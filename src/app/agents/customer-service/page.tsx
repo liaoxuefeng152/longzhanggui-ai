@@ -3,22 +3,167 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import MainLayout from '@/components/layout/MainLayout';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { MessageSquare, Send, Globe, Zap } from 'lucide-react';
+import {
+  Headphones,
+  Search,
+  Shield,
+  MessageSquare,
+  AlertTriangle,
+  CheckCircle,
+  XCircle,
+  RefreshCw,
+  Play,
+  Settings,
+  Globe,
+  Languages,
+  Clock,
+  Send,
+  Package,
+  Truck,
+  DollarSign,
+  Users,
+  Bot,
+  User,
+  ArrowRightLeft,
+  Ban,
+  ThumbsUp,
+  ThumbsDown,
+} from 'lucide-react';
 
-export default function CustomerServicePage() {
+interface CustomerTicket {
+  id: string;
+  platform: 'TK' | 'Amazon';
+  type: 'inquiry' | 'dispute' | 'refund' | 'shipping';
+  status: 'pending' | 'processing' | 'resolved' | 'escalated';
+  customer: string;
+  language: string;
+  subject: string;
+  aiHandled: boolean;
+  complianceChecked: boolean;
+  satisfaction?: number;
+  createdAt: string;
+}
+
+interface DisputeCase {
+  id: string;
+  platform: 'TK' | 'Amazon';
+  type: 'refund' | 'return' | 'a-to-z';
+  orderId: string;
+  customer: string;
+  amount: number;
+  status: 'pending' | 'processing' | 'resolved';
+  solution: string;
+  aiSuggested: boolean;
+  createdAt: string;
+}
+
+const mockTickets: CustomerTicket[] = [
+  {
+    id: 'TK001',
+    platform: 'TK',
+    type: 'inquiry',
+    status: 'resolved',
+    customer: 'Budi Santoso',
+    language: '印尼语',
+    subject: '询问物流状态 - 订单#TK20260321001',
+    aiHandled: true,
+    complianceChecked: true,
+    satisfaction: 5,
+    createdAt: '2026-03-21 14:30',
+  },
+  {
+    id: 'AM001',
+    platform: 'Amazon',
+    type: 'dispute',
+    status: 'processing',
+    customer: 'John Smith',
+    language: '英语',
+    subject: '申请退款 - 商品与描述不符',
+    aiHandled: true,
+    complianceChecked: true,
+    createdAt: '2026-03-21 13:15',
+  },
+  {
+    id: 'TK002',
+    platform: 'TK',
+    type: 'shipping',
+    status: 'pending',
+    customer: 'Somchai Thai',
+    language: '泰语',
+    subject: '包裹未送达 - 订单#TK20260320098',
+    aiHandled: false,
+    complianceChecked: false,
+    createdAt: '2026-03-21 12:00',
+  },
+  {
+    id: 'AM002',
+    platform: 'Amazon',
+    type: 'refund',
+    status: 'resolved',
+    customer: 'Maria Garcia',
+    language: '西班牙语',
+    subject: 'A-to-Z索赔申请',
+    aiHandled: true,
+    complianceChecked: true,
+    satisfaction: 4,
+    createdAt: '2026-03-21 11:45',
+  },
+];
+
+const mockDisputes: DisputeCase[] = [
+  {
+    id: 'DSP001',
+    platform: 'Amazon',
+    type: 'a-to-z',
+    orderId: 'AM20260321001',
+    customer: 'John Smith',
+    amount: 89.99,
+    status: 'processing',
+    solution: '全额退款',
+    aiSuggested: true,
+    createdAt: '2026-03-21 13:15',
+  },
+  {
+    id: 'DSP002',
+    platform: 'TK',
+    type: 'refund',
+    orderId: 'TK20260320098',
+    customer: 'Somchai Thai',
+    amount: 25.50,
+    status: 'pending',
+    solution: '补发商品',
+    aiSuggested: true,
+    createdAt: '2026-03-21 12:00',
+  },
+];
+
+const languageSupport = [
+  { code: 'id', name: '印尼语', platform: 'TK', accuracy: 98.5 },
+  { code: 'th', name: '泰语', platform: 'TK', accuracy: 97.2 },
+  { code: 'vi', name: '越南语', platform: 'TK', accuracy: 96.8 },
+  { code: 'en', name: '英语', platform: 'Amazon', accuracy: 99.1 },
+  { code: 'de', name: '德语', platform: 'Amazon', accuracy: 98.3 },
+  { code: 'ja', name: '日语', platform: 'Amazon', accuracy: 97.5 },
+];
+
+const complianceWords = [
+  { id: 'CW001', word: '好评返现', replacement: '感谢您的支持', status: 'active' },
+  { id: 'CW002', word: '留评有礼', replacement: '如有问题请联系我们', status: 'active' },
+  { id: 'CW003', word: '100%有效', replacement: '效果显著', status: 'active' },
+  { id: 'CW004', word: '最好', replacement: '优质', status: 'active' },
+];
+
+export default function CustomerServiceAgentPage() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
-  const [message, setMessage] = useState('');
-  const [response, setResponse] = useState('');
-  const [language, setLanguage] = useState('zh');
-  const [loading, setLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState('tickets');
+  const [agentStatus, setAgentStatus] = useState<'online' | 'offline' | 'processing'>('online');
+  const [tickets, setTickets] = useState<CustomerTicket[]>(mockTickets);
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -29,58 +174,36 @@ export default function CustomerServicePage() {
     setUser(JSON.parse(userData));
   }, [router]);
 
-  const handleSend = async () => {
-    if (!message.trim()) return;
+  const getTypeLabel = (type: string) => {
+    const labels: Record<string, string> = {
+      inquiry: '咨询',
+      dispute: '纠纷',
+      refund: '退款',
+      shipping: '物流',
+    };
+    return labels[type] || type;
+  };
 
-    setLoading(true);
-    setResponse('');
+  const getStatusBadge = (status: string) => {
+    const config: Record<string, { label: string; className: string }> = {
+      pending: { label: '待处理', className: 'bg-warning/10 text-warning border-warning/20' },
+      processing: { label: '处理中', className: 'bg-primary/10 text-primary border-primary/20' },
+      resolved: { label: '已解决', className: 'bg-success/10 text-success border-success/20' },
+      escalated: { label: '已升级', className: 'bg-destructive/10 text-destructive border-destructive/20' },
+    };
+    const { label, className } = config[status] || config.pending;
+    return <Badge variant="outline" className={className}>{label}</Badge>;
+  };
 
-    try {
-      const res = await fetch('/api/ai/model/invoke', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          scene: 'customer_service',
-          prompt: `你是一位专业的客服智能体，请用${language === 'zh' ? '中文' : language}回复以下客户咨询：\n\n${message}`,
-        }),
-      });
-
-      if (!res.ok) throw new Error('请求失败');
-
-      const reader = res.body?.getReader();
-      const decoder = new TextDecoder();
-
-      if (reader) {
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-
-          const chunk = decoder.decode(value);
-          const lines = chunk.split('\n\n');
-
-          for (const line of lines) {
-            if (line.startsWith('data: ')) {
-              const data = line.slice(6);
-              if (data === '[DONE]') continue;
-
-              try {
-                const parsed = JSON.parse(data);
-                if (parsed.content) {
-                  setResponse((prev) => prev + parsed.content);
-                }
-              } catch (e) {
-                console.error('Parse error:', e);
-              }
-            }
-          }
-        }
-      }
-    } catch (error) {
-      console.error('Error:', error);
-      setResponse('抱歉，生成回复时出现错误。');
-    } finally {
-      setLoading(false);
-    }
+  const getSatisfactionStars = (score?: number) => {
+    if (!score) return <span className="text-[11px] text-muted-foreground">未评价</span>;
+    return (
+      <div className="flex items-center gap-0.5">
+        {[1, 2, 3, 4, 5].map((i) => (
+          <span key={i} className={i <= score ? 'text-warning' : 'text-muted'}>★</span>
+        ))}
+      </div>
+    );
   };
 
   if (!user) return null;
@@ -88,139 +211,379 @@ export default function CustomerServicePage() {
   return (
     <MainLayout user={user} onLogout={() => router.push('/login')}>
       <div className="space-y-6">
-        <div className="flex items-center gap-3">
-          <div className="bg-[#1677FF] p-2 rounded-lg">
-            <MessageSquare className="h-5 w-5 text-white" />
+        {/* 页面头部 */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center">
+              <Headphones className="h-7 w-7 text-primary" />
+            </div>
+            <div>
+              <h1 className="text-[18px] font-semibold text-foreground">AI客服智能体</h1>
+              <p className="text-[14px] text-muted-foreground">多语种回复 · 纠纷处理 · 话术合规 · 物流轨迹查询</p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-[18px] font-semibold text-[#1D2129]">客服智能体</h1>
-            <p className="text-[14px] text-[#717C89]">多语种自动客服，24小时值守</p>
+          <div className="flex items-center gap-3">
+            <Badge className={agentStatus === 'online' ? 'bg-success text-white' : 'bg-warning text-white'}>
+              {agentStatus === 'online' ? '在线运行' : agentStatus === 'processing' ? '处理中' : '离线'}
+            </Badge>
+            <Button variant="outline">
+              <RefreshCw className="h-4 w-4 mr-2" />
+              刷新
+            </Button>
+            <Button>
+              <Play className="h-4 w-4 mr-2" />
+              启动客服
+            </Button>
           </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-6">
-          {/* 左侧：对话测试 */}
-          <div className="col-span-2 space-y-4">
-            <Card className="bg-white border-[#E8E8E8] shadow-sm">
-              <CardHeader className="px-4 py-4">
-                <CardTitle className="text-[14px] font-medium text-[#4E5969]">
-                  对话测试
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="px-4 pb-4 space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="language">语言选择</Label>
-                  <Select value={language} onValueChange={setLanguage}>
-                    <SelectTrigger className="h-9">
-                      <SelectValue placeholder="选择语言" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="zh">中文</SelectItem>
-                      <SelectItem value="id">印尼语</SelectItem>
-                      <SelectItem value="ms">马来语</SelectItem>
-                      <SelectItem value="th">泰语</SelectItem>
-                      <SelectItem value="vi">越南语</SelectItem>
-                      <SelectItem value="en">英语</SelectItem>
-                    </SelectContent>
-                  </Select>
+        {/* 核心能力标签 */}
+        <div className="flex items-center gap-2">
+          <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
+            <Shield className="h-3 w-3 mr-1" />
+            话术合规
+          </Badge>
+          <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
+            <Languages className="h-3 w-3 mr-1" />
+            多语种
+          </Badge>
+          <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
+            <MessageSquare className="h-3 w-3 mr-1" />
+            纠纷处理
+          </Badge>
+          <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
+            <Truck className="h-3 w-3 mr-1" />
+            物流查询
+          </Badge>
+        </div>
+
+        {/* 统计概览 */}
+        <div className="grid grid-cols-5 gap-4">
+          <Card className="bg-white border-border shadow-sm">
+            <CardContent className="p-4">
+              <div className="text-[12px] text-muted-foreground mb-1">今日会话</div>
+              <div className="text-[24px] font-semibold text-foreground">328</div>
+              <div className="text-[11px] text-success mt-1">↑ 25% vs 昨日</div>
+            </CardContent>
+          </Card>
+          <Card className="bg-white border-border shadow-sm">
+            <CardContent className="p-4">
+              <div className="text-[12px] text-muted-foreground mb-1">AI处理率</div>
+              <div className="text-[24px] font-semibold text-success">92.3%</div>
+              <div className="text-[11px] text-muted-foreground mt-1">自动回复+纠纷</div>
+            </CardContent>
+          </Card>
+          <Card className="bg-white border-border shadow-sm">
+            <CardContent className="p-4">
+              <div className="text-[12px] text-muted-foreground mb-1">纠纷处理</div>
+              <div className="text-[24px] font-semibold text-foreground">15</div>
+              <div className="text-[11px] text-muted-foreground mt-1">含A-to-Z索赔</div>
+            </CardContent>
+          </Card>
+          <Card className="bg-white border-border shadow-sm">
+            <CardContent className="p-4">
+              <div className="text-[12px] text-muted-foreground mb-1">满意度</div>
+              <div className="text-[24px] font-semibold text-success">4.8</div>
+              <div className="text-[11px] text-muted-foreground mt-1">5星满分</div>
+            </CardContent>
+          </Card>
+          <Card className="bg-white border-border shadow-sm">
+            <CardContent className="p-4">
+              <div className="text-[12px] text-muted-foreground mb-1">模型调用</div>
+              <div className="text-[24px] font-semibold text-foreground">2,100</div>
+              <div className="text-[11px] text-muted-foreground mt-1">豆包-Seed-1.8</div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* 主要内容区 */}
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList className="bg-muted/50">
+            <TabsTrigger value="tickets">客服工单</TabsTrigger>
+            <TabsTrigger value="disputes">纠纷处理</TabsTrigger>
+            <TabsTrigger value="languages">多语种</TabsTrigger>
+            <TabsTrigger value="compliance">话术合规</TabsTrigger>
+            <TabsTrigger value="config">配置设置</TabsTrigger>
+          </TabsList>
+
+          {/* 客服工单 */}
+          <TabsContent value="tickets" className="space-y-4">
+            {/* 操作栏 */}
+            <Card className="bg-white border-border shadow-sm">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-4">
+                  <div className="flex-1 relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <input
+                      type="text"
+                      placeholder="搜索工单、客户..."
+                      className="w-full pl-10 pr-4 py-2 border border-border rounded-md text-[14px] focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    />
+                  </div>
+                  <select className="px-4 py-2 border border-border rounded-md text-[14px] focus:outline-none focus:ring-2 focus:ring-primary/50">
+                    <option value="">全部平台</option>
+                    <option value="TK">TK东南亚</option>
+                    <option value="Amazon">亚马逊</option>
+                  </select>
+                  <select className="px-4 py-2 border border-border rounded-md text-[14px] focus:outline-none focus:ring-2 focus:ring-primary/50">
+                    <option value="">全部状态</option>
+                    <option value="pending">待处理</option>
+                    <option value="processing">处理中</option>
+                    <option value="resolved">已解决</option>
+                  </select>
                 </div>
+              </CardContent>
+            </Card>
 
-                <div className="space-y-2">
-                  <Label htmlFor="message">用户咨询</Label>
-                  <Textarea
-                    id="message"
-                    placeholder="输入用户的咨询内容..."
-                    value={message}
-                    onChange={(e) => setMessage(e.target.value)}
-                    className="min-h-[120px]"
-                  />
-                </div>
+            {/* 工单列表 */}
+            <div className="space-y-3">
+              {tickets.map((ticket) => (
+                <Card key={ticket.id} className="bg-white border-border shadow-sm">
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1 space-y-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[14px] font-medium text-foreground">{ticket.subject}</span>
+                          <Badge variant="outline" className="text-[11px]">{ticket.platform}</Badge>
+                          <Badge variant="outline" className="text-[11px]">{getTypeLabel(ticket.type)}</Badge>
+                          {getStatusBadge(ticket.status)}
+                        </div>
+                        <div className="flex items-center gap-4 text-[11px] text-muted-foreground">
+                          <span>客户: {ticket.customer}</span>
+                          <span>语言: {ticket.language}</span>
+                          <span>ID: {ticket.id}</span>
+                          <span>{ticket.createdAt}</span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          {ticket.aiHandled ? (
+                            <Badge variant="outline" className="bg-success/10 text-success text-[10px]">
+                              <Bot className="h-3 w-3 mr-1" />
+                              AI已处理
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="bg-warning/10 text-warning text-[10px]">
+                              <User className="h-3 w-3 mr-1" />
+                              待人工
+                            </Badge>
+                          )}
+                          {ticket.complianceChecked && (
+                            <Badge variant="outline" className="bg-success/10 text-success text-[10px]">
+                              <CheckCircle className="h-3 w-3 mr-1" />
+                              合规校验
+                            </Badge>
+                          )}
+                          {ticket.satisfaction && (
+                            <div className="flex items-center gap-1">
+                              <span className="text-[10px] text-muted-foreground">满意度:</span>
+                              {getSatisfactionStars(ticket.satisfaction)}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button variant="outline" size="sm">
+                          <MessageSquare className="h-3 w-3 mr-1" />
+                          详情
+                        </Button>
+                        {ticket.status === 'pending' && (
+                          <Button size="sm">
+                            <Send className="h-3 w-3 mr-1" />
+                            处理
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </TabsContent>
 
-                <Button
-                  onClick={handleSend}
-                  disabled={loading || !message.trim()}
-                  className="bg-[#1677FF] hover:bg-[#0F62FE] h-9"
-                >
-                  <Send className="h-4 w-4 mr-2" />
-                  {loading ? '生成中...' : '生成回复'}
-                </Button>
+          {/* 纠纷处理 */}
+          <TabsContent value="disputes" className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <Card className="bg-white border-border shadow-sm">
+                <CardHeader>
+                  <CardTitle className="text-[15px]">纠纷处理中心</CardTitle>
+                  <CardDescription>对接TK/亚马逊纠纷API，自动生成标准化和解方案</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {mockDisputes.map((dispute) => (
+                      <div key={dispute.id} className="p-3 border border-border rounded-lg">
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <span className="text-[12px] font-medium text-foreground">订单 #{dispute.orderId}</span>
+                            <Badge variant="outline" className="text-[10px]">{dispute.platform}</Badge>
+                            <Badge variant="outline" className="text-[10px]">{dispute.type === 'a-to-z' ? 'A-to-Z索赔' : dispute.type === 'refund' ? '退款' : '退货'}</Badge>
+                          </div>
+                          <Badge variant="outline" className={`${dispute.status === 'pending' ? 'bg-warning/10 text-warning border-warning/20' : 'bg-primary/10 text-primary border-primary/20'} text-[10px]`}>
+                            {dispute.status === 'pending' ? '待处理' : '处理中'}
+                          </Badge>
+                        </div>
+                        <div className="text-[11px] text-muted-foreground mb-2">
+                          客户: {dispute.customer} · 金额: ${dispute.amount}
+                        </div>
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="text-[11px] text-muted-foreground">AI建议方案:</span>
+                          <span className="text-[11px] text-primary font-medium">{dispute.solution}</span>
+                          {dispute.aiSuggested && (
+                            <Badge variant="outline" className="bg-success/10 text-success text-[9px]">AI推荐</Badge>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button size="sm" variant="outline">拒绝</Button>
+                          <Button size="sm">执行方案</Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
 
-                {response && (
-                  <div className="space-y-2">
-                    <Label>AI回复</Label>
-                    <div className="p-4 bg-[#F5F7FA] rounded-lg border border-[#E8E8E8]">
-                      <p className="text-[13px] text-[#1D2129] whitespace-pre-wrap">
-                        {response}
-                      </p>
+              <Card className="bg-white border-border shadow-sm">
+                <CardHeader>
+                  <CardTitle className="text-[15px]">纠纷处理规则</CardTitle>
+                  <CardDescription>自动识别纠纷类型，生成标准化和解方案</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="p-3 bg-muted/30 rounded-lg">
+                      <div className="text-[12px] font-medium text-foreground mb-1">退款纠纷</div>
+                      <div className="text-[11px] text-muted-foreground">
+                        自动生成全额退款/补发商品方案，执行平台操作
+                      </div>
+                    </div>
+                    <div className="p-3 bg-muted/30 rounded-lg">
+                      <div className="text-[12px] font-medium text-foreground mb-1">退货纠纷</div>
+                      <div className="text-[11px] text-muted-foreground">
+                        识别退货原因，生成分段处理方案
+                      </div>
+                    </div>
+                    <div className="p-3 bg-muted/30 rounded-lg">
+                      <div className="text-[12px] font-medium text-foreground mb-1">A-to-Z索赔</div>
+                      <div className="text-[11px] text-muted-foreground">
+                        亚马逊专属，自动生成和解方案并执行
+                      </div>
+                    </div>
+                    <div className="p-3 bg-muted/30 rounded-lg">
+                      <div className="text-[12px] font-medium text-foreground mb-1">物流轨迹回复</div>
+                      <div className="text-[11px] text-muted-foreground">
+                        调用ERP物流数据，精准回复买家物流节点问题
+                      </div>
                     </div>
                   </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
 
-          {/* 右侧：功能介绍 */}
-          <div className="space-y-4">
-            <Card className="bg-white border-[#E8E8E8] shadow-sm">
-              <CardHeader className="px-4 py-4">
-                <CardTitle className="text-[14px] font-medium text-[#4E5969]">
-                  核心功能
-                </CardTitle>
+          {/* 多语种 */}
+          <TabsContent value="languages" className="space-y-4">
+            <Card className="bg-white border-border shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-[15px]">多语种支持</CardTitle>
+                <CardDescription>TK东南亚（印尼语/泰语/越南语）+ 亚马逊（英语/德语/日语）</CardDescription>
               </CardHeader>
-              <CardContent className="px-4 pb-4 space-y-3">
-                <div className="flex items-start gap-3">
-                  <Globe className="h-5 w-5 text-[#1677FF] flex-shrink-0 mt-0.5" />
-                  <div>
-                    <p className="text-[13px] font-medium text-[#1D2129]">多语种支持</p>
-                    <p className="text-[12px] text-[#717C89]">
-                      印尼语、马来语、泰语、越南语、英语
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <Zap className="h-5 w-5 text-[#1677FF] flex-shrink-0 mt-0.5" />
-                  <div>
-                    <p className="text-[13px] font-medium text-[#1D2129]">意图识别</p>
-                    <p className="text-[12px] text-[#717C89]">
-                      自动识别用户提问意图，精准回复
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <MessageSquare className="h-5 w-5 text-[#1677FF] flex-shrink-0 mt-0.5" />
-                  <div>
-                    <p className="text-[13px] font-medium text-[#1D2129]">24小时值守</p>
-                    <p className="text-[12px] text-[#717C89]">
-                      全天候自动回复，及时响应用户
-                    </p>
-                  </div>
+              <CardContent>
+                <div className="grid grid-cols-3 gap-4">
+                  {languageSupport.map((lang) => (
+                    <div key={lang.code} className="p-4 border border-border rounded-lg">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Globe className="h-4 w-4 text-primary" />
+                        <span className="text-[13px] font-medium text-foreground">{lang.name}</span>
+                        <Badge variant="outline" className="text-[10px]">{lang.platform}</Badge>
+                      </div>
+                      <div className="flex items-center justify-between text-[11px]">
+                        <span className="text-muted-foreground">翻译准确率</span>
+                        <span className="text-success font-medium">{lang.accuracy}%</span>
+                      </div>
+                      <Progress value={lang.accuracy} className="h-1.5 mt-2" />
+                    </div>
+                  ))}
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
 
-            <Card className="bg-white border-[#E8E8E8] shadow-sm">
-              <CardHeader className="px-4 py-4">
-                <CardTitle className="text-[14px] font-medium text-[#4E5969]">
-                  调用统计
-                </CardTitle>
+          {/* 话术合规 */}
+          <TabsContent value="compliance" className="space-y-4">
+            <Card className="bg-white border-border shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-[15px]">话术合规过滤</CardTitle>
+                <CardDescription>回复前校验平台禁用语，违规则自动替换为合规表述</CardDescription>
               </CardHeader>
-              <CardContent className="px-4 pb-4 space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-[13px] text-[#4E5969]">今日调用</span>
-                  <span className="text-[14px] font-semibold text-[#1D2129]">8,560</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-[13px] text-[#4E5969]">成功率</span>
-                  <span className="text-[14px] font-semibold text-[#52C41A]">98.5%</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-[13px] text-[#4E5969]">平均响应</span>
-                  <span className="text-[14px] font-semibold text-[#1D2129]">1.2s</span>
+              <CardContent>
+                <div className="space-y-3">
+                  {complianceWords.map((word) => (
+                    <div key={word.id} className="flex items-center justify-between p-3 border border-border rounded-lg">
+                      <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-2">
+                          <Ban className="h-4 w-4 text-destructive" />
+                          <span className="text-[13px] text-destructive line-through">{word.word}</span>
+                        </div>
+                        <ArrowRightLeft className="h-4 w-4 text-muted-foreground" />
+                        <div className="flex items-center gap-2">
+                          <CheckCircle className="h-4 w-4 text-success" />
+                          <span className="text-[13px] text-success">{word.replacement}</span>
+                        </div>
+                      </div>
+                      <Badge variant="outline" className="bg-success/10 text-success text-[10px]">已启用</Badge>
+                    </div>
+                  ))}
                 </div>
               </CardContent>
             </Card>
-          </div>
-        </div>
+          </TabsContent>
+
+          {/* 配置设置 */}
+          <TabsContent value="config" className="space-y-4">
+            <Card className="bg-white border-border shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-[15px]">智能体配置</CardTitle>
+                <CardDescription>模型选择、回复策略、话术模板配置</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between p-4 border border-border rounded-lg">
+                    <div>
+                      <div className="text-[13px] font-medium text-foreground">调用模型</div>
+                      <div className="text-[11px] text-muted-foreground">豆包-Seed-1.8 用于多语种客服回复</div>
+                    </div>
+                    <select className="px-4 py-2 border border-border rounded-md text-[14px] focus:outline-none focus:ring-2 focus:ring-primary/50">
+                      <option value="doubao">豆包-Seed-1.8</option>
+                      <option value="deepseek">DeepSeek-V3</option>
+                    </select>
+                  </div>
+                  <div className="flex items-center justify-between p-4 border border-border rounded-lg">
+                    <div>
+                      <div className="text-[13px] font-medium text-foreground">自动回复模式</div>
+                      <div className="text-[11px] text-muted-foreground">AI自动回复 + 纠纷自动处理</div>
+                    </div>
+                    <Badge variant="outline" className="bg-success/10 text-success">已启用</Badge>
+                  </div>
+                  <div className="flex items-center justify-between p-4 border border-border rounded-lg">
+                    <div>
+                      <div className="text-[13px] font-medium text-foreground">话术合规校验</div>
+                      <div className="text-[11px] text-muted-foreground">回复前自动校验平台禁用语</div>
+                    </div>
+                    <Badge variant="outline" className="bg-success/10 text-success">已启用</Badge>
+                  </div>
+                  <div className="flex items-center justify-between p-4 border border-border rounded-lg">
+                    <div>
+                      <div className="text-[13px] font-medium text-foreground">物流数据对接</div>
+                      <div className="text-[11px] text-muted-foreground">ERP物流轨迹API</div>
+                    </div>
+                    <Button variant="outline" size="sm">
+                      <Settings className="h-4 w-4 mr-2" />
+                      配置
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
     </MainLayout>
   );
