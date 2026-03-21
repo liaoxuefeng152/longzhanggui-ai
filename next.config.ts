@@ -21,8 +21,8 @@ const nextConfig: NextConfig = {
 
   // 环境变量
   env: {
-    NEXT_PUBLIC_APP_NAME: '阿峰｜跨境AI中台',
-    NEXT_PUBLIC_APP_VERSION: '1.0.0',
+    NEXT_PUBLIC_APP_NAME: '龙虾AI跨境无人店系统',
+    NEXT_PUBLIC_APP_VERSION: '3.0.0',
   },
 
   // 实验性功能
@@ -34,11 +34,13 @@ const nextConfig: NextConfig = {
   // 压缩
   compress: true,
 
-  // 生产环境优化
-  swcMinify: true,
+  // 生产环境优化 - swcMinify 已在 Next.js 16 中移除
 
-  // 路径别名（已在 tsconfig.json 中配置）
-  // typescript 配置
+  // TypeScript 配置
+  typescript: {
+    // 开发时忽略类型错误以加快构建
+    ignoreBuildErrors: false,
+  },
 };
 
 export default nextConfig;

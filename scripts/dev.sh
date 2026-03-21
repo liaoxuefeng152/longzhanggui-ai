@@ -30,4 +30,4 @@ echo "Clearing port ${PORT} before start."
 kill_port_if_listening
 echo "Starting HTTP service on port ${PORT} for dev..."
 
-npx next dev --webpack --port $PORT
+node "${COZE_WORKSPACE_PATH}/node_modules/next/dist/bin/next" dev --webpack --port $PORT

@@ -5,12 +5,17 @@ import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import {
   LayoutDashboard,
-  Bot,
+  Cpu,
   FileText,
-  MessageSquare,
-  Megaphone,
+  Bot,
   Users,
+  CreditCard,
+  ClipboardList,
+  Link2,
+  Package,
   ShoppingCart,
+  Headphones,
+  BarChart3,
   Settings,
   ChevronRight,
 } from 'lucide-react';
@@ -25,6 +30,7 @@ interface MenuItem {
   }[];
 }
 
+// 根据PRD文档的14个核心页面配置导航菜单
 const menuItems: MenuItem[] = [
   {
     title: '控制台',
@@ -34,7 +40,7 @@ const menuItems: MenuItem[] = [
   {
     title: '模型路由',
     href: '/models',
-    icon: Bot,
+    icon: Cpu,
   },
   {
     title: 'Prompt中心',
@@ -42,23 +48,58 @@ const menuItems: MenuItem[] = [
     icon: FileText,
   },
   {
-    title: '智能体工厂',
+    title: '智能体调度',
     href: '/agents',
-    icon: MessageSquare,
+    icon: Bot,
     submenu: [
-      { title: '客服智能体', href: '/agents/customer-service' },
-      { title: '自推广智能体', href: '/agents/marketing' },
+      { title: '选品智能体', href: '/agents/product-selection' },
+      { title: '图片设计智能体', href: '/agents/image-design' },
+      { title: '视频生成智能体', href: '/agents/video-generation' },
+      { title: 'Listing优化', href: '/agents/listing-optimization' },
+      { title: '广告投放智能体', href: '/agents/advertising' },
+      { title: 'AI客服智能体', href: '/agents/customer-service' },
+      { title: '数据复盘智能体', href: '/agents/data-review' },
     ],
   },
   {
-    title: '用户管理',
-    href: '/users',
+    title: '飞书用户',
+    href: '/feishu-users',
     icon: Users,
   },
   {
-    title: '订单套餐',
+    title: '套餐管理',
+    href: '/packages',
+    icon: CreditCard,
+  },
+  {
+    title: '任务日志',
+    href: '/task-logs',
+    icon: ClipboardList,
+  },
+  {
+    title: '平台绑定',
+    href: '/platform-bindings',
+    icon: Link2,
+  },
+  {
+    title: '商品库',
+    href: '/products',
+    icon: Package,
+  },
+  {
+    title: '订单中心',
     href: '/orders',
     icon: ShoppingCart,
+  },
+  {
+    title: '客服工单',
+    href: '/customer-tickets',
+    icon: Headphones,
+  },
+  {
+    title: '数据报表',
+    href: '/reports',
+    icon: BarChart3,
   },
   {
     title: '系统设置',
@@ -78,12 +119,8 @@ export default function Sidebar() {
   };
 
   return (
-    <aside className="w-[220px] bg-white border-r border-[#E8E8E8] fixed left-0 top-[60px] bottom-0 overflow-y-auto">
-      <div className="p-6">
-        <div className="mb-4">
-          <h3 className="text-[14px] font-medium text-[#717C89] mb-2">功能菜单</h3>
-        </div>
-
+    <aside className="w-[220px] bg-sidebar fixed left-0 top-[60px] bottom-0 overflow-y-auto">
+      <div className="p-4">
         <nav className="space-y-1">
           {menuItems.map((item) => {
             const Icon = item.icon;
@@ -96,8 +133,8 @@ export default function Sidebar() {
                   className={cn(
                     'flex items-center gap-3 px-3 py-2.5 rounded-md transition-all duration-200',
                     active
-                      ? 'bg-[#E6F7FF] text-[#1677FF] font-medium'
-                      : 'text-[#4E5969] hover:bg-[#F5F7FA]'
+                      ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium'
+                      : 'text-sidebar-foreground/80 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'
                   )}
                 >
                   <Icon className="h-4 w-4 flex-shrink-0" />
@@ -113,7 +150,7 @@ export default function Sidebar() {
                 </Link>
 
                 {item.submenu && active && (
-                  <div className="ml-6 mt-1 space-y-1">
+                  <div className="ml-6 mt-1 space-y-1 border-l border-sidebar-border/30 pl-3">
                     {item.submenu.map((subItem) => (
                       <Link
                         key={subItem.href}
@@ -121,8 +158,8 @@ export default function Sidebar() {
                         className={cn(
                           'block px-3 py-2 text-[13px] rounded-md transition-all duration-200',
                           pathname === subItem.href
-                            ? 'bg-[#E6F7FF] text-[#1677FF] font-medium'
-                            : 'text-[#4E5969] hover:bg-[#F5F7FA]'
+                            ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium'
+                            : 'text-sidebar-foreground/70 hover:bg-sidebar-accent/30 hover:text-sidebar-foreground'
                         )}
                       >
                         {subItem.title}

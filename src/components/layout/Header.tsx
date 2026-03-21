@@ -1,6 +1,6 @@
 'use client';
 
-import { Bell, User } from 'lucide-react';
+import { Bell, User, Moon, Sun } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -24,17 +24,37 @@ interface HeaderProps {
 
 export default function Header({ user, onLogout }: HeaderProps) {
   return (
-    <header className="h-[60px] bg-white border-b border-[#E8E8E8] flex items-center justify-between px-6 fixed top-0 left-0 right-0 z-50">
-      <div className="flex items-center gap-2">
-        <span className="text-[16px] font-semibold text-[#1D2129]">
-          阿峰｜跨境AI中台
-        </span>
+    <header className="h-[60px] bg-white border-b border-border flex items-center justify-between px-6 fixed top-0 left-0 right-0 z-50">
+      <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+            <span className="text-white font-bold text-lg">🦞</span>
+          </div>
+          <div className="flex flex-col">
+            <span className="text-[16px] font-semibold text-foreground">
+              龙虾AI跨境无人店
+            </span>
+            <span className="text-[11px] text-muted-foreground">
+              v1.0 · 飞书AI中台驱动版
+            </span>
+          </div>
+        </div>
       </div>
 
-      <div className="flex items-center gap-6">
+      <div className="flex items-center gap-4">
+        <div className="text-[12px] text-muted-foreground">
+          {new Date().toLocaleString('zh-CN', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+          })}
+        </div>
+
         <Button variant="ghost" size="icon" className="relative">
-          <Bell className="h-5 w-5 text-[#4E5969]" />
-          <Badge className="absolute -top-1 -right-1 h-4 w-4 p-0 bg-[#F5222D] rounded-full flex items-center justify-center text-[10px]">
+          <Bell className="h-5 w-5 text-muted-foreground" />
+          <Badge className="absolute -top-1 -right-1 h-4 w-4 p-0 bg-destructive rounded-full flex items-center justify-center text-[10px]">
             3
           </Badge>
         </Button>
@@ -42,15 +62,20 @@ export default function Header({ user, onLogout }: HeaderProps) {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="flex items-center gap-2 h-10 px-2">
-              <Avatar className="h-10 w-10">
+              <Avatar className="h-8 w-8">
                 <AvatarImage src={user?.avatar} alt={user?.nickname} />
-                <AvatarFallback className="bg-[#1677FF] text-white">
-                  {user?.nickname?.charAt(0) || 'U'}
+                <AvatarFallback className="bg-primary text-white text-sm">
+                  {user?.nickname?.charAt(0) || '阿'}
                 </AvatarFallback>
               </Avatar>
-              <span className="text-[14px] font-medium text-[#1D2129]">
-                {user?.nickname || '用户'}
-              </span>
+              <div className="flex flex-col items-start">
+                <span className="text-[14px] font-medium text-foreground">
+                  {user?.nickname || '阿峰'}
+                </span>
+                <span className="text-[11px] text-muted-foreground">
+                  超级管理员
+                </span>
+              </div>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48">
@@ -58,8 +83,9 @@ export default function Header({ user, onLogout }: HeaderProps) {
             <DropdownMenuSeparator />
             <DropdownMenuItem>个人中心</DropdownMenuItem>
             <DropdownMenuItem>系统设置</DropdownMenuItem>
+            <DropdownMenuItem>操作日志</DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={onLogout} className="text-[#F5222D]">
+            <DropdownMenuItem onClick={onLogout} className="text-destructive">
               退出登录
             </DropdownMenuItem>
           </DropdownMenuContent>

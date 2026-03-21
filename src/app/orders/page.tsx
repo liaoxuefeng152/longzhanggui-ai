@@ -4,15 +4,138 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import MainLayout from '@/components/layout/MainLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Search, Download } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Search,
+  Download,
+  Eye,
+  Truck,
+  AlertTriangle,
+  CheckCircle,
+  Clock,
+  XCircle,
+} from 'lucide-react';
+
+interface Order {
+  id: string;
+  orderId: string;
+  customer: string;
+  platform: string;
+  product: string;
+  quantity: number;
+  amount: number;
+  status: 'pending' | 'paid' | 'shipped' | 'delivered' | 'cancelled' | 'exception';
+  logisticsStatus: string;
+  createdAt: string;
+}
+
+const statusConfig: Record<string, { label: string; className: string; icon: any }> = {
+  pending: { label: '待付款', className: 'bg-warning/10 text-warning', icon: Clock },
+  paid: { label: '已付款', className: 'bg-primary/10 text-primary', icon: CheckCircle },
+  shipped: { label: '已发货', className: 'bg-success/10 text-success', icon: Truck },
+  delivered: { label: '已签收', className: 'bg-success text-white', icon: CheckCircle },
+  cancelled: { label: '已取消', className: 'bg-muted text-muted-foreground', icon: XCircle },
+  exception: { label: '异常', className: 'bg-destructive text-white', icon: AlertTriangle },
+};
 
 export default function OrdersPage() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [filterPlatform, setFilterPlatform] = useState<string>('all');
+
+  const orders: Order[] = [
+    {
+      id: '1',
+      orderId: 'TK202402200001',
+      customer: 'Ahmad Suryadi',
+      platform: 'TK印尼',
+      product: '穆斯林头巾-印花款',
+      quantity: 2,
+      amount: 31.98,
+      status: 'shipped',
+      logisticsStatus: '清关中',
+      createdAt: '2024-02-20 10:30',
+    },
+    {
+      id: '2',
+      orderId: 'TK202402200002',
+      customer: 'Somsak Prasert',
+      platform: 'TK泰国',
+      product: '佛教护身符项链',
+      quantity: 1,
+      amount: 8.99,
+      status: 'paid',
+      logisticsStatus: '待发货',
+      createdAt: '2024-02-20 09:45',
+    },
+    {
+      id: '3',
+      orderId: 'AMZ202402200001',
+      customer: 'John Smith',
+      platform: '亚马逊美国',
+      product: '户外露营帐篷3人',
+      quantity: 1,
+      amount: 89.99,
+      status: 'delivered',
+      logisticsStatus: '已签收',
+      createdAt: '2024-02-18 14:20',
+    },
+    {
+      id: '4',
+      orderId: 'TK202402190015',
+      customer: 'Nguyen Van A',
+      platform: 'TK越南',
+      product: '咖啡滤泡壶套装',
+      quantity: 3,
+      amount: 37.5,
+      status: 'exception',
+      logisticsStatus: '地址错误',
+      createdAt: '2024-02-19 16:10',
+    },
+    {
+      id: '5',
+      orderId: 'TK202402190014',
+      customer: 'Dewi Lestari',
+      platform: 'TK印尼',
+      product: '穆斯林头巾-纯色款',
+      quantity: 5,
+      amount: 74.95,
+      status: 'pending',
+      logisticsStatus: '-',
+      createdAt: '2024-02-19 11:25',
+    },
+    {
+      id: '6',
+      orderId: 'AMZ202402180008',
+      customer: 'Emily Brown',
+      platform: '亚马逊美国',
+      product: '智能手表运动版',
+      quantity: 1,
+      amount: 49.99,
+      status: 'cancelled',
+      logisticsStatus: '买家取消',
+      createdAt: '2024-02-18 08:50',
+    },
+  ];
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -23,77 +146,23 @@ export default function OrdersPage() {
     setUser(JSON.parse(userData));
   }, [router]);
 
-  const packages = [
-    {
-      id: 'trial',
-      name: '试用版',
-      price: 0,
-      days: 3,
-      features: ['客服智能体', '自推广智能体', 'Prompt模板', '100次/天模型调用'],
-      popular: false,
-    },
-    {
-      id: 'basic',
-      name: '基础版',
-      price: 299,
-      days: 30,
-      features: ['客服智能体', '自推广智能体', 'Prompt模板', '1000次/天模型调用', '优先客服支持'],
-      popular: true,
-    },
-    {
-      id: 'pro',
-      name: '专业版',
-      price: 799,
-      days: 30,
-      features: ['全部智能体', '无限模型调用', '定制Prompt', '专属客服', 'API接口访问', '数据报表'],
-      popular: false,
-    },
-    {
-      id: 'enterprise',
-      name: '企业版',
-      price: 1999,
-      days: 30,
-      features: ['全部专业版功能', '多店铺管理', '专属技术支持', 'SLA保障', '私有化部署'],
-      popular: false,
-    },
-  ];
+  const filteredOrders = orders.filter((o) => {
+    const matchSearch = o.orderId.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      o.customer.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchStatus = filterStatus === 'all' || o.status === filterStatus;
+    const matchPlatform = filterPlatform === 'all' || o.platform === filterPlatform;
+    return matchSearch && matchStatus && matchPlatform;
+  });
 
-  const orders = [
-    {
-      id: 'O20240220001',
-      userId: 'U001',
-      userName: '王明',
-      packageType: 'basic',
-      amount: 299,
-      days: 30,
-      status: 'paid',
-      createdAt: '2024-02-20 15:32:18',
-    },
-    {
-      id: 'O20240220002',
-      userId: 'U002',
-      userName: '李华',
-      packageType: 'trial',
-      amount: 0,
-      days: 3,
-      status: 'paid',
-      createdAt: '2024-02-20 14:15:45',
-    },
-    {
-      id: 'O20240220003',
-      userId: 'U003',
-      userName: '张伟',
-      packageType: 'pro',
-      amount: 799,
-      days: 30,
-      status: 'pending',
-      createdAt: '2024-02-20 13:08:23',
-    },
-  ];
-
-  const getPackageName = (type: string) => {
-    const pkg = packages.find(p => p.id === type);
-    return pkg?.name || type;
+  const getStatusBadge = (status: string) => {
+    const config = statusConfig[status];
+    const Icon = config.icon;
+    return (
+      <Badge variant="outline" className={`${config.className} border-0`}>
+        <Icon className="h-3 w-3 mr-1" />
+        {config.label}
+      </Badge>
+    );
   };
 
   if (!user) return null;
@@ -101,124 +170,142 @@ export default function OrdersPage() {
   return (
     <MainLayout user={user} onLogout={() => router.push('/login')}>
       <div className="space-y-6">
+        {/* 页面标题 */}
         <div className="flex items-center justify-between">
-          <h1 className="text-[18px] font-semibold text-[#1D2129]">订单套餐</h1>
-          <Button variant="outline" className="h-9">
+          <div>
+            <h1 className="text-[18px] font-semibold text-foreground">订单管理中心</h1>
+            <p className="text-[14px] text-muted-foreground mt-1">
+              多平台订单 · 异常处理 · 物流同步
+            </p>
+          </div>
+          <Button variant="outline">
             <Download className="h-4 w-4 mr-2" />
             导出订单
           </Button>
         </div>
 
-        {/* 套餐卡片 */}
-        <div className="grid grid-cols-4 gap-4">
-          {packages.map((pkg) => (
-            <Card
-              key={pkg.id}
-              className={`bg-white border-[#E8E8E8] shadow-sm ${
-                pkg.popular ? 'border-[#1677FF] border-2 relative' : ''
-              }`}
-            >
-              {pkg.popular && (
-                <div className="absolute top-0 right-0 bg-[#1677FF] text-white text-[12px] px-3 py-1 rounded-bl-lg">
-                  热门
-                </div>
-              )}
-              <CardHeader className="pb-3">
-                <CardTitle className="text-[16px] font-semibold text-[#1D2129]">
-                  {pkg.name}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="mb-4">
-                  <span className="text-[28px] font-bold text-[#1677FF]">
-                    ¥{pkg.price}
-                  </span>
-                  <span className="text-[13px] text-[#717C89]">/{pkg.days}天</span>
-                </div>
-                <ul className="space-y-2 mb-4">
-                  {pkg.features.map((feature, idx) => (
-                    <li key={idx} className="text-[13px] text-[#4E5969] flex items-start">
-                      <span className="text-[#52C41A] mr-2">✓</span>
-                      {feature}
-                    </li>
-                  ))}
-                </ul>
-                <Button
-                  className={`w-full ${
-                    pkg.popular
-                      ? 'bg-[#1677FF] hover:bg-[#0F62FE]'
-                      : 'bg-white border-[#1677FF] text-[#1677FF] hover:bg-[#E6F7FF]'
-                  } h-9`}
-                >
-                  选择套餐
-                </Button>
-              </CardContent>
-            </Card>
-          ))}
+        {/* 统计卡片 */}
+        <div className="grid grid-cols-6 gap-4">
+          <Card className="bg-white border-border shadow-sm">
+            <CardContent className="p-4 text-center">
+              <div className="text-[13px] text-muted-foreground mb-1">今日订单</div>
+              <div className="text-[20px] font-semibold text-foreground">156</div>
+            </CardContent>
+          </Card>
+          <Card className="bg-white border-border shadow-sm">
+            <CardContent className="p-4 text-center">
+              <div className="text-[13px] text-muted-foreground mb-1">待发货</div>
+              <div className="text-[20px] font-semibold text-warning">42</div>
+            </CardContent>
+          </Card>
+          <Card className="bg-white border-border shadow-sm">
+            <CardContent className="p-4 text-center">
+              <div className="text-[13px] text-muted-foreground mb-1">运输中</div>
+              <div className="text-[20px] font-semibold text-primary">89</div>
+            </CardContent>
+          </Card>
+          <Card className="bg-white border-border shadow-sm">
+            <CardContent className="p-4 text-center">
+              <div className="text-[13px] text-muted-foreground mb-1">已签收</div>
+              <div className="text-[20px] font-semibold text-success">2,856</div>
+            </CardContent>
+          </Card>
+          <Card className="bg-white border-border shadow-sm">
+            <CardContent className="p-4 text-center">
+              <div className="text-[13px] text-muted-foreground mb-1">异常订单</div>
+              <div className="text-[20px] font-semibold text-destructive">8</div>
+            </CardContent>
+          </Card>
+          <Card className="bg-white border-border shadow-sm">
+            <CardContent className="p-4 text-center">
+              <div className="text-[13px] text-muted-foreground mb-1">今日金额</div>
+              <div className="text-[20px] font-semibold text-foreground">$4,528</div>
+            </CardContent>
+          </Card>
         </div>
 
-        {/* 订单列表 */}
-        <Card className="bg-white border-[#E8E8E8] shadow-sm">
-          <CardHeader className="px-4 py-4">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-[14px] font-medium text-[#4E5969]">
-                订单记录
-              </CardTitle>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-[#C9CDD4]" />
+        {/* 筛选区 */}
+        <Card className="bg-white border-border shadow-sm">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-4">
+              <div className="relative flex-1 max-w-[300px]">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="搜索订单号/用户"
-                  className="pl-10 h-9 w-[300px]"
+                  placeholder="搜索订单号/客户名"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
                 />
               </div>
+              <Select value={filterStatus} onValueChange={setFilterStatus}>
+                <SelectTrigger className="w-[120px]">
+                  <SelectValue placeholder="订单状态" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">全部状态</SelectItem>
+                  <SelectItem value="pending">待付款</SelectItem>
+                  <SelectItem value="paid">已付款</SelectItem>
+                  <SelectItem value="shipped">已发货</SelectItem>
+                  <SelectItem value="delivered">已签收</SelectItem>
+                  <SelectItem value="cancelled">已取消</SelectItem>
+                  <SelectItem value="exception">异常</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={filterPlatform} onValueChange={setFilterPlatform}>
+                <SelectTrigger className="w-[150px]">
+                  <SelectValue placeholder="平台" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">全部平台</SelectItem>
+                  <SelectItem value="TK印尼">TK印尼</SelectItem>
+                  <SelectItem value="TK泰国">TK泰国</SelectItem>
+                  <SelectItem value="TK越南">TK越南</SelectItem>
+                  <SelectItem value="亚马逊美国">亚马逊美国</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button variant="outline" onClick={() => { setSearchTerm(''); setFilterStatus('all'); setFilterPlatform('all'); }}>
+                重置
+              </Button>
             </div>
-          </CardHeader>
-          <CardContent className="px-4 pb-4">
+          </CardContent>
+        </Card>
+
+        {/* 订单列表 */}
+        <Card className="bg-white border-border shadow-sm">
+          <CardContent className="p-0">
             <Table>
               <TableHeader>
-                <TableRow className="border-[#E8E8E8]">
-                  <TableHead className="text-[13px] font-medium text-[#4E5969]">订单号</TableHead>
-                  <TableHead className="text-[13px] font-medium text-[#4E5969]">用户</TableHead>
-                  <TableHead className="text-[13px] font-medium text-[#4E5969]">套餐</TableHead>
-                  <TableHead className="text-[13px] font-medium text-[#4E5969]">金额</TableHead>
-                  <TableHead className="text-[13px] font-medium text-[#4E5969]">天数</TableHead>
-                  <TableHead className="text-[13px] font-medium text-[#4E5969]">状态</TableHead>
-                  <TableHead className="text-[13px] font-medium text-[#4E5969]">下单时间</TableHead>
+                <TableRow className="border-border bg-muted/30">
+                  <TableHead className="text-[12px] font-medium text-muted-foreground px-6">订单号</TableHead>
+                  <TableHead className="text-[12px] font-medium text-muted-foreground">客户</TableHead>
+                  <TableHead className="text-[12px] font-medium text-muted-foreground">平台</TableHead>
+                  <TableHead className="text-[12px] font-medium text-muted-foreground">商品</TableHead>
+                  <TableHead className="text-[12px] font-medium text-muted-foreground">数量</TableHead>
+                  <TableHead className="text-[12px] font-medium text-muted-foreground">金额</TableHead>
+                  <TableHead className="text-[12px] font-medium text-muted-foreground">状态</TableHead>
+                  <TableHead className="text-[12px] font-medium text-muted-foreground">物流</TableHead>
+                  <TableHead className="text-[12px] font-medium text-muted-foreground">下单时间</TableHead>
+                  <TableHead className="text-[12px] font-medium text-muted-foreground text-right px-6">操作</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {orders.map((order) => (
-                  <TableRow key={order.id} className="border-[#E8E8E8] hover:bg-[#F5F7FA]">
-                    <TableCell className="text-[13px] text-[#1D2129] font-medium">
-                      {order.id}
-                    </TableCell>
-                    <TableCell className="text-[13px] text-[#4E5969]">
-                      {order.userName}
-                    </TableCell>
-                    <TableCell className="text-[13px] text-[#4E5969]">
-                      {getPackageName(order.packageType)}
-                    </TableCell>
-                    <TableCell className="text-[13px] text-[#1D2129] font-medium">
-                      ¥{order.amount}
-                    </TableCell>
-                    <TableCell className="text-[13px] text-[#4E5969]">
-                      {order.days}天
-                    </TableCell>
+                {filteredOrders.map((order) => (
+                  <TableRow key={order.id} className="border-border hover:bg-muted/30">
+                    <TableCell className="px-6 text-[13px] font-medium text-primary">{order.orderId}</TableCell>
+                    <TableCell className="text-[13px] text-foreground">{order.customer}</TableCell>
                     <TableCell>
-                      <Badge
-                        className={
-                          order.status === 'paid'
-                            ? 'bg-[#52C41A] text-white'
-                            : order.status === 'pending'
-                            ? 'bg-[#FAAD14] text-white'
-                            : 'bg-[#F5222D] text-white'
-                        }
-                      >
-                        {order.status === 'paid' ? '已支付' : order.status === 'pending' ? '待支付' : '已取消'}
-                      </Badge>
+                      <Badge variant="outline" className="text-[11px]">{order.platform}</Badge>
                     </TableCell>
-                    <TableCell className="text-[13px] text-[#4E5969]">
-                      {order.createdAt}
+                    <TableCell className="text-[13px] text-foreground max-w-[150px] truncate">{order.product}</TableCell>
+                    <TableCell className="text-[13px] text-foreground">{order.quantity}</TableCell>
+                    <TableCell className="text-[13px] font-medium text-foreground">${order.amount}</TableCell>
+                    <TableCell>{getStatusBadge(order.status)}</TableCell>
+                    <TableCell className="text-[12px] text-muted-foreground">{order.logisticsStatus}</TableCell>
+                    <TableCell className="text-[12px] text-muted-foreground">{order.createdAt}</TableCell>
+                    <TableCell className="text-right px-6">
+                      <Button variant="ghost" size="sm">
+                        <Eye className="h-4 w-4" />
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))}
