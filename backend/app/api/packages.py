@@ -34,8 +34,15 @@ async def get_packages(
     return {
         "packages": [
             {
-                **PackageResponse.model_validate(p).model_dump(),
-                "features": json.loads(p.features) if p.features else []
+                "id": p.id,
+                "name": p.name,
+                "price": p.price,
+                "call_quota": p.call_quota,
+                "duration": p.duration,
+                "features": json.loads(p.features) if p.features else [],
+                "is_active": p.is_active,
+                "created_at": p.created_at,
+                "updated_at": p.updated_at,
             }
             for p in packages
         ]

@@ -3,10 +3,10 @@ requires = ["nodejs-24"]
 
 [dev]
 build = ["bash", "./scripts/prepare.sh"]
-run = ["bash", "./scripts/dev.sh"]
-deps = ["git"] # -> apt install git
+run = ["bash", "./scripts/dev-all.sh"]
+deps = ["git"]
 
 [deploy]
 build = ["bash","./scripts/build.sh"]
 run = ["bash","./scripts/start.sh"]
-deps = ["git"] # -> apt install git
+deps = ["git"]
