@@ -5,8 +5,6 @@ import { useRouter } from 'next/navigation';
 import MainLayout from '@/components/layout/MainLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Select,
   SelectContent,
@@ -22,6 +20,8 @@ import {
   ShoppingCart,
   Users,
   Eye,
+  RefreshCw,
+  Loader2,
 } from 'lucide-react';
 import {
   LineChart,
@@ -38,38 +38,77 @@ import {
   ResponsiveContainer,
   Legend,
 } from 'recharts';
+import { toast } from 'sonner';
+import {
+  getReportOverview,
+  getReportUsage,
+  getReportAgents,
+  ReportOverview,
+  ReportUsage,
+  ReportAgents,
+} from '@/lib/api/reports';
+import { logout } from '@/lib/api/auth';
 
-const salesData = [
-  { date: '02-14', sales: 4250, orders: 86 },
-  { date: '02-15', sales: 5180, orders: 102 },
-  { date: '02-16', sales: 4890, orders: 95 },
-  { date: '02-17', sales: 5620, orders: 118 },
-  { date: '02-18', sales: 6340, orders: 125 },
-  { date: '02-19', sales: 5890, orders: 112 },
-  { date: '02-20', sales: 6850, orders: 138 },
-];
-
-const platformData = [
+// 默认数据
+const defaultPlatformData = [
   { name: 'TK印尼', value: 45, color: '#165DFF' },
   { name: 'TK泰国', value: 25, color: '#00B42A' },
   { name: 'TK越南', value: 15, color: '#FF7D00' },
   { name: '亚马逊', value: 15, color: '#722ED1' },
 ];
 
-const agentPerformance = [
-  { name: '选品智能体', tasks: 185, success: 98.5 },
-  { name: '图片设计', tasks: 162, success: 97.2 },
-  { name: '视频生成', tasks: 98, success: 95.8 },
-  { name: 'Listing优化', tasks: 142, success: 96.5 },
-  { name: '广告投放', tasks: 89, success: 94.2 },
-  { name: 'AI客服', tasks: 210, success: 99.1 },
-  { name: '数据复盘', tasks: 56, success: 97.8 },
-];
-
 export default function ReportsPage() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [timeRange, setTimeRange] = useState('7d');
+  const [isLoading, setIsLoading] = useState(false);
+  const [overview, setOverview] = useState<ReportOverview | null>(null);
+  const [usage, setUsage] = useState<ReportUsage | null>(null);
+  const [agents, setAgents] = useState<ReportAgents | null>(null);
+
+  // 计算日期范围
+  const getDateRange = () => {
+    const endDate = new Date();
+    const startDate = new Date();
+    
+    switch (timeRange) {
+      case '7d':
+        startDate.setDate(startDate.getDate() - 7);
+        break;
+      case '30d':
+        startDate.setDate(startDate.getDate() - 30);
+        break;
+      case '90d':
+        startDate.setDate(startDate.getDate() - 90);
+        break;
+    }
+    
+    return {
+      start_date: startDate.toISOString().split('T')[0],
+      end_date: endDate.toISOString().split('T')[0],
+    };
+  };
+
+  // 获取报表数据
+  const fetchReports = async () => {
+    setIsLoading(true);
+    try {
+      const dateRange = getDateRange();
+      const [overviewRes, usageRes, agentsRes] = await Promise.all([
+        getReportOverview(dateRange),
+        getReportUsage(dateRange),
+        getReportAgents(dateRange),
+      ]);
+      setOverview(overviewRes);
+      setUsage(usageRes);
+      setAgents(agentsRes);
+    } catch (error) {
+      console.error('获取报表数据失败:', error);
+      toast.error('获取报表数据失败');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -78,12 +117,29 @@ export default function ReportsPage() {
       return;
     }
     setUser(JSON.parse(userData));
-  }, [router]);
+    fetchReports();
+  }, [router, timeRange]);
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch (error) {
+      // 忽略错误
+    }
+    router.push('/login');
+  };
+
+  // 转换智能体效能数据
+  const agentPerformanceData = agents?.agents?.map(a => ({
+    name: a.name,
+    tasks: a.total_tasks,
+    success: a.success_rate,
+  })) || [];
 
   if (!user) return null;
 
   return (
-    <MainLayout user={user} onLogout={() => router.push('/login')}>
+    <MainLayout user={user} onLogout={handleLogout}>
       <div className="space-y-6">
         {/* 页面标题 */}
         <div className="flex items-center justify-between">
@@ -104,6 +160,14 @@ export default function ReportsPage() {
                 <SelectItem value="90d">近90天</SelectItem>
               </SelectContent>
             </Select>
+            <Button variant="outline" onClick={fetchReports} disabled={isLoading}>
+              {isLoading ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <RefreshCw className="h-4 w-4 mr-2" />
+              )}
+              刷新
+            </Button>
             <Button variant="outline">
               <Download className="h-4 w-4 mr-2" />
               导出报表
@@ -118,7 +182,9 @@ export default function ReportsPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-[13px] text-muted-foreground mb-1">总销售额</p>
-                  <p className="text-[28px] font-semibold text-foreground">$38,720</p>
+                  <p className="text-[28px] font-semibold text-foreground">
+                    ${overview?.total_sales?.toLocaleString() || 0}
+                  </p>
                   <div className="flex items-center gap-1 mt-1">
                     <TrendingUp className="h-3 w-3 text-success" />
                     <span className="text-[12px] text-success">+15.2%</span>
@@ -136,7 +202,9 @@ export default function ReportsPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-[13px] text-muted-foreground mb-1">总订单数</p>
-                  <p className="text-[28px] font-semibold text-foreground">776</p>
+                  <p className="text-[28px] font-semibold text-foreground">
+                    {overview?.total_orders?.toLocaleString() || 0}
+                  </p>
                   <div className="flex items-center gap-1 mt-1">
                     <TrendingUp className="h-3 w-3 text-success" />
                     <span className="text-[12px] text-success">+8.5%</span>
@@ -154,7 +222,9 @@ export default function ReportsPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-[13px] text-muted-foreground mb-1">活跃用户</p>
-                  <p className="text-[28px] font-semibold text-foreground">198</p>
+                  <p className="text-[28px] font-semibold text-foreground">
+                    {overview?.active_users?.toLocaleString() || 0}
+                  </p>
                   <div className="flex items-center gap-1 mt-1">
                     <TrendingUp className="h-3 w-3 text-success" />
                     <span className="text-[12px] text-success">+12</span>
@@ -172,7 +242,9 @@ export default function ReportsPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-[13px] text-muted-foreground mb-1">平均转化率</p>
-                  <p className="text-[28px] font-semibold text-foreground">3.8%</p>
+                  <p className="text-[28px] font-semibold text-foreground">
+                    {overview?.conversion_rate?.toFixed(1) || 0}%
+                  </p>
                   <div className="flex items-center gap-1 mt-1">
                     <TrendingDown className="h-3 w-3 text-destructive" />
                     <span className="text-[12px] text-destructive">-0.3%</span>
@@ -196,37 +268,43 @@ export default function ReportsPage() {
             </CardHeader>
             <CardContent className="p-6">
               <div className="h-[300px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={salesData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#E8E8E8" />
-                    <XAxis dataKey="date" tick={{ fontSize: 12, fill: '#86909C' }} />
-                    <YAxis tick={{ fontSize: 12, fill: '#86909C' }} />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: '#FFFFFF',
-                        border: '1px solid #E8E8E8',
-                        borderRadius: '8px',
-                      }}
-                    />
-                    <Legend />
-                    <Line
-                      type="monotone"
-                      dataKey="sales"
-                      name="销售额($)"
-                      stroke="#165DFF"
-                      strokeWidth={2}
-                      dot={{ fill: '#165DFF', r: 4 }}
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="orders"
-                      name="订单数"
-                      stroke="#00B42A"
-                      strokeWidth={2}
-                      dot={{ fill: '#00B42A', r: 4 }}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
+                {isLoading ? (
+                  <div className="flex items-center justify-center h-full">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                  </div>
+                ) : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={overview?.sales_trend || []}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#E8E8E8" />
+                      <XAxis dataKey="date" tick={{ fontSize: 12, fill: '#86909C' }} />
+                      <YAxis tick={{ fontSize: 12, fill: '#86909C' }} />
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: '#FFFFFF',
+                          border: '1px solid #E8E8E8',
+                          borderRadius: '8px',
+                        }}
+                      />
+                      <Legend />
+                      <Line
+                        type="monotone"
+                        dataKey="sales"
+                        name="销售额($)"
+                        stroke="#165DFF"
+                        strokeWidth={2}
+                        dot={{ fill: '#165DFF', r: 4 }}
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="orders"
+                        name="订单数"
+                        stroke="#00B42A"
+                        strokeWidth={2}
+                        dot={{ fill: '#00B42A', r: 4 }}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -238,25 +316,59 @@ export default function ReportsPage() {
             </CardHeader>
             <CardContent className="p-6">
               <div className="h-[250px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={platformData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={60}
-                      outerRadius={80}
-                      paddingAngle={2}
-                      dataKey="value"
-                    >
-                      {platformData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                    <Legend />
-                  </PieChart>
-                </ResponsiveContainer>
+                {isLoading ? (
+                  <div className="flex items-center justify-center h-full">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                  </div>
+                ) : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={overview?.platform_distribution || defaultPlatformData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={60}
+                        outerRadius={80}
+                        paddingAngle={2}
+                        dataKey="value"
+                      >
+                        {(overview?.platform_distribution || defaultPlatformData).map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                      <Legend />
+                    </PieChart>
+                  </ResponsiveContainer>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* 使用情况统计 */}
+        <div className="grid grid-cols-3 gap-4">
+          <Card className="bg-white border-border shadow-sm">
+            <CardContent className="p-4">
+              <div className="text-[13px] text-muted-foreground mb-1">总调用次数</div>
+              <div className="text-[24px] font-semibold text-foreground">
+                {usage?.total_calls?.toLocaleString() || 0}
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="bg-white border-border shadow-sm">
+            <CardContent className="p-4">
+              <div className="text-[13px] text-muted-foreground mb-1">总Tokens消耗</div>
+              <div className="text-[24px] font-semibold text-foreground">
+                {usage?.total_tokens?.toLocaleString() || 0}
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="bg-white border-border shadow-sm">
+            <CardContent className="p-4">
+              <div className="text-[13px] text-muted-foreground mb-1">智能体数量</div>
+              <div className="text-[24px] font-semibold text-foreground">
+                {agents?.agents?.length || 0}
               </div>
             </CardContent>
           </Card>
@@ -269,28 +381,38 @@ export default function ReportsPage() {
           </CardHeader>
           <CardContent className="p-6">
             <div className="h-[300px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={agentPerformance} layout="vertical">
-                  <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#E8E8E8" />
-                  <XAxis type="number" tick={{ fontSize: 12, fill: '#86909C' }} />
-                  <YAxis
-                    type="category"
-                    dataKey="name"
-                    tick={{ fontSize: 13, fill: '#4E5969' }}
-                    width={120}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: '#FFFFFF',
-                      border: '1px solid #E8E8E8',
-                      borderRadius: '8px',
-                    }}
-                  />
-                  <Legend />
-                  <Bar dataKey="tasks" name="任务数" fill="#165DFF" radius={[0, 4, 4, 0]} />
-                  <Bar dataKey="success" name="成功率(%)" fill="#00B42A" radius={[0, 4, 4, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
+              {isLoading ? (
+                <div className="flex items-center justify-center h-full">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+              ) : agentPerformanceData.length === 0 ? (
+                <div className="flex items-center justify-center h-full text-muted-foreground">
+                  暂无智能体数据
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={agentPerformanceData} layout="vertical">
+                    <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#E8E8E8" />
+                    <XAxis type="number" tick={{ fontSize: 12, fill: '#86909C' }} />
+                    <YAxis
+                      type="category"
+                      dataKey="name"
+                      tick={{ fontSize: 13, fill: '#4E5969' }}
+                      width={120}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: '#FFFFFF',
+                        border: '1px solid #E8E8E8',
+                        borderRadius: '8px',
+                      }}
+                    />
+                    <Legend />
+                    <Bar dataKey="tasks" name="任务数" fill="#165DFF" radius={[0, 4, 4, 0]} />
+                    <Bar dataKey="success" name="成功率(%)" fill="#00B42A" radius={[0, 4, 4, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
             </div>
           </CardContent>
         </Card>

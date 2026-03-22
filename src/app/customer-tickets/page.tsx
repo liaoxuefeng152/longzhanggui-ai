@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import MainLayout from '@/components/layout/MainLayout';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -31,27 +31,19 @@ import {
 import {
   Search,
   MessageSquare,
-  AlertCircle,
   RefreshCw,
-  CheckCircle,
-  Clock,
-  User,
+  Loader2,
 } from 'lucide-react';
-
-interface Ticket {
-  id: string;
-  customer: string;
-  platform: string;
-  type: 'inquiry' | 'complaint' | 'refund' | 'dispute';
-  subject: string;
-  status: 'pending' | 'processing' | 'resolved' | 'escalated';
-  priority: 'low' | 'medium' | 'high';
-  agent: string;
-  createdAt: string;
-  updatedAt: string;
-  language: string;
-  messages: number;
-}
+import { toast } from 'sonner';
+import {
+  getTickets,
+  getTicketStats,
+  closeTicket,
+  assignTicket,
+  Ticket,
+  TicketStats,
+} from '@/lib/api/tickets';
+import { logout } from '@/lib/api/auth';
 
 const typeConfig: Record<string, { label: string; className: string }> = {
   inquiry: { label: '咨询', className: 'bg-primary/10 text-primary' },
@@ -62,8 +54,11 @@ const typeConfig: Record<string, { label: string; className: string }> = {
 
 const statusConfig: Record<string, { label: string; className: string }> = {
   pending: { label: '待处理', className: 'bg-warning/10 text-warning' },
+  open: { label: '待处理', className: 'bg-warning/10 text-warning' },
   processing: { label: '处理中', className: 'bg-primary/10 text-primary' },
+  in_progress: { label: '处理中', className: 'bg-primary/10 text-primary' },
   resolved: { label: '已解决', className: 'bg-success text-white' },
+  closed: { label: '已关闭', className: 'bg-muted text-muted-foreground' },
   escalated: { label: '已升级', className: 'bg-destructive text-white' },
 };
 
@@ -76,98 +71,38 @@ const priorityConfig: Record<string, { label: string; className: string }> = {
 export default function CustomerTicketsPage() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
+  const [tickets, setTickets] = useState<Ticket[]>([]);
+  const [stats, setStats] = useState<TicketStats | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
-  const [filterType, setFilterType] = useState<string>('all');
+  const [filterPriority, setFilterPriority] = useState<string>('all');
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
 
-  const tickets: Ticket[] = [
-    {
-      id: 'TK001',
-      customer: 'Ahmad Suryadi',
-      platform: 'TK印尼',
-      type: 'inquiry',
-      subject: '询问发货时间',
-      status: 'resolved',
-      priority: 'low',
-      agent: 'AI客服',
-      createdAt: '2024-02-20 10:30',
-      updatedAt: '2024-02-20 10:35',
-      language: '印尼语',
-      messages: 3,
-    },
-    {
-      id: 'TK002',
-      customer: 'Somsak Prasert',
-      platform: 'TK泰国',
-      type: 'dispute',
-      subject: '商品与描述不符，要求退款',
-      status: 'processing',
-      priority: 'high',
-      agent: 'AI客服',
-      createdAt: '2024-02-20 09:15',
-      updatedAt: '2024-02-20 11:20',
-      language: '泰语',
-      messages: 8,
-    },
-    {
-      id: 'TK003',
-      customer: 'Nguyen Van A',
-      platform: 'TK越南',
-      type: 'complaint',
-      subject: '物流时间过长',
-      status: 'pending',
-      priority: 'medium',
-      agent: '-',
-      createdAt: '2024-02-20 08:45',
-      updatedAt: '2024-02-20 08:45',
-      language: '越南语',
-      messages: 1,
-    },
-    {
-      id: 'AMZ001',
-      customer: 'John Smith',
-      platform: '亚马逊美国',
-      type: 'refund',
-      subject: 'A-to-Z索赔申请',
-      status: 'escalated',
-      priority: 'high',
-      agent: '人工客服',
-      createdAt: '2024-02-19 16:20',
-      updatedAt: '2024-02-20 09:00',
-      language: '英语',
-      messages: 12,
-    },
-    {
-      id: 'TK004',
-      customer: 'Dewi Lestari',
-      platform: 'TK印尼',
-      type: 'inquiry',
-      subject: '产品使用咨询',
-      status: 'resolved',
-      priority: 'low',
-      agent: 'AI客服',
-      createdAt: '2024-02-19 14:30',
-      updatedAt: '2024-02-19 14:35',
-      language: '印尼语',
-      messages: 4,
-    },
-    {
-      id: 'TK005',
-      customer: 'Maria Santos',
-      platform: 'TK菲律宾',
-      type: 'complaint',
-      subject: '收到破损商品',
-      status: 'processing',
-      priority: 'high',
-      agent: 'AI客服',
-      createdAt: '2024-02-19 11:00',
-      updatedAt: '2024-02-19 15:30',
-      language: '英语',
-      messages: 6,
-    },
-  ];
+  // 获取工单列表
+  const fetchTickets = async () => {
+    setIsLoading(true);
+    try {
+      const [ticketsRes, statsRes] = await Promise.all([
+        getTickets({
+          page: 1,
+          page_size: 100,
+          status: filterStatus === 'all' ? undefined : filterStatus,
+          priority: filterPriority === 'all' ? undefined : filterPriority,
+        }),
+        getTicketStats(),
+      ]);
+      setTickets(ticketsRes.tickets);
+      setStats(statsRes);
+    } catch (error) {
+      console.error('获取工单列表失败:', error);
+      toast.error('获取工单列表失败');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -176,20 +111,85 @@ export default function CustomerTicketsPage() {
       return;
     }
     setUser(JSON.parse(userData));
-  }, [router]);
+    fetchTickets();
+  }, [router, filterStatus, filterPriority]);
 
+  // 过滤工单
   const filteredTickets = tickets.filter((t) => {
-    const matchSearch = t.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      t.customer.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchStatus = filterStatus === 'all' || t.status === filterStatus;
-    const matchType = filterType === 'all' || t.type === filterType;
-    return matchSearch && matchStatus && matchType;
+    const matchSearch = 
+      t.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      t.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      t.user_id.toLowerCase().includes(searchTerm.toLowerCase());
+    return matchSearch;
   });
+
+  // 关闭工单
+  const handleCloseTicket = async (ticketId: string) => {
+    const resolution = prompt('请输入解决方案:');
+    if (!resolution) return;
+    
+    setIsClosing(true);
+    try {
+      await closeTicket(ticketId, resolution);
+      toast.success('工单已关闭');
+      setIsDetailOpen(false);
+      fetchTickets();
+    } catch (error) {
+      console.error('关闭工单失败:', error);
+      toast.error('关闭工单失败');
+    } finally {
+      setIsClosing(false);
+    }
+  };
+
+  // 分配工单
+  const handleAssignTicket = async (ticketId: string) => {
+    const assignedTo = prompt('请输入分配给的用户ID:');
+    if (!assignedTo) return;
+    
+    try {
+      await assignTicket(ticketId, assignedTo);
+      toast.success('工单已分配');
+      fetchTickets();
+    } catch (error) {
+      console.error('分配工单失败:', error);
+      toast.error('分配工单失败');
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch (error) {
+      // 忽略错误
+    }
+    router.push('/login');
+  };
+
+  // 获取状态徽章
+  const getStatusBadge = (status: string) => {
+    const config = statusConfig[status] || statusConfig.pending;
+    return (
+      <Badge className={config.className}>
+        {config.label}
+      </Badge>
+    );
+  };
+
+  // 获取优先级徽章
+  const getPriorityBadge = (priority: string) => {
+    const config = priorityConfig[priority] || priorityConfig.low;
+    return (
+      <Badge variant="outline" className={`${config.className} border-0 text-[11px]`}>
+        {config.label}
+      </Badge>
+    );
+  };
 
   if (!user) return null;
 
   return (
-    <MainLayout user={user} onLogout={() => router.push('/login')}>
+    <MainLayout user={user} onLogout={handleLogout}>
       <div className="space-y-6">
         {/* 页面标题 */}
         <div className="flex items-center justify-between">
@@ -205,32 +205,32 @@ export default function CustomerTicketsPage() {
         <div className="grid grid-cols-5 gap-4">
           <Card className="bg-white border-border shadow-sm">
             <CardContent className="p-4 text-center">
-              <div className="text-[13px] text-muted-foreground mb-1">今日工单</div>
-              <div className="text-[20px] font-semibold text-foreground">86</div>
+              <div className="text-[13px] text-muted-foreground mb-1">总工单</div>
+              <div className="text-[20px] font-semibold text-foreground">{stats?.total || 0}</div>
             </CardContent>
           </Card>
           <Card className="bg-white border-border shadow-sm">
             <CardContent className="p-4 text-center">
               <div className="text-[13px] text-muted-foreground mb-1">待处理</div>
-              <div className="text-[20px] font-semibold text-warning">23</div>
+              <div className="text-[20px] font-semibold text-warning">{stats?.open || 0}</div>
             </CardContent>
           </Card>
           <Card className="bg-white border-border shadow-sm">
             <CardContent className="p-4 text-center">
               <div className="text-[13px] text-muted-foreground mb-1">处理中</div>
-              <div className="text-[20px] font-semibold text-primary">15</div>
+              <div className="text-[20px] font-semibold text-primary">{stats?.in_progress || 0}</div>
             </CardContent>
           </Card>
           <Card className="bg-white border-border shadow-sm">
             <CardContent className="p-4 text-center">
               <div className="text-[13px] text-muted-foreground mb-1">已解决</div>
-              <div className="text-[20px] font-semibold text-success">48</div>
+              <div className="text-[20px] font-semibold text-success">{stats?.resolved || 0}</div>
             </CardContent>
           </Card>
           <Card className="bg-white border-border shadow-sm">
             <CardContent className="p-4 text-center">
-              <div className="text-[13px] text-muted-foreground mb-1">AI处理率</div>
-              <div className="text-[20px] font-semibold text-foreground">92%</div>
+              <div className="text-[13px] text-muted-foreground mb-1">已关闭</div>
+              <div className="text-[20px] font-semibold text-muted-foreground">{stats?.closed || 0}</div>
             </CardContent>
           </Card>
         </div>
@@ -242,7 +242,7 @@ export default function CustomerTicketsPage() {
               <div className="relative flex-1 max-w-[300px]">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="搜索工单号/客户名"
+                  placeholder="搜索工单ID/标题/用户ID"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10"
@@ -260,20 +260,20 @@ export default function CustomerTicketsPage() {
                   <SelectItem value="escalated">已升级</SelectItem>
                 </SelectContent>
               </Select>
-              <Select value={filterType} onValueChange={setFilterType}>
+              <Select value={filterPriority} onValueChange={setFilterPriority}>
                 <SelectTrigger className="w-[120px]">
-                  <SelectValue placeholder="类型" />
+                  <SelectValue placeholder="优先级" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">全部类型</SelectItem>
-                  <SelectItem value="inquiry">咨询</SelectItem>
-                  <SelectItem value="complaint">投诉</SelectItem>
-                  <SelectItem value="refund">退款</SelectItem>
-                  <SelectItem value="dispute">纠纷</SelectItem>
+                  <SelectItem value="all">全部优先级</SelectItem>
+                  <SelectItem value="high">高</SelectItem>
+                  <SelectItem value="medium">中</SelectItem>
+                  <SelectItem value="low">低</SelectItem>
                 </SelectContent>
               </Select>
-              <Button variant="outline" onClick={() => { setSearchTerm(''); setFilterStatus('all'); setFilterType('all'); }}>
-                重置
+              <Button variant="outline" onClick={fetchTickets} disabled={isLoading}>
+                <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+                刷新
               </Button>
             </div>
           </CardContent>
@@ -282,63 +282,65 @@ export default function CustomerTicketsPage() {
         {/* 工单列表 */}
         <Card className="bg-white border-border shadow-sm">
           <CardContent className="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow className="border-border bg-muted/30">
-                  <TableHead className="text-[12px] font-medium text-muted-foreground px-6">工单号</TableHead>
-                  <TableHead className="text-[12px] font-medium text-muted-foreground">客户</TableHead>
-                  <TableHead className="text-[12px] font-medium text-muted-foreground">平台</TableHead>
-                  <TableHead className="text-[12px] font-medium text-muted-foreground">类型</TableHead>
-                  <TableHead className="text-[12px] font-medium text-muted-foreground">主题</TableHead>
-                  <TableHead className="text-[12px] font-medium text-muted-foreground">优先级</TableHead>
-                  <TableHead className="text-[12px] font-medium text-muted-foreground">状态</TableHead>
-                  <TableHead className="text-[12px] font-medium text-muted-foreground">处理人</TableHead>
-                  <TableHead className="text-[12px] font-medium text-muted-foreground">语言</TableHead>
-                  <TableHead className="text-[12px] font-medium text-muted-foreground text-right px-6">操作</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredTickets.map((ticket) => (
-                  <TableRow key={ticket.id} className="border-border hover:bg-muted/30">
-                    <TableCell className="px-6 text-[13px] font-medium text-primary">{ticket.id}</TableCell>
-                    <TableCell className="text-[13px] text-foreground">{ticket.customer}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className="text-[11px]">{ticket.platform}</Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className={`${typeConfig[ticket.type].className} border-0 text-[11px]`}>
-                        {typeConfig[ticket.type].label}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-[13px] text-foreground max-w-[150px] truncate">{ticket.subject}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className={`${priorityConfig[ticket.priority].className} border-0 text-[11px]`}>
-                        {priorityConfig[ticket.priority].label}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge className={statusConfig[ticket.status].className}>
-                        {statusConfig[ticket.status].label}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-[13px] text-muted-foreground">{ticket.agent}</TableCell>
-                    <TableCell className="text-[13px] text-muted-foreground">{ticket.language}</TableCell>
-                    <TableCell className="text-right px-6">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          setSelectedTicket(ticket);
-                          setIsDetailOpen(true);
-                        }}
-                      >
-                        <MessageSquare className="h-4 w-4" />
-                      </Button>
-                    </TableCell>
+            {isLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            ) : filteredTickets.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground">
+                暂无工单数据
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-border bg-muted/30">
+                    <TableHead className="text-[12px] font-medium text-muted-foreground px-6">工单ID</TableHead>
+                    <TableHead className="text-[12px] font-medium text-muted-foreground">标题</TableHead>
+                    <TableHead className="text-[12px] font-medium text-muted-foreground">用户ID</TableHead>
+                    <TableHead className="text-[12px] font-medium text-muted-foreground">优先级</TableHead>
+                    <TableHead className="text-[12px] font-medium text-muted-foreground">状态</TableHead>
+                    <TableHead className="text-[12px] font-medium text-muted-foreground">处理人</TableHead>
+                    <TableHead className="text-[12px] font-medium text-muted-foreground">创建时间</TableHead>
+                    <TableHead className="text-[12px] font-medium text-muted-foreground text-right px-6">操作</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {filteredTickets.map((ticket) => (
+                    <TableRow key={ticket.id} className="border-border hover:bg-muted/30">
+                      <TableCell className="px-6 text-[13px] font-medium text-primary">
+                        {ticket.id.substring(0, 8)}...
+                      </TableCell>
+                      <TableCell className="text-[13px] text-foreground max-w-[200px] truncate">
+                        {ticket.title}
+                      </TableCell>
+                      <TableCell className="text-[13px] text-muted-foreground">
+                        {ticket.user_id.substring(0, 8)}...
+                      </TableCell>
+                      <TableCell>{getPriorityBadge(ticket.priority)}</TableCell>
+                      <TableCell>{getStatusBadge(ticket.status)}</TableCell>
+                      <TableCell className="text-[13px] text-muted-foreground">
+                        {ticket.assigned_to || '-'}
+                      </TableCell>
+                      <TableCell className="text-[12px] text-muted-foreground">
+                        {new Date(ticket.created_at).toLocaleString('zh-CN')}
+                      </TableCell>
+                      <TableCell className="text-right px-6">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedTicket(ticket);
+                            setIsDetailOpen(true);
+                          }}
+                        >
+                          <MessageSquare className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
           </CardContent>
         </Card>
 
@@ -346,45 +348,72 @@ export default function CustomerTicketsPage() {
         <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
           <DialogContent className="sm:max-w-[600px]">
             <DialogHeader>
-              <DialogTitle>工单详情 - {selectedTicket?.id}</DialogTitle>
+              <DialogTitle>工单详情</DialogTitle>
             </DialogHeader>
             {selectedTicket && (
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <div className="text-[12px] text-muted-foreground mb-1">客户</div>
-                    <div className="text-[14px] font-medium">{selectedTicket.customer}</div>
+                    <div className="text-[12px] text-muted-foreground mb-1">工单ID</div>
+                    <div className="text-[14px] font-mono">{selectedTicket.id}</div>
                   </div>
                   <div>
-                    <div className="text-[12px] text-muted-foreground mb-1">平台/语言</div>
-                    <div className="text-[14px]">{selectedTicket.platform} · {selectedTicket.language}</div>
+                    <div className="text-[12px] text-muted-foreground mb-1">用户ID</div>
+                    <div className="text-[14px]">{selectedTicket.user_id}</div>
                   </div>
                   <div>
-                    <div className="text-[12px] text-muted-foreground mb-1">工单类型</div>
-                    <Badge variant="outline" className={`${typeConfig[selectedTicket.type].className} border-0`}>
-                      {typeConfig[selectedTicket.type].label}
-                    </Badge>
+                    <div className="text-[12px] text-muted-foreground mb-1">优先级</div>
+                    {getPriorityBadge(selectedTicket.priority)}
                   </div>
                   <div>
                     <div className="text-[12px] text-muted-foreground mb-1">状态</div>
-                    <Badge className={statusConfig[selectedTicket.status].className}>
-                      {statusConfig[selectedTicket.status].label}
-                    </Badge>
+                    {getStatusBadge(selectedTicket.status)}
+                  </div>
+                  <div>
+                    <div className="text-[12px] text-muted-foreground mb-1">创建时间</div>
+                    <div className="text-[14px]">
+                      {new Date(selectedTicket.created_at).toLocaleString('zh-CN')}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-[12px] text-muted-foreground mb-1">处理人</div>
+                    <div className="text-[14px]">{selectedTicket.assigned_to || '未分配'}</div>
                   </div>
                 </div>
                 <div>
-                  <div className="text-[12px] text-muted-foreground mb-1">主题</div>
-                  <div className="text-[14px] bg-muted/30 p-3 rounded-md">{selectedTicket.subject}</div>
+                  <div className="text-[12px] text-muted-foreground mb-1">标题</div>
+                  <div className="text-[14px] bg-muted/30 p-3 rounded-md">{selectedTicket.title}</div>
                 </div>
                 <div>
-                  <div className="text-[12px] text-muted-foreground mb-1">对话记录 ({selectedTicket.messages}条)</div>
-                  <div className="bg-muted/30 p-3 rounded-md h-[150px] overflow-y-auto text-[13px]">
-                    <div className="text-muted-foreground text-center">对话记录加载中...</div>
+                  <div className="text-[12px] text-muted-foreground mb-1">内容</div>
+                  <div className="text-[14px] bg-muted/30 p-3 rounded-md max-h-[150px] overflow-y-auto">
+                    {selectedTicket.content}
                   </div>
                 </div>
+                {selectedTicket.resolution && (
+                  <div>
+                    <div className="text-[12px] text-muted-foreground mb-1">解决方案</div>
+                    <div className="text-[14px] bg-success/10 p-3 rounded-md">
+                      {selectedTicket.resolution}
+                    </div>
+                  </div>
+                )}
                 <div className="flex gap-2">
-                  <Button variant="outline" className="flex-1">转人工处理</Button>
-                  <Button className="flex-1">AI自动回复</Button>
+                  <Button 
+                    variant="outline" 
+                    className="flex-1"
+                    onClick={() => handleAssignTicket(selectedTicket.id)}
+                  >
+                    分配处理
+                  </Button>
+                  <Button 
+                    className="flex-1"
+                    onClick={() => handleCloseTicket(selectedTicket.id)}
+                    disabled={isClosing || selectedTicket.status === 'closed'}
+                  >
+                    {isClosing && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                    关闭工单
+                  </Button>
                 </div>
               </div>
             )}
