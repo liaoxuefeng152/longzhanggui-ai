@@ -1,55 +1,16 @@
-# 依赖
 node_modules
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-
-# 构建输出
 .next
-out
-dist
-build
-
-# 测试
-coverage
-.nyc_output
-
-# Git
 .git
 .gitignore
-
-# IDE
+*.md
+!README.md
+.env*.local
+.env
 .vscode
 .idea
-*.swp
-*.swo
-*~
-
-# Docker
-Dockerfile
-docker-compose.yml
-.dockerignore
-
-# 文档
-README.md
-*.md
-
-# 环境变量
-.env
-.env.local
-.env.*.local
-
-# 日志
-logs
 *.log
-
-# 临时文件
-tmp
-temp
-.DS_Store
-Thumbs.db
-
-# 缓存
-.pnpm-store
-.cache
+data/
+*.db
+*.db-journal
+coverage
+.nyc_output

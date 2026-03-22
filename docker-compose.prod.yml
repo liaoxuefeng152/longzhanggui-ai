@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  # ===========================================
+  # Next.js 应用 - 生产环境
+  # ===========================================
+  app:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./data:/app/data
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=file:/app/data/db/prod.db
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - redis
+    restart: always
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:5000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ===========================================
+  # Redis 缓存服务
+  # ===========================================
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-redis123}
+    restart: always
+
+volumes:
+  redis_data:
