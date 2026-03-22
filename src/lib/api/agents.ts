@@ -1,7 +1,7 @@
 /**
  * 智能体API
  */
-import { apiClient } from './client';
+import { apiClient, PaginatedResponse } from './client';
 import { API_ENDPOINTS } from './config';
 
 // 智能体类型
@@ -32,14 +32,6 @@ export interface Task {
   started_at?: string;
   completed_at?: string;
   created_at: string;
-}
-
-// 分页响应
-export interface PaginatedResponse<T> {
-  items: T[];
-  total: number;
-  page: number;
-  page_size: number;
 }
 
 /**
