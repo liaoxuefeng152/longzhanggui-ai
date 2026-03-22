@@ -46,15 +46,33 @@ async def get_agents(
     result = await db.execute(query)
     agents = result.scalars().all()
     
+    # 转换为响应格式
+    items = []
+    for a in agents:
+        item = {
+            "id": a.id,
+            "name": a.name,
+            "type": a.type,
+            "description": a.description,
+            "prompt_id": a.prompt_id,
+            "model_id": a.model_id,
+            "config": json.loads(a.config) if a.config else None,
+            "status": a.status,
+            "total_calls": a.total_calls,
+            "created_at": a.created_at,
+            "updated_at": a.updated_at,
+        }
+        items.append(item)
+    
     return {
-        "items": [AgentResponse.model_validate(a) for a in agents],
+        "items": items,
         "total": total,
         "page": page,
         "page_size": page_size
     }
 
 
-@router.get("/{agent_id}", response_model=AgentResponse)
+@router.get("/{agent_id}")
 async def get_agent(
     agent_id: str,
     db: AsyncSession = Depends(get_db),
@@ -72,10 +90,22 @@ async def get_agent(
             detail="智能体不存在"
         )
     
-    return AgentResponse.model_validate(agent)
+    return {
+        "id": agent.id,
+        "name": agent.name,
+        "type": agent.type,
+        "description": agent.description,
+        "prompt_id": agent.prompt_id,
+        "model_id": agent.model_id,
+        "config": json.loads(agent.config) if agent.config else None,
+        "status": agent.status,
+        "total_calls": agent.total_calls,
+        "created_at": agent.created_at,
+        "updated_at": agent.updated_at,
+    }
 
 
-@router.post("", response_model=AgentResponse)
+@router.post("")
 async def create_agent(
     agent_data: AgentCreate,
     db: AsyncSession = Depends(get_db),
@@ -95,10 +125,22 @@ async def create_agent(
     await db.commit()
     await db.refresh(agent)
     
-    return AgentResponse.model_validate(agent)
+    return {
+        "id": agent.id,
+        "name": agent.name,
+        "type": agent.type,
+        "description": agent.description,
+        "prompt_id": agent.prompt_id,
+        "model_id": agent.model_id,
+        "config": json.loads(agent.config) if agent.config else None,
+        "status": agent.status,
+        "total_calls": agent.total_calls,
+        "created_at": agent.created_at,
+        "updated_at": agent.updated_at,
+    }
 
 
-@router.put("/{agent_id}/config", response_model=AgentResponse)
+@router.put("/{agent_id}/config")
 async def update_agent_config(
     agent_id: str,
     config_data: AgentConfigUpdate,
@@ -121,7 +163,19 @@ async def update_agent_config(
     await db.commit()
     await db.refresh(agent)
     
-    return AgentResponse.model_validate(agent)
+    return {
+        "id": agent.id,
+        "name": agent.name,
+        "type": agent.type,
+        "description": agent.description,
+        "prompt_id": agent.prompt_id,
+        "model_id": agent.model_id,
+        "config": json.loads(agent.config) if agent.config else None,
+        "status": agent.status,
+        "total_calls": agent.total_calls,
+        "created_at": agent.created_at,
+        "updated_at": agent.updated_at,
+    }
 
 
 @router.post("/{agent_id}/start", response_model=TaskStartResponse)

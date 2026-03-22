@@ -4,6 +4,7 @@
 from sqlalchemy import Column, String, Boolean, Integer, DateTime, Text, ForeignKey
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
+from enum import Enum
 from app.core.database import Base
 import uuid
 
@@ -12,14 +13,14 @@ def generate_uuid():
     return str(uuid.uuid4())
 
 
-class ModelProvider(str, str):
+class ModelProvider(str, Enum):
     DOUBAO = "doubao"
     OPENAI = "openai"
     DEEPSEEK = "deepseek"
     CUSTOM = "custom"
 
 
-class ModelStatus(str, str):
+class ModelStatus(str, Enum):
     ACTIVE = "active"
     INACTIVE = "inactive"
     ERROR = "error"
@@ -61,7 +62,7 @@ class Prompt(Base):
     model = relationship("AIModel", backref="prompts")
 
 
-class AgentType(str, str):
+class AgentType(str, Enum):
     PRODUCT_SELECTION = "product-selection"
     IMAGE_DESIGN = "image-design"
     VIDEO_GENERATION = "video-generation"
@@ -71,7 +72,7 @@ class AgentType(str, str):
     DATA_REVIEW = "data-review"
 
 
-class AgentStatus(str, str):
+class AgentStatus(str, Enum):
     ACTIVE = "active"
     INACTIVE = "inactive"
 
@@ -97,7 +98,7 @@ class Agent(Base):
     model = relationship("AIModel", backref="agents")
 
 
-class TaskStatus(str, str):
+class TaskStatus(str, Enum):
     PENDING = "pending"
     RUNNING = "running"
     COMPLETED = "completed"

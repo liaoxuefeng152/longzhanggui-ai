@@ -1,129 +1,26 @@
 """
 缓存服务
+支持Redis和内存缓存两种模式
 """
 from typing import Optional, Any
 import json
-import redis.asyncio as redis
 from datetime import timedelta
+import time
 
 from app.core.config import settings
 from loguru import logger
 
-
-class CacheService:
-    """Redis缓存服务"""
-    
-    _client: Optional[redis.Redis] = None
-    
-    @classmethod
-    async def get_client(cls) -> redis.Redis:
-        """获取Redis客户端"""
-        if cls._client is None:
-            try:
-                cls._client = redis.from_url(
-                    settings.REDIS_URL,
-                    encoding="utf-8",
-                    decode_responses=True
-                )
-                # 测试连接
-                await cls._client.ping()
-                logger.info("Redis连接成功")
-            except Exception as e:
-                logger.warning(f"Redis连接失败: {e}，将使用内存缓存")
-                cls._client = None
-        
-        return cls._client
-    
-    @classmethod
-    async def close(cls):
-        """关闭Redis连接"""
-        if cls._client:
-            await cls._client.close()
-            cls._client = None
-    
-    @classmethod
-    async def get(cls, key: str) -> Optional[Any]:
-        """获取缓存"""
-        try:
-            client = await cls.get_client()
-            if client:
-                value = await client.get(key)
-                if value:
-                    return json.loads(value)
-        except Exception as e:
-            logger.warning(f"缓存读取失败: {e}")
-        return None
-    
-    @classmethod
-    async def set(
-        cls,
-        key: str,
-        value: Any,
-        expire: int = 3600
-    ) -> bool:
-        """设置缓存"""
-        try:
-            client = await cls.get_client()
-            if client:
-                await client.set(
-                    key,
-                    json.dumps(value, ensure_ascii=False),
-                    ex=expire
-                )
-                return True
-        except Exception as e:
-            logger.warning(f"缓存写入失败: {e}")
-        return False
-    
-    @classmethod
-    async def delete(cls, key: str) -> bool:
-        """删除缓存"""
-        try:
-            client = await cls.get_client()
-            if client:
-                await client.delete(key)
-                return True
-        except Exception as e:
-            logger.warning(f"缓存删除失败: {e}")
-        return False
-    
-    @classmethod
-    async def exists(cls, key: str) -> bool:
-        """检查缓存是否存在"""
-        try:
-            client = await cls.get_client()
-            if client:
-                return await client.exists(key) > 0
-        except Exception as e:
-            logger.warning(f"缓存检查失败: {e}")
-        return False
-    
-    @classmethod
-    async def incr(cls, key: str) -> int:
-        """计数器增加"""
-        try:
-            client = await cls.get_client()
-            if client:
-                return await client.incr(key)
-        except Exception as e:
-            logger.warning(f"计数器增加失败: {e}")
-        return 0
-    
-    @classmethod
-    async def expire(cls, key: str, seconds: int) -> bool:
-        """设置过期时间"""
-        try:
-            client = await cls.get_client()
-            if client:
-                await client.expire(key, seconds)
-                return True
-        except Exception as e:
-            logger.warning(f"设置过期时间失败: {e}")
-        return False
+# 尝试导入redis，如果不可用则使用内存缓存
+try:
+    import redis.asyncio as redis
+    REDIS_AVAILABLE = True
+except ImportError:
+    REDIS_AVAILABLE = False
+    logger.warning("Redis模块未安装，将使用内存缓存")
 
 
 class MemoryCache:
-    """内存缓存（Redis不可用时的备选方案）"""
+    """内存缓存"""
     
     _cache: dict = {}
     _expire: dict = {}
@@ -131,7 +28,6 @@ class MemoryCache:
     @classmethod
     def get(cls, key: str) -> Optional[Any]:
         """获取缓存"""
-        import time
         if key in cls._cache:
             if key in cls._expire and cls._expire[key] < time.time():
                 del cls._cache[key]
@@ -143,7 +39,6 @@ class MemoryCache:
     @classmethod
     def set(cls, key: str, value: Any, expire: int = 3600):
         """设置缓存"""
-        import time
         cls._cache[key] = value
         cls._expire[key] = time.time() + expire
     
@@ -157,37 +52,168 @@ class MemoryCache:
     def exists(cls, key: str) -> bool:
         """检查缓存是否存在"""
         return cls.get(key) is not None
+    
+    @classmethod
+    def incr(cls, key: str) -> int:
+        """计数器增加"""
+        value = cls._cache.get(key, 0)
+        if not isinstance(value, int):
+            value = 0
+        value += 1
+        cls._cache[key] = value
+        return value
+
+
+class CacheService:
+    """Redis缓存服务（可选）"""
+    
+    _client: Optional[Any] = None
+    _initialized: bool = False
+    
+    @classmethod
+    async def init(cls):
+        """初始化Redis连接"""
+        if cls._initialized:
+            return
+        
+        cls._initialized = True
+        
+        if not REDIS_AVAILABLE:
+            logger.info("Redis不可用，使用内存缓存")
+            return
+        
+        try:
+            cls._client = redis.from_url(
+                settings.REDIS_URL,
+                encoding="utf-8",
+                decode_responses=True
+            )
+            # 测试连接
+            await cls._client.ping()
+            logger.info("Redis连接成功")
+        except Exception as e:
+            logger.warning(f"Redis连接失败: {e}，将使用内存缓存")
+            cls._client = None
+    
+    @classmethod
+    async def close(cls):
+        """关闭Redis连接"""
+        if cls._client:
+            await cls._client.close()
+            cls._client = None
+    
+    @classmethod
+    async def get(cls, key: str) -> Optional[Any]:
+        """获取缓存"""
+        if cls._client is None:
+            return MemoryCache.get(key)
+        
+        try:
+            value = await cls._client.get(key)
+            if value:
+                return json.loads(value)
+        except Exception as e:
+            logger.warning(f"Redis缓存读取失败: {e}")
+        return None
+    
+    @classmethod
+    async def set(
+        cls,
+        key: str,
+        value: Any,
+        expire: int = 3600
+    ) -> bool:
+        """设置缓存"""
+        # 同时写入内存缓存
+        MemoryCache.set(key, value, expire)
+        
+        if cls._client is None:
+            return True
+        
+        try:
+            await cls._client.set(
+                key,
+                json.dumps(value, ensure_ascii=False),
+                ex=expire
+            )
+            return True
+        except Exception as e:
+            logger.warning(f"Redis缓存写入失败: {e}")
+        return False
+    
+    @classmethod
+    async def delete(cls, key: str) -> bool:
+        """删除缓存"""
+        MemoryCache.delete(key)
+        
+        if cls._client is None:
+            return True
+        
+        try:
+            await cls._client.delete(key)
+            return True
+        except Exception as e:
+            logger.warning(f"Redis缓存删除失败: {e}")
+        return False
+    
+    @classmethod
+    async def exists(cls, key: str) -> bool:
+        """检查缓存是否存在"""
+        if MemoryCache.exists(key):
+            return True
+        
+        if cls._client is None:
+            return False
+        
+        try:
+            return await cls._client.exists(key) > 0
+        except Exception as e:
+            logger.warning(f"Redis缓存检查失败: {e}")
+        return False
+    
+    @classmethod
+    async def incr(cls, key: str) -> int:
+        """计数器增加"""
+        if cls._client is None:
+            return MemoryCache.incr(key)
+        
+        try:
+            return await cls._client.incr(key)
+        except Exception as e:
+            logger.warning(f"Redis计数器增加失败: {e}")
+            return MemoryCache.incr(key)
 
 
 # 统一缓存接口
 class Cache:
-    """缓存接口"""
+    """缓存接口（统一封装）"""
     
     @staticmethod
     async def get(key: str) -> Optional[Any]:
         """获取缓存"""
-        # 优先使用Redis
-        result = await CacheService.get(key)
+        # 优先从内存缓存获取
+        result = MemoryCache.get(key)
         if result is not None:
             return result
-        # 回退到内存缓存
-        return MemoryCache.get(key)
+        # 尝试从Redis获取
+        return await CacheService.get(key)
     
     @staticmethod
     async def set(key: str, value: Any, expire: int = 3600):
         """设置缓存"""
         await CacheService.set(key, value, expire)
-        MemoryCache.set(key, value, expire)
     
     @staticmethod
     async def delete(key: str):
         """删除缓存"""
         await CacheService.delete(key)
-        MemoryCache.delete(key)
     
     @staticmethod
     async def exists(key: str) -> bool:
         """检查缓存是否存在"""
-        if await CacheService.exists(key):
-            return True
-        return MemoryCache.exists(key)
+        return await CacheService.exists(key)
+    
+    @staticmethod
+    async def incr(key: str) -> int:
+        """计数器增加"""
+        return await CacheService.incr(key)

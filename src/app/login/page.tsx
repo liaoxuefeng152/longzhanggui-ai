@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { toast } from 'sonner';
+import { login } from '@/lib/api/auth';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -49,26 +50,26 @@ export default function LoginPage() {
 
     setIsLoading(true);
 
-    // 模拟登录验证
-    setTimeout(() => {
-      // 模拟登录逻辑 - 只有管理员可以登录
-      if (username === 'admin' && password === 'admin123') {
-        localStorage.setItem('user', JSON.stringify({
-          id: '1',
-          username,
-          nickname: '阿峰',
-          role: 'admin',
-          avatar: '',
-        }));
-        toast.success('登录成功');
-        router.push('/dashboard');
-      } else {
-        toast.error('账号或密码错误，剩余4次尝试机会');
-        generateCaptcha();
-        setCaptcha('');
-      }
+    try {
+      // 调用真实登录API
+      const response = await login({
+        phone: username, // 使用输入的用户名作为手机号
+        password: password,
+      });
+
+      // 登录成功，保存用户信息（token已在login函数中保存）
+      localStorage.setItem('user', JSON.stringify(response.user));
+      
+      toast.success('登录成功');
+      router.push('/');
+    } catch (error: any) {
+      console.error('登录失败:', error);
+      toast.error(error.message || '账号或密码错误');
+      generateCaptcha();
+      setCaptcha('');
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   return (
@@ -198,6 +199,10 @@ export default function LoginPage() {
 
         {/* 提示信息 */}
         <div className="mt-8 p-4 bg-primary/5 rounded-lg border border-primary/10">
+          <p className="text-[12px] text-muted-foreground text-center mb-2">
+            <span className="text-primary font-medium">默认管理员账号：</span>
+            13800138000 / admin123
+          </p>
           <p className="text-[12px] text-muted-foreground text-center">
             <span className="text-primary font-medium">提示：</span>
             终端用户（卖家）请通过飞书机器人交互，无需登录后台

@@ -29,11 +29,28 @@ import {
   ResponsiveContainer,
   Cell,
 } from 'recharts';
+import { getDashboardStats, DashboardStats } from '@/lib/api/dashboard';
+import { logout } from '@/lib/api/auth';
 
 export default function DashboardPage() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // 获取统计数据
+  const fetchStats = async () => {
+    setIsLoading(true);
+    try {
+      const data = await getDashboardStats();
+      setStats(data);
+    } catch (error) {
+      console.error('获取统计数据失败:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -42,7 +59,8 @@ export default function DashboardPage() {
       return;
     }
     setUser(JSON.parse(userData));
-  }, [router]);
+    fetchStats();
+  }, [router, refreshKey]);
 
   // 自动刷新数据
   useEffect(() => {
@@ -52,52 +70,60 @@ export default function DashboardPage() {
     return () => clearInterval(timer);
   }, []);
 
-  const handleLogout = () => {
-    localStorage.removeItem('user');
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch (error) {
+      // 忽略登出错误
+    }
     router.push('/login');
   };
 
   // 核心数据概览
   const coreStats = [
     {
-      title: '在线模型数',
-      value: '12',
-      icon: Bot,
-      color: 'text-primary',
-      bgColor: 'bg-primary/10',
-    },
-    {
-      title: '今日任务总量',
-      value: '1,258',
+      title: '今日调用次数',
+      value: stats?.todayCalls?.toLocaleString() || '0',
       icon: ClipboardList,
       color: 'text-warning',
       bgColor: 'bg-warning/10',
     },
     {
-      title: '任务成功率',
-      value: '98.5%',
+      title: '在线用户数',
+      value: stats?.onlineUsers?.toLocaleString() || '0',
+      icon: Users,
+      color: 'text-primary',
+      bgColor: 'bg-primary/10',
+    },
+    {
+      title: '今日订单数',
+      value: stats?.todayOrders?.toLocaleString() || '0',
       icon: CheckCircle,
       color: 'text-success',
       bgColor: 'bg-success/10',
     },
     {
-      title: '付费用户数',
-      value: '256',
-      icon: Users,
+      title: '推荐用户数',
+      value: stats?.referralUsers?.toLocaleString() || '0',
+      icon: Activity,
       color: 'text-primary',
       bgColor: 'bg-primary/10',
     },
   ];
 
-  // 智能体活跃度数据（近7日调用次数）
-  const agentActivityData = [
-    { name: '选品智能体', calls: 1850, color: '#165DFF' },
-    { name: '图片设计', calls: 1620, color: '#00B42A' },
-    { name: '视频生成', calls: 980, color: '#FF7D00' },
-    { name: 'Listing优化', calls: 1420, color: '#F53F3F' },
-    { name: '广告投放', calls: 890, color: '#722ED1' },
-    { name: 'AI客服', calls: 2100, color: '#165DFF' },
-    { name: '数据复盘', calls: 560, color: '#00B42A' },
+  // 智能体活跃度数据（近7日调用次数）- 使用API数据或默认数据
+  const agentActivityData = stats?.callTrend?.map((item, index) => ({
+    name: item.date,
+    calls: item.calls,
+    color: ['#165DFF', '#00B42A', '#FF7D00', '#F53F3F', '#722ED1', '#165DFF', '#00B42A'][index % 7],
+  })) || [
+    { name: '02-14', calls: 0, color: '#165DFF' },
+    { name: '02-15', calls: 0, color: '#00B42A' },
+    { name: '02-16', calls: 0, color: '#FF7D00' },
+    { name: '02-17', calls: 0, color: '#F53F3F' },
+    { name: '02-18', calls: 0, color: '#722ED1' },
+    { name: '02-19', calls: 0, color: '#165DFF' },
+    { name: '02-20', calls: 0, color: '#00B42A' },
   ];
 
   // 实时任务流数据
@@ -123,10 +149,13 @@ export default function DashboardPage() {
 
   // 用户数据统计
   const userStats = [
-    { label: '试用用户数', value: 128, trend: 'up', change: '+12' },
-    { label: '付费用户数', value: 256, trend: 'up', change: '+8' },
-    { label: '套餐到期预警', value: 15, trend: 'down', change: '-3' },
+    { label: '今日调用', value: stats?.todayCalls || 0, trend: 'up', change: '次' },
+    { label: '在线用户', value: stats?.onlineUsers || 0, trend: 'up', change: '人' },
+    { label: '今日订单', value: stats?.todayOrders || 0, trend: 'up', change: '单' },
   ];
+
+  // 最近用户
+  const recentUsers = stats?.recentUsers || [];
 
   if (!user) {
     return null;
@@ -180,32 +209,29 @@ export default function DashboardPage() {
           })}
         </div>
 
-        {/* 智能体活跃度趋势图 */}
+        {/* 调用趋势图 */}
         <Card className="bg-white border-border shadow-sm">
           <CardHeader className="px-6 py-4 border-b border-border">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-[15px] font-medium">智能体活跃度趋势</CardTitle>
+              <CardTitle className="text-[15px] font-medium">调用趋势</CardTitle>
               <Badge variant="outline" className="text-[12px]">近7日调用次数</Badge>
             </div>
           </CardHeader>
           <CardContent className="p-6">
             <div className="h-[280px]">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={agentActivityData} layout="vertical">
-                  <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#E8E8E8" />
+                <BarChart data={agentActivityData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#E8E8E8" />
                   <XAxis
-                    type="number"
+                    dataKey="name"
                     axisLine={false}
                     tickLine={false}
                     tick={{ fontSize: 12, fill: '#86909C' }}
                   />
                   <YAxis
-                    type="category"
-                    dataKey="name"
                     axisLine={false}
                     tickLine={false}
-                    tick={{ fontSize: 13, fill: '#4E5969' }}
-                    width={100}
+                    tick={{ fontSize: 12, fill: '#86909C' }}
                   />
                   <Tooltip
                     contentStyle={{
@@ -217,7 +243,7 @@ export default function DashboardPage() {
                     }}
                     formatter={(value: any) => [`${value} 次`, '调用次数']}
                   />
-                  <Bar dataKey="calls" radius={[0, 4, 4, 0]} barSize={24}>
+                  <Bar dataKey="calls" fill="#165DFF" radius={[4, 4, 0, 0]} barSize={40}>
                     {agentActivityData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
@@ -278,30 +304,31 @@ export default function DashboardPage() {
 
           {/* 右侧面板 */}
           <div className="space-y-6">
-            {/* 用户数据统计 */}
+            {/* 最近注册用户 */}
             <Card className="bg-white border-border shadow-sm">
               <CardHeader className="px-6 py-4 border-b border-border">
-                <CardTitle className="text-[15px] font-medium">用户数据统计</CardTitle>
+                <CardTitle className="text-[15px] font-medium">最近注册用户</CardTitle>
               </CardHeader>
               <CardContent className="p-6">
-                <div className="space-y-4">
-                  {userStats.map((stat, index) => (
-                    <div key={index} className="flex items-center justify-between">
-                      <span className="text-[14px] text-muted-foreground">{stat.label}</span>
-                      <div className="flex items-center gap-2">
-                        <span className="text-[18px] font-semibold text-foreground">{stat.value}</span>
-                        <span className={`text-[12px] ${stat.trend === 'up' ? 'text-success' : 'text-destructive'} flex items-center`}>
-                          {stat.trend === 'up' ? (
-                            <TrendingUp className="h-3 w-3 mr-1" />
-                          ) : (
-                            <TrendingDown className="h-3 w-3 mr-1" />
-                          )}
-                          {stat.change}
-                        </span>
+                {recentUsers.length > 0 ? (
+                  <div className="space-y-3">
+                    {recentUsers.map((u) => (
+                      <div key={u.id} className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                            <Users className="h-4 w-4 text-primary" />
+                          </div>
+                          <span className="text-[14px] text-foreground">{u.nickname}</span>
+                        </div>
+                        <span className="text-[12px] text-muted-foreground">{u.createdAt}</span>
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-4 text-[14px] text-muted-foreground">
+                    暂无新用户
+                  </div>
+                )}
               </CardContent>
             </Card>
 
