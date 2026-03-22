@@ -29,7 +29,10 @@ import {
   Eye,
   ChevronRight,
   Zap,
+  Loader2,
 } from 'lucide-react';
+import { toast } from 'sonner';
+import { startAgentTask, Task } from '@/lib/api/agents';
 
 interface Product {
   id: string;
@@ -127,6 +130,9 @@ export default function SelectionAgentPage() {
   const [activeTab, setActiveTab] = useState('overview');
   const [agentStatus, setAgentStatus] = useState<'online' | 'offline' | 'processing'>('online');
   const [products, setProducts] = useState<Product[]>(mockProducts);
+  const [agentId, setAgentId] = useState<string | null>(null);
+  const [isStarting, setIsStarting] = useState(false);
+  const [currentTask, setCurrentTask] = useState<Task | null>(null);
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -135,7 +141,99 @@ export default function SelectionAgentPage() {
       return;
     }
     setUser(JSON.parse(userData));
+    
+    // 获取选品智能体ID
+    fetchAgentId();
   }, [router]);
+
+  const fetchAgentId = async () => {
+    try {
+      // 通过类型获取智能体信息
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/agents?type=product-selection`);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.items && data.items.length > 0) {
+          setAgentId(data.items[0].id);
+        }
+      }
+    } catch (error) {
+      console.error('获取智能体信息失败:', error);
+    }
+  };
+
+  const handleStartSelection = async () => {
+    if (!agentId) {
+      toast.error('智能体未初始化，请刷新页面重试');
+      return;
+    }
+
+    setIsStarting(true);
+    setAgentStatus('processing');
+
+    try {
+      const result = await startAgentTask(agentId, {
+        action: 'product_selection',
+        platforms: ['TK', 'Amazon'],
+        categories: [],
+        limit: 20,
+      });
+      
+      toast.success('选品任务已启动！任务ID: ' + result.task_id);
+      
+      // 轮询任务状态
+      pollTaskStatus(result.task_id);
+    } catch (error: any) {
+      console.error('启动选品失败:', error);
+      toast.error(error.message || '启动选品失败');
+      setAgentStatus('online');
+    } finally {
+      setIsStarting(false);
+    }
+  };
+
+  const pollTaskStatus = async (taskId: string) => {
+    let attempts = 0;
+    const maxAttempts = 60; // 最多轮询60次（约2分钟）
+    
+    const poll = async () => {
+      try {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/agents/tasks/${taskId}`, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          },
+        });
+        
+        if (response.ok) {
+          const task: Task = await response.json();
+          setCurrentTask(task);
+          
+          if (task.status === 'completed') {
+            toast.success('选品任务完成！');
+            setAgentStatus('online');
+            return;
+          } else if (task.status === 'failed') {
+            toast.error('选品任务失败: ' + (task.error || '未知错误'));
+            setAgentStatus('online');
+            return;
+          }
+          
+          // 继续轮询
+          attempts++;
+          if (attempts < maxAttempts) {
+            setTimeout(poll, 2000);
+          } else {
+            toast.warning('任务执行时间较长，请稍后查看结果');
+            setAgentStatus('online');
+          }
+        }
+      } catch (error) {
+        console.error('轮询任务状态失败:', error);
+        setAgentStatus('online');
+      }
+    };
+    
+    poll();
+  };
 
   const getComplianceBadge = (status: string) => {
     const config: Record<string, { label: string; className: string }> = {
@@ -181,9 +279,26 @@ export default function SelectionAgentPage() {
               <RefreshCw className="h-4 w-4 mr-2" />
               刷新
             </Button>
-            <Button>
-              <Play className="h-4 w-4 mr-2" />
-              启动选品
+            <Button 
+              onClick={handleStartSelection}
+              disabled={isStarting || agentStatus === 'processing'}
+            >
+              {isStarting ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  启动中...
+                </>
+              ) : agentStatus === 'processing' ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  选品中...
+                </>
+              ) : (
+                <>
+                  <Play className="h-4 w-4 mr-2" />
+                  启动选品
+                </>
+              )}
             </Button>
           </div>
         </div>

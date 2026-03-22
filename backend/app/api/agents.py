@@ -72,6 +72,104 @@ async def get_agents(
     }
 
 
+# ===========================================
+# 任务相关路由 - 必须放在 /{agent_id} 之前
+# ===========================================
+
+@router.get("/tasks")
+async def get_tasks(
+    agent_id: Optional[str] = None,
+    task_status: Optional[str] = None,
+    page: int = 1,
+    page_size: int = 20,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """获取任务列表"""
+    query = select(Task)
+    count_query = select(func.count(Task.id))
+    
+    if agent_id:
+        query = query.where(Task.agent_id == agent_id)
+        count_query = count_query.where(Task.agent_id == agent_id)
+    
+    if task_status:
+        query = query.where(Task.status == task_status)
+        count_query = count_query.where(Task.status == task_status)
+    
+    # 获取总数
+    total_result = await db.execute(count_query)
+    total = total_result.scalar()
+    
+    # 分页查询
+    query = query.offset((page - 1) * page_size).limit(page_size)
+    query = query.order_by(Task.created_at.desc())
+    
+    result = await db.execute(query)
+    tasks = result.scalars().all()
+    
+    # 手动构造响应，避免 Pydantic 验证 JSON 字符串
+    return {
+        "items": [
+            {
+                "id": t.id,
+                "agent_id": t.agent_id,
+                "user_id": t.user_id,
+                "status": t.status,
+                "input": json.loads(t.input) if t.input else None,
+                "output": json.loads(t.output) if t.output else None,
+                "error": t.error,
+                "tokens_used": t.tokens_used,
+                "started_at": t.started_at,
+                "completed_at": t.completed_at,
+                "created_at": t.created_at,
+            }
+            for t in tasks
+        ],
+        "total": total,
+        "page": page,
+        "page_size": page_size
+    }
+
+
+@router.get("/tasks/{task_id}")
+async def get_task(
+    task_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """获取任务详情"""
+    result = await db.execute(
+        select(Task).where(Task.id == task_id)
+    )
+    task = result.scalar_one_or_none()
+    
+    if not task:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="任务不存在"
+        )
+    
+    # 手动构造响应，避免 Pydantic 验证 JSON 字符串
+    return {
+        "id": task.id,
+        "agent_id": task.agent_id,
+        "user_id": task.user_id,
+        "status": task.status,
+        "input": json.loads(task.input) if task.input else None,
+        "output": json.loads(task.output) if task.output else None,
+        "error": task.error,
+        "tokens_used": task.tokens_used,
+        "started_at": task.started_at,
+        "completed_at": task.completed_at,
+        "created_at": task.created_at,
+    }
+
+
+# ===========================================
+# 智能体详情和操作路由
+# ===========================================
+
 @router.get("/{agent_id}")
 async def get_agent(
     agent_id: str,
@@ -251,75 +349,3 @@ async def stop_agent_task(
     await db.commit()
     
     return {"success": True, "message": "任务已停止"}
-
-
-@router.get("/tasks")
-async def get_tasks(
-    agent_id: Optional[str] = None,
-    task_status: Optional[str] = None,
-    page: int = 1,
-    page_size: int = 20,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    """获取任务列表"""
-    query = select(Task)
-    count_query = select(func.count(Task.id))
-    
-    if agent_id:
-        query = query.where(Task.agent_id == agent_id)
-        count_query = count_query.where(Task.agent_id == agent_id)
-    
-    if task_status:
-        query = query.where(Task.status == task_status)
-        count_query = count_query.where(Task.status == task_status)
-    
-    # 获取总数
-    total_result = await db.execute(count_query)
-    total = total_result.scalar()
-    
-    # 分页查询
-    query = query.offset((page - 1) * page_size).limit(page_size)
-    query = query.order_by(Task.created_at.desc())
-    
-    result = await db.execute(query)
-    tasks = result.scalars().all()
-    
-    return {
-        "items": [
-            {
-                **TaskResponse.model_validate(t).model_dump(),
-                "input": json.loads(t.input) if t.input else None,
-                "output": json.loads(t.output) if t.output else None
-            }
-            for t in tasks
-        ],
-        "total": total,
-        "page": page,
-        "page_size": page_size
-    }
-
-
-@router.get("/tasks/{task_id}")
-async def get_task(
-    task_id: str,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    """获取任务详情"""
-    result = await db.execute(
-        select(Task).where(Task.id == task_id)
-    )
-    task = result.scalar_one_or_none()
-    
-    if not task:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="任务不存在"
-        )
-    
-    return {
-        **TaskResponse.model_validate(task).model_dump(),
-        "input": json.loads(task.input) if task.input else None,
-        "output": json.loads(task.output) if task.output else None
-    }
