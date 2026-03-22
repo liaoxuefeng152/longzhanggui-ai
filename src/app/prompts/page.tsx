@@ -44,134 +44,65 @@ import {
   ToggleLeft,
   ToggleRight,
   Sparkles,
+  RefreshCw,
+  Loader2,
 } from 'lucide-react';
 import { toast } from 'sonner';
-
-interface PromptTemplate {
-  id: string;
-  name: string;
-  agent: string;
-  platform: string;
-  status: 'enabled' | 'disabled';
-  version: string;
-  createdAt: string;
-  updatedAt: string;
-  abTestGroup?: string;
-}
+import {
+  getPrompts,
+  createPrompt,
+  updatePrompt,
+  deletePrompt,
+  Prompt,
+  PromptCreate,
+  PromptUpdate,
+} from '@/lib/api/prompts';
+import { logout } from '@/lib/api/auth';
 
 const agentCategories = [
-  { id: 'selection', label: '选品Prompt', icon: '🔍' },
-  { id: 'image', label: '图片设计Prompt', icon: '🖼️' },
-  { id: 'video', label: '短视频Prompt', icon: '🎬' },
-  { id: 'listing', label: 'Listing优化Prompt', icon: '📝' },
+  { id: 'product-selection', label: '选品Prompt', icon: '🔍' },
+  { id: 'image-design', label: '图片设计Prompt', icon: '🖼️' },
+  { id: 'video-generation', label: '短视频Prompt', icon: '🎬' },
+  { id: 'listing-optimization', label: 'Listing优化Prompt', icon: '📝' },
   { id: 'advertising', label: '广告Prompt', icon: '📢' },
-  { id: 'customer', label: '客服Prompt', icon: '💬' },
-  { id: 'review', label: '复盘Prompt', icon: '📊' },
+  { id: 'customer-service', label: '客服Prompt', icon: '💬' },
+  { id: 'data-review', label: '复盘Prompt', icon: '📊' },
 ];
 
 export default function PromptsPage() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
+  const [prompts, setPrompts] = useState<Prompt[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeCategory, setActiveCategory] = useState('all');
+  const [isLoading, setIsLoading] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingPrompt, setEditingPrompt] = useState<PromptTemplate | null>(null);
+  const [editingPrompt, setEditingPrompt] = useState<Prompt | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // 表单状态
+  const [formData, setFormData] = useState<PromptCreate>({
+    name: '',
+    category: 'general',
+    agent_type: 'product-selection',
+    platform: 'all',
+    content: '',
+    variables: {},
+  });
 
-  const [prompts, setPrompts] = useState<PromptTemplate[]>([
-    {
-      id: 'P001',
-      name: 'TK东南亚选品分析模板',
-      agent: '选品智能体',
-      platform: 'TK东南亚',
-      status: 'enabled',
-      version: 'v2.1',
-      createdAt: '2024-02-18 14:30',
-      updatedAt: '2024-02-20 09:15',
-      abTestGroup: 'A组',
-    },
-    {
-      id: 'P002',
-      name: '亚马逊美国站选品模板',
-      agent: '选品智能体',
-      platform: '亚马逊',
-      status: 'enabled',
-      version: 'v1.8',
-      createdAt: '2024-02-15 10:20',
-      updatedAt: '2024-02-19 16:45',
-    },
-    {
-      id: 'P003',
-      name: 'TK主图设计Prompt',
-      agent: '图片设计智能体',
-      platform: 'TK东南亚',
-      status: 'enabled',
-      version: 'v1.5',
-      createdAt: '2024-02-12 08:00',
-      updatedAt: '2024-02-18 11:30',
-    },
-    {
-      id: 'P004',
-      name: '亚马逊A+页面设计模板',
-      agent: '图片设计智能体',
-      platform: '亚马逊',
-      status: 'disabled',
-      version: 'v1.0',
-      createdAt: '2024-02-10 15:45',
-      updatedAt: '2024-02-10 15:45',
-    },
-    {
-      id: 'P005',
-      name: 'TK短视频带货脚本',
-      agent: '视频生成智能体',
-      platform: 'TK东南亚',
-      status: 'enabled',
-      version: 'v2.0',
-      createdAt: '2024-02-08 12:00',
-      updatedAt: '2024-02-17 14:20',
-      abTestGroup: 'B组',
-    },
-    {
-      id: 'P006',
-      name: 'Listing标题优化模板',
-      agent: 'Listing优化智能体',
-      platform: 'TK/亚马逊',
-      status: 'enabled',
-      version: 'v3.2',
-      createdAt: '2024-02-05 09:30',
-      updatedAt: '2024-02-20 10:00',
-    },
-    {
-      id: 'P007',
-      name: 'TK广告投放策略Prompt',
-      agent: '广告投放智能体',
-      platform: 'TK Ads',
-      status: 'enabled',
-      version: 'v1.3',
-      createdAt: '2024-02-03 16:20',
-      updatedAt: '2024-02-16 08:45',
-    },
-    {
-      id: 'P008',
-      name: '印尼语客服回复模板',
-      agent: 'AI客服智能体',
-      platform: 'TK印尼',
-      status: 'enabled',
-      version: 'v2.5',
-      createdAt: '2024-02-01 11:15',
-      updatedAt: '2024-02-19 17:30',
-      abTestGroup: 'A组',
-    },
-    {
-      id: 'P009',
-      name: '周度数据复盘模板',
-      agent: '数据复盘智能体',
-      platform: '全平台',
-      status: 'enabled',
-      version: 'v1.1',
-      createdAt: '2024-01-28 14:00',
-      updatedAt: '2024-02-15 09:00',
-    },
-  ]);
+  // 获取Prompt列表
+  const fetchPrompts = async () => {
+    setIsLoading(true);
+    try {
+      const response = await getPrompts({ page: 1, page_size: 100 });
+      setPrompts(response.items);
+    } catch (error) {
+      console.error('获取Prompt列表失败:', error);
+      toast.error('获取Prompt列表失败');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -180,8 +111,10 @@ export default function PromptsPage() {
       return;
     }
     setUser(JSON.parse(userData));
+    fetchPrompts();
   }, [router]);
 
+  // 过滤Prompt
   const filteredPrompts = prompts.filter((prompt) => {
     const matchSearch =
       prompt.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -189,52 +122,131 @@ export default function PromptsPage() {
     
     if (activeCategory === 'all') return matchSearch;
     
-    const categoryMap: Record<string, string> = {
-      selection: '选品智能体',
-      image: '图片设计智能体',
-      video: '视频生成智能体',
-      listing: 'Listing优化智能体',
-      advertising: '广告投放智能体',
-      customer: 'AI客服智能体',
-      review: '数据复盘智能体',
-    };
-    
-    return matchSearch && prompt.agent === categoryMap[activeCategory];
+    return matchSearch && prompt.agent_type === activeCategory;
   });
 
-  const handleToggleStatus = (promptId: string) => {
-    setPrompts((prev) =>
-      prev.map((p) =>
-        p.id === promptId
-          ? { ...p, status: p.status === 'enabled' ? 'disabled' : 'enabled' }
-          : p
-      )
-    );
-    toast.success('状态已更新');
+  // 切换状态
+  const handleToggleStatus = async (prompt: Prompt) => {
+    try {
+      const newStatus = prompt.status === 'active' ? 'inactive' : 'active';
+      await updatePrompt(prompt.id, { status: newStatus });
+      toast.success('状态已更新');
+      fetchPrompts();
+    } catch (error) {
+      console.error('更新状态失败:', error);
+      toast.error('更新状态失败');
+    }
   };
 
-  const handleDeletePrompt = (promptId: string) => {
-    setPrompts((prev) => prev.filter((p) => p.id !== promptId));
-    toast.success('模板已删除');
+  // 删除Prompt
+  const handleDeletePrompt = async (promptId: string) => {
+    if (!confirm('确定要删除该Prompt模板吗？')) return;
+    try {
+      await deletePrompt(promptId);
+      toast.success('模板已删除');
+      fetchPrompts();
+    } catch (error) {
+      console.error('删除模板失败:', error);
+      toast.error('删除模板失败');
+    }
   };
 
-  const handleCopyPrompt = (prompt: PromptTemplate) => {
-    const newPrompt: PromptTemplate = {
-      ...prompt,
-      id: `P${String(prompts.length + 1).padStart(3, '0')}`,
-      name: `${prompt.name} (副本)`,
-      status: 'disabled',
-      createdAt: new Date().toLocaleString('zh-CN'),
-      updatedAt: new Date().toLocaleString('zh-CN'),
-    };
-    setPrompts((prev) => [...prev, newPrompt]);
-    toast.success('模板已复制');
+  // 复制Prompt
+  const handleCopyPrompt = async (prompt: Prompt) => {
+    try {
+      await createPrompt({
+        name: `${prompt.name} (副本)`,
+        category: prompt.category || 'general',
+        agent_type: prompt.agent_type,
+        platform: prompt.platform,
+        content: prompt.content,
+        variables: prompt.variables || {},
+      });
+      toast.success('模板已复制');
+      fetchPrompts();
+    } catch (error) {
+      console.error('复制模板失败:', error);
+      toast.error('复制模板失败');
+    }
+  };
+
+  // 编辑Prompt
+  const handleEditPrompt = (prompt: Prompt) => {
+    setEditingPrompt(prompt);
+    setFormData({
+      name: prompt.name,
+      category: prompt.category || 'general',
+      agent_type: prompt.agent_type,
+      platform: prompt.platform,
+      content: prompt.content,
+      variables: prompt.variables || {},
+    });
+    setIsDialogOpen(true);
+  };
+
+  // 重置表单
+  const resetForm = () => {
+    setEditingPrompt(null);
+    setFormData({
+      name: '',
+      category: 'general',
+      agent_type: 'product-selection',
+      platform: 'all',
+      content: '',
+      variables: {},
+    });
+  };
+
+  // 提交表单
+  const handleSubmit = async () => {
+    if (!formData.name || !formData.content) {
+      toast.error('请填写必填项');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      if (editingPrompt) {
+        // 更新
+        const updateData: PromptUpdate = {
+          name: formData.name,
+          category: formData.category,
+          agent_type: formData.agent_type,
+          platform: formData.platform,
+          content: formData.content,
+          variables: formData.variables,
+        };
+        await updatePrompt(editingPrompt.id, updateData);
+        toast.success('模板已更新');
+      } else {
+        // 创建
+        await createPrompt(formData);
+        toast.success('模板已创建');
+      }
+      setIsDialogOpen(false);
+      resetForm();
+      fetchPrompts();
+    } catch (error) {
+      console.error('保存模板失败:', error);
+      toast.error('保存模板失败');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch (error) {
+      // 忽略错误
+    }
+    router.push('/login');
   };
 
   if (!user) return null;
 
   return (
-    <MainLayout user={user} onLogout={() => router.push('/login')}>
+    <MainLayout user={user} onLogout={handleLogout}>
       <div className="space-y-6">
         {/* 页面标题 */}
         <div className="flex items-center justify-between">
@@ -244,9 +256,12 @@ export default function PromptsPage() {
               七大智能体Prompt模板 · 版本管控 · AB测试
             </p>
           </div>
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <Dialog open={isDialogOpen} onOpenChange={(open) => {
+            setIsDialogOpen(open);
+            if (!open) resetForm();
+          }}>
             <DialogTrigger asChild>
-              <Button onClick={() => setEditingPrompt(null)}>
+              <Button onClick={resetForm}>
                 <Plus className="h-4 w-4 mr-2" />
                 新增模板
               </Button>
@@ -260,100 +275,83 @@ export default function PromptsPage() {
               </DialogHeader>
               <div className="grid gap-4 py-4">
                 <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="name" className="text-right">模板名称</Label>
+                  <Label htmlFor="name" className="text-right">模板名称 <span className="text-destructive">*</span></Label>
                   <Input
                     id="name"
                     placeholder="请输入模板名称"
                     className="col-span-3"
-                    defaultValue={editingPrompt?.name || ''}
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   />
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="agent" className="text-right">绑定智能体</Label>
-                  <Select defaultValue={editingPrompt?.agent || ''}>
+                  <Label htmlFor="agent_type" className="text-right">绑定智能体</Label>
+                  <Select value={formData.agent_type} onValueChange={(v) => setFormData({ ...formData, agent_type: v })}>
                     <SelectTrigger className="col-span-3">
                       <SelectValue placeholder="选择智能体" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="选品智能体">选品智能体</SelectItem>
-                      <SelectItem value="图片设计智能体">图片设计智能体</SelectItem>
-                      <SelectItem value="视频生成智能体">视频生成智能体</SelectItem>
-                      <SelectItem value="Listing优化智能体">Listing优化智能体</SelectItem>
-                      <SelectItem value="广告投放智能体">广告投放智能体</SelectItem>
-                      <SelectItem value="AI客服智能体">AI客服智能体</SelectItem>
-                      <SelectItem value="数据复盘智能体">数据复盘智能体</SelectItem>
+                      {agentCategories.map((cat) => (
+                        <SelectItem key={cat.id} value={cat.id}>
+                          {cat.icon} {cat.label}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="platform" className="text-right">适用平台</Label>
-                  <Select defaultValue={editingPrompt?.platform || ''}>
+                  <Select value={formData.platform} onValueChange={(v) => setFormData({ ...formData, platform: v })}>
                     <SelectTrigger className="col-span-3">
                       <SelectValue placeholder="选择平台" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="TK东南亚">TK东南亚</SelectItem>
-                      <SelectItem value="TK印尼">TK印尼</SelectItem>
-                      <SelectItem value="TK泰国">TK泰国</SelectItem>
-                      <SelectItem value="TK越南">TK越南</SelectItem>
-                      <SelectItem value="亚马逊">亚马逊</SelectItem>
-                      <SelectItem value="TK/亚马逊">TK/亚马逊</SelectItem>
-                      <SelectItem value="全平台">全平台</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="abTest" className="text-right">AB测试分组</Label>
-                  <Select>
-                    <SelectTrigger className="col-span-3">
-                      <SelectValue placeholder="不参与AB测试" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">不参与AB测试</SelectItem>
-                      <SelectItem value="A">A组</SelectItem>
-                      <SelectItem value="B">B组</SelectItem>
+                      <SelectItem value="all">全平台</SelectItem>
+                      <SelectItem value="tiktok">TK东南亚</SelectItem>
+                      <SelectItem value="tiktok-id">TK印尼</SelectItem>
+                      <SelectItem value="tiktok-th">TK泰国</SelectItem>
+                      <SelectItem value="tiktok-vn">TK越南</SelectItem>
+                      <SelectItem value="amazon">亚马逊</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="grid grid-cols-4 items-start gap-4">
-                  <Label htmlFor="content" className="text-right pt-2">Prompt内容</Label>
+                  <Label htmlFor="content" className="text-right pt-2">Prompt内容 <span className="text-destructive">*</span></Label>
                   <div className="col-span-3 space-y-2">
                     <Textarea
                       id="content"
                       placeholder="请输入Prompt内容，可使用 {{变量名}} 插入动态变量"
                       className="min-h-[200px] font-mono text-[13px]"
+                      value={formData.content}
+                      onChange={(e) => setFormData({ ...formData, content: e.target.value })}
                     />
                     <div className="flex items-center gap-2">
                       <span className="text-[12px] text-muted-foreground">快速插入变量：</span>
-                      <Button variant="outline" size="sm" className="h-6 text-[11px]">
+                      <Button variant="outline" size="sm" className="h-6 text-[11px]"
+                        onClick={() => setFormData({ ...formData, content: formData.content + '{{商品名称}}' })}>
                         <Sparkles className="h-3 w-3 mr-1" />
                         {'{{商品名称}}'}
                       </Button>
-                      <Button variant="outline" size="sm" className="h-6 text-[11px]">
+                      <Button variant="outline" size="sm" className="h-6 text-[11px]"
+                        onClick={() => setFormData({ ...formData, content: formData.content + '{{平台}}' })}>
                         <Sparkles className="h-3 w-3 mr-1" />
                         {'{{平台}}'}
                       </Button>
-                      <Button variant="outline" size="sm" className="h-6 text-[11px]">
+                      <Button variant="outline" size="sm" className="h-6 text-[11px]"
+                        onClick={() => setFormData({ ...formData, content: formData.content + '{{用户语言}}' })}>
                         <Sparkles className="h-3 w-3 mr-1" />
                         {'{{用户语言}}'}
                       </Button>
                     </div>
                   </div>
                 </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="versionNote" className="text-right">版本备注</Label>
-                  <Input
-                    id="versionNote"
-                    placeholder="如：优化了合规校验逻辑"
-                    className="col-span-3"
-                  />
-                </div>
               </div>
               <DialogFooter>
                 <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
                   取消
                 </Button>
-                <Button onClick={() => setIsDialogOpen(false)}>
+                <Button onClick={handleSubmit} disabled={isSubmitting}>
+                  {isSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                   保存
                 </Button>
               </DialogFooter>
@@ -390,14 +388,20 @@ export default function PromptsPage() {
         {/* 搜索区 */}
         <Card className="bg-white border-border shadow-sm">
           <CardContent className="p-4">
-            <div className="relative max-w-[400px]">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="搜索模板名称/ID"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
+            <div className="flex items-center gap-4">
+              <div className="relative flex-1 max-w-[400px]">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="搜索模板名称/ID"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+              <Button variant="outline" onClick={fetchPrompts} disabled={isLoading}>
+                <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+                刷新
+              </Button>
             </div>
           </CardContent>
         </Card>
@@ -413,118 +417,108 @@ export default function PromptsPage() {
             </div>
           </CardHeader>
           <CardContent className="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow className="border-border bg-muted/30">
-                  <TableHead className="text-[12px] font-medium text-muted-foreground px-6">模板ID</TableHead>
-                  <TableHead className="text-[12px] font-medium text-muted-foreground">模板名称</TableHead>
-                  <TableHead className="text-[12px] font-medium text-muted-foreground">绑定智能体</TableHead>
-                  <TableHead className="text-[12px] font-medium text-muted-foreground">平台</TableHead>
-                  <TableHead className="text-[12px] font-medium text-muted-foreground">状态</TableHead>
-                  <TableHead className="text-[12px] font-medium text-muted-foreground">版本</TableHead>
-                  <TableHead className="text-[12px] font-medium text-muted-foreground">AB测试</TableHead>
-                  <TableHead className="text-[12px] font-medium text-muted-foreground">更新时间</TableHead>
-                  <TableHead className="text-[12px] font-medium text-muted-foreground text-right px-6">操作</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredPrompts.map((prompt) => (
-                  <TableRow key={prompt.id} className="border-border hover:bg-muted/30">
-                    <TableCell className="text-[13px] font-medium text-primary px-6">
-                      {prompt.id}
-                    </TableCell>
-                    <TableCell className="text-[13px] text-foreground font-medium">
-                      {prompt.name}
-                    </TableCell>
-                    <TableCell className="text-[13px] text-muted-foreground">
-                      {prompt.agent}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className="text-[11px]">
-                        {prompt.platform}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        className={
-                          prompt.status === 'enabled'
-                            ? 'bg-success text-white'
-                            : 'bg-muted text-muted-foreground'
-                        }
-                      >
-                        {prompt.status === 'enabled' ? '启用' : '禁用'}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-[13px] text-muted-foreground">
-                      {prompt.version}
-                    </TableCell>
-                    <TableCell>
-                      {prompt.abTestGroup ? (
-                        <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
-                          {prompt.abTestGroup}
-                        </Badge>
-                      ) : (
-                        <span className="text-[12px] text-muted-foreground">-</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-[13px] text-muted-foreground">
-                      {prompt.updatedAt}
-                    </TableCell>
-                    <TableCell className="text-right px-6">
-                      <div className="flex items-center justify-end gap-1">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            setEditingPrompt(prompt);
-                            setIsDialogOpen(true);
-                          }}
-                          title="编辑"
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleCopyPrompt(prompt)}
-                          title="复制"
-                        >
-                          <Copy className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleToggleStatus(prompt.id)}
-                          title={prompt.status === 'enabled' ? '禁用' : '启用'}
-                        >
-                          {prompt.status === 'enabled' ? (
-                            <ToggleRight className="h-4 w-4 text-success" />
-                          ) : (
-                            <ToggleLeft className="h-4 w-4 text-muted-foreground" />
-                          )}
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          title="版本历史"
-                        >
-                          <History className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDeletePrompt(prompt.id)}
-                          className="text-destructive hover:text-destructive"
-                          title="删除"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
+            {isLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            ) : filteredPrompts.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground">
+                暂无Prompt模板数据
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-border bg-muted/30">
+                    <TableHead className="text-[12px] font-medium text-muted-foreground px-6">模板ID</TableHead>
+                    <TableHead className="text-[12px] font-medium text-muted-foreground">模板名称</TableHead>
+                    <TableHead className="text-[12px] font-medium text-muted-foreground">绑定智能体</TableHead>
+                    <TableHead className="text-[12px] font-medium text-muted-foreground">平台</TableHead>
+                    <TableHead className="text-[12px] font-medium text-muted-foreground">状态</TableHead>
+                    <TableHead className="text-[12px] font-medium text-muted-foreground">版本</TableHead>
+                    <TableHead className="text-[12px] font-medium text-muted-foreground">更新时间</TableHead>
+                    <TableHead className="text-[12px] font-medium text-muted-foreground text-right px-6">操作</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {filteredPrompts.map((prompt) => (
+                    <TableRow key={prompt.id} className="border-border hover:bg-muted/30">
+                      <TableCell className="text-[13px] font-medium text-primary px-6">
+                        {prompt.id.substring(0, 8)}...
+                      </TableCell>
+                      <TableCell className="text-[13px] text-foreground font-medium">
+                        {prompt.name}
+                      </TableCell>
+                      <TableCell className="text-[13px] text-muted-foreground">
+                        {agentCategories.find(c => c.id === prompt.agent_type)?.label || prompt.agent_type}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="text-[11px]">
+                          {prompt.platform}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          className={
+                            prompt.status === 'active'
+                              ? 'bg-success text-white'
+                              : 'bg-muted text-muted-foreground'
+                          }
+                        >
+                          {prompt.status === 'active' ? '启用' : '禁用'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-[13px] text-muted-foreground">
+                        v{prompt.version}
+                      </TableCell>
+                      <TableCell className="text-[13px] text-muted-foreground">
+                        {new Date(prompt.updated_at).toLocaleString('zh-CN')}
+                      </TableCell>
+                      <TableCell className="text-right px-6">
+                        <div className="flex items-center justify-end gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleEditPrompt(prompt)}
+                            title="编辑"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleCopyPrompt(prompt)}
+                            title="复制"
+                          >
+                            <Copy className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleToggleStatus(prompt)}
+                            title={prompt.status === 'active' ? '禁用' : '启用'}
+                          >
+                            {prompt.status === 'active' ? (
+                              <ToggleRight className="h-4 w-4 text-success" />
+                            ) : (
+                              <ToggleLeft className="h-4 w-4 text-muted-foreground" />
+                            )}
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeletePrompt(prompt.id)}
+                            className="text-destructive hover:text-destructive"
+                            title="删除"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
           </CardContent>
         </Card>
       </div>

@@ -26,11 +26,12 @@ import {
 import {
   Search,
   MoreHorizontal,
-  UserPlus,
   Download,
   MessageSquare,
   Ban,
   CheckCircle,
+  RefreshCw,
+  Loader2,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -40,115 +41,36 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
-
-interface FeishuUser {
-  id: string;
-  nickname: string;
-  avatar: string;
-  feishuId: string;
-  platform: string;
-  packageType: string;
-  expireDate: string;
-  totalCalls: number;
-  todayCalls: number;
-  status: 'active' | 'expired' | 'disabled';
-  createdAt: string;
-  lastActiveAt: string;
-}
+import {
+  getFeishuUsers,
+  updateUserQuota,
+  FeishuUser,
+} from '@/lib/api/feishu-users';
+import { logout } from '@/lib/api/auth';
 
 export default function FeishuUsersPage() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
+  const [users, setUsers] = useState<FeishuUser[]>([]);
+  const [totalUsers, setTotalUsers] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
-  const [filterPackage, setFilterPackage] = useState<string>('all');
+  const [isLoading, setIsLoading] = useState(false);
 
-  const [users, setUsers] = useState<FeishuUser[]>([
-    {
-      id: 'U001',
-      nickname: '张明',
-      avatar: '',
-      feishuId: 'ou_xxxx1',
-      platform: 'TK印尼',
-      packageType: '专业版',
-      expireDate: '2024-03-20',
-      totalCalls: 12580,
-      todayCalls: 156,
-      status: 'active',
-      createdAt: '2024-01-15',
-      lastActiveAt: '2024-02-20 14:32',
-    },
-    {
-      id: 'U002',
-      nickname: '李华',
-      avatar: '',
-      feishuId: 'ou_xxxx2',
-      platform: 'TK泰国',
-      packageType: '试用版',
-      expireDate: '2024-02-18',
-      totalCalls: 320,
-      todayCalls: 12,
-      status: 'expired',
-      createdAt: '2024-02-15',
-      lastActiveAt: '2024-02-18 09:15',
-    },
-    {
-      id: 'U003',
-      nickname: '王芳',
-      avatar: '',
-      feishuId: 'ou_xxxx3',
-      platform: '亚马逊美国',
-      packageType: '企业版',
-      expireDate: '2024-12-31',
-      totalCalls: 85620,
-      todayCalls: 423,
-      status: 'active',
-      createdAt: '2023-12-01',
-      lastActiveAt: '2024-02-20 15:10',
-    },
-    {
-      id: 'U004',
-      nickname: '赵伟',
-      avatar: '',
-      feishuId: 'ou_xxxx4',
-      platform: 'TK越南',
-      packageType: '基础版',
-      expireDate: '2024-04-15',
-      totalCalls: 4520,
-      todayCalls: 89,
-      status: 'active',
-      createdAt: '2024-01-20',
-      lastActiveAt: '2024-02-20 12:45',
-    },
-    {
-      id: 'U005',
-      nickname: '刘静',
-      avatar: '',
-      feishuId: 'ou_xxxx5',
-      platform: 'TK马来西亚',
-      packageType: '专业版',
-      expireDate: '2024-05-01',
-      totalCalls: 6890,
-      todayCalls: 201,
-      status: 'active',
-      createdAt: '2024-01-25',
-      lastActiveAt: '2024-02-20 14:58',
-    },
-    {
-      id: 'U006',
-      nickname: '陈强',
-      avatar: '',
-      feishuId: 'ou_xxxx6',
-      platform: '亚马逊欧洲',
-      packageType: '试用版',
-      expireDate: '2024-02-10',
-      totalCalls: 180,
-      todayCalls: 0,
-      status: 'disabled',
-      createdAt: '2024-02-07',
-      lastActiveAt: '2024-02-10 16:20',
-    },
-  ]);
+  // 获取用户列表
+  const fetchUsers = async () => {
+    setIsLoading(true);
+    try {
+      const response = await getFeishuUsers({ page: 1, page_size: 100, status: filterStatus === 'all' ? undefined : filterStatus });
+      setUsers(response.users);
+      setTotalUsers(response.total);
+    } catch (error) {
+      console.error('获取用户列表失败:', error);
+      toast.error('获取用户列表失败');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -157,57 +79,54 @@ export default function FeishuUsersPage() {
       return;
     }
     setUser(JSON.parse(userData));
-  }, [router]);
+    fetchUsers();
+  }, [router, filterStatus]);
 
+  // 过滤用户
   const filteredUsers = users.filter((u) => {
     const matchSearch =
-      u.nickname.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (u.nickname || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
       u.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      u.feishuId.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchStatus = filterStatus === 'all' || u.status === filterStatus;
-    const matchPackage = filterPackage === 'all' || u.packageType === filterPackage;
-    return matchSearch && matchStatus && matchPackage;
+      u.open_id.toLowerCase().includes(searchTerm.toLowerCase());
+    return matchSearch;
   });
 
+  // 获取状态徽章
   const getStatusBadge = (status: string) => {
     const statusMap: Record<string, { label: string; className: string }> = {
       active: { label: '正常', className: 'bg-success text-white' },
-      expired: { label: '已过期', className: 'bg-warning text-white' },
+      inactive: { label: '已过期', className: 'bg-warning text-white' },
       disabled: { label: '已禁用', className: 'bg-destructive text-white' },
     };
     const config = statusMap[status] || statusMap.disabled;
     return <Badge className={config.className}>{config.label}</Badge>;
   };
 
-  const getPackageBadge = (type: string) => {
-    const typeMap: Record<string, string> = {
-      试用版: 'bg-muted text-muted-foreground',
-      基础版: 'bg-primary/10 text-primary',
-      专业版: 'bg-success/10 text-success',
-      企业版: 'bg-warning/10 text-warning',
-    };
-    return (
-      <Badge variant="outline" className={typeMap[type] || ''}>
-        {type}
-      </Badge>
-    );
+  // 处理禁用/启用用户
+  const handleToggleUserStatus = async (userId: string, currentStatus: string) => {
+    try {
+      // TODO: 调用更新用户状态API
+      toast.success('用户状态已更新');
+      fetchUsers();
+    } catch (error) {
+      console.error('更新用户状态失败:', error);
+      toast.error('更新用户状态失败');
+    }
   };
 
-  const handleDisableUser = (userId: string) => {
-    setUsers((prev) =>
-      prev.map((u) =>
-        u.id === userId
-          ? { ...u, status: u.status === 'disabled' ? 'active' : 'disabled' }
-          : u
-      )
-    );
-    toast.success('用户状态已更新');
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch (error) {
+      // 忽略错误
+    }
+    router.push('/login');
   };
 
   if (!user) return null;
 
   return (
-    <MainLayout user={user} onLogout={() => router.push('/login')}>
+    <MainLayout user={user} onLogout={handleLogout}>
       <div className="space-y-6">
         {/* 页面标题 */}
         <div className="flex items-center justify-between">
@@ -230,25 +149,31 @@ export default function FeishuUsersPage() {
           <Card className="bg-white border-border shadow-sm">
             <CardContent className="p-4">
               <div className="text-[13px] text-muted-foreground mb-1">总用户数</div>
-              <div className="text-[24px] font-semibold text-foreground">256</div>
+              <div className="text-[24px] font-semibold text-foreground">{totalUsers}</div>
             </CardContent>
           </Card>
           <Card className="bg-white border-border shadow-sm">
             <CardContent className="p-4">
               <div className="text-[13px] text-muted-foreground mb-1">活跃用户</div>
-              <div className="text-[24px] font-semibold text-success">198</div>
+              <div className="text-[24px] font-semibold text-success">
+                {users.filter(u => u.status === 'active').length}
+              </div>
             </CardContent>
           </Card>
           <Card className="bg-white border-border shadow-sm">
             <CardContent className="p-4">
-              <div className="text-[13px] text-muted-foreground mb-1">付费用户</div>
-              <div className="text-[24px] font-semibold text-primary">142</div>
+              <div className="text-[13px] text-muted-foreground mb-1">总调用次数</div>
+              <div className="text-[24px] font-semibold text-primary">
+                {users.reduce((sum, u) => sum + u.call_used, 0).toLocaleString()}
+              </div>
             </CardContent>
           </Card>
           <Card className="bg-white border-border shadow-sm">
             <CardContent className="p-4">
-              <div className="text-[13px] text-muted-foreground mb-1">到期预警</div>
-              <div className="text-[24px] font-semibold text-warning">15</div>
+              <div className="text-[13px] text-muted-foreground mb-1">总配额</div>
+              <div className="text-[24px] font-semibold text-warning">
+                {users.reduce((sum, u) => sum + u.call_quota, 0).toLocaleString()}
+              </div>
             </CardContent>
           </Card>
         </div>
@@ -273,31 +198,13 @@ export default function FeishuUsersPage() {
                 <SelectContent>
                   <SelectItem value="all">全部状态</SelectItem>
                   <SelectItem value="active">正常</SelectItem>
-                  <SelectItem value="expired">已过期</SelectItem>
+                  <SelectItem value="inactive">已过期</SelectItem>
                   <SelectItem value="disabled">已禁用</SelectItem>
                 </SelectContent>
               </Select>
-              <Select value={filterPackage} onValueChange={setFilterPackage}>
-                <SelectTrigger className="w-[120px]">
-                  <SelectValue placeholder="套餐类型" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">全部套餐</SelectItem>
-                  <SelectItem value="试用版">试用版</SelectItem>
-                  <SelectItem value="基础版">基础版</SelectItem>
-                  <SelectItem value="专业版">专业版</SelectItem>
-                  <SelectItem value="企业版">企业版</SelectItem>
-                </SelectContent>
-              </Select>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setSearchTerm('');
-                  setFilterStatus('all');
-                  setFilterPackage('all');
-                }}
-              >
-                重置
+              <Button variant="outline" onClick={fetchUsers} disabled={isLoading}>
+                <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+                刷新
               </Button>
             </div>
           </CardContent>
@@ -314,83 +221,102 @@ export default function FeishuUsersPage() {
             </div>
           </CardHeader>
           <CardContent className="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow className="border-border bg-muted/30">
-                  <TableHead className="text-[12px] font-medium text-muted-foreground px-6">用户</TableHead>
-                  <TableHead className="text-[12px] font-medium text-muted-foreground">飞书ID</TableHead>
-                  <TableHead className="text-[12px] font-medium text-muted-foreground">平台</TableHead>
-                  <TableHead className="text-[12px] font-medium text-muted-foreground">套餐</TableHead>
-                  <TableHead className="text-[12px] font-medium text-muted-foreground">到期时间</TableHead>
-                  <TableHead className="text-[12px] font-medium text-muted-foreground">今日调用</TableHead>
-                  <TableHead className="text-[12px] font-medium text-muted-foreground">状态</TableHead>
-                  <TableHead className="text-[12px] font-medium text-muted-foreground">最后活跃</TableHead>
-                  <TableHead className="text-[12px] font-medium text-muted-foreground text-right px-6">操作</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredUsers.map((u) => (
-                  <TableRow key={u.id} className="border-border hover:bg-muted/30">
-                    <TableCell className="px-6">
-                      <div className="flex items-center gap-3">
-                        <Avatar className="h-8 w-8">
-                          <AvatarImage src={u.avatar} alt={u.nickname} />
-                          <AvatarFallback className="bg-primary text-white text-[12px]">
-                            {u.nickname.charAt(0)}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <div className="text-[13px] font-medium text-foreground">{u.nickname}</div>
-                          <div className="text-[11px] text-muted-foreground">{u.id}</div>
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-[12px] text-muted-foreground font-mono">
-                      {u.feishuId}
-                    </TableCell>
-                    <TableCell className="text-[13px] text-foreground">{u.platform}</TableCell>
-                    <TableCell>{getPackageBadge(u.packageType)}</TableCell>
-                    <TableCell className="text-[13px] text-muted-foreground">{u.expireDate}</TableCell>
-                    <TableCell className="text-[13px] text-foreground">{u.todayCalls}</TableCell>
-                    <TableCell>{getStatusBadge(u.status)}</TableCell>
-                    <TableCell className="text-[12px] text-muted-foreground">{u.lastActiveAt}</TableCell>
-                    <TableCell className="text-right px-6">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem>
-                            <MessageSquare className="h-4 w-4 mr-2" />
-                            发送消息
-                          </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            <UserPlus className="h-4 w-4 mr-2" />
-                            续费/升级
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem onClick={() => handleDisableUser(u.id)}>
-                            {u.status === 'disabled' ? (
-                              <>
-                                <CheckCircle className="h-4 w-4 mr-2" />
-                                启用用户
-                              </>
-                            ) : (
-                              <>
-                                <Ban className="h-4 w-4 mr-2" />
-                                禁用用户
-                              </>
-                            )}
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
+            {isLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            ) : filteredUsers.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground">
+                暂无用户数据
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-border bg-muted/30">
+                    <TableHead className="text-[12px] font-medium text-muted-foreground px-6">用户</TableHead>
+                    <TableHead className="text-[12px] font-medium text-muted-foreground">飞书ID</TableHead>
+                    <TableHead className="text-[12px] font-medium text-muted-foreground">已用/配额</TableHead>
+                    <TableHead className="text-[12px] font-medium text-muted-foreground">状态</TableHead>
+                    <TableHead className="text-[12px] font-medium text-muted-foreground">注册时间</TableHead>
+                    <TableHead className="text-[12px] font-medium text-muted-foreground text-right px-6">操作</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {filteredUsers.map((u) => (
+                    <TableRow key={u.id} className="border-border hover:bg-muted/30">
+                      <TableCell className="px-6">
+                        <div className="flex items-center gap-3">
+                          <Avatar className="h-8 w-8">
+                            <AvatarImage src={u.avatar} alt={u.nickname || ''} />
+                            <AvatarFallback className="bg-primary text-white text-[12px]">
+                              {(u.nickname || 'U').charAt(0).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <div className="text-[13px] font-medium text-foreground">{u.nickname || '-'}</div>
+                            <div className="text-[11px] text-muted-foreground">{u.id.substring(0, 8)}...</div>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-[12px] text-muted-foreground font-mono">
+                        {u.open_id.substring(0, 12)}...
+                      </TableCell>
+                      <TableCell className="text-[13px] text-foreground">
+                        <span className="font-medium">{u.call_used.toLocaleString()}</span>
+                        <span className="text-muted-foreground"> / {u.call_quota.toLocaleString()}</span>
+                      </TableCell>
+                      <TableCell>{getStatusBadge(u.status)}</TableCell>
+                      <TableCell className="text-[13px] text-muted-foreground">
+                        {new Date(u.created_at).toLocaleDateString('zh-CN')}
+                      </TableCell>
+                      <TableCell className="text-right px-6">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem>
+                              <MessageSquare className="h-4 w-4 mr-2" />
+                              发送消息
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => {
+                              const quota = prompt('请输入新的配额:', String(u.call_quota));
+                              if (quota) {
+                                updateUserQuota(u.id, parseInt(quota) || 0).then(() => {
+                                  toast.success('配额已更新');
+                                  fetchUsers();
+                                }).catch((err) => {
+                                  console.error('更新配额失败:', err);
+                                  toast.error('更新配额失败');
+                                });
+                              }
+                            }}>
+                              调整配额
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => handleToggleUserStatus(u.id, u.status)}>
+                              {u.status === 'disabled' ? (
+                                <>
+                                  <CheckCircle className="h-4 w-4 mr-2" />
+                                  启用用户
+                                </>
+                              ) : (
+                                <>
+                                  <Ban className="h-4 w-4 mr-2" />
+                                  禁用用户
+                                </>
+                              )}
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
           </CardContent>
         </Card>
       </div>

@@ -18,134 +18,103 @@ import {
   BarChart3,
   Settings,
   Play,
-  Pause,
   RefreshCw,
-  CheckCircle,
-  AlertTriangle,
   Shield,
+  AlertTriangle,
 } from 'lucide-react';
 import Link from 'next/link';
+import { toast } from 'sonner';
+import { getAgents, Agent as AgentType } from '@/lib/api/agents';
+import { logout } from '@/lib/api/auth';
 
-interface Agent {
-  id: string;
-  name: string;
-  icon: any;
-  description: string;
-  status: 'online' | 'offline' | 'error';
-  model: string;
-  platform: string;
-  calls: number;
-  successRate: number;
-  features: string[];
-  compliance: boolean;
-  riskControl: boolean;
-}
+// 智能体图标映射
+const agentIcons: Record<string, any> = {
+  'product-selection': ShoppingCart,
+  'image-design': Image,
+  'video-generation': Video,
+  'listing-optimization': FileText,
+  'advertising': Megaphone,
+  'customer-service': Headphones,
+  'data-review': BarChart3,
+};
 
-const agents: Agent[] = [
-  {
-    id: 'selection',
-    name: '选品智能体',
-    icon: ShoppingCart,
+// 智能体描述映射
+const agentDescriptions: Record<string, { description: string; platform: string; features: string[]; compliance: boolean; riskControl: boolean }> = {
+  'product-selection': {
     description: '爆款挖掘、竞品分析、利润核算、合规+供应链校验',
-    status: 'online',
-    model: '豆包-Seed-1.8',
     platform: 'TK/亚马逊',
-    calls: 1850,
-    successRate: 98.5,
     features: ['爆款挖掘', '竞品分析', '利润核算', '供应链匹配'],
     compliance: true,
     riskControl: false,
   },
-  {
-    id: 'image',
-    name: '图片设计智能体',
-    icon: Image,
+  'image-design': {
     description: '主图生成、背景替换、A+页面设计、图片合规校验',
-    status: 'online',
-    model: '豆包-Seed-1.8',
     platform: 'TK/亚马逊',
-    calls: 1620,
-    successRate: 97.2,
     features: ['主图生成', '背景替换', 'A+页面设计', '合规校验'],
     compliance: true,
     riskControl: false,
   },
-  {
-    id: 'video',
-    name: '视频生成智能体',
-    icon: Video,
+  'video-generation': {
     description: '脚本生成、AI配音、字幕、图文轮播视频、合规预检',
-    status: 'online',
-    model: '豆包-Seed-1.8',
     platform: 'TK东南亚',
-    calls: 980,
-    successRate: 95.8,
     features: ['脚本生成', 'AI配音', '图文轮播', '合规预检'],
     compliance: true,
     riskControl: false,
   },
-  {
-    id: 'listing',
-    name: 'Listing优化智能体',
-    icon: FileText,
+  'listing-optimization': {
     description: '标题/五点/A+优化、关键词挖掘、平台差异化合规校验',
-    status: 'online',
-    model: 'DeepSeek-V3',
     platform: 'TK/亚马逊',
-    calls: 1420,
-    successRate: 96.5,
     features: ['标题优化', '五点描述', '关键词挖掘', '合规校验'],
     compliance: true,
     riskControl: false,
   },
-  {
-    id: 'advertising',
-    name: '广告投放智能体',
-    icon: Megaphone,
+  'advertising': {
     description: '预算分配、出价建议、关键词挖掘、广告风控引擎',
-    status: 'online',
-    model: 'DeepSeek-V3',
     platform: 'TK Ads/亚马逊PPC',
-    calls: 890,
-    successRate: 94.2,
     features: ['预算分配', '出价建议', '关键词挖掘', '风控引擎'],
     compliance: false,
     riskControl: true,
   },
-  {
-    id: 'customer',
-    name: 'AI客服智能体',
-    icon: Headphones,
+  'customer-service': {
     description: '多语种回复、纠纷处理、话术合规、物流轨迹查询',
-    status: 'online',
-    model: '豆包-Seed-1.8',
     platform: 'TK/亚马逊',
-    calls: 2100,
-    successRate: 99.1,
     features: ['多语种回复', '纠纷处理', '话术合规', '物流查询'],
     compliance: true,
     riskControl: false,
   },
-  {
-    id: 'review',
-    name: '数据复盘智能体',
-    icon: BarChart3,
+  'data-review': {
     description: '销售分析、流量分析、ROI计算、自动化任务转化',
-    status: 'online',
-    model: 'DeepSeek-V3',
     platform: '全平台',
-    calls: 560,
-    successRate: 97.8,
     features: ['销售分析', '流量分析', 'ROI计算', '任务转化'],
     compliance: false,
     riskControl: false,
   },
-];
+};
 
 export default function AgentsPage() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
+  const [agents, setAgents] = useState<AgentType[]>([]);
+  const [totalCalls, setTotalCalls] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+
+  // 获取智能体列表
+  const fetchAgents = async () => {
+    setIsLoading(true);
+    try {
+      const response = await getAgents({ page: 1, page_size: 20 });
+      setAgents(response.items);
+      // 计算总调用次数
+      const total = response.items.reduce((sum, a) => sum + (a.total_calls || 0), 0);
+      setTotalCalls(total);
+    } catch (error) {
+      console.error('获取智能体列表失败:', error);
+      toast.error('获取智能体列表失败');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -154,26 +123,39 @@ export default function AgentsPage() {
       return;
     }
     setUser(JSON.parse(userData));
+    fetchAgents();
   }, [router]);
 
+  // 过滤智能体
   const filteredAgents = agents.filter((agent) =>
-    agent.name.toLowerCase().includes(searchTerm.toLowerCase())
+    agent.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    agent.type.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  // 获取状态徽章
   const getStatusBadge = (status: string) => {
     const statusMap: Record<string, { label: string; className: string }> = {
-      online: { label: '在线', className: 'bg-success text-white' },
-      offline: { label: '离线', className: 'bg-muted text-muted-foreground' },
+      active: { label: '在线', className: 'bg-success text-white' },
+      inactive: { label: '离线', className: 'bg-muted text-muted-foreground' },
       error: { label: '异常', className: 'bg-destructive text-white' },
     };
-    const config = statusMap[status] || statusMap.offline;
+    const config = statusMap[status] || statusMap.inactive;
     return <Badge className={config.className}>{config.label}</Badge>;
+  };
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch (error) {
+      // 忽略错误
+    }
+    router.push('/login');
   };
 
   if (!user) return null;
 
   return (
-    <MainLayout user={user} onLogout={() => router.push('/login')}>
+    <MainLayout user={user} onLogout={handleLogout}>
       <div className="space-y-6">
         {/* 页面标题 */}
         <div className="flex items-center justify-between">
@@ -194,8 +176,8 @@ export default function AgentsPage() {
                 className="pl-10 pr-4 py-2 border border-border rounded-md text-[14px] w-[200px] focus:outline-none focus:ring-2 focus:ring-primary/50"
               />
             </div>
-            <Button variant="outline">
-              <RefreshCw className="h-4 w-4 mr-2" />
+            <Button variant="outline" onClick={fetchAgents} disabled={isLoading}>
+              <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
               刷新状态
             </Button>
           </div>
@@ -206,111 +188,128 @@ export default function AgentsPage() {
           <Card className="bg-white border-border shadow-sm">
             <CardContent className="p-4">
               <div className="text-[13px] text-muted-foreground mb-1">在线智能体</div>
-              <div className="text-[24px] font-semibold text-success">7/7</div>
+              <div className="text-[24px] font-semibold text-success">
+                {agents.filter(a => a.status === 'active').length}/{agents.length}
+              </div>
             </CardContent>
           </Card>
           <Card className="bg-white border-border shadow-sm">
             <CardContent className="p-4">
-              <div className="text-[13px] text-muted-foreground mb-1">今日总调用</div>
-              <div className="text-[24px] font-semibold text-foreground">9,420</div>
+              <div className="text-[13px] text-muted-foreground mb-1">总调用次数</div>
+              <div className="text-[24px] font-semibold text-foreground">{totalCalls.toLocaleString()}</div>
             </CardContent>
           </Card>
           <Card className="bg-white border-border shadow-sm">
             <CardContent className="p-4">
-              <div className="text-[13px] text-muted-foreground mb-1">平均成功率</div>
-              <div className="text-[24px] font-semibold text-foreground">97.3%</div>
+              <div className="text-[13px] text-muted-foreground mb-1">智能体类型</div>
+              <div className="text-[24px] font-semibold text-foreground">{agents.length}</div>
             </CardContent>
           </Card>
           <Card className="bg-white border-border shadow-sm">
             <CardContent className="p-4">
-              <div className="text-[13px] text-muted-foreground mb-1">合规校验通过率</div>
-              <div className="text-[24px] font-semibold text-success">99.8%</div>
+              <div className="text-[13px] text-muted-foreground mb-1">合规校验</div>
+              <div className="text-[24px] font-semibold text-success">已启用</div>
             </CardContent>
           </Card>
         </div>
 
         {/* 智能体卡片列表 */}
-        <div className="grid grid-cols-2 gap-6">
-          {filteredAgents.map((agent) => {
-            const Icon = agent.icon;
-            return (
-              <Card key={agent.id} className="bg-white border-border shadow-sm hover:shadow-md transition-shadow">
-                <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
-                        <Icon className="h-6 w-6 text-primary" />
+        {isLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+          </div>
+        ) : filteredAgents.length === 0 ? (
+          <div className="text-center py-12 text-muted-foreground">
+            暂无智能体数据
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-6">
+            {filteredAgents.map((agent) => {
+              const Icon = agentIcons[agent.type] || BarChart3;
+              const meta = agentDescriptions[agent.type] || {
+                description: agent.description || '',
+                platform: '全平台',
+                features: [],
+                compliance: false,
+                riskControl: false,
+              };
+              
+              return (
+                <Card key={agent.id} className="bg-white border-border shadow-sm hover:shadow-md transition-shadow">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
+                          <Icon className="h-6 w-6 text-primary" />
+                        </div>
+                        <div>
+                          <CardTitle className="text-[16px] font-semibold">{agent.name}</CardTitle>
+                          <CardDescription className="text-[12px]">{meta.platform}</CardDescription>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {meta.compliance && (
+                          <Badge variant="outline" className="bg-success/10 text-success border-success/20">
+                            <Shield className="h-3 w-3 mr-1" />
+                            合规
+                          </Badge>
+                        )}
+                        {meta.riskControl && (
+                          <Badge variant="outline" className="bg-warning/10 text-warning border-warning/20">
+                            <AlertTriangle className="h-3 w-3 mr-1" />
+                            风控
+                          </Badge>
+                        )}
+                        {getStatusBadge(agent.status)}
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <p className="text-[13px] text-muted-foreground">{meta.description}</p>
+                    
+                    {meta.features.length > 0 && (
+                      <div className="flex flex-wrap gap-2">
+                        {meta.features.map((feature) => (
+                          <Badge key={feature} variant="outline" className="text-[11px]">
+                            {feature}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
+
+                    <div className="grid grid-cols-2 gap-4 pt-2 border-t border-border">
+                      <div>
+                        <div className="text-[12px] text-muted-foreground">调用次数</div>
+                        <div className="text-[13px] font-medium text-foreground">{agent.total_calls?.toLocaleString() || 0}</div>
                       </div>
                       <div>
-                        <CardTitle className="text-[16px] font-semibold">{agent.name}</CardTitle>
-                        <CardDescription className="text-[12px]">{agent.platform}</CardDescription>
+                        <div className="text-[12px] text-muted-foreground">状态</div>
+                        <div className="text-[13px] font-medium text-success">
+                          {agent.status === 'active' ? '运行中' : '已停止'}
+                        </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      {agent.compliance && (
-                        <Badge variant="outline" className="bg-success/10 text-success border-success/20">
-                          <Shield className="h-3 w-3 mr-1" />
-                          合规
-                        </Badge>
-                      )}
-                      {agent.riskControl && (
-                        <Badge variant="outline" className="bg-warning/10 text-warning border-warning/20">
-                          <AlertTriangle className="h-3 w-3 mr-1" />
-                          风控
-                        </Badge>
-                      )}
-                      {getStatusBadge(agent.status)}
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <p className="text-[13px] text-muted-foreground">{agent.description}</p>
-                  
-                  <div className="flex flex-wrap gap-2">
-                    {agent.features.map((feature) => (
-                      <Badge key={feature} variant="outline" className="text-[11px]">
-                        {feature}
-                      </Badge>
-                    ))}
-                  </div>
 
-                  <div className="grid grid-cols-3 gap-4 pt-2 border-t border-border">
-                    <div>
-                      <div className="text-[12px] text-muted-foreground">调用模型</div>
-                      <div className="text-[13px] font-medium text-foreground">{agent.model}</div>
-                    </div>
-                    <div>
-                      <div className="text-[12px] text-muted-foreground">今日调用</div>
-                      <div className="text-[13px] font-medium text-foreground">{agent.calls.toLocaleString()}</div>
-                    </div>
-                    <div>
-                      <div className="text-[12px] text-muted-foreground">成功率</div>
-                      <div className="flex items-center gap-1">
-                        <Progress value={agent.successRate} className="h-1.5 flex-1" />
-                        <span className="text-[13px] font-medium text-success">{agent.successRate}%</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2 pt-2">
-                    <Link href={`/agents/${agent.id}`} className="flex-1">
-                      <Button variant="outline" className="w-full">
-                        <Settings className="h-4 w-4 mr-2" />
-                        配置详情
+                    <div className="flex items-center gap-2 pt-2">
+                      <Link href={`/agents/${agent.id}`} className="flex-1">
+                        <Button variant="outline" className="w-full">
+                          <Settings className="h-4 w-4 mr-2" />
+                          配置详情
+                        </Button>
+                      </Link>
+                      <Button variant="outline" size="icon">
+                        <Play className="h-4 w-4" />
                       </Button>
-                    </Link>
-                    <Button variant="outline" size="icon">
-                      <Play className="h-4 w-4" />
-                    </Button>
-                    <Button variant="outline" size="icon">
-                      <RefreshCw className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
+                      <Button variant="outline" size="icon" onClick={fetchAgents}>
+                        <RefreshCw className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        )}
       </div>
     </MainLayout>
   );
