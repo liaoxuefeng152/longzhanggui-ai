@@ -62,8 +62,8 @@ const menuItems: MenuItem[] = [
     ],
   },
   {
-    title: '飞书用户',
-    href: '/feishu-users',
+    title: '用户管理',
+    href: '/users',
     icon: Users,
   },
   {
