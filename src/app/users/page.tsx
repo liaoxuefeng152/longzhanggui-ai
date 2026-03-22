@@ -11,7 +11,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Search, Plus, Edit, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { getUsers, User } from '@/lib/api/users';
+import { getUsers } from '@/lib/api';
+import type { SystemUser as User } from '@/lib/api';
 import { logout } from '@/lib/api/auth';
 
 export default function UsersPage() {

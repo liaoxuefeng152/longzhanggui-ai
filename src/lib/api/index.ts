@@ -19,5 +19,5 @@ export * from './products';
 export * from './orders';
 export * from './settings';
 // 从users模块导出时重命名User类型避免冲突
-export { getUsers, createUser, updateUser, deleteUser } from './users';
+export { getUsers } from './users';
 export type { User as SystemUser } from './users';

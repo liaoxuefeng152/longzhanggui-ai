@@ -2,7 +2,6 @@
  * 用户管理API
  */
 import { apiClient, PaginatedResponse } from './client';
-import { API_ENDPOINTS } from './config';
 
 // 用户类型
 export interface User {
@@ -14,23 +13,6 @@ export interface User {
   status: string;
   created_at: string;
   updated_at: string;
-}
-
-// 用户创建请求
-export interface UserCreate {
-  phone: string;
-  password: string;
-  nickname: string;
-  role?: string;
-  avatar?: string;
-}
-
-// 用户更新请求
-export interface UserUpdate {
-  nickname?: string;
-  role?: string;
-  avatar?: string;
-  status?: string;
 }
 
 /**
@@ -48,7 +30,6 @@ export async function getUsers(params?: {
   if (params?.status) searchParams.set('status', params.status);
   if (params?.role) searchParams.set('role', params.role);
   
-  // 使用auth端点获取用户列表，这里假设有单独的用户管理API
   const endpoint = `/users?${searchParams.toString()}`;
   return apiClient.get<PaginatedResponse<User>>(endpoint);
 }
@@ -58,32 +39,4 @@ export async function getUsers(params?: {
  */
 export async function getUser(id: string): Promise<User> {
   return apiClient.get<User>(`/users/${id}`);
-}
-
-/**
- * 创建用户
- */
-export async function createUser(data: UserCreate): Promise<User> {
-  return apiClient.post<User>('/users', data);
-}
-
-/**
- * 更新用户
- */
-export async function updateUser(id: string, data: UserUpdate): Promise<User> {
-  return apiClient.put<User>(`/users/${id}`, data);
-}
-
-/**
- * 删除用户
- */
-export async function deleteUser(id: string): Promise<{ success: boolean; message: string }> {
-  return apiClient.delete(`/users/${id}`);
-}
-
-/**
- * 重置用户密码
- */
-export async function resetUserPassword(id: string): Promise<{ success: boolean; message: string }> {
-  return apiClient.post(`/users/${id}/reset-password`);
 }
