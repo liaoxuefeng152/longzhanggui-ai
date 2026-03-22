@@ -297,7 +297,7 @@ export default function FeishuUsersPage() {
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem onClick={() => handleToggleUserStatus(u.id, u.status)}>
-                              {u.status === 'disabled' ? (
+                              {u.status === 'inactive' ? (
                                 <>
                                   <CheckCircle className="h-4 w-4 mr-2" />
                                   启用用户

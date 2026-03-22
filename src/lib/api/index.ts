@@ -18,6 +18,4 @@ export * from './platform-bindings';
 export * from './products';
 export * from './orders';
 export * from './settings';
-// 从users模块导出时重命名User类型避免冲突
-export { getUsers } from './users';
-export type { User as SystemUser } from './users';
+// 用户管理已合并到 feishu-users 模块
