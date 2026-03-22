@@ -10,6 +10,8 @@ from app.core.config import settings
 from app.core.database import init_db
 from app.api import api_router
 from app.services.init_service import init_system
+from app.exceptions.handlers import setup_exception_handlers
+from app.middleware.logging_middleware import LoggingMiddleware
 
 
 @asynccontextmanager
@@ -36,11 +38,36 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title=settings.APP_NAME,
     version=settings.APP_VERSION,
-    description="跨境电商AI智能体运营平台后端API",
+    description="""
+## 龙虾AI跨境无人店系统
+
+跨境电商AI智能体运营平台，提供以下功能：
+
+### 核心功能
+- 🔐 用户认证与权限管理
+- 🤖 7大AI智能体服务
+- 📊 数据分析与报表
+- 💬 智能客服系统
+
+### 智能体列表
+1. 选品智能体 - 市场分析与选品推荐
+2. 图片设计智能体 - 商品图片生成
+3. 视频生成智能体 - 营销视频创作
+4. Listing优化智能体 - 商品信息优化
+5. 广告投放智能体 - 广告策略优化
+6. AI客服智能体 - 多语言客服支持
+7. 数据复盘智能体 - 数据分析与报告
+    """,
     lifespan=lifespan,
     docs_url="/docs",
     redoc_url="/redoc",
 )
+
+# 设置异常处理器
+setup_exception_handlers(app)
+
+# 添加日志中间件
+app.add_middleware(LoggingMiddleware)
 
 # 配置CORS
 app.add_middleware(

@@ -9,6 +9,7 @@ from app.core.security import (
     create_access_token,
     decode_access_token
 )
+from app.core.logging import setup_logging, log_request, log_response, log_error
 
 __all__ = [
     "settings",
@@ -21,4 +22,8 @@ __all__ = [
     "get_password_hash",
     "create_access_token",
     "decode_access_token",
+    "setup_logging",
+    "log_request",
+    "log_response",
+    "log_error",
 ]
