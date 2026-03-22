@@ -14,6 +14,10 @@ export * from './feishu-users';
 export * from './task-logs';
 export * from './tickets';
 export * from './reports';
+export * from './platform-bindings';
+export * from './products';
+export * from './orders';
+export * from './settings';
 // 从users模块导出时重命名User类型避免冲突
 export { getUsers, createUser, updateUser, deleteUser } from './users';
 export type { User as SystemUser } from './users';
