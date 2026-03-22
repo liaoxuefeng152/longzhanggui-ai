@@ -1,401 +1,220 @@
 # 龙虾AI跨境无人店系统 - API接口清单
 
-> 版本：v1.0  
-> 更新时间：2024-02-21
+> 版本：v2.0  
+> 更新时间：2024-02-22  
+> 状态：✅ 全部实现
 
 ---
 
-## 一、已存在 API（需完善）
+## 一、认证模块 `/api/v1/auth`
 
 | 序号 | API路径 | 方法 | 功能 | 状态 |
 |------|---------|------|------|------|
-| 1 | `/api/auth/login` | POST | 手机验证码登录 | ⚠️ Mock实现 |
-| 2 | `/api/dashboard/stats` | GET | 控制台统计数据 | ⚠️ Mock实现 |
-| 3 | `/api/models/status` | GET | 模型状态列表 | ⚠️ Mock实现 |
-| 4 | `/api/prompts` | GET | Prompt模板列表 | ⚠️ Mock实现 |
-| 5 | `/api/ai/model/invoke` | POST | AI模型调用（流式） | ✅ 已实现SDK调用 |
+| 1 | `/auth/login` | POST | 用户登录 | ✅ |
+| 2 | `/auth/logout` | POST | 用户登出 | ✅ |
+| 3 | `/auth/me` | GET | 获取当前用户 | ✅ |
+| 4 | `/auth/send-code` | POST | 发送验证码 | ✅ |
 
 ---
 
-## 二、待实现 API
+## 二、模型路由模块 `/api/v1/models`
 
-### 1. 认证模块 `/api/auth`
-
-| 序号 | API路径 | 方法 | 功能 | 请求参数 | 响应数据 |
-|------|---------|------|------|----------|----------|
-| 6 | `/api/auth/send-code` | POST | 发送短信验证码 | `phone: string` | `{ success: boolean, message: string }` |
-| 7 | `/api/auth/logout` | POST | 退出登录 | - | `{ success: boolean }` |
-| 8 | `/api/auth/me` | GET | 获取当前用户信息 | - | `{ user: User }` |
-
-### 2. 模型路由模块 `/api/models`
-
-| 序号 | API路径 | 方法 | 功能 | 请求参数 | 响应数据 |
-|------|---------|------|------|----------|----------|
-| 9 | `/api/models` | GET | 获取模型列表 | `page, pageSize, status` | `{ models: Model[], total: number }` |
-| 10 | `/api/models` | POST | 添加模型配置 | `name, modelId, apiKey, endpoint, dailyLimit` | `{ model: Model }` |
-| 11 | `/api/models/[id]` | PUT | 更新模型配置 | `name, modelId, apiKey, endpoint, dailyLimit, status` | `{ model: Model }` |
-| 12 | `/api/models/[id]` | DELETE | 删除模型配置 | - | `{ success: boolean }` |
-| 13 | `/api/models/[id]/test` | POST | 测试模型连通性 | - | `{ success: boolean, latency: number, message: string }` |
-
-### 3. Prompt模块 `/api/prompts`
-
-| 序号 | API路径 | 方法 | 功能 | 请求参数 | 响应数据 |
-|------|---------|------|------|----------|----------|
-| 14 | `/api/prompts` | POST | 创建Prompt模板 | `name, category, content, model, agent` | `{ prompt: Prompt }` |
-| 15 | `/api/prompts/[id]` | GET | 获取Prompt详情 | - | `{ prompt: Prompt }` |
-| 16 | `/api/prompts/[id]` | PUT | 更新Prompt模板 | `name, category, content, model, agent, isActive` | `{ prompt: Prompt }` |
-| 17 | `/api/prompts/[id]` | DELETE | 删除Prompt模板 | - | `{ success: boolean }` |
-
-### 4. 智能体模块 `/api/agents`
-
-| 序号 | API路径 | 方法 | 功能 | 请求参数 | 响应数据 |
-|------|---------|------|------|----------|----------|
-| 18 | `/api/agents` | GET | 获取智能体列表 | `page, pageSize, status` | `{ agents: Agent[], total: number }` |
-| 19 | `/api/agents/[id]` | GET | 获取智能体详情 | - | `{ agent: Agent }` |
-| 20 | `/api/agents/[id]/config` | PUT | 更新智能体配置 | `config: object` | `{ agent: Agent }` |
-| 21 | `/api/agents/[id]/start` | POST | 启动智能体任务 | `params: object` | `{ taskId: string }` |
-| 22 | `/api/agents/[id]/stop` | POST | 停止智能体任务 | `taskId: string` | `{ success: boolean }` |
-| 23 | `/api/agents/tasks` | GET | 获取任务列表 | `agentId, status, page, pageSize` | `{ tasks: Task[], total: number }` |
-| 24 | `/api/agents/tasks/[taskId]` | GET | 获取任务详情 | - | `{ task: Task }` |
-
-### 5. 飞书用户模块 `/api/feishu-users`
-
-| 序号 | API路径 | 方法 | 功能 | 请求参数 | 响应数据 |
-|------|---------|------|------|----------|----------|
-| 25 | `/api/feishu-users` | GET | 获取飞书用户列表 | `page, pageSize, keyword, status` | `{ users: FeishuUser[], total: number }` |
-| 26 | `/api/feishu-users/[id]` | GET | 获取用户详情 | - | `{ user: FeishuUser }` |
-| 27 | `/api/feishu-users/[id]` | PUT | 更新用户信息 | `nickname, status, packageId` | `{ user: FeishuUser }` |
-| 28 | `/api/feishu-users/[id]/quota` | PUT | 调整用户配额 | `callQuota: number, reason: string` | `{ user: FeishuUser }` |
-
-### 6. 套餐管理模块 `/api/packages`
-
-| 序号 | API路径 | 方法 | 功能 | 请求参数 | 响应数据 |
-|------|---------|------|------|----------|----------|
-| 29 | `/api/packages` | GET | 获取套餐列表 | - | `{ packages: Package[] }` |
-| 30 | `/api/packages` | POST | 创建套餐 | `name, price, callQuota, duration, features` | `{ package: Package }` |
-| 31 | `/api/packages/[id]` | PUT | 更新套餐 | `name, price, callQuota, duration, features, isActive` | `{ package: Package }` |
-| 32 | `/api/packages/[id]` | DELETE | 删除套餐 | - | `{ success: boolean }` |
-
-### 7. 任务日志模块 `/api/task-logs`
-
-| 序号 | API路径 | 方法 | 功能 | 请求参数 | 响应数据 |
-|------|---------|------|------|----------|----------|
-| 33 | `/api/task-logs` | GET | 获取任务日志列表 | `userId, agentId, status, startDate, endDate, page, pageSize` | `{ logs: TaskLog[], total: number }` |
-| 34 | `/api/task-logs/[id]` | GET | 获取日志详情 | - | `{ log: TaskLog }` |
-| 35 | `/api/task-logs/[id]/retry` | POST | 重试任务 | - | `{ taskId: string }` |
-
-### 8. 平台绑定模块 `/api/platform-bindings`
-
-| 序号 | API路径 | 方法 | 功能 | 请求参数 | 响应数据 |
-|------|---------|------|------|----------|----------|
-| 36 | `/api/platform-bindings` | GET | 获取平台绑定列表 | `userId, platform, page, pageSize` | `{ bindings: PlatformBinding[], total: number }` |
-| 37 | `/api/platform-bindings` | POST | 绑定平台账号 | `platform, accountInfo, credentials` | `{ binding: PlatformBinding }` |
-| 38 | `/api/platform-bindings/[id]` | PUT | 更新绑定信息 | `accountInfo, credentials, status` | `{ binding: PlatformBinding }` |
-| 39 | `/api/platform-bindings/[id]` | DELETE | 解绑平台账号 | - | `{ success: boolean }` |
-
-### 9. 商品库模块 `/api/products`
-
-| 序号 | API路径 | 方法 | 功能 | 请求参数 | 响应数据 |
-|------|---------|------|------|----------|----------|
-| 40 | `/api/products` | GET | 获取商品列表 | `keyword, category, status, page, pageSize` | `{ products: Product[], total: number }` |
-| 41 | `/api/products` | POST | 添加商品 | `name, sku, category, price, stock, images, description` | `{ product: Product }` |
-| 42 | `/api/products/[id]` | GET | 获取商品详情 | - | `{ product: Product }` |
-| 43 | `/api/products/[id]` | PUT | 更新商品信息 | `name, sku, category, price, stock, images, description, status` | `{ product: Product }` |
-| 44 | `/api/products/[id]` | DELETE | 删除商品 | - | `{ success: boolean }` |
-| 45 | `/api/products/batch` | POST | 批量导入商品 | `products: Product[]` | `{ success: number, failed: number }` |
-
-### 10. 订单中心模块 `/api/orders`
-
-| 序号 | API路径 | 方法 | 功能 | 请求参数 | 响应数据 |
-|------|---------|------|------|----------|----------|
-| 46 | `/api/orders` | GET | 获取订单列表 | `keyword, status, platform, startDate, endDate, page, pageSize` | `{ orders: Order[], total: number }` |
-| 47 | `/api/orders/[id]` | GET | 获取订单详情 | - | `{ order: Order }` |
-| 48 | `/api/orders/[id]/status` | PUT | 更新订单状态 | `status, remark` | `{ order: Order }` |
-| 49 | `/api/orders/stats` | GET | 获取订单统计 | `startDate, endDate` | `{ stats: OrderStats }` |
-
-### 11. 客服工单模块 `/api/customer-tickets`
-
-| 序号 | API路径 | 方法 | 功能 | 请求参数 | 响应数据 |
-|------|---------|------|------|----------|----------|
-| 50 | `/api/customer-tickets` | GET | 获取工单列表 | `status, priority, userId, page, pageSize` | `{ tickets: Ticket[], total: number }` |
-| 51 | `/api/customer-tickets` | POST | 创建工单 | `title, content, priority, userId` | `{ ticket: Ticket }` |
-| 52 | `/api/customer-tickets/[id]` | GET | 获取工单详情 | - | `{ ticket: Ticket }` |
-| 53 | `/api/customer-tickets/[id]` | PUT | 更新工单 | `title, content, priority, status` | `{ ticket: Ticket }` |
-| 54 | `/api/customer-tickets/[id]/close` | POST | 关闭工单 | `resolution: string` | `{ ticket: Ticket }` |
-
-### 12. 数据报表模块 `/api/reports`
-
-| 序号 | API路径 | 方法 | 功能 | 请求参数 | 响应数据 |
-|------|---------|------|------|----------|----------|
-| 55 | `/api/reports/overview` | GET | 获取报表概览 | `startDate, endDate` | `{ overview: OverviewStats }` |
-| 56 | `/api/reports/usage` | GET | 使用量统计 | `startDate, endDate, granularity` | `{ usage: UsageStats[] }` |
-| 57 | `/api/reports/revenue` | GET | 收入统计 | `startDate, endDate, granularity` | `{ revenue: RevenueStats[] }` |
-| 58 | `/api/reports/agents` | GET | 智能体调用统计 | `startDate, endDate` | `{ agents: AgentStats[] }` |
-
-### 13. 系统设置模块 `/api/settings`
-
-| 序号 | API路径 | 方法 | 功能 | 请求参数 | 响应数据 |
-|------|---------|------|------|----------|----------|
-| 59 | `/api/settings` | GET | 获取系统设置 | - | `{ settings: Settings }` |
-| 60 | `/api/settings` | PUT | 更新系统设置 | `settings: object` | `{ settings: Settings }` |
-| 61 | `/api/settings/feishu` | GET | 获取飞书配置 | - | `{ feishu: FeishuConfig }` |
-| 62 | `/api/settings/feishu` | PUT | 更新飞书配置 | `appId, appSecret, encryptKey, verificationToken` | `{ feishu: FeishuConfig }` |
+| 序号 | API路径 | 方法 | 功能 | 状态 |
+|------|---------|------|------|------|
+| 5 | `/models` | GET | 获取模型列表 | ✅ |
+| 6 | `/models` | POST | 创建模型配置 | ✅ |
+| 7 | `/models/{id}` | GET | 获取模型详情 | ✅ |
+| 8 | `/models/{id}` | PUT | 更新模型配置 | ✅ |
+| 9 | `/models/{id}` | DELETE | 删除模型配置 | ✅ |
+| 10 | `/models/{id}/test` | POST | 测试模型连通性 | ✅ |
+| 11 | `/models/status/list` | GET | 获取模型状态列表 | ✅ |
 
 ---
 
-## 三、数据类型定义
+## 三、Prompt模块 `/api/v1/prompts`
 
-### User 用户
-```typescript
-interface User {
-  id: string;
-  phone: string;
-  nickname: string;
-  role: 'admin' | 'user';
-  avatar: string;
-  status: 'active' | 'inactive' | 'banned';
-  packageId?: string;
-  callQuota: number;
-  callUsed: number;
-  createdAt: string;
-  updatedAt: string;
-}
-```
-
-### Model 模型配置
-```typescript
-interface Model {
-  id: string;
-  name: string;
-  modelId: string;
-  provider: 'doubao' | 'openai' | 'deepseek' | 'custom';
-  apiKey: string;
-  endpoint: string;
-  dailyLimit: number;
-  todayUsed: number;
-  status: 'active' | 'inactive' | 'error';
-  createdAt: string;
-  updatedAt: string;
-}
-```
-
-### Prompt Prompt模板
-```typescript
-interface Prompt {
-  id: string;
-  name: string;
-  category: string;
-  content: string;
-  model: string;
-  agent: string;
-  version: string;
-  isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
-```
-
-### Agent 智能体
-```typescript
-interface Agent {
-  id: string;
-  name: string;
-  type: 'product-selection' | 'image-design' | 'video-generation' | 'listing-optimization' | 'advertising' | 'customer-service' | 'data-review';
-  description: string;
-  promptId: string;
-  modelId: string;
-  config: Record<string, any>;
-  status: 'active' | 'inactive';
-  totalCalls: number;
-  createdAt: string;
-  updatedAt: string;
-}
-```
-
-### Task 任务
-```typescript
-interface Task {
-  id: string;
-  agentId: string;
-  userId: string;
-  status: 'pending' | 'running' | 'completed' | 'failed';
-  input: Record<string, any>;
-  output?: Record<string, any>;
-  error?: string;
-  startedAt?: string;
-  completedAt?: string;
-  createdAt: string;
-}
-```
-
-### FeishuUser 飞书用户
-```typescript
-interface FeishuUser {
-  id: string;
-  openId: string;
-  unionId: string;
-  nickname: string;
-  avatar: string;
-  mobile?: string;
-  departmentId?: string;
-  status: 'active' | 'inactive';
-  packageId?: string;
-  callQuota: number;
-  callUsed: number;
-  referralCode: string;
-  referredBy?: string;
-  createdAt: string;
-  updatedAt: string;
-}
-```
-
-### Package 套餐
-```typescript
-interface Package {
-  id: string;
-  name: string;
-  price: number;
-  callQuota: number;
-  duration: number; // 天数
-  features: string[];
-  isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
-```
-
-### TaskLog 任务日志
-```typescript
-interface TaskLog {
-  id: string;
-  taskId: string;
-  agentId: string;
-  userId: string;
-  action: string;
-  status: 'success' | 'failed';
-  input: Record<string, any>;
-  output?: Record<string, any>;
-  error?: string;
-  duration: number; // 毫秒
-  tokensUsed?: number;
-  createdAt: string;
-}
-```
-
-### PlatformBinding 平台绑定
-```typescript
-interface PlatformBinding {
-  id: string;
-  userId: string;
-  platform: 'tiktok' | 'shopee' | 'lazada' | 'tokopedia';
-  shopId: string;
-  shopName: string;
-  accountInfo: Record<string, any>;
-  credentials: Record<string, any>; // 加密存储
-  status: 'active' | 'expired' | 'error';
-  lastSyncAt?: string;
-  createdAt: string;
-  updatedAt: string;
-}
-```
-
-### Product 商品
-```typescript
-interface Product {
-  id: string;
-  userId: string;
-  name: string;
-  sku: string;
-  category: string;
-  price: number;
-  stock: number;
-  images: string[];
-  description: string;
-  status: 'active' | 'inactive';
-  createdAt: string;
-  updatedAt: string;
-}
-```
-
-### Order 订单
-```typescript
-interface Order {
-  id: string;
-  orderNo: string;
-  userId: string;
-  platform: string;
-  shopId: string;
-  productId: string;
-  productName: string;
-  quantity: number;
-  amount: number;
-  status: 'pending' | 'paid' | 'shipped' | 'completed' | 'cancelled';
-  buyerInfo: Record<string, any>;
-  createdAt: string;
-  updatedAt: string;
-}
-```
-
-### Ticket 工单
-```typescript
-interface Ticket {
-  id: string;
-  title: string;
-  content: string;
-  priority: 'low' | 'medium' | 'high';
-  status: 'open' | 'in_progress' | 'resolved' | 'closed';
-  userId: string;
-  assignedTo?: string;
-  resolution?: string;
-  createdAt: string;
-  updatedAt: string;
-}
-```
-
-### Settings 系统设置
-```typescript
-interface Settings {
-  siteName: string;
-  siteLogo: string;
-  contactEmail: string;
-  contactPhone: string;
-  trialDays: number;
-  defaultCallQuota: number;
-  maintenanceMode: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
-```
-
-### FeishuConfig 飞书配置
-```typescript
-interface FeishuConfig {
-  appId: string;
-  appSecret: string;
-  encryptKey: string;
-  verificationToken: string;
-  botName: string;
-  welcomeMessage: string;
-}
-```
+| 序号 | API路径 | 方法 | 功能 | 状态 |
+|------|---------|------|------|------|
+| 12 | `/prompts` | GET | 获取Prompt列表 | ✅ |
+| 13 | `/prompts` | POST | 创建Prompt模板 | ✅ |
+| 14 | `/prompts/{id}` | GET | 获取Prompt详情 | ✅ |
+| 15 | `/prompts/{id}` | PUT | 更新Prompt模板 | ✅ |
+| 16 | `/prompts/{id}` | DELETE | 删除Prompt模板 | ✅ |
 
 ---
 
-## 四、统计汇总
+## 四、智能体模块 `/api/v1/agents`
 
-| 分类 | 已实现 | 待实现 | 合计 |
-|------|--------|--------|------|
-| 认证模块 | 1 | 3 | 4 |
-| 模型路由 | 1 | 4 | 5 |
-| Prompt模块 | 1 | 4 | 5 |
-| 智能体模块 | 0 | 7 | 7 |
-| 飞书用户 | 0 | 4 | 4 |
-| 套餐管理 | 0 | 4 | 4 |
-| 任务日志 | 0 | 3 | 3 |
-| 平台绑定 | 0 | 4 | 4 |
-| 商品库 | 0 | 6 | 6 |
-| 订单中心 | 0 | 4 | 4 |
-| 客服工单 | 0 | 5 | 5 |
-| 数据报表 | 0 | 4 | 4 |
-| 系统设置 | 0 | 4 | 4 |
-| **总计** | **3** | **56** | **59** |
+| 序号 | API路径 | 方法 | 功能 | 状态 |
+|------|---------|------|------|------|
+| 17 | `/agents` | GET | 获取智能体列表 | ✅ |
+| 18 | `/agents` | POST | 创建智能体 | ✅ |
+| 19 | `/agents/{id}` | GET | 获取智能体详情 | ✅ |
+| 20 | `/agents/{id}/config` | PUT | 更新智能体配置 | ✅ |
+| 21 | `/agents/{id}/start` | POST | 启动智能体任务 | ✅ |
+| 22 | `/agents/{id}/stop` | POST | 停止智能体任务 | ✅ |
+| 23 | `/agents/tasks` | GET | 获取任务列表 | ✅ |
+| 24 | `/agents/tasks/{taskId}` | GET | 获取任务详情 | ✅ |
+
+---
+
+## 五、AI调用模块 `/api/v1/ai`
+
+| 序号 | API路径 | 方法 | 功能 | 状态 |
+|------|---------|------|------|------|
+| 25 | `/ai/invoke` | POST | AI模型调用（支持流式） | ✅ |
+
+---
+
+## 六、控制台模块 `/api/v1/dashboard`
+
+| 序号 | API路径 | 方法 | 功能 | 状态 |
+|------|---------|------|------|------|
+| 26 | `/dashboard/stats` | GET | 获取控制台统计数据 | ✅ |
+
+---
+
+## 七、飞书用户模块 `/api/v1/feishu-users`
+
+| 序号 | API路径 | 方法 | 功能 | 状态 |
+|------|---------|------|------|------|
+| 27 | `/feishu-users` | GET | 获取飞书用户列表 | ✅ |
+| 28 | `/feishu-users` | POST | 创建飞书用户 | ✅ |
+| 29 | `/feishu-users/{id}` | GET | 获取用户详情 | ✅ |
+| 30 | `/feishu-users/{id}` | PUT | 更新用户信息 | ✅ |
+| 31 | `/feishu-users/{id}/quota` | PUT | 调整用户配额 | ✅ |
+| 32 | `/feishu-users/{id}/usage` | GET | 获取用户使用统计 | ✅ |
+
+---
+
+## 八、套餐管理模块 `/api/v1/packages`
+
+| 序号 | API路径 | 方法 | 功能 | 状态 |
+|------|---------|------|------|------|
+| 33 | `/packages` | GET | 获取套餐列表 | ✅ |
+| 34 | `/packages` | POST | 创建套餐 | ✅ |
+| 35 | `/packages/{id}` | GET | 获取套餐详情 | ✅ |
+| 36 | `/packages/{id}` | PUT | 更新套餐 | ✅ |
+| 37 | `/packages/{id}` | DELETE | 删除套餐 | ✅ |
+
+---
+
+## 九、任务日志模块 `/api/v1/task-logs`
+
+| 序号 | API路径 | 方法 | 功能 | 状态 |
+|------|---------|------|------|------|
+| 38 | `/task-logs` | GET | 获取任务日志列表 | ✅ |
+| 39 | `/task-logs/{id}` | GET | 获取日志详情 | ✅ |
+| 40 | `/task-logs/{id}/retry` | POST | 重试任务 | ✅ |
+| 41 | `/task-logs/stats/summary` | GET | 获取任务统计 | ✅ |
+
+---
+
+## 十、平台绑定模块 `/api/v1/platform-bindings`
+
+| 序号 | API路径 | 方法 | 功能 | 状态 |
+|------|---------|------|------|------|
+| 42 | `/platform-bindings` | GET | 获取平台绑定列表 | ✅ |
+| 43 | `/platform-bindings` | POST | 绑定平台账号 | ✅ |
+| 44 | `/platform-bindings/{id}` | GET | 获取绑定详情 | ✅ |
+| 45 | `/platform-bindings/{id}` | PUT | 更新绑定信息 | ✅ |
+| 46 | `/platform-bindings/{id}` | DELETE | 解绑平台账号 | ✅ |
+| 47 | `/platform-bindings/{id}/sync` | POST | 同步平台数据 | ✅ |
+
+---
+
+## 十一、商品库模块 `/api/v1/products`
+
+| 序号 | API路径 | 方法 | 功能 | 状态 |
+|------|---------|------|------|------|
+| 48 | `/products` | GET | 获取商品列表 | ✅ |
+| 49 | `/products` | POST | 添加商品 | ✅ |
+| 50 | `/products/{id}` | GET | 获取商品详情 | ✅ |
+| 51 | `/products/{id}` | PUT | 更新商品信息 | ✅ |
+| 52 | `/products/{id}` | DELETE | 删除商品 | ✅ |
+| 53 | `/products/batch` | POST | 批量导入商品 | ✅ |
+| 54 | `/products/categories/list` | GET | 获取商品分类 | ✅ |
+
+---
+
+## 十二、订单中心模块 `/api/v1/orders`
+
+| 序号 | API路径 | 方法 | 功能 | 状态 |
+|------|---------|------|------|------|
+| 55 | `/orders` | GET | 获取订单列表 | ✅ |
+| 56 | `/orders` | POST | 创建订单 | ✅ |
+| 57 | `/orders/{id}` | GET | 获取订单详情 | ✅ |
+| 58 | `/orders/{id}/status` | PUT | 更新订单状态 | ✅ |
+| 59 | `/orders/stats/summary` | GET | 获取订单统计 | ✅ |
+| 60 | `/orders/platforms/list` | GET | 获取平台列表 | ✅ |
+
+---
+
+## 十三、客服工单模块 `/api/v1/customer-tickets`
+
+| 序号 | API路径 | 方法 | 功能 | 状态 |
+|------|---------|------|------|------|
+| 61 | `/customer-tickets` | GET | 获取工单列表 | ✅ |
+| 62 | `/customer-tickets` | POST | 创建工单 | ✅ |
+| 63 | `/customer-tickets/{id}` | GET | 获取工单详情 | ✅ |
+| 64 | `/customer-tickets/{id}` | PUT | 更新工单 | ✅ |
+| 65 | `/customer-tickets/{id}/close` | POST | 关闭工单 | ✅ |
+| 66 | `/customer-tickets/{id}/assign` | POST | 分配工单 | ✅ |
+| 67 | `/customer-tickets/stats/summary` | GET | 获取工单统计 | ✅ |
+
+---
+
+## 十四、数据报表模块 `/api/v1/reports`
+
+| 序号 | API路径 | 方法 | 功能 | 状态 |
+|------|---------|------|------|------|
+| 68 | `/reports/overview` | GET | 获取报表概览 | ✅ |
+| 69 | `/reports/usage` | GET | 获取使用量统计 | ✅ |
+| 70 | `/reports/revenue` | GET | 获取收入统计 | ✅ |
+| 71 | `/reports/agents` | GET | 获取智能体统计 | ✅ |
+
+---
+
+## 十五、系统设置模块 `/api/v1/settings`
+
+| 序号 | API路径 | 方法 | 功能 | 状态 |
+|------|---------|------|------|------|
+| 72 | `/settings` | GET | 获取系统设置 | ✅ |
+| 73 | `/settings` | PUT | 更新系统设置 | ✅ |
+| 74 | `/settings/feishu` | GET | 获取飞书配置 | ✅ |
+| 75 | `/settings/feishu` | PUT | 更新飞书配置 | ✅ |
+| 76 | `/settings/feishu/test` | POST | 测试飞书连接 | ✅ |
+| 77 | `/settings/backup` | GET | 获取备份信息 | ✅ |
+| 78 | `/settings/backup` | POST | 创建备份 | ✅ |
+
+---
+
+## 统计汇总
+
+| 模块 | API数量 | 状态 |
+|------|---------|------|
+| 认证模块 | 4 | ✅ |
+| 模型路由 | 7 | ✅ |
+| Prompt模块 | 5 | ✅ |
+| 智能体模块 | 8 | ✅ |
+| AI调用模块 | 1 | ✅ |
+| 控制台模块 | 1 | ✅ |
+| 飞书用户模块 | 6 | ✅ |
+| 套餐管理模块 | 5 | ✅ |
+| 任务日志模块 | 4 | ✅ |
+| 平台绑定模块 | 6 | ✅ |
+| 商品库模块 | 7 | ✅ |
+| 订单中心模块 | 6 | ✅ |
+| 客服工单模块 | 7 | ✅ |
+| 数据报表模块 | 4 | ✅ |
+| 系统设置模块 | 7 | ✅ |
+| **总计** | **78** | **✅** |
+
+---
+
+## API文档访问
+
+启动后端服务后，访问以下地址查看完整API文档：
+
+- Swagger UI: http://localhost:8000/docs
+- ReDoc: http://localhost:8000/redoc

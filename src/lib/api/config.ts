@@ -12,6 +12,7 @@ export const API_ENDPOINTS = {
     login: '/auth/login',
     logout: '/auth/logout',
     me: '/auth/me',
+    sendCode: '/auth/send-code',
   },
   
   // 模型管理
@@ -47,6 +48,77 @@ export const API_ENDPOINTS = {
   // 控制台
   dashboard: {
     stats: '/dashboard/stats',
+  },
+  
+  // 飞书用户
+  feishuUsers: {
+    list: '/feishu-users',
+    detail: (id: string) => `/feishu-users/${id}`,
+    quota: (id: string) => `/feishu-users/${id}/quota`,
+    usage: (id: string) => `/feishu-users/${id}/usage`,
+  },
+  
+  // 套餐管理
+  packages: {
+    list: '/packages',
+    detail: (id: string) => `/packages/${id}`,
+  },
+  
+  // 任务日志
+  taskLogs: {
+    list: '/task-logs',
+    detail: (id: string) => `/task-logs/${id}`,
+    retry: (id: string) => `/task-logs/${id}/retry`,
+    stats: '/task-logs/stats/summary',
+  },
+  
+  // 平台绑定
+  platformBindings: {
+    list: '/platform-bindings',
+    detail: (id: string) => `/platform-bindings/${id}`,
+    sync: (id: string) => `/platform-bindings/${id}/sync`,
+  },
+  
+  // 商品库
+  products: {
+    list: '/products',
+    detail: (id: string) => `/products/${id}`,
+    batch: '/products/batch',
+    categories: '/products/categories/list',
+  },
+  
+  // 订单中心
+  orders: {
+    list: '/orders',
+    detail: (id: string) => `/orders/${id}`,
+    status: (id: string) => `/orders/${id}/status`,
+    stats: '/orders/stats/summary',
+    platforms: '/orders/platforms/list',
+  },
+  
+  // 客服工单
+  tickets: {
+    list: '/customer-tickets',
+    detail: (id: string) => `/customer-tickets/${id}`,
+    close: (id: string) => `/customer-tickets/${id}/close`,
+    assign: (id: string) => `/customer-tickets/${id}/assign`,
+    stats: '/customer-tickets/stats/summary',
+  },
+  
+  // 数据报表
+  reports: {
+    overview: '/reports/overview',
+    usage: '/reports/usage',
+    revenue: '/reports/revenue',
+    agents: '/reports/agents',
+  },
+  
+  // 系统设置
+  settings: {
+    list: '/settings',
+    feishu: '/settings/feishu',
+    testFeishu: '/settings/feishu/test',
+    backup: '/settings/backup',
   },
 } as const;
 
