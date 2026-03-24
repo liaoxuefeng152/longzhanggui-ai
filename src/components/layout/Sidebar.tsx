@@ -18,6 +18,9 @@ import {
   BarChart3,
   Settings,
   ChevronRight,
+  Warehouse,
+  DollarSign,
+  Receipt,
 } from 'lucide-react';
 
 interface MenuItem {
@@ -62,6 +65,18 @@ const menuItems: MenuItem[] = [
     ],
   },
   {
+    title: 'ERP系统',
+    href: '/erp',
+    icon: Package,
+    submenu: [
+      { title: '商品管理', href: '/erp/products' },
+      { title: '库存管理', href: '/erp/inventory' },
+      { title: '采购管理', href: '/erp/purchase' },
+      { title: '订单管理', href: '/erp/orders' },
+      { title: '财务管理', href: '/erp/finance' },
+    ],
+  },
+  {
     title: '用户管理',
     href: '/users',
     icon: Users,
@@ -80,16 +95,6 @@ const menuItems: MenuItem[] = [
     title: '平台绑定',
     href: '/platform-bindings',
     icon: Link2,
-  },
-  {
-    title: '商品库',
-    href: '/products',
-    icon: Package,
-  },
-  {
-    title: '订单中心',
-    href: '/orders',
-    icon: ShoppingCart,
   },
   {
     title: '客服工单',

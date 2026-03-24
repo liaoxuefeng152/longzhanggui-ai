@@ -8,6 +8,11 @@ from app.models.business import (
     PlatformBinding, Product, Order, Ticket,
     Setting, FeishuConfig, APIStats
 )
+from app.models.erp import (
+    ERPProduct, PlatformSKU, Inventory, PurchaseOrder,
+    ERPOrder, Logistics, FinancialRecord, DailyFinanceSummary,
+    Collection1688
+)
 
 __all__ = [
     # 数据库
@@ -34,4 +39,14 @@ __all__ = [
     "Setting",
     "FeishuConfig",
     "APIStats",
+    # ERP
+    "ERPProduct",
+    "PlatformSKU",
+    "Inventory",
+    "PurchaseOrder",
+    "ERPOrder",
+    "Logistics",
+    "FinancialRecord",
+    "DailyFinanceSummary",
+    "Collection1688",
 ]
