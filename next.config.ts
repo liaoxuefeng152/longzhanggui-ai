@@ -41,6 +41,16 @@ const nextConfig: NextConfig = {
     // 开发时忽略类型错误以加快构建
     ignoreBuildErrors: false,
   },
+
+  // API 代理 - 将 /api/v1 请求转发到后端
+  async rewrites() {
+    return [
+      {
+        source: '/api/v1/:path*',
+        destination: 'http://localhost:8000/api/v1/:path*',
+      },
+    ];
+  },
 };
 
 export default nextConfig;
