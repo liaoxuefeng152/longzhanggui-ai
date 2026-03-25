@@ -12,6 +12,7 @@ from app.api import api_router
 from app.services.init_service import init_system
 from app.exceptions.handlers import setup_exception_handlers
 from app.middleware.logging_middleware import LoggingMiddleware
+from app.services.scheduler_service import task_scheduler
 
 
 @asynccontextmanager
@@ -27,6 +28,9 @@ async def lifespan(app: FastAPI):
     # 初始化系统数据（创建默认管理员等）
     await init_system()
     logger.info("✅ 系统初始化完成")
+    
+    # 启动定时任务调度器
+    task_scheduler.start()
     
     yield
     

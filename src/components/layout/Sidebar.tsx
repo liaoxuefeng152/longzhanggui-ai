@@ -21,6 +21,8 @@ import {
   Warehouse,
   DollarSign,
   Receipt,
+  Truck,
+  Sparkles,
 } from 'lucide-react';
 
 interface MenuItem {
@@ -65,6 +67,11 @@ const menuItems: MenuItem[] = [
     ],
   },
   {
+    title: 'AI智能体中心',
+    href: '/ai-agents',
+    icon: Sparkles,
+  },
+  {
     title: 'ERP系统',
     href: '/erp',
     icon: Package,
@@ -73,6 +80,7 @@ const menuItems: MenuItem[] = [
       { title: '库存管理', href: '/erp/inventory' },
       { title: '采购管理', href: '/erp/purchase' },
       { title: '订单管理', href: '/erp/orders' },
+      { title: '物流管理', href: '/erp/logistics' },
       { title: '财务管理', href: '/erp/finance' },
     ],
   },
