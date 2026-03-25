@@ -3,6 +3,7 @@
 为各智能体和服务提供可被工作流编排引擎调用的执行接口
 """
 from typing import Dict, Any, Optional
+from datetime import datetime
 from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -450,6 +451,8 @@ async def execute_publish(
     输出：
     - published_products: 已上架商品信息
     """
+    from app.services.tiktok_shop_service import TikTokShopService, publish_to_tiktok
+    
     params = input_data.get("params", {})
     
     listing_result = input_data.get("listing_optimization", {})
@@ -461,6 +464,7 @@ async def execute_publish(
         }
     
     platform = params.get("platform", "tiktok")
+    region = params.get("region", "ID")
     
     logger.info(f"开始上架商品到{platform}: {len(listings)}个")
     
@@ -468,17 +472,41 @@ async def execute_publish(
     
     for listing in listings:
         try:
-            # TODO: 调用真实的平台API上架
-            # 目前返回模拟结果
-            
-            published_products.append({
-                "product_name": listing.get("product_name"),
-                "platform": platform,
-                "status": "published",
-                "listing_id": f"LIST_{platform.upper()}_{hash(listing.get('product_name')) % 100000}",
-                "listing_url": f"https://shop.tiktok.com/product/{hash(listing.get('product_name')) % 100000}",
-                "published_at": "2024-01-01T00:00:00Z"
-            })
+            if platform.lower() == "tiktok":
+                # 调用TikTok Shop API上架
+                product_data = {
+                    "title": listing.get("optimized_title", listing.get("product_name")),
+                    "name": listing.get("product_name"),
+                    "description": listing.get("optimized_description", ""),
+                    "images": listing.get("images", []),
+                    "price": listing.get("price", 10.0),
+                    "inventory": 100,
+                    "category": params.get("category", "宠物用品"),
+                    "region": region,
+                    "sku": f"SKU_{hash(listing.get('product_name')) % 10000}"
+                }
+                
+                result = await publish_to_tiktok(product_data)
+                
+                published_products.append({
+                    "product_name": listing.get("product_name"),
+                    "platform": platform,
+                    "status": "published" if result.get("success") else "failed",
+                    "listing_id": result.get("product_id", ""),
+                    "listing_url": result.get("listing_url", ""),
+                    "published_at": datetime.now().isoformat(),
+                    "message": result.get("message", "")
+                })
+            else:
+                # 其他平台（暂返回模拟结果）
+                published_products.append({
+                    "product_name": listing.get("product_name"),
+                    "platform": platform,
+                    "status": "published",
+                    "listing_id": f"LIST_{platform.upper()}_{hash(listing.get('product_name')) % 100000}",
+                    "listing_url": f"https://shop.{platform}.com/product/{hash(listing.get('product_name')) % 100000}",
+                    "published_at": datetime.now().isoformat()
+                })
             
         except Exception as e:
             logger.error(f"上架失败: {listing.get('product_name')}, error: {e}")
