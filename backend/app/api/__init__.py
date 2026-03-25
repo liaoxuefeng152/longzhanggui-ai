@@ -22,6 +22,7 @@ from app.api.erp import router as erp_router
 from app.api.feishu import router as feishu_router
 from app.api.collection import router as collection_router
 from app.api.ai_agents import router as ai_agents_router
+from app.api.workflow import router as workflow_router
 
 api_router = APIRouter()
 
@@ -46,3 +47,4 @@ api_router.include_router(erp_router)
 api_router.include_router(feishu_router)
 api_router.include_router(collection_router)
 api_router.include_router(ai_agents_router)
+api_router.include_router(workflow_router)

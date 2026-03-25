@@ -23,6 +23,7 @@ import {
   Receipt,
   Truck,
   Sparkles,
+  Zap,
 } from 'lucide-react';
 
 interface MenuItem {
@@ -41,6 +42,11 @@ const menuItems: MenuItem[] = [
     title: '控制台',
     href: '/dashboard',
     icon: LayoutDashboard,
+  },
+  {
+    title: '工作流编排',
+    href: '/workflows',
+    icon: Zap,
   },
   {
     title: '模型路由',

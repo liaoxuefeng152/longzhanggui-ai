@@ -14,6 +14,9 @@ from app.exceptions.handlers import setup_exception_handlers
 from app.middleware.logging_middleware import LoggingMiddleware
 from app.services.scheduler_service import task_scheduler
 
+# 导入工作流执行器以注册
+from app.services.workflow_executors import *  # noqa: F401, F403
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):

@@ -18,6 +18,9 @@ from app.core.config import settings
 
 class CommandType(str, Enum):
     """指令类型"""
+    # 全链路自动化
+    FULL_AUTOMATION = "full_automation"  # 全链路自动化：选品→采集→图片→定价→Listing→上架
+    
     # 选品相关
     SELECT_PRODUCTS = "select_products"  # 选品
     
@@ -289,6 +292,12 @@ class CommandParser:
     
     # 指令关键词映射
     KEYWORD_MAP = {
+        # 全链路自动化（最高优先级）
+        "自动上架": CommandType.FULL_AUTOMATION,
+        "全自动": CommandType.FULL_AUTOMATION,
+        "全链路": CommandType.FULL_AUTOMATION,
+        "一键上架": CommandType.FULL_AUTOMATION,
+        
         # 选品
         "选品": CommandType.SELECT_PRODUCTS,
         "选": CommandType.SELECT_PRODUCTS,
@@ -398,6 +407,11 @@ class CommandParser:
                 category = cat
                 break
         
+        # 检测是否需要自动上架
+        auto_publish = False
+        if "上架" in text or "自动" in text or "一键" in text:
+            auto_publish = True
+        
         # 识别指令类型
         command_type = None
         for keyword, cmd_type in self.KEYWORD_MAP.items():
@@ -414,12 +428,14 @@ class CommandParser:
             "site": site,
             "category": category,
             "quantity": quantity,
+            "auto_publish": auto_publish,
             "original_text": text,
         }
     
     async def execute(self, parsed_command: Dict[str, Any], user_id: str) -> Dict[str, Any]:
         """执行指令"""
         from app.services.task_service import TaskService
+        from app.services.workflow_orchestrator import workflow_orchestrator
         
         command_type = parsed_command["command_type"]
         
@@ -435,11 +451,93 @@ class CommandParser:
         if command_type == CommandType.STATUS:
             return {
                 "success": True,
-                "message": "✅ 系统运行正常\n- ERP服务: 正常\n- AI智能体: 正常\n- 订单同步: 正常",
+                "message": "✅ 系统运行正常\n- ERP服务: 正常\n- AI智能体: 正常\n- 订单同步: 正常\n- 工作流引擎: 正常",
                 "need_callback": False
             }
         
-        # 创建异步任务
+        # 全链路自动化 - 使用工作流引擎
+        if command_type == CommandType.FULL_AUTOMATION:
+            return await self._execute_full_automation(parsed_command, user_id)
+        
+        # 单步选品 + 自动触发后续流程
+        if command_type == CommandType.SELECT_PRODUCTS:
+            # 判断是否需要自动上架
+            if parsed_command.get("auto_publish") or "上架" in parsed_command.get("original_text", ""):
+                return await self._execute_full_automation(parsed_command, user_id)
+            
+            # 否则只执行选品
+            return await self._execute_single_task(command_type, parsed_command, user_id)
+        
+        # 其他单步任务
+        return await self._execute_single_task(command_type, parsed_command, user_id)
+    
+    async def _execute_full_automation(self, parsed_command: Dict[str, Any], user_id: str) -> Dict[str, Any]:
+        """执行全链路自动化"""
+        from app.services.workflow_orchestrator import workflow_orchestrator
+        import asyncio
+        
+        logger.info(f"启动全链路自动化: {parsed_command}")
+        
+        # 立即返回确认消息
+        async def notify_progress(workflow_id: str, event_type: str, data: Dict[str, Any]):
+            """进度通知回调"""
+            try:
+                if event_type == "step_completed":
+                    step_name = data.get("step_name", "")
+                    progress = data.get("progress", 0)
+                    message = f"🔄 {step_name} 完成 ({progress:.0f}%)"
+                    await self.feishu_service.send_text(user_id, message)
+                elif event_type == "workflow_completed":
+                    results = data.get("results", {})
+                    message = self._format_workflow_result(results)
+                    await self.feishu_service.send_markdown(user_id, "✅ 全链路自动化完成", message)
+                elif event_type == "workflow_failed":
+                    await self.feishu_service.send_text(user_id, f"❌ 工作流执行失败: {data.get('error')}")
+            except Exception as e:
+                logger.error(f"发送进度通知失败: {e}")
+        
+        # 构建工作流参数
+        workflow_params = {
+            "category": parsed_command.get("category", "宠物用品"),
+            "platform": parsed_command.get("platform", "tiktok"),
+            "region": parsed_command.get("site", "id"),
+            "quantity": parsed_command.get("quantity", 3),
+            "target_language": "id" if parsed_command.get("site") == "id" else "en",
+            "image_mode": "translate",
+            "profit_rate": 0.3
+        }
+        
+        # 异步执行工作流
+        asyncio.create_task(
+            workflow_orchestrator.execute_workflow(
+                template_name="full_automation",
+                user_id=user_id,
+                params=workflow_params,
+                notify_callback=notify_progress
+            )
+        )
+        
+        return {
+            "success": True,
+            "message": f"🚀 **全链路自动化已启动**\n\n"
+                      f"📋 选品需求：{workflow_params['quantity']}个{workflow_params['region']}站{workflow_params['category']}\n"
+                      f"🎯 目标平台：{workflow_params['platform']}\n\n"
+                      f"系统将自动执行以下步骤：\n"
+                      f"1️⃣ AI智能选品\n"
+                      f"2️⃣ 1688商品采集\n"
+                      f"3️⃣ 图片智能处理\n"
+                      f"4️⃣ 智能定价\n"
+                      f"5️⃣ Listing优化\n"
+                      f"6️⃣ 商品上架\n\n"
+                      f"⏳ 请稍候，正在执行中...",
+            "need_callback": True,
+            "workflow": "full_automation"
+        }
+    
+    async def _execute_single_task(self, command_type: CommandType, parsed_command: Dict[str, Any], user_id: str) -> Dict[str, Any]:
+        """执行单步任务"""
+        from app.services.task_service import TaskService
+        
         task_service = TaskService()
         task = await task_service.create_task(
             user_id=user_id,
@@ -454,12 +552,55 @@ class CommandParser:
             "need_callback": True
         }
     
+    def _format_workflow_result(self, results: Dict[str, Any]) -> str:
+        """格式化工作流结果"""
+        lines = []
+        
+        # 选品结果
+        if "product_selection" in results:
+            products = results["product_selection"].get("output", {}).get("products", [])
+            lines.append(f"**选品完成**：{len(products)}个商品")
+        
+        # 采集结果
+        if "collect_1688" in results:
+            collected = results["collect_1688"].get("output", {}).get("total_count", 0)
+            images = results["collect_1688"].get("output", {}).get("total_images", 0)
+            lines.append(f"**采集完成**：{collected}个商品，{images}张图片")
+        
+        # 图片处理结果
+        if "image_processing" in results:
+            processed = results["image_processing"].get("output", {}).get("total_processed", 0)
+            lines.append(f"**图片处理**：{processed}张完成")
+        
+        # 定价结果
+        if "pricing" in results:
+            pricing_count = results["pricing"].get("output", {}).get("total_products", 0)
+            lines.append(f"**定价完成**：{pricing_count}个商品")
+        
+        # 上架结果
+        if "publish" in results:
+            published = results["publish"].get("output", {}).get("total_published", 0)
+            products = results["publish"].get("output", {}).get("published_products", [])
+            lines.append(f"**上架完成**：{published}个商品")
+            
+            # 列出上架商品链接
+            for p in products[:3]:
+                if p.get("listing_url"):
+                    lines.append(f"  - [{p.get('product_name')}]({p.get('listing_url')})")
+        
+        return "\n".join(lines) if lines else "执行完成"
+    
     def _get_help_text(self) -> str:
         """获取帮助文本"""
         return """
 🦞 **龙虾AI跨境无人店 - 指令帮助**
 
-**📦 选品与上架**
+**🚀 全链路自动化（推荐）**
+• `选品 3个印尼站宠物用品 自动上架` - 一句话完成选品到上架全流程
+• `全自动上架 2个泰国站美妆` - 全链路自动化
+• `一键上架 美国站电子` - 自动选品+采集+处理+上架
+
+**📦 单步操作**
 • `选品 3个印尼站宠物用品` - AI智能选品
 • `采集 1688商品链接` - 采集1688商品
 • `图片处理 [商品]` - 翻译/优化图片
