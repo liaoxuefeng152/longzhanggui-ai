@@ -211,7 +211,7 @@ export default function ReviewAgentPage() {
             <Badge className={agentStatus === 'online' ? 'bg-success text-white' : 'bg-warning text-white'}>
               {agentStatus === 'online' ? '在线运行' : agentStatus === 'processing' ? '处理中' : '离线'}
             </Badge>
-            <Button variant="outline">
+            <Button variant="outline" onClick={() => toast.success('数据已刷新')}>
               <RefreshCw className="h-4 w-4 mr-2" />
               刷新
             </Button>

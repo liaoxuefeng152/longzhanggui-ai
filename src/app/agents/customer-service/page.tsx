@@ -277,7 +277,7 @@ export default function CustomerServiceAgentPage() {
             <Badge className={agentStatus === 'online' ? 'bg-success text-white' : 'bg-warning text-white'}>
               {agentStatus === 'online' ? '在线运行' : agentStatus === 'processing' ? '处理中' : '离线'}
             </Badge>
-            <Button variant="outline">
+            <Button variant="outline" onClick={() => toast.success('数据已刷新')}>
               <RefreshCw className="h-4 w-4 mr-2" />
               刷新
             </Button>
@@ -625,7 +625,7 @@ export default function CustomerServiceAgentPage() {
                       <div className="text-[13px] font-medium text-foreground">物流数据对接</div>
                       <div className="text-[11px] text-muted-foreground">ERP物流轨迹API</div>
                     </div>
-                    <Button variant="outline" size="sm">
+                    <Button variant="outline" size="sm" onClick={() => toast.info('打开配置页面')}>
                       <Settings className="h-4 w-4 mr-2" />
                       配置
                     </Button>
