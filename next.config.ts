@@ -42,15 +42,16 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: false,
   },
 
-  // API 代理 - 将 /api/v1 请求转发到后端
-  async rewrites() {
-    return [
-      {
-        source: '/api/v1/:path*',
-        destination: 'http://localhost:8000/api/v1/:path*',
-      },
-    ];
-  },
+  // API 代理 - 本地开发使用 Next.js API 路由，不转发到后端
+  // 如需连接后端服务，取消注释以下配置
+  // async rewrites() {
+  //   return [
+  //     {
+  //       source: '/api/v1/:path*',
+  //       destination: 'http://localhost:8000/api/v1/:path*',
+  //     },
+  //   ];
+  // },
 };
 
 export default nextConfig;
