@@ -218,7 +218,14 @@ export default function Collection1688Page() {
                   {previewLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Eye className="h-4 w-4" />}
                   预览
                 </Button>
+                <Button onClick={handleCollect} disabled={loading}>
+                  {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+                  采集
+                </Button>
               </div>
+              <p className="text-[12px] text-muted-foreground">
+                提示：点击「预览」可先查看商品信息再确认采集，点击「采集」直接采集并入库
+              </p>
 
               {/* 预览数据 */}
               {previewData && (
