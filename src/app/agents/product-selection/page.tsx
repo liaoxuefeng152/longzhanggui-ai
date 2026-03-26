@@ -154,7 +154,7 @@ export default function SelectionAgentPage() {
         min_profit_rate: 0.3,
       });
       
-      if (result.success && result.data) {
+      if (result.success && Array.isArray(result.data)) {
         // 将API返回的数据转换为页面展示格式
         const newProducts: Product[] = result.data.map((item, index) => ({
           id: item.id || `P${Date.now()}-${index}`,
@@ -163,8 +163,8 @@ export default function SelectionAgentPage() {
           platform: item.platform?.toUpperCase() === 'AMAZON' ? 'Amazon' : 'TK',
           salesTrend: item.sales_trend || 0,
           profitMargin: item.profit_margin || 0,
-          complianceStatus: item.compliance_status as 'passed' | 'failed' | 'pending' || 'passed',
-          supplyChain: item.supply_chain as 'matched' | 'unmatched' | 'checking' || 'matched',
+          complianceStatus: (item.compliance_status || 'passed') as 'passed' | 'failed' | 'pending',
+          supplyChain: (item.supply_chain || 'matched') as 'matched' | 'unmatched' | 'checking',
           purchaseCycle: item.purchase_cycle || 7,
           stockCostRatio: item.stock_cost_ratio || 30,
           predictedProfit: item.predicted_profit || 0,
@@ -173,6 +173,8 @@ export default function SelectionAgentPage() {
         
         setProducts(newProducts);
         toast.success(`选品完成！共发现 ${newProducts.length} 个潜力商品`);
+      } else {
+        toast.error('选品返回数据格式错误');
       }
     } catch (error: any) {
       console.error('启动选品失败:', error);
