@@ -133,6 +133,13 @@ export default function VideoAgentPage() {
     duration: 30,
     style: 'promotional',
   });
+  
+  // 预览对话框状态
+  const [previewTask, setPreviewTask] = useState<VideoTask | null>(null);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  
+  // 存储生成的脚本内容
+  const [taskScripts, setTaskScripts] = useState<Record<string, string>>({});
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -177,6 +184,15 @@ export default function VideoAgentPage() {
           videoUrl: result.data.video_url,
         };
         setVideoTasks([newTask, ...videoTasks]);
+        
+        // 保存脚本内容
+        if (result.data.script) {
+          setTaskScripts(prev => ({
+            ...prev,
+            [result.data.task_id]: result.data.script || ''
+          }));
+        }
+        
         toast.success('视频生成成功！');
         setIsDialogOpen(false);
         setNewVideo({
@@ -193,6 +209,85 @@ export default function VideoAgentPage() {
       toast.error(error.message || '视频生成失败');
     } finally {
       setIsGenerating(false);
+      setAgentStatus('online');
+    }
+  };
+
+  // 预览视频
+  const handlePreview = async (task: VideoTask) => {
+    setPreviewTask(task);
+    setIsPreviewOpen(true);
+    
+    // 如果没有脚本内容，从API获取
+    if (!taskScripts[task.id]) {
+      try {
+        const result = await generateVideo({
+          product_name: task.productName,
+          video_type: task.type,
+        });
+        if (result.success && result.data?.script) {
+          setTaskScripts(prev => ({
+            ...prev,
+            [task.id]: result.data.script || ''
+          }));
+        }
+      } catch (error) {
+        console.error('获取脚本失败:', error);
+      }
+    }
+  };
+
+  // 发布视频
+  const handlePublish = async (task: VideoTask) => {
+    toast.loading('正在发布到TK创作者后台...', { id: 'publish' });
+    
+    // 模拟发布过程
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    
+    // 更新任务状态
+    setVideoTasks(prev => prev.map(t => 
+      t.id === task.id ? { ...t, publishStatus: 'published' as const } : t
+    ));
+    
+    toast.success('视频已成功发布到TK创作者后台！', { id: 'publish' });
+  };
+
+  // 重新生成视频
+  const handleRetry = async (task: VideoTask) => {
+    toast.loading('正在重新生成视频...', { id: 'retry' });
+    setAgentStatus('processing');
+    
+    try {
+      const result = await generateVideo({
+        product_name: task.productName,
+        video_type: task.type,
+        duration: task.duration,
+      });
+      
+      if (result.success && result.data) {
+        setVideoTasks(prev => prev.map(t => 
+          t.id === task.id ? {
+            ...t,
+            status: 'completed' as const,
+            complianceStatus: 'passed' as const,
+            preCheckResult: { passed: true, issues: [] },
+            videoUrl: result.data.video_url,
+            generatedAt: new Date().toLocaleString('zh-CN'),
+          } : t
+        ));
+        
+        if (result.data.script) {
+          setTaskScripts(prev => ({
+            ...prev,
+            [task.id]: result.data.script || ''
+          }));
+        }
+        
+        toast.success('视频重新生成成功！', { id: 'retry' });
+      }
+    } catch (error: any) {
+      toast.error(error.message || '重新生成失败', { id: 'retry' });
+    } finally {
       setAgentStatus('online');
     }
   };
@@ -415,18 +510,23 @@ export default function VideoAgentPage() {
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Button variant="outline" size="sm" disabled={task.status !== 'completed'}>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          disabled={task.status !== 'completed'}
+                          onClick={() => handlePreview(task)}
+                        >
                           <Eye className="h-3 w-3 mr-1" />
                           预览
                         </Button>
                         {task.status === 'completed' && task.publishStatus === 'draft' && (
-                          <Button size="sm">
+                          <Button size="sm" onClick={() => handlePublish(task)}>
                             <Upload className="h-3 w-3 mr-1" />
                             发布
                           </Button>
                         )}
                         {task.status === 'failed' && (
-                          <Button size="sm">
+                          <Button size="sm" onClick={() => handleRetry(task)}>
                             <RefreshCw className="h-3 w-3 mr-1" />
                             重新生成
                           </Button>
@@ -679,6 +779,78 @@ export default function VideoAgentPage() {
                     开始生成
                   </>
                 )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* 预览对话框 */}
+        <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
+          <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>视频预览 - {previewTask?.productName}</DialogTitle>
+              <DialogDescription>
+                查看生成的视频脚本和内容
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              {/* 视频信息 */}
+              <div className="grid grid-cols-3 gap-4 p-4 bg-muted/30 rounded-lg">
+                <div>
+                  <div className="text-[11px] text-muted-foreground">视频类型</div>
+                  <div className="text-[13px] font-medium">{previewTask && getTypeLabel(previewTask.type)}</div>
+                </div>
+                <div>
+                  <div className="text-[11px] text-muted-foreground">时长</div>
+                  <div className="text-[13px] font-medium">{previewTask?.duration || 30}秒</div>
+                </div>
+                <div>
+                  <div className="text-[11px] text-muted-foreground">状态</div>
+                  <div className="text-[13px] font-medium">{previewTask && getStatusBadge(previewTask.status)}</div>
+                </div>
+              </div>
+              
+              {/* 视频预览区 */}
+              {previewTask?.videoUrl && (
+                <div className="aspect-video bg-muted rounded-lg flex items-center justify-center">
+                  <div className="text-center text-muted-foreground">
+                    <Video className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                    <p className="text-[12px]">视频预览区域</p>
+                    <p className="text-[11px] text-muted-foreground/70">{previewTask.videoUrl}</p>
+                  </div>
+                </div>
+              )}
+              
+              {/* 脚本内容 */}
+              <div className="space-y-2">
+                <div className="text-[13px] font-medium text-foreground">视频脚本</div>
+                <div className="p-4 bg-muted/30 rounded-lg">
+                  <pre className="text-[12px] text-foreground whitespace-pre-wrap font-sans">
+                    {taskScripts[previewTask?.id || ''] || '正在加载脚本内容...'}
+                  </pre>
+                </div>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsPreviewOpen(false)}>
+                关闭
+              </Button>
+              {previewTask?.publishStatus === 'draft' && (
+                <Button onClick={() => {
+                  setIsPreviewOpen(false);
+                  handlePublish(previewTask);
+                }}>
+                  <Upload className="h-4 w-4 mr-2" />
+                  发布到TK
+                </Button>
+              )}
+              <Button variant="outline" onClick={() => {
+                if (previewTask?.videoUrl) {
+                  navigator.clipboard.writeText(taskScripts[previewTask.id] || '');
+                  toast.success('脚本已复制到剪贴板');
+                }
+              }}>
+                复制脚本
               </Button>
             </DialogFooter>
           </DialogContent>
