@@ -25,15 +25,16 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { getPurchaseOrders, PurchaseOrder as ERPurchaseOrder, createPurchaseOrder } from '@/lib/api/erp';
 
 interface PurchaseOrder {
   id: string;
   po_number: string;
-  supplier_name: string;
-  total_items: number;
+  supplier_name?: string;
+  qty: number;
   total_amount: number;
   status: string;
-  expected_date?: string;
+  expected_arrival?: string;
   created_at: string;
   notes?: string;
 }
@@ -59,21 +60,24 @@ export default function ERPPurchasePage() {
   const fetchOrders = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('token');
-      const params = new URLSearchParams();
-      if (keyword) params.set('keyword', keyword);
-      if (statusFilter) params.set('status', statusFilter);
-      
-      const response = await fetch(`/api/v1/erp/purchase?${params.toString()}`, {
-        headers: { 'Authorization': `Bearer ${token}` },
+      const data = await getPurchaseOrders({
+        status: statusFilter || undefined,
       });
       
-      if (response.ok) {
-        const data = await response.json();
-        setOrders(data.items || []);
-      } else {
-        toast.error('获取采购订单失败');
-      }
+      // 转换数据格式
+      const orders: PurchaseOrder[] = (data || []).map((item: ERPurchaseOrder) => ({
+        id: item.id,
+        po_number: item.po_number,
+        supplier_name: item.supplier_name,
+        qty: item.qty,
+        total_amount: item.total_amount,
+        status: item.status,
+        expected_date: item.expected_arrival,
+        created_at: item.created_at,
+        notes: item.notes,
+      }));
+      
+      setOrders(orders);
     } catch (error) {
       console.error('获取采购订单失败:', error);
       toast.error('获取采购订单失败');
@@ -105,8 +109,8 @@ export default function ERPPurchasePage() {
   const pendingOrders = orders.filter(o => o.status === 'pending' || o.status === 'approved').length;
   const totalAmount = orders.reduce((sum, o) => sum + o.total_amount, 0);
   const overdueOrders = orders.filter(o => {
-    if (!o.expected_date || o.status === 'received' || o.status === 'cancelled') return false;
-    return new Date(o.expected_date) < new Date();
+    if (!o.expected_arrival || o.status === 'received' || o.status === 'cancelled') return false;
+    return new Date(o.expected_arrival) < new Date();
   }).length;
 
   if (!user) return null;
@@ -256,7 +260,7 @@ export default function ERPPurchasePage() {
                           <div className="flex items-center gap-2">
                             <span className="text-[14px] font-mono font-medium">{order.po_number}</span>
                             {getStatusBadge(order.status)}
-                            {order.expected_date && new Date(order.expected_date) < new Date() && order.status !== 'received' && order.status !== 'cancelled' && (
+                            {order.expected_arrival && new Date(order.expected_arrival) < new Date() && order.status !== 'received' && order.status !== 'cancelled' && (
                               <Badge variant="outline" className="bg-destructive/10 text-destructive">
                                 <AlertTriangle className="h-3 w-3 mr-1" />
                                 逾期
@@ -265,10 +269,10 @@ export default function ERPPurchasePage() {
                           </div>
                           <div className="text-[14px] font-medium text-foreground">{order.supplier_name}</div>
                           <div className="flex items-center gap-4 text-[12px] text-muted-foreground">
-                            <span>商品数: <span className="text-foreground">{order.total_items}</span></span>
+                            <span>数量: <span className="text-foreground">{order.qty}</span></span>
                             <span>创建时间: <span className="text-foreground">{new Date(order.created_at).toLocaleString()}</span></span>
-                            {order.expected_date && (
-                              <span>预计到货: <span className="text-foreground">{order.expected_date}</span></span>
+                            {order.expected_arrival && (
+                              <span>预计到货: <span className="text-foreground">{order.expected_arrival}</span></span>
                             )}
                           </div>
                           {order.notes && (

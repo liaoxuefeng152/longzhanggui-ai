@@ -29,7 +29,10 @@ import {
   TrendingUp,
   Copy,
   Edit3,
+  Loader2,
 } from 'lucide-react';
+import { toast } from 'sonner';
+import { optimizeListing, suggestKeywords, ListingResult } from '@/lib/api/ai-agents';
 
 interface ListingTask {
   id: string;
@@ -46,6 +49,7 @@ interface ListingTask {
     tags: boolean;
   };
   generatedAt?: string;
+  result?: ListingResult;
 }
 
 const mockListingTasks: ListingTask[] = [
@@ -108,6 +112,9 @@ export default function ListingAgentPage() {
   const [activeTab, setActiveTab] = useState('tasks');
   const [agentStatus, setAgentStatus] = useState<'online' | 'offline' | 'processing'>('online');
   const [listingTasks, setListingTasks] = useState<ListingTask[]>(mockListingTasks);
+  const [productName, setProductName] = useState('');
+  const [platform, setPlatform] = useState<'TK' | 'Amazon'>('TK');
+  const [isProcessing, setIsProcessing] = useState(false);
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -117,6 +124,54 @@ export default function ListingAgentPage() {
     }
     setUser(JSON.parse(userData));
   }, [router]);
+
+  // 启动Listing优化
+  const handleStartOptimization = async () => {
+    if (!productName) {
+      toast.error('请输入商品名称');
+      return;
+    }
+
+    setIsProcessing(true);
+    setAgentStatus('processing');
+
+    try {
+      const result = await optimizeListing({
+        product_info: { name: productName },
+        platform: platform.toLowerCase(),
+        language: 'en',
+      });
+
+      if (result.success && result.data) {
+        const newTask: ListingTask = {
+          id: `LST${Date.now()}`,
+          productName,
+          platform,
+          status: 'completed',
+          complianceStatus: 'passed',
+          complianceIssues: [],
+          components: {
+            title: true,
+            bullets: platform === 'Amazon',
+            aplus: platform === 'Amazon',
+            keywords: true,
+            tags: platform === 'TK',
+          },
+          generatedAt: new Date().toLocaleString('zh-CN'),
+          result: result.data,
+        };
+        setListingTasks([newTask, ...listingTasks]);
+        toast.success('Listing优化完成！');
+        setProductName('');
+      }
+    } catch (error: any) {
+      console.error('优化失败:', error);
+      toast.error(error.message || '优化失败');
+    } finally {
+      setIsProcessing(false);
+      setAgentStatus('online');
+    }
+  };
 
   const getStatusBadge = (status: string) => {
     const config: Record<string, { label: string; className: string }> = {

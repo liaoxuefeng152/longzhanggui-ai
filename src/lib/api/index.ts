@@ -18,4 +18,7 @@ export * from './platform-bindings';
 export * from './products';
 export * from './orders';
 export * from './settings';
+export * from './erp';
+export * from './ai-agents';
+export * from './collection';
 // 用户管理已合并到 feishu-users 模块

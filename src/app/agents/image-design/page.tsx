@@ -27,7 +27,10 @@ import {
   Upload,
   Wand2,
   RotateCcw,
+  Loader2,
 } from 'lucide-react';
+import { toast } from 'sonner';
+import { processImage, batchProcessImages, ImageProcessResult, ImageProcessMode } from '@/lib/api/ai-agents';
 
 interface ImageTask {
   id: string;
@@ -39,6 +42,7 @@ interface ImageTask {
   complianceIssues: string[];
   generatedAt?: string;
   imageUrl?: string;
+  processedUrl?: string;
 }
 
 const mockImageTasks: ImageTask[] = [
@@ -98,6 +102,9 @@ export default function ImageAgentPage() {
   const [activeTab, setActiveTab] = useState('tasks');
   const [agentStatus, setAgentStatus] = useState<'online' | 'offline' | 'processing'>('online');
   const [imageTasks, setImageTasks] = useState<ImageTask[]>(mockImageTasks);
+  const [imageUrl, setImageUrl] = useState('');
+  const [processMode, setProcessMode] = useState<ImageProcessMode>('translate');
+  const [isProcessing, setIsProcessing] = useState(false);
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -107,6 +114,51 @@ export default function ImageAgentPage() {
     }
     setUser(JSON.parse(userData));
   }, [router]);
+
+  // 处理图片
+  const handleProcessImage = async () => {
+    if (!imageUrl) {
+      toast.error('请输入图片URL');
+      return;
+    }
+
+    setIsProcessing(true);
+    setAgentStatus('processing');
+
+    try {
+      const result = await processImage({
+        image_url: imageUrl,
+        mode: processMode,
+        source_language: 'zh',
+        target_language: 'en',
+      });
+
+      if (result.success && result.data) {
+        // 更新任务列表
+        const newTask: ImageTask = {
+          id: result.data.task_id,
+          productName: '新图片处理',
+          type: 'main',
+          platform: 'TK',
+          status: result.data.status === 'completed' ? 'completed' : 'processing',
+          complianceStatus: 'passed',
+          complianceIssues: [],
+          generatedAt: new Date().toLocaleString('zh-CN'),
+          imageUrl: imageUrl,
+          processedUrl: result.data.processed_url,
+        };
+        setImageTasks([newTask, ...imageTasks]);
+        toast.success('图片处理成功！');
+        setImageUrl('');
+      }
+    } catch (error: any) {
+      console.error('图片处理失败:', error);
+      toast.error(error.message || '图片处理失败');
+    } finally {
+      setIsProcessing(false);
+      setAgentStatus('online');
+    }
+  };
 
   const getTypeLabel = (type: string) => {
     const labels: Record<string, string> = {
@@ -163,9 +215,18 @@ export default function ImageAgentPage() {
               <RefreshCw className="h-4 w-4 mr-2" />
               刷新
             </Button>
-            <Button>
-              <Play className="h-4 w-4 mr-2" />
-              新建设计
+            <Button onClick={handleProcessImage} disabled={isProcessing}>
+              {isProcessing ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  处理中...
+                </>
+              ) : (
+                <>
+                  <Wand2 className="h-4 w-4 mr-2" />
+                  处理图片
+                </>
+              )}
             </Button>
           </div>
         </div>
@@ -240,6 +301,51 @@ export default function ImageAgentPage() {
 
           {/* 设计任务 */}
           <TabsContent value="tasks" className="space-y-4">
+            {/* 图片处理输入 */}
+            <Card className="bg-white border-border shadow-sm">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-[15px]">图片处理</CardTitle>
+                <CardDescription>输入图片URL，选择处理模式</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center gap-4">
+                  <div className="flex-1 relative">
+                    <Image className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <input
+                      type="text"
+                      placeholder="输入图片URL..."
+                      value={imageUrl}
+                      onChange={(e) => setImageUrl(e.target.value)}
+                      className="w-full pl-10 pr-4 py-2 border border-border rounded-md text-[14px] focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    />
+                  </div>
+                  <select 
+                    className="px-4 py-2 border border-border rounded-md text-[14px]"
+                    value={processMode}
+                    onChange={(e) => setProcessMode(e.target.value as ImageProcessMode)}
+                  >
+                    <option value="translate">翻译模式</option>
+                    <option value="optimize">优化模式</option>
+                    <option value="remove_watermark">去水印</option>
+                    <option value="white_background">白底图</option>
+                  </select>
+                  <Button onClick={handleProcessImage} disabled={isProcessing || !imageUrl}>
+                    {isProcessing ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        处理中...
+                      </>
+                    ) : (
+                      <>
+                        <Wand2 className="h-4 w-4 mr-2" />
+                        开始处理
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
             {/* 操作栏 */}
             <Card className="bg-white border-border shadow-sm">
               <CardContent className="p-4">

@@ -32,7 +32,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { startAgentTask, Task } from '@/lib/api/agents';
+import { selectProducts, SelectedProduct, analyzeCompetition } from '@/lib/api/ai-agents';
 
 interface Product {
   id: string;
@@ -130,9 +130,7 @@ export default function SelectionAgentPage() {
   const [activeTab, setActiveTab] = useState('overview');
   const [agentStatus, setAgentStatus] = useState<'online' | 'offline' | 'processing'>('online');
   const [products, setProducts] = useState<Product[]>(mockProducts);
-  const [agentId, setAgentId] = useState<string | null>(null);
   const [isStarting, setIsStarting] = useState(false);
-  const [currentTask, setCurrentTask] = useState<Task | null>(null);
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -141,98 +139,48 @@ export default function SelectionAgentPage() {
       return;
     }
     setUser(JSON.parse(userData));
-    
-    // 获取选品智能体ID
-    fetchAgentId();
   }, [router]);
 
-  const fetchAgentId = async () => {
-    try {
-      // 通过类型获取智能体信息
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/agents?type=product-selection`);
-      if (response.ok) {
-        const data = await response.json();
-        if (data.items && data.items.length > 0) {
-          setAgentId(data.items[0].id);
-        }
-      }
-    } catch (error) {
-      console.error('获取智能体信息失败:', error);
-    }
-  };
-
+  // 启动AI选品
   const handleStartSelection = async () => {
-    if (!agentId) {
-      toast.error('智能体未初始化，请刷新页面重试');
-      return;
-    }
-
     setIsStarting(true);
     setAgentStatus('processing');
 
     try {
-      const result = await startAgentTask(agentId, {
-        action: 'product_selection',
-        platforms: ['TK', 'Amazon'],
-        categories: [],
-        limit: 20,
+      const result = await selectProducts({
+        platform: 'tiktok',
+        site: 'id',
+        count: 10,
+        min_profit_rate: 0.3,
       });
       
-      toast.success('选品任务已启动！任务ID: ' + result.task_id);
-      
-      // 轮询任务状态
-      pollTaskStatus(result.task_id);
+      if (result.success && result.data) {
+        // 将API返回的数据转换为页面展示格式
+        const newProducts: Product[] = result.data.map((item, index) => ({
+          id: item.id || `P${Date.now()}-${index}`,
+          name: item.name,
+          category: item.category || '其他',
+          platform: item.platform?.toUpperCase() === 'AMAZON' ? 'Amazon' : 'TK',
+          salesTrend: item.sales_trend || 0,
+          profitMargin: item.profit_margin || 0,
+          complianceStatus: item.compliance_status as 'passed' | 'failed' | 'pending' || 'passed',
+          supplyChain: item.supply_chain as 'matched' | 'unmatched' | 'checking' || 'matched',
+          purchaseCycle: item.purchase_cycle || 7,
+          stockCostRatio: item.stock_cost_ratio || 30,
+          predictedProfit: item.predicted_profit || 0,
+          selectedAt: new Date().toLocaleString('zh-CN'),
+        }));
+        
+        setProducts(newProducts);
+        toast.success(`选品完成！共发现 ${newProducts.length} 个潜力商品`);
+      }
     } catch (error: any) {
       console.error('启动选品失败:', error);
       toast.error(error.message || '启动选品失败');
-      setAgentStatus('online');
     } finally {
       setIsStarting(false);
+      setAgentStatus('online');
     }
-  };
-
-  const pollTaskStatus = async (taskId: string) => {
-    let attempts = 0;
-    const maxAttempts = 60; // 最多轮询60次（约2分钟）
-    
-    const poll = async () => {
-      try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/agents/tasks/${taskId}`, {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          },
-        });
-        
-        if (response.ok) {
-          const task: Task = await response.json();
-          setCurrentTask(task);
-          
-          if (task.status === 'completed') {
-            toast.success('选品任务完成！');
-            setAgentStatus('online');
-            return;
-          } else if (task.status === 'failed') {
-            toast.error('选品任务失败: ' + (task.error || '未知错误'));
-            setAgentStatus('online');
-            return;
-          }
-          
-          // 继续轮询
-          attempts++;
-          if (attempts < maxAttempts) {
-            setTimeout(poll, 2000);
-          } else {
-            toast.warning('任务执行时间较长，请稍后查看结果');
-            setAgentStatus('online');
-          }
-        }
-      } catch (error) {
-        console.error('轮询任务状态失败:', error);
-        setAgentStatus('online');
-      }
-    };
-    
-    poll();
   };
 
   const getComplianceBadge = (status: string) => {

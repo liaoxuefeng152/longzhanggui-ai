@@ -23,26 +23,15 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { collectProduct, previewProduct, batchCollectProducts, getCollectionHistory, CollectionHistory, ProductPreview } from '@/lib/api/collection';
 
 interface CollectionItem {
   id: string;
   source_url: string;
-  source_id: string;
-  product_id: string;
+  source_id?: string;
+  product_id?: string;
   status: string;
   created_at: string;
-}
-
-interface ProductPreview {
-  offer_id: string;
-  title: string;
-  price: string;
-  images: string[];
-  supplier: {
-    name: string;
-    rating: number;
-  };
-  skus: Array<{ name: string; values: string[] }>;
 }
 
 export default function Collection1688Page() {
@@ -75,15 +64,8 @@ export default function Collection1688Page() {
   const fetchHistory = async () => {
     setHistoryLoading(true);
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('/api/v1/1688/history?page=1&page_size=20', {
-        headers: { 'Authorization': `Bearer ${token}` },
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        setHistory(data.items || []);
-      }
+      const data = await getCollectionHistory(1, 20);
+      setHistory(data.items || []);
     } catch (error) {
       console.error('获取采集历史失败:', error);
     } finally {
@@ -105,24 +87,10 @@ export default function Collection1688Page() {
 
     setPreviewLoading(true);
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('/api/v1/1688/collect/preview', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({ url: collectUrl }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success) {
-          setPreviewData(data.data);
-          toast.success('预览成功');
-        } else {
-          toast.error('预览失败');
-        }
+      const data = await previewProduct(collectUrl);
+      if (data.success && data.data) {
+        setPreviewData(data.data as any);
+        toast.success('预览成功');
       } else {
         toast.error('预览失败');
       }
@@ -143,26 +111,12 @@ export default function Collection1688Page() {
 
     setLoading(true);
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('/api/v1/1688/collect', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({ url: collectUrl }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success) {
-          toast.success('采集成功，已添加到商品库');
-          setCollectUrl('');
-          setPreviewData(null);
-          fetchHistory();
-        } else {
-          toast.error('采集失败');
-        }
+      const data = await collectProduct(collectUrl);
+      if (data.success) {
+        toast.success('采集成功，已添加到商品库');
+        setCollectUrl('');
+        setPreviewData(null);
+        fetchHistory();
       } else {
         toast.error('采集失败');
       }
@@ -189,25 +143,11 @@ export default function Collection1688Page() {
 
     setLoading(true);
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('/api/v1/1688/collect/batch', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({ urls }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success) {
-          toast.success(`批量采集完成，成功${data.total}个`);
-          setBatchUrls('');
-          fetchHistory();
-        }
-      } else {
-        toast.error('批量采集失败');
+      const data = await batchCollectProducts(urls);
+      if (data.success) {
+        toast.success(`批量采集完成，成功${data.total}个`);
+        setBatchUrls('');
+        fetchHistory();
       }
     } catch (error) {
       console.error('批量采集失败:', error);
@@ -285,34 +225,32 @@ export default function Collection1688Page() {
                 <div className="p-4 bg-muted/30 rounded-lg space-y-3">
                   <div className="flex gap-4">
                     <div className="w-20 h-20 bg-muted rounded-lg overflow-hidden">
-                      {previewData.images[0] && (
+                      {previewData.images?.[0] && (
                         <img src={previewData.images[0]} alt="" className="w-full h-full object-cover" />
                       )}
                     </div>
                     <div className="flex-1 space-y-2">
                       <div className="text-[14px] font-medium text-foreground line-clamp-2">
-                        {previewData.title}
+                        {previewData.name}
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="text-[16px] font-semibold text-orange-500">¥{previewData.price}</span>
-                        <span className="text-[12px] text-muted-foreground">ID: {previewData.offer_id}</span>
+                        <span className="text-[12px] text-muted-foreground">ID: {previewData.id}</span>
                       </div>
                       <div className="text-[12px] text-muted-foreground">
-                        供应商: {previewData.supplier.name}
+                        供应商: {previewData.supplier}
                       </div>
                     </div>
                   </div>
                   
                   {/* SKU信息 */}
-                  {previewData.skus && previewData.skus.length > 0 && (
+                  {previewData.sku_info && previewData.sku_info.length > 0 && (
                     <div className="space-y-2">
-                      {previewData.skus.map((sku, idx) => (
+                      {previewData.sku_info.map((sku, idx) => (
                         <div key={idx} className="flex items-center gap-2 text-[12px]">
                           <span className="text-muted-foreground">{sku.name}:</span>
                           <div className="flex flex-wrap gap-1">
-                            {sku.values.map((v, i) => (
-                              <Badge key={i} variant="outline" className="text-[10px]">{v}</Badge>
-                            ))}
+                            <Badge variant="outline" className="text-[10px]">¥{sku.price} · 库存: {sku.stock}</Badge>
                           </div>
                         </div>
                       ))}

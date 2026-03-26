@@ -23,26 +23,27 @@ import {
   BarChart3,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { getInventoryList, Inventory as ERPInventory } from '@/lib/api/erp';
 
-interface Inventory {
+interface InventoryItem {
   id: string;
   product_id: string;
   sku: string;
   product_name?: string;
   warehouse: string;
-  available_qty: number;
-  reserved_qty: number;
-  damaged_qty: number;
+  qty_available: number;
+  qty_reserved: number;
   safety_stock: number;
   reorder_point: number;
-  status: string;
+  is_low_stock: boolean;
+  need_reorder: boolean;
   updated_at: string;
 }
 
 export default function ERPInventoryPage() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
-  const [inventory, setInventory] = useState<Inventory[]>([]);
+  const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [keyword, setKeyword] = useState('');
   const [warehouseFilter, setWarehouseFilter] = useState('');
@@ -61,22 +62,27 @@ export default function ERPInventoryPage() {
   const fetchInventory = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('token');
-      const params = new URLSearchParams();
-      if (keyword) params.set('keyword', keyword);
-      if (warehouseFilter) params.set('warehouse', warehouseFilter);
-      if (statusFilter) params.set('status', statusFilter);
-      
-      const response = await fetch(`/api/v1/erp/inventory?${params.toString()}`, {
-        headers: { 'Authorization': `Bearer ${token}` },
+      const data = await getInventoryList({
+        low_stock: statusFilter === 'low_stock',
       });
       
-      if (response.ok) {
-        const data = await response.json();
-        setInventory(data.items || []);
-      } else {
-        toast.error('获取库存列表失败');
-      }
+      // 转换数据格式
+      const items: InventoryItem[] = (data || []).map((item: ERPInventory) => ({
+        id: item.id,
+        product_id: item.product_id,
+        sku: `SKU-${item.product_id.slice(0, 8)}`,
+        product_name: `商品-${item.product_id.slice(0, 6)}`,
+        warehouse: item.warehouse || 'domestic',
+        qty_available: item.qty_available,
+        qty_reserved: item.qty_reserved,
+        safety_stock: item.safety_stock,
+        reorder_point: item.reorder_point,
+        is_low_stock: item.is_low_stock,
+        need_reorder: item.need_reorder,
+        updated_at: item.updated_at,
+      }));
+      
+      setInventory(items);
     } catch (error) {
       console.error('获取库存失败:', error);
       toast.error('获取库存列表失败');
@@ -85,15 +91,14 @@ export default function ERPInventoryPage() {
     }
   };
 
-  const getStatusBadge = (status: string) => {
-    const config: Record<string, { label: string; className: string }> = {
-      normal: { label: '正常', className: 'bg-success/10 text-success' },
-      low_stock: { label: '低库存', className: 'bg-warning/10 text-warning' },
-      out_of_stock: { label: '缺货', className: 'bg-destructive/10 text-destructive' },
-      overstock: { label: '积压', className: 'bg-orange-500/10 text-orange-500' },
-    };
-    const { label, className } = config[status] || config.normal;
-    return <Badge variant="outline" className={className}>{label}</Badge>;
+  const getStatusBadge = (item: InventoryItem) => {
+    if (item.qty_available <= 0) {
+      return <Badge variant="outline" className="bg-destructive/10 text-destructive">缺货</Badge>;
+    }
+    if (item.is_low_stock) {
+      return <Badge variant="outline" className="bg-warning/10 text-warning">低库存</Badge>;
+    }
+    return <Badge variant="outline" className="bg-success/10 text-success">正常</Badge>;
   };
 
   const getWarehouseBadge = (warehouse: string) => {
@@ -108,9 +113,9 @@ export default function ERPInventoryPage() {
 
   // 统计数据
   const totalItems = inventory.length;
-  const totalQty = inventory.reduce((sum, i) => sum + i.available_qty, 0);
-  const lowStockItems = inventory.filter(i => i.status === 'low_stock' || i.status === 'out_of_stock').length;
-  const abnormalItems = inventory.filter(i => i.damaged_qty > 0).length;
+  const totalQty = inventory.reduce((sum, i) => sum + i.qty_available, 0);
+  const lowStockItems = inventory.filter(i => i.is_low_stock || i.qty_available <= 0).length;
+  const totalReserved = inventory.reduce((sum, i) => sum + i.qty_reserved, 0);
 
   if (!user) return null;
 
@@ -190,17 +195,17 @@ export default function ERPInventoryPage() {
           <Card className="bg-white border-border shadow-sm">
             <CardContent className="p-4">
               <div className="text-[12px] text-muted-foreground mb-1">预留库存</div>
-              <div className="text-[24px] font-semibold text-foreground">
-                {inventory.reduce((sum, i) => sum + i.reserved_qty, 0)}
-              </div>
+              <div className="text-[24px] font-semibold text-foreground">{totalReserved}</div>
               <div className="text-[11px] text-muted-foreground mt-1">订单占用</div>
             </CardContent>
           </Card>
           <Card className="bg-white border-border shadow-sm">
             <CardContent className="p-4">
-              <div className="text-[12px] text-muted-foreground mb-1">异常库存</div>
-              <div className="text-[24px] font-semibold text-destructive">{abnormalItems}</div>
-              <div className="text-[11px] text-muted-foreground mt-1">破损/过期</div>
+              <div className="text-[12px] text-muted-foreground mb-1">需补货</div>
+              <div className="text-[24px] font-semibold text-destructive">
+                {inventory.filter(i => i.need_reorder).length}
+              </div>
+              <div className="text-[11px] text-muted-foreground mt-1">待采购</div>
             </CardContent>
           </Card>
         </div>
@@ -271,7 +276,7 @@ export default function ERPInventoryPage() {
                           <div className="flex items-center gap-2">
                             <span className="text-[12px] text-muted-foreground font-mono">{item.sku}</span>
                             {getWarehouseBadge(item.warehouse)}
-                            {getStatusBadge(item.status)}
+                            {getStatusBadge(item)}
                           </div>
                           <div className="text-[14px] font-medium text-foreground">{item.product_name || '未知商品'}</div>
                           <div className="flex items-center gap-4 text-[12px] text-muted-foreground">
@@ -284,24 +289,18 @@ export default function ERPInventoryPage() {
                       <div className="text-right space-y-2">
                         <div className="flex items-center justify-end gap-4">
                           <div className="text-center">
-                            <div className="text-[20px] font-semibold text-foreground">{item.available_qty}</div>
+                            <div className="text-[20px] font-semibold text-foreground">{item.qty_available}</div>
                             <div className="text-[10px] text-muted-foreground">可售</div>
                           </div>
                           <div className="text-center">
-                            <div className="text-[20px] font-semibold text-warning">{item.reserved_qty}</div>
+                            <div className="text-[20px] font-semibold text-warning">{item.qty_reserved}</div>
                             <div className="text-[10px] text-muted-foreground">预留</div>
                           </div>
-                          {item.damaged_qty > 0 && (
-                            <div className="text-center">
-                              <div className="text-[20px] font-semibold text-destructive">{item.damaged_qty}</div>
-                              <div className="text-[10px] text-muted-foreground">破损</div>
-                            </div>
-                          )}
                         </div>
-                        {(item.status === 'low_stock' || item.status === 'out_of_stock') && (
+                        {item.need_reorder && (
                           <div className="flex items-center justify-end gap-1 text-[12px] text-warning">
                             <TrendingDown className="h-3 w-3" />
-                            建议补货 {item.safety_stock - item.available_qty + item.reorder_point} 件
+                            建议补货 {item.safety_stock - item.qty_available + item.reorder_point} 件
                           </div>
                         )}
                         <div className="flex items-center gap-2 mt-3">

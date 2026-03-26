@@ -33,7 +33,10 @@ import {
   Ban,
   ThumbsUp,
   ThumbsDown,
+  Loader2,
 } from 'lucide-react';
+import { toast } from 'sonner';
+import { generateCustomerReply, handleDispute } from '@/lib/api/ai-agents';
 
 interface CustomerTicket {
   id: string;
@@ -47,6 +50,7 @@ interface CustomerTicket {
   complianceChecked: boolean;
   satisfaction?: number;
   createdAt: string;
+  reply?: string;
 }
 
 interface DisputeCase {
@@ -164,6 +168,9 @@ export default function CustomerServiceAgentPage() {
   const [activeTab, setActiveTab] = useState('tickets');
   const [agentStatus, setAgentStatus] = useState<'online' | 'offline' | 'processing'>('online');
   const [tickets, setTickets] = useState<CustomerTicket[]>(mockTickets);
+  const [customerMessage, setCustomerMessage] = useState('');
+  const [replyLanguage, setReplyLanguage] = useState('en');
+  const [isProcessing, setIsProcessing] = useState(false);
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -173,6 +180,50 @@ export default function CustomerServiceAgentPage() {
     }
     setUser(JSON.parse(userData));
   }, [router]);
+
+  // 生成客服回复
+  const handleGenerateReply = async () => {
+    if (!customerMessage) {
+      toast.error('请输入客户消息');
+      return;
+    }
+
+    setIsProcessing(true);
+    setAgentStatus('processing');
+
+    try {
+      const result = await generateCustomerReply({
+        message: customerMessage,
+        language: replyLanguage,
+      });
+
+      if (result.success && result.data) {
+        // 创建新工单
+        const newTicket: CustomerTicket = {
+          id: `TK${Date.now()}`,
+          platform: 'TK',
+          type: 'inquiry',
+          status: 'resolved',
+          customer: '客户',
+          language: replyLanguage === 'id' ? '印尼语' : replyLanguage === 'th' ? '泰语' : '英语',
+          subject: customerMessage.slice(0, 50) + '...',
+          aiHandled: true,
+          complianceChecked: true,
+          createdAt: new Date().toLocaleString('zh-CN'),
+          reply: result.data.reply,
+        };
+        setTickets([newTicket, ...tickets]);
+        toast.success('AI回复已生成！');
+        setCustomerMessage('');
+      }
+    } catch (error: any) {
+      console.error('生成回复失败:', error);
+      toast.error(error.message || '生成回复失败');
+    } finally {
+      setIsProcessing(false);
+      setAgentStatus('online');
+    }
+  };
 
   const getTypeLabel = (type: string) => {
     const labels: Record<string, string> = {
