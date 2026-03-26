@@ -59,23 +59,18 @@ const menuItems: MenuItem[] = [
     icon: FileText,
   },
   {
-    title: '智能体调度',
-    href: '/agents',
+    title: 'AI智能体中心',
+    href: '/ai-agents',
     icon: Bot,
     submenu: [
       { title: '选品智能体', href: '/agents/product-selection' },
-      { title: '图片设计智能体', href: '/agents/image-design' },
+      { title: '图片智能体', href: '/agents/image-design' },
       { title: '视频生成智能体', href: '/agents/video-generation' },
       { title: 'Listing优化', href: '/agents/listing-optimization' },
       { title: '广告投放智能体', href: '/agents/advertising' },
       { title: 'AI客服智能体', href: '/agents/customer-service' },
       { title: '数据复盘智能体', href: '/agents/data-review' },
     ],
-  },
-  {
-    title: 'AI智能体中心',
-    href: '/ai-agents',
-    icon: Sparkles,
   },
   {
     title: 'ERP系统',
