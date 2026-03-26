@@ -3,7 +3,9 @@
  */
 
 // API基础URL
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+// 使用相对路径，通过 Next.js rewrites 代理到后端
+// 这样浏览器端和服务端都能正常工作
+export const API_BASE_URL = '/api/v1';
 
 // API端点配置
 export const API_ENDPOINTS = {
