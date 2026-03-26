@@ -281,7 +281,7 @@ export default function CustomerServiceAgentPage() {
               <RefreshCw className="h-4 w-4 mr-2" />
               刷新
             </Button>
-            <Button onClick={() => toast.success('客服智能体已启动！')}>
+            <Button onClick={() => { console.log('启动客服按钮被点击'); toast.success('客服智能体已启动！'); }}>
               <Play className="h-4 w-4 mr-2" />
               启动客服
             </Button>

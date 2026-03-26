@@ -215,7 +215,7 @@ export default function ReviewAgentPage() {
               <RefreshCw className="h-4 w-4 mr-2" />
               刷新
             </Button>
-            <Button onClick={() => toast.success('数据复盘报告生成中...')}>
+            <Button onClick={() => { console.log('生成报告按钮被点击'); toast.success('数据复盘报告生成中...'); }}>
               <Play className="h-4 w-4 mr-2" />
               生成报告
             </Button>
