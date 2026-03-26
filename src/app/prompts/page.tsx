@@ -95,10 +95,11 @@ export default function PromptsPage() {
     setIsLoading(true);
     try {
       const response = await getPrompts({ page: 1, page_size: 100 });
-      setPrompts(response.items);
+      setPrompts(response.items || response.prompts || []);
     } catch (error) {
       console.error('获取Prompt列表失败:', error);
       toast.error('获取Prompt列表失败');
+      setPrompts([]);
     } finally {
       setIsLoading(false);
     }
