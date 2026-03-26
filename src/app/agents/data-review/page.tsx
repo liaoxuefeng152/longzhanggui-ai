@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { toast } from 'sonner';
 import {
   BarChart3,
   Search,
@@ -214,7 +215,7 @@ export default function ReviewAgentPage() {
               <RefreshCw className="h-4 w-4 mr-2" />
               刷新
             </Button>
-            <Button>
+            <Button onClick={() => toast.success('数据复盘报告生成中...')}>
               <Play className="h-4 w-4 mr-2" />
               生成报告
             </Button>
@@ -429,15 +430,15 @@ export default function ReviewAgentPage() {
                         <div className="flex items-center gap-2">
                           {task.status === 'pending' && (
                             <>
-                              <Button variant="outline" size="sm">跳过</Button>
-                              <Button size="sm">
+                              <Button variant="outline" size="sm" onClick={() => toast.info('已跳过该任务')}>跳过</Button>
+                              <Button size="sm" onClick={() => toast.success('正在执行数据复盘任务...')}>
                                 <Send className="h-3 w-3 mr-1" />
                                 执行
                               </Button>
                             </>
                           )}
                           {task.status === 'processing' && (
-                            <Button variant="outline" size="sm">
+                            <Button variant="outline" size="sm" onClick={() => toast.info('正在查看任务进度...')}>
                               <Eye className="h-3 w-3 mr-1" />
                               查看进度
                             </Button>
@@ -518,16 +519,16 @@ export default function ReviewAgentPage() {
                             待发送
                           </Badge>
                         )}
-                        <Button variant="outline" size="sm">
+                        <Button variant="outline" size="sm" onClick={() => toast.info('正在查看报告详情...')}>
                           <Eye className="h-3 w-3 mr-1" />
                           查看
                         </Button>
-                        <Button variant="outline" size="sm">
+                        <Button variant="outline" size="sm" onClick={() => toast.success('报告已导出')}>
                           <Download className="h-3 w-3 mr-1" />
                           导出
                         </Button>
                         {report.status !== 'sent' && (
-                          <Button size="sm">
+                          <Button size="sm" onClick={() => toast.success('报告已发送')}>
                             <Send className="h-3 w-3 mr-1" />
                             发送
                           </Button>
@@ -585,7 +586,7 @@ export default function ReviewAgentPage() {
                       <div className="text-[13px] font-medium text-foreground">数据源</div>
                       <div className="text-[11px] text-muted-foreground">ERP全量销售、订单、广告、物流、客服数据</div>
                     </div>
-                    <Button variant="outline" size="sm">
+                    <Button variant="outline" size="sm" onClick={() => toast.info('正在打开配置页面...')}>
                       <Settings className="h-4 w-4 mr-2" />
                       配置
                     </Button>

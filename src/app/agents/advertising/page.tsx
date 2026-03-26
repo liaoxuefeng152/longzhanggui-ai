@@ -9,6 +9,21 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
   Megaphone,
   Search,
   Shield,
@@ -29,7 +44,11 @@ import {
   Eye,
   Ban,
   AlertOctagon,
+  Loader2,
+  Sparkles,
 } from 'lucide-react';
+import { toast } from 'sonner';
+import { createAdCampaign } from '@/lib/api/ai-agents';
 
 interface AdCampaign {
   id: string;
@@ -177,6 +196,16 @@ export default function AdvertisingAgentPage() {
   const [activeTab, setActiveTab] = useState('campaigns');
   const [agentStatus, setAgentStatus] = useState<'online' | 'offline' | 'processing'>('online');
   const [campaigns, setCampaigns] = useState<AdCampaign[]>(mockCampaigns);
+  
+  // 新建广告对话框状态
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
+  const [newAd, setNewAd] = useState({
+    product_id: '',
+    platform: 'tiktok',
+    daily_budget: 100,
+    target_acos: 0.2,
+  });
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -186,6 +215,71 @@ export default function AdvertisingAgentPage() {
     }
     setUser(JSON.parse(userData));
   }, [router]);
+
+  // 创建广告
+  const handleCreateAd = async () => {
+    if (!newAd.product_id.trim()) {
+      toast.error('请输入产品ID');
+      return;
+    }
+
+    setIsCreating(true);
+    setAgentStatus('processing');
+
+    try {
+      const result = await createAdCampaign({
+        product_id: newAd.product_id,
+        platform: newAd.platform,
+        daily_budget: newAd.daily_budget,
+        target_acos: newAd.target_acos,
+      });
+
+      if (result.success && result.data) {
+        const newCampaign: AdCampaign = {
+          id: result.data.campaign_id,
+          name: `广告计划-${newAd.product_id}`,
+          platform: newAd.platform === 'tiktok' ? 'TK Ads' : 'Amazon PPC',
+          status: 'active',
+          budget: newAd.daily_budget,
+          spent: 0,
+          clicks: 0,
+          conversions: 0,
+          roi: 0,
+          cpc: 0,
+          riskStatus: 'normal',
+          riskReasons: [],
+        };
+        setCampaigns([newCampaign, ...campaigns]);
+        toast.success('广告计划创建成功！');
+        setIsDialogOpen(false);
+        setNewAd({
+          product_id: '',
+          platform: 'tiktok',
+          daily_budget: 100,
+          target_acos: 0.2,
+        });
+      }
+    } catch (error: any) {
+      console.error('创建广告失败:', error);
+      toast.error(error.message || '创建广告失败');
+    } finally {
+      setIsCreating(false);
+      setAgentStatus('online');
+    }
+  };
+
+  // 暂停广告
+  const handlePauseAd = (campaign: AdCampaign) => {
+    setCampaigns(prev => prev.map(c => 
+      c.id === campaign.id ? { ...c, status: 'paused' as const } : c
+    ));
+    toast.success(`广告"${campaign.name}"已暂停`);
+  };
+
+  // 查看详情
+  const handleViewDetails = (campaign: AdCampaign) => {
+    toast.info(`查看广告详情: ${campaign.name}`);
+  };
 
   const getStatusBadge = (status: string) => {
     const config: Record<string, { label: string; className: string }> = {
@@ -235,7 +329,7 @@ export default function AdvertisingAgentPage() {
               <RefreshCw className="h-4 w-4 mr-2" />
               刷新
             </Button>
-            <Button>
+            <Button onClick={() => setIsDialogOpen(true)}>
               <Play className="h-4 w-4 mr-2" />
               新建广告
             </Button>
@@ -390,17 +484,22 @@ export default function AdvertisingAgentPage() {
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Button variant="outline" size="sm">
+                        <Button variant="outline" size="sm" onClick={() => handleViewDetails(campaign)}>
                           <Eye className="h-3 w-3 mr-1" />
                           详情
                         </Button>
                         {campaign.status === 'active' ? (
-                          <Button variant="outline" size="sm">
+                          <Button variant="outline" size="sm" onClick={() => handlePauseAd(campaign)}>
                             <Pause className="h-3 w-3 mr-1" />
                             暂停
                           </Button>
                         ) : campaign.status === 'paused' ? (
-                          <Button size="sm">
+                          <Button size="sm" onClick={() => {
+                            setCampaigns(prev => prev.map(c => 
+                              c.id === campaign.id ? { ...c, status: 'active' as const } : c
+                            ));
+                            toast.success(`广告"${campaign.name}"已恢复投放`);
+                          }}>
                             <Play className="h-3 w-3 mr-1" />
                             恢复
                           </Button>
@@ -592,6 +691,83 @@ export default function AdvertisingAgentPage() {
             </Card>
           </TabsContent>
         </Tabs>
+
+        {/* 新建广告对话框 */}
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogContent className="sm:max-w-[500px]">
+            <DialogHeader>
+              <DialogTitle>新建广告计划</DialogTitle>
+              <DialogDescription>
+                创建新的广告投放计划，AI将自动优化出价和关键词
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <label className="text-[13px] font-medium text-foreground">产品ID *</label>
+                <input
+                  type="text"
+                  placeholder="例如：PROD001"
+                  value={newAd.product_id}
+                  onChange={(e) => setNewAd({ ...newAd, product_id: e.target.value })}
+                  className="w-full px-4 py-2 border border-border rounded-md text-[14px] focus:outline-none focus:ring-2 focus:ring-primary/50"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[13px] font-medium text-foreground">投放平台</label>
+                <Select
+                  value={newAd.platform}
+                  onValueChange={(value) => setNewAd({ ...newAd, platform: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="tiktok">TikTok Ads</SelectItem>
+                    <SelectItem value="amazon">Amazon PPC</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-[13px] font-medium text-foreground">日预算（元）</label>
+                <input
+                  type="number"
+                  placeholder="100"
+                  value={newAd.daily_budget}
+                  onChange={(e) => setNewAd({ ...newAd, daily_budget: parseFloat(e.target.value) || 100 })}
+                  className="w-full px-4 py-2 border border-border rounded-md text-[14px] focus:outline-none focus:ring-2 focus:ring-primary/50"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[13px] font-medium text-foreground">目标ACOS (%)</label>
+                <input
+                  type="number"
+                  placeholder="20"
+                  value={newAd.target_acos * 100}
+                  onChange={(e) => setNewAd({ ...newAd, target_acos: (parseFloat(e.target.value) || 20) / 100 })}
+                  className="w-full px-4 py-2 border border-border rounded-md text-[14px] focus:outline-none focus:ring-2 focus:ring-primary/50"
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+                取消
+              </Button>
+              <Button onClick={handleCreateAd} disabled={isCreating}>
+                {isCreating ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    创建中...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="h-4 w-4 mr-2" />
+                    创建广告
+                  </>
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </MainLayout>
   );

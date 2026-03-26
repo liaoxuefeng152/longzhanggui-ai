@@ -133,7 +133,7 @@ export default function LogisticsPage() {
               <RefreshCw className="h-4 w-4 mr-2" />
               同步轨迹
             </Button>
-            <Button variant="outline">
+            <Button variant="outline" onClick={() => toast.success('正在导出物流数据...')}>
               <Download className="h-4 w-4 mr-2" />
               导出
             </Button>
@@ -245,11 +245,11 @@ export default function LogisticsPage() {
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Button variant="outline" size="sm">
+                        <Button variant="outline" size="sm" onClick={() => toast.info(`查看物流 ${item.tracking_number} 轨迹`)}>
                           <MapPin className="h-3 w-3 mr-1" />
                           轨迹
                         </Button>
-                        <Button variant="outline" size="sm">
+                        <Button variant="outline" size="sm" onClick={() => toast.info(`查看物流 ${item.tracking_number} 详情`)}>
                           <Eye className="h-3 w-3 mr-1" />
                           详情
                         </Button>

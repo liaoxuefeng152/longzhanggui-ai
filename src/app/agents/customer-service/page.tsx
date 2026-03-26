@@ -281,7 +281,7 @@ export default function CustomerServiceAgentPage() {
               <RefreshCw className="h-4 w-4 mr-2" />
               刷新
             </Button>
-            <Button>
+            <Button onClick={() => toast.success('客服智能体已启动！')}>
               <Play className="h-4 w-4 mr-2" />
               启动客服
             </Button>
@@ -432,12 +432,12 @@ export default function CustomerServiceAgentPage() {
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Button variant="outline" size="sm">
+                        <Button variant="outline" size="sm" onClick={() => toast.info(`查看工单详情: ${ticket.subject}`)}>
                           <MessageSquare className="h-3 w-3 mr-1" />
                           详情
                         </Button>
                         {ticket.status === 'pending' && (
-                          <Button size="sm">
+                          <Button size="sm" onClick={() => toast.success('工单已处理！')}>
                             <Send className="h-3 w-3 mr-1" />
                             处理
                           </Button>
@@ -483,8 +483,8 @@ export default function CustomerServiceAgentPage() {
                           )}
                         </div>
                         <div className="flex items-center gap-2">
-                          <Button size="sm" variant="outline">拒绝</Button>
-                          <Button size="sm">执行方案</Button>
+                          <Button size="sm" variant="outline" onClick={() => toast.info('已拒绝方案')}>拒绝</Button>
+                          <Button size="sm" onClick={() => toast.success('已执行方案！')}>执行方案</Button>
                         </div>
                       </div>
                     ))}

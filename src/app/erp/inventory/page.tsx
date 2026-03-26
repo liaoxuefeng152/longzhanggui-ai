@@ -134,15 +134,15 @@ export default function ERPInventoryPage() {
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <Button variant="outline">
+            <Button variant="outline" onClick={() => toast.info('库存调拨功能开发中...')}>
               <MinusCircle className="h-4 w-4 mr-2" />
               库存调拨
             </Button>
-            <Button variant="outline">
+            <Button variant="outline" onClick={() => toast.success('正在导出库存数据...')}>
               <Download className="h-4 w-4 mr-2" />
               导出
             </Button>
-            <Button>
+            <Button onClick={() => toast.info('入库功能开发中...')}>
               <PlusCircle className="h-4 w-4 mr-2" />
               入库
             </Button>
@@ -304,11 +304,11 @@ export default function ERPInventoryPage() {
                           </div>
                         )}
                         <div className="flex items-center gap-2 mt-3">
-                          <Button variant="outline" size="sm">
+                          <Button variant="outline" size="sm" onClick={() => toast.info(`查看库存 ${item.sku} 详情`)}>
                             <Eye className="h-3 w-3 mr-1" />
                             详情
                           </Button>
-                          <Button variant="outline" size="sm">
+                          <Button variant="outline" size="sm" onClick={() => toast.info(`调整库存 ${item.sku}`)}>
                             <Edit className="h-3 w-3 mr-1" />
                             调整
                           </Button>

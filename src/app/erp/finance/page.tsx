@@ -144,11 +144,11 @@ export default function ERPFinancePage() {
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <Button variant="outline">
+            <Button variant="outline" onClick={() => toast.success('正在导出财务报表...')}>
               <FileText className="h-4 w-4 mr-2" />
               导出报表
             </Button>
-            <Button variant="outline">
+            <Button variant="outline" onClick={() => toast.success('正在导出财务明细...')}>
               <Download className="h-4 w-4 mr-2" />
               导出明细
             </Button>

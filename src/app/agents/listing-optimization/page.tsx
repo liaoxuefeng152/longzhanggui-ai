@@ -9,6 +9,21 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
   FileText,
   Search,
   Shield,
@@ -30,6 +45,7 @@ import {
   Copy,
   Edit3,
   Loader2,
+  Sparkles,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { optimizeListing, suggestKeywords, ListingResult } from '@/lib/api/ai-agents';
@@ -115,6 +131,18 @@ export default function ListingAgentPage() {
   const [productName, setProductName] = useState('');
   const [platform, setPlatform] = useState<'TK' | 'Amazon'>('TK');
   const [isProcessing, setIsProcessing] = useState(false);
+  
+  // 新建优化对话框状态
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [newListing, setNewListing] = useState({
+    product_name: '',
+    platform: 'TK' as 'TK' | 'Amazon',
+    language: 'id',
+  });
+  
+  // 预览对话框状态
+  const [previewTask, setPreviewTask] = useState<ListingTask | null>(null);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -127,7 +155,7 @@ export default function ListingAgentPage() {
 
   // 启动Listing优化
   const handleStartOptimization = async () => {
-    if (!productName) {
+    if (!newListing.product_name.trim()) {
       toast.error('请输入商品名称');
       return;
     }
@@ -137,32 +165,37 @@ export default function ListingAgentPage() {
 
     try {
       const result = await optimizeListing({
-        product_info: { name: productName },
-        platform: platform.toLowerCase(),
-        language: 'en',
+        product_info: { name: newListing.product_name },
+        platform: newListing.platform.toLowerCase(),
+        language: newListing.language,
       });
 
       if (result.success && result.data) {
         const newTask: ListingTask = {
           id: `LST${Date.now()}`,
-          productName,
-          platform,
+          productName: newListing.product_name,
+          platform: newListing.platform,
           status: 'completed',
           complianceStatus: 'passed',
           complianceIssues: [],
           components: {
             title: true,
-            bullets: platform === 'Amazon',
-            aplus: platform === 'Amazon',
+            bullets: newListing.platform === 'Amazon',
+            aplus: newListing.platform === 'Amazon',
             keywords: true,
-            tags: platform === 'TK',
+            tags: newListing.platform === 'TK',
           },
           generatedAt: new Date().toLocaleString('zh-CN'),
           result: result.data,
         };
         setListingTasks([newTask, ...listingTasks]);
         toast.success('Listing优化完成！');
-        setProductName('');
+        setIsDialogOpen(false);
+        setNewListing({
+          product_name: '',
+          platform: 'TK',
+          language: 'id',
+        });
       }
     } catch (error: any) {
       console.error('优化失败:', error);
@@ -171,6 +204,18 @@ export default function ListingAgentPage() {
       setIsProcessing(false);
       setAgentStatus('online');
     }
+  };
+
+  // 预览Listing
+  const handlePreview = (task: ListingTask) => {
+    setPreviewTask(task);
+    setIsPreviewOpen(true);
+  };
+
+  // 复制内容
+  const handleCopy = (content: string) => {
+    navigator.clipboard.writeText(content);
+    toast.success('已复制到剪贴板');
   };
 
   const getStatusBadge = (status: string) => {
@@ -218,7 +263,7 @@ export default function ListingAgentPage() {
               <RefreshCw className="h-4 w-4 mr-2" />
               刷新
             </Button>
-            <Button>
+            <Button onClick={() => setIsDialogOpen(true)}>
               <Play className="h-4 w-4 mr-2" />
               新建优化
             </Button>
@@ -360,11 +405,25 @@ export default function ListingAgentPage() {
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Button variant="outline" size="sm" disabled={task.status !== 'completed'}>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          disabled={task.status !== 'completed'}
+                          onClick={() => handlePreview(task)}
+                        >
                           <Eye className="h-3 w-3 mr-1" />
                           预览
                         </Button>
-                        <Button variant="outline" size="sm" disabled={task.status !== 'completed'}>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          disabled={task.status !== 'completed'}
+                          onClick={() => {
+                            if (task.result) {
+                              handleCopy(task.result.title);
+                            }
+                          }}
+                        >
                           <Copy className="h-3 w-3 mr-1" />
                           复制
                         </Button>
@@ -594,6 +653,158 @@ export default function ListingAgentPage() {
             </Card>
           </TabsContent>
         </Tabs>
+
+        {/* 新建优化对话框 */}
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogContent className="sm:max-w-[500px]">
+            <DialogHeader>
+              <DialogTitle>新建Listing优化</DialogTitle>
+              <DialogDescription>
+                输入商品信息，AI将自动生成优化的标题、关键词等内容
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <label className="text-[13px] font-medium text-foreground">商品名称 *</label>
+                <input
+                  type="text"
+                  placeholder="例如：宠物自动喂食器 5L大容量"
+                  value={newListing.product_name}
+                  onChange={(e) => setNewListing({ ...newListing, product_name: e.target.value })}
+                  className="w-full px-4 py-2 border border-border rounded-md text-[14px] focus:outline-none focus:ring-2 focus:ring-primary/50"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[13px] font-medium text-foreground">目标平台</label>
+                <Select
+                  value={newListing.platform}
+                  onValueChange={(value: 'TK' | 'Amazon') => setNewListing({ ...newListing, platform: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="TK">TikTok东南亚</SelectItem>
+                    <SelectItem value="Amazon">亚马逊</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-[13px] font-medium text-foreground">目标语言</label>
+                <Select
+                  value={newListing.language}
+                  onValueChange={(value) => setNewListing({ ...newListing, language: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="id">印尼语</SelectItem>
+                    <SelectItem value="th">泰语</SelectItem>
+                    <SelectItem value="vi">越南语</SelectItem>
+                    <SelectItem value="en">英语</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+                取消
+              </Button>
+              <Button onClick={handleStartOptimization} disabled={isProcessing}>
+                {isProcessing ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    优化中...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="h-4 w-4 mr-2" />
+                    开始优化
+                  </>
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* 预览对话框 */}
+        <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
+          <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Listing详情 - {previewTask?.productName}</DialogTitle>
+              <DialogDescription>
+                查看生成的Listing内容
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              {previewTask?.result && (
+                <>
+                  {/* 标题 */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <label className="text-[13px] font-medium text-foreground">标题</label>
+                      <Button variant="ghost" size="sm" onClick={() => handleCopy(previewTask.result?.title || '')}>
+                        <Copy className="h-3 w-3 mr-1" />
+                        复制
+                      </Button>
+                    </div>
+                    <div className="p-3 bg-muted/30 rounded-lg text-[13px]">
+                      {previewTask.result.title}
+                    </div>
+                  </div>
+
+                  {/* 五点描述 */}
+                  {previewTask.result.bullet_points && previewTask.result.bullet_points.length > 0 && (
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <label className="text-[13px] font-medium text-foreground">五点描述</label>
+                        <Button variant="ghost" size="sm" onClick={() => handleCopy(previewTask.result?.bullet_points?.join('\n') || '')}>
+                          <Copy className="h-3 w-3 mr-1" />
+                          复制
+                        </Button>
+                      </div>
+                      <div className="p-3 bg-muted/30 rounded-lg text-[13px] space-y-2">
+                        {previewTask.result.bullet_points.map((bullet, idx) => (
+                          <div key={idx}>{bullet}</div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 关键词 */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <label className="text-[13px] font-medium text-foreground">关键词</label>
+                      <Button variant="ghost" size="sm" onClick={() => handleCopy(previewTask.result?.keywords?.join(', ') || '')}>
+                        <Copy className="h-3 w-3 mr-1" />
+                        复制
+                      </Button>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {previewTask.result.keywords.map((keyword, idx) => (
+                        <Badge key={idx} variant="outline">{keyword}</Badge>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* SEO评分 */}
+                  <div className="p-3 bg-muted/30 rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[13px] font-medium">SEO评分</span>
+                      <span className="text-[18px] font-bold text-success">{previewTask.result.seo_score}</span>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsPreviewOpen(false)}>
+                关闭
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </MainLayout>
   );

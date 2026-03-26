@@ -137,7 +137,7 @@ export default function ERPOrdersPage() {
               <RefreshCw className="h-4 w-4 mr-2" />
               同步订单
             </Button>
-            <Button variant="outline">
+            <Button variant="outline" onClick={() => toast.success('正在导出订单数据...')}>
               <Download className="h-4 w-4 mr-2" />
               导出
             </Button>
@@ -296,12 +296,12 @@ export default function ERPOrdersPage() {
                           </span>
                         </div>
                         <div className="flex items-center gap-2 mt-3">
-                          <Button variant="outline" size="sm">
+                          <Button variant="outline" size="sm" onClick={() => toast.info(`查看订单 ${order.platform_order_id} 详情`)}>
                             <Eye className="h-3 w-3 mr-1" />
                             详情
                           </Button>
                           {order.status === 'paid' && (
-                            <Button size="sm">
+                            <Button size="sm" onClick={() => toast.success(`订单 ${order.platform_order_id} 已发货`)}>
                               <Truck className="h-3 w-3 mr-1" />
                               发货
                             </Button>

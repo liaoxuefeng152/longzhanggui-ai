@@ -146,15 +146,15 @@ export default function ERPProductsPage() {
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <Button variant="outline">
+            <Button variant="outline" onClick={() => toast.info('批量导入功能开发中...')}>
               <Upload className="h-4 w-4 mr-2" />
               批量导入
             </Button>
-            <Button variant="outline">
+            <Button variant="outline" onClick={() => toast.success('正在导出商品数据...')}>
               <Download className="h-4 w-4 mr-2" />
               导出
             </Button>
-            <Button>
+            <Button onClick={() => toast.info('新增商品功能开发中...')}>
               <Plus className="h-4 w-4 mr-2" />
               新增商品
             </Button>
@@ -313,11 +313,11 @@ export default function ERPProductsPage() {
                           采购 ¥{product.cost_price.toFixed(2)} + 运费 ¥{(product.domestic_shipping + product.first_mile_shipping).toFixed(2)}
                         </div>
                         <div className="flex items-center gap-2 mt-3">
-                          <Button variant="outline" size="sm">
+                          <Button variant="outline" size="sm" onClick={() => toast.info(`查看商品 ${product.internal_sku} 详情`)}>
                             <Eye className="h-3 w-3 mr-1" />
                             详情
                           </Button>
-                          <Button variant="outline" size="sm">
+                          <Button variant="outline" size="sm" onClick={() => toast.info(`编辑商品 ${product.internal_sku}`)}>
                             <Edit className="h-3 w-3 mr-1" />
                             编辑
                           </Button>

@@ -130,11 +130,11 @@ export default function ERPPurchasePage() {
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <Button variant="outline">
+            <Button variant="outline" onClick={() => toast.success('正在导出采购数据...')}>
               <Download className="h-4 w-4 mr-2" />
               导出
             </Button>
-            <Button>
+            <Button onClick={() => toast.info('新建采购单功能开发中...')}>
               <Plus className="h-4 w-4 mr-2" />
               新建采购单
             </Button>
@@ -284,18 +284,18 @@ export default function ERPPurchasePage() {
                         <div className="text-[20px] font-semibold text-foreground">¥{order.total_amount.toFixed(2)}</div>
                         <div className="text-[11px] text-muted-foreground">采购金额</div>
                         <div className="flex items-center gap-2 mt-3">
-                          <Button variant="outline" size="sm">
+                          <Button variant="outline" size="sm" onClick={() => toast.info(`查看采购单 ${order.po_number} 详情`)}>
                             <Eye className="h-3 w-3 mr-1" />
                             详情
                           </Button>
                           {order.status === 'draft' && (
-                            <Button variant="outline" size="sm">
+                            <Button variant="outline" size="sm" onClick={() => toast.info(`编辑采购单 ${order.po_number}`)}>
                               <Edit className="h-3 w-3 mr-1" />
                               编辑
                             </Button>
                           )}
                           {order.status === 'approved' && (
-                            <Button size="sm">
+                            <Button size="sm" onClick={() => toast.success(`采购单 ${order.po_number} 已下单`)}>
                               <ExternalLink className="h-3 w-3 mr-1" />
                               下单
                             </Button>
