@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import MainLayout from '@/components/layout/MainLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -18,16 +20,13 @@ import {
   FileText,
   Upload,
   Package,
-  Settings
+  Settings,
+  Loader2,
+  RefreshCw,
 } from "lucide-react";
+import { toast } from 'sonner';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
-
-// 简单的toast通知
-const showToast = (title: string, description?: string) => {
-  console.log(`[Toast] ${title}: ${description || ''}`);
-  alert(`${title}\n${description || ''}`);
-};
 
 // 工作流模板类型
 interface WorkflowTemplate {
@@ -48,10 +47,22 @@ const stepIconMap: Record<string, React.ReactNode> = {
 };
 
 export default function WorkflowsPage() {
+  const router = useRouter();
+  const [user, setUser] = useState<any>(null);
   const [templates, setTemplates] = useState<WorkflowTemplate[]>([]);
   const [loading, setLoading] = useState(true);
   const [executingWorkflow, setExecutingWorkflow] = useState<string | null>(null);
   const [executionProgress, setExecutionProgress] = useState(0);
+
+  // 用户认证检查
+  useEffect(() => {
+    const userData = localStorage.getItem('user');
+    if (!userData) {
+      router.push('/login');
+      return;
+    }
+    setUser(JSON.parse(userData));
+  }, [router]);
 
   // 获取工作流模板列表
   useEffect(() => {
@@ -85,7 +96,7 @@ export default function WorkflowsPage() {
 
       if (response.ok) {
         const data = await response.json();
-        showToast("🚀 工作流已启动", data.message);
+        toast.success("工作流已启动", { description: data.message });
 
         // 模拟进度更新（实际应通过WebSocket获取）
         let progress = 0;
@@ -95,13 +106,13 @@ export default function WorkflowsPage() {
           if (progress >= 100) {
             clearInterval(interval);
             setExecutingWorkflow(null);
-            showToast("✅ 工作流执行完成", "已成功完成选品到上架的全流程");
+            toast.success("工作流执行完成", { description: "已成功完成选品到上架的全流程" });
           }
         }, 2000);
       }
     } catch (error) {
       console.error('Failed to trigger workflow:', error);
-      showToast("❌ 启动失败", "无法启动工作流，请稍后重试");
+      toast.error("启动失败", { description: "无法启动工作流，请稍后重试" });
       setExecutingWorkflow(null);
     }
   };
@@ -118,46 +129,49 @@ export default function WorkflowsPage() {
     return colors[id] || 'bg-gray-500';
   };
 
-  return (
-    <div className="container mx-auto p-6 space-y-8">
-      {/* 页面标题 */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
-            <Zap className="h-8 w-8 text-yellow-500" />
-            工作流编排引擎
-          </h1>
-          <p className="text-muted-foreground mt-2">
-            龙虾调度中枢 - 一键触发全链路自动化
-          </p>
-        </div>
-        <Button 
-          onClick={triggerFullAutomation}
-          disabled={!!executingWorkflow}
-          className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
-        >
-          {executingWorkflow ? (
-            <>
-              <Clock className="mr-2 h-4 w-4 animate-spin" />
-              执行中...
-            </>
-          ) : (
-            <>
-              <Play className="mr-2 h-4 w-4" />
-              启动全链路自动化
-            </>
-          )}
-        </Button>
-      </div>
+  if (!user) return null;
 
-      {/* 执行进度 */}
-      {executingWorkflow && (
-        <Card className="border-purple-200 bg-purple-50/50">
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Clock className="h-5 w-5 animate-pulse text-purple-600" />
-              工作流执行中
-            </CardTitle>
+  return (
+    <MainLayout user={user} onLogout={() => router.push('/login')}>
+      <div className="space-y-6">
+        {/* 页面标题 */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 rounded-xl bg-yellow-500/10 flex items-center justify-center">
+              <Zap className="h-7 w-7 text-yellow-500" />
+            </div>
+            <div>
+              <h1 className="text-[18px] font-semibold text-foreground">工作流编排引擎</h1>
+              <p className="text-[14px] text-muted-foreground">龙虾调度中枢 - 一键触发全链路自动化</p>
+            </div>
+          </div>
+          <Button 
+            onClick={triggerFullAutomation}
+            disabled={!!executingWorkflow}
+            className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+          >
+            {executingWorkflow ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                执行中...
+              </>
+            ) : (
+              <>
+                <Play className="mr-2 h-4 w-4" />
+                启动全链路自动化
+              </>
+            )}
+          </Button>
+        </div>
+
+        {/* 执行进度 */}
+        {executingWorkflow && (
+          <Card className="border-purple-200 bg-purple-50/50">
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Clock className="h-5 w-5 animate-pulse text-purple-600" />
+                工作流执行中
+              </CardTitle>
           </CardHeader>
           <CardContent>
             <Progress value={executionProgress} className="h-2" />
@@ -205,7 +219,7 @@ export default function WorkflowsPage() {
                 <Button 
                   variant="outline" 
                   className="w-full"
-                  onClick={() => showToast("功能开发中", "工作流详情页面即将上线")}
+                  onClick={() => toast.info("功能开发中", { description: "工作流详情页面即将上线" })}
                 >
                   查看详情
                   <ArrowRight className="ml-2 h-4 w-4" />
@@ -298,6 +312,7 @@ export default function WorkflowsPage() {
           </div>
         </CardContent>
       </Card>
-    </div>
+      </div>
+    </MainLayout>
   );
 }
