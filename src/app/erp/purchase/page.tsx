@@ -7,6 +7,15 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import {
   ShoppingCart,
   Search,
@@ -23,20 +32,39 @@ import {
   DollarSign,
   Package,
   ExternalLink,
+  Loader2,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { getPurchaseOrders, PurchaseOrder as ERPurchaseOrder, createPurchaseOrder } from '@/lib/api/erp';
+import { getPurchaseOrders, PurchaseOrder as ERPurchaseOrder } from '@/lib/api/erp';
 
 interface PurchaseOrder {
   id: string;
   po_number: string;
+  product_id?: string;
+  product_name?: string;
+  sku?: string;
   supplier_name?: string;
+  supplier_url?: string;
+  supplier_contact?: string;
   qty: number;
+  unit_price: number;
   total_amount: number;
   status: string;
   expected_arrival?: string;
   created_at: string;
   notes?: string;
+}
+
+interface NewPurchaseOrderForm {
+  product_name: string;
+  sku: string;
+  qty: string;
+  unit_price: string;
+  supplier_name: string;
+  supplier_url: string;
+  supplier_contact: string;
+  expected_arrival: string;
+  notes: string;
 }
 
 export default function ERPPurchasePage() {
@@ -46,6 +74,21 @@ export default function ERPPurchasePage() {
   const [loading, setLoading] = useState(true);
   const [keyword, setKeyword] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  
+  // 新建采购单对话框
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [newOrder, setNewOrder] = useState<NewPurchaseOrderForm>({
+    product_name: '',
+    sku: '',
+    qty: '',
+    unit_price: '',
+    supplier_name: '',
+    supplier_url: '',
+    supplier_contact: '',
+    expected_arrival: '',
+    notes: '',
+  });
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -65,24 +108,83 @@ export default function ERPPurchasePage() {
       });
       
       // 转换数据格式
-      const orders: PurchaseOrder[] = (data || []).map((item: ERPurchaseOrder) => ({
+      const purchaseOrders: PurchaseOrder[] = (data || []).map((item: ERPurchaseOrder) => ({
         id: item.id,
         po_number: item.po_number,
+        product_id: item.product_id,
+        product_name: item.product_name,
+        sku: item.sku,
         supplier_name: item.supplier_name,
+        supplier_url: item.supplier_url,
+        supplier_contact: item.supplier_contact,
         qty: item.qty,
+        unit_price: item.unit_price,
         total_amount: item.total_amount,
         status: item.status,
-        expected_date: item.expected_arrival,
+        expected_arrival: item.expected_arrival,
         created_at: item.created_at,
         notes: item.notes,
       }));
       
-      setOrders(orders);
+      setOrders(purchaseOrders);
     } catch (error) {
       console.error('获取采购订单失败:', error);
       toast.error('获取采购订单失败');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleCreateOrder = async () => {
+    if (!newOrder.product_name) {
+      toast.error('请输入商品名称');
+      return;
+    }
+    if (!newOrder.qty || parseInt(newOrder.qty) <= 0) {
+      toast.error('请输入有效的采购数量');
+      return;
+    }
+    if (!newOrder.unit_price || parseFloat(newOrder.unit_price) <= 0) {
+      toast.error('请输入有效的单价');
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const response = await fetch('/api/v1/erp/purchase-orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...newOrder,
+          qty: parseInt(newOrder.qty),
+          unit_price: parseFloat(newOrder.unit_price),
+        }),
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        toast.success('采购单创建成功');
+        setShowCreateDialog(false);
+        setNewOrder({
+          product_name: '',
+          sku: '',
+          qty: '',
+          unit_price: '',
+          supplier_name: '',
+          supplier_url: '',
+          supplier_contact: '',
+          expected_arrival: '',
+          notes: '',
+        });
+        fetchOrders();
+      } else {
+        toast.error(data.message || '创建失败');
+      }
+    } catch (error) {
+      console.error('创建采购单失败:', error);
+      toast.error('创建采购单失败');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -113,6 +215,9 @@ export default function ERPPurchasePage() {
     return new Date(o.expected_arrival) < new Date();
   }).length;
 
+  // 计算总金额
+  const calculatedTotal = ((parseFloat(newOrder.qty) || 0) * (parseFloat(newOrder.unit_price) || 0)).toFixed(2);
+
   if (!user) return null;
 
   return (
@@ -134,7 +239,7 @@ export default function ERPPurchasePage() {
               <Download className="h-4 w-4 mr-2" />
               导出
             </Button>
-            <Button onClick={() => toast.info('新建采购单功能开发中...')}>
+            <Button onClick={() => setShowCreateDialog(true)}>
               <Plus className="h-4 w-4 mr-2" />
               新建采购单
             </Button>
@@ -310,6 +415,122 @@ export default function ERPPurchasePage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* 新建采购单对话框 */}
+      <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>新建采购单</DialogTitle>
+            <DialogDescription>填写采购信息创建新的采购单</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="product_name">商品名称 *</Label>
+                <Input
+                  id="product_name"
+                  value={newOrder.product_name}
+                  onChange={(e) => setNewOrder({ ...newOrder, product_name: e.target.value })}
+                  placeholder="输入商品名称"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="sku">SKU</Label>
+                <Input
+                  id="sku"
+                  value={newOrder.sku}
+                  onChange={(e) => setNewOrder({ ...newOrder, sku: e.target.value })}
+                  placeholder="可选"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="qty">采购数量 *</Label>
+                <Input
+                  id="qty"
+                  type="number"
+                  value={newOrder.qty}
+                  onChange={(e) => setNewOrder({ ...newOrder, qty: e.target.value })}
+                  placeholder="0"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="unit_price">单价(元) *</Label>
+                <Input
+                  id="unit_price"
+                  type="number"
+                  value={newOrder.unit_price}
+                  onChange={(e) => setNewOrder({ ...newOrder, unit_price: e.target.value })}
+                  placeholder="0.00"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>总金额</Label>
+                <div className="h-9 px-3 py-2 bg-muted rounded-md text-[14px] flex items-center">
+                  ¥{calculatedTotal}
+                </div>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="supplier_name">供应商名称</Label>
+                <Input
+                  id="supplier_name"
+                  value={newOrder.supplier_name}
+                  onChange={(e) => setNewOrder({ ...newOrder, supplier_name: e.target.value })}
+                  placeholder="输入供应商名称"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="supplier_contact">供应商联系方式</Label>
+                <Input
+                  id="supplier_contact"
+                  value={newOrder.supplier_contact}
+                  onChange={(e) => setNewOrder({ ...newOrder, supplier_contact: e.target.value })}
+                  placeholder="电话/微信"
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="supplier_url">供应商链接</Label>
+              <Input
+                id="supplier_url"
+                value={newOrder.supplier_url}
+                onChange={(e) => setNewOrder({ ...newOrder, supplier_url: e.target.value })}
+                placeholder="https://shop12345678.1688.com"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="expected_arrival">预计到货日期</Label>
+                <Input
+                  id="expected_arrival"
+                  type="date"
+                  value={newOrder.expected_arrival}
+                  onChange={(e) => setNewOrder({ ...newOrder, expected_arrival: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="notes">备注</Label>
+                <Input
+                  id="notes"
+                  value={newOrder.notes}
+                  onChange={(e) => setNewOrder({ ...newOrder, notes: e.target.value })}
+                  placeholder="备注信息"
+                />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowCreateDialog(false)}>取消</Button>
+            <Button onClick={handleCreateOrder} disabled={submitting}>
+              {submitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              创建采购单
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </MainLayout>
   );
 }

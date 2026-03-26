@@ -144,11 +144,54 @@ export default function ERPFinancePage() {
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <Button variant="outline" onClick={() => toast.success('正在导出财务报表...')}>
+            <Button variant="outline" onClick={async () => {
+              try {
+                const params = new URLSearchParams();
+                params.set('type', 'summary');
+                if (dateRange.start) params.set('start_date', dateRange.start);
+                if (dateRange.end) params.set('end_date', dateRange.end);
+                
+                const response = await fetch(`/api/v1/erp/finance/export?${params.toString()}`);
+                if (!response.ok) throw new Error('导出失败');
+                
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `财务汇总报表_${new Date().toISOString().split('T')[0]}.csv`;
+                a.click();
+                window.URL.revokeObjectURL(url);
+                toast.success('财务汇总报表导出成功');
+              } catch (error) {
+                toast.error('导出失败，请重试');
+              }
+            }}>
               <FileText className="h-4 w-4 mr-2" />
               导出报表
             </Button>
-            <Button variant="outline" onClick={() => toast.success('正在导出财务明细...')}>
+            <Button variant="outline" onClick={async () => {
+              try {
+                const params = new URLSearchParams();
+                params.set('type', 'detail');
+                if (dateRange.start) params.set('start_date', dateRange.start);
+                if (dateRange.end) params.set('end_date', dateRange.end);
+                if (typeFilter) params.set('record_type', typeFilter);
+                
+                const response = await fetch(`/api/v1/erp/finance/export?${params.toString()}`);
+                if (!response.ok) throw new Error('导出失败');
+                
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `财务明细报表_${new Date().toISOString().split('T')[0]}.csv`;
+                a.click();
+                window.URL.revokeObjectURL(url);
+                toast.success('财务明细报表导出成功');
+              } catch (error) {
+                toast.error('导出失败，请重试');
+              }
+            }}>
               <Download className="h-4 w-4 mr-2" />
               导出明细
             </Button>

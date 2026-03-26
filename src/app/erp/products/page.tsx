@@ -9,6 +9,14 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
   Package,
   Search,
   Plus,
@@ -24,6 +32,7 @@ import {
   CheckCircle,
   Clock,
   Box,
+  Loader2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -46,6 +55,17 @@ interface ERPProduct {
   updated_at: string;
 }
 
+interface NewProductForm {
+  name_zh: string;
+  name_en: string;
+  cost_price: string;
+  domestic_shipping: string;
+  first_mile_shipping: string;
+  supplier_name: string;
+  category_name: string;
+  source_url: string;
+}
+
 export default function ERPProductsPage() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
@@ -54,6 +74,20 @@ export default function ERPProductsPage() {
   const [keyword, setKeyword] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [complianceFilter, setComplianceFilter] = useState('');
+  
+  // 新增商品对话框
+  const [showAddDialog, setShowAddDialog] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [newProduct, setNewProduct] = useState<NewProductForm>({
+    name_zh: '',
+    name_en: '',
+    cost_price: '',
+    domestic_shipping: '0',
+    first_mile_shipping: '0',
+    supplier_name: '',
+    category_name: '',
+    source_url: '',
+  });
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -89,6 +123,50 @@ export default function ERPProductsPage() {
       toast.error('获取商品列表失败');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleAddProduct = async () => {
+    if (!newProduct.name_zh) {
+      toast.error('请输入商品中文名称');
+      return;
+    }
+    if (!newProduct.cost_price || parseFloat(newProduct.cost_price) <= 0) {
+      toast.error('请输入有效的采购价格');
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const response = await fetch('/api/v1/erp/products', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newProduct),
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        toast.success('商品创建成功');
+        setShowAddDialog(false);
+        setNewProduct({
+          name_zh: '',
+          name_en: '',
+          cost_price: '',
+          domestic_shipping: '0',
+          first_mile_shipping: '0',
+          supplier_name: '',
+          category_name: '',
+          source_url: '',
+        });
+        fetchProducts();
+      } else {
+        toast.error(data.message || '创建失败');
+      }
+    } catch (error) {
+      console.error('创建商品失败:', error);
+      toast.error('创建商品失败');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -154,7 +232,7 @@ export default function ERPProductsPage() {
               <Download className="h-4 w-4 mr-2" />
               导出
             </Button>
-            <Button onClick={() => toast.info('新增商品功能开发中...')}>
+            <Button onClick={() => setShowAddDialog(true)}>
               <Plus className="h-4 w-4 mr-2" />
               新增商品
             </Button>
@@ -331,6 +409,113 @@ export default function ERPProductsPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* 新增商品对话框 */}
+      <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>新增商品</DialogTitle>
+            <DialogDescription>填写商品信息创建新的商品记录</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="name_zh">商品名称(中文) *</Label>
+                <Input
+                  id="name_zh"
+                  value={newProduct.name_zh}
+                  onChange={(e) => setNewProduct({ ...newProduct, name_zh: e.target.value })}
+                  placeholder="输入商品中文名称"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="name_en">商品名称(英文)</Label>
+                <Input
+                  id="name_en"
+                  value={newProduct.name_en}
+                  onChange={(e) => setNewProduct({ ...newProduct, name_en: e.target.value })}
+                  placeholder="输入商品英文名称"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="cost_price">采购价格(元) *</Label>
+                <Input
+                  id="cost_price"
+                  type="number"
+                  value={newProduct.cost_price}
+                  onChange={(e) => setNewProduct({ ...newProduct, cost_price: e.target.value })}
+                  placeholder="0.00"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="domestic_shipping">国内运费(元)</Label>
+                <Input
+                  id="domestic_shipping"
+                  type="number"
+                  value={newProduct.domestic_shipping}
+                  onChange={(e) => setNewProduct({ ...newProduct, domestic_shipping: e.target.value })}
+                  placeholder="0.00"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="first_mile_shipping">头程运费(元)</Label>
+                <Input
+                  id="first_mile_shipping"
+                  type="number"
+                  value={newProduct.first_mile_shipping}
+                  onChange={(e) => setNewProduct({ ...newProduct, first_mile_shipping: e.target.value })}
+                  placeholder="0.00"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="supplier_name">供应商名称</Label>
+                <Input
+                  id="supplier_name"
+                  value={newProduct.supplier_name}
+                  onChange={(e) => setNewProduct({ ...newProduct, supplier_name: e.target.value })}
+                  placeholder="输入供应商名称"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="category_name">商品分类</Label>
+                <Input
+                  id="category_name"
+                  value={newProduct.category_name}
+                  onChange={(e) => setNewProduct({ ...newProduct, category_name: e.target.value })}
+                  placeholder="输入商品分类"
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="source_url">货源链接</Label>
+              <Input
+                id="source_url"
+                value={newProduct.source_url}
+                onChange={(e) => setNewProduct({ ...newProduct, source_url: e.target.value })}
+                placeholder="https://detail.1688.com/offer/xxx.html"
+              />
+            </div>
+            <div className="text-[12px] text-muted-foreground">
+              总成本：¥{
+                ((parseFloat(newProduct.cost_price) || 0) + 
+                (parseFloat(newProduct.domestic_shipping) || 0) + 
+                (parseFloat(newProduct.first_mile_shipping) || 0)).toFixed(2)
+              }
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAddDialog(false)}>取消</Button>
+            <Button onClick={handleAddProduct} disabled={submitting}>
+              {submitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              创建商品
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </MainLayout>
   );
 }

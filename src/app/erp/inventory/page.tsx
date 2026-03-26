@@ -7,6 +7,15 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import {
   Warehouse,
   Search,
@@ -21,6 +30,7 @@ import {
   MinusCircle,
   PlusCircle,
   BarChart3,
+  Loader2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { getInventoryList, Inventory as ERPInventory } from '@/lib/api/erp';
@@ -40,6 +50,16 @@ interface InventoryItem {
   updated_at: string;
 }
 
+interface StockInForm {
+  product_id: string;
+  sku: string;
+  product_name: string;
+  warehouse: string;
+  quantity: string;
+  batch_no: string;
+  notes: string;
+}
+
 export default function ERPInventoryPage() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
@@ -48,6 +68,19 @@ export default function ERPInventoryPage() {
   const [keyword, setKeyword] = useState('');
   const [warehouseFilter, setWarehouseFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  
+  // 入库对话框
+  const [showStockInDialog, setShowStockInDialog] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [stockInForm, setStockInForm] = useState<StockInForm>({
+    product_id: '',
+    sku: '',
+    product_name: '',
+    warehouse: 'domestic',
+    quantity: '',
+    batch_no: '',
+    notes: '',
+  });
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -88,6 +121,53 @@ export default function ERPInventoryPage() {
       toast.error('获取库存列表失败');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleStockIn = async () => {
+    if (!stockInForm.product_name) {
+      toast.error('请输入商品名称');
+      return;
+    }
+    if (!stockInForm.quantity || parseInt(stockInForm.quantity) <= 0) {
+      toast.error('请输入有效的入库数量');
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const response = await fetch('/api/v1/erp/inventory/stock-in', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...stockInForm,
+          product_id: stockInForm.product_id || `PROD-${Date.now()}`,
+          quantity: parseInt(stockInForm.quantity),
+        }),
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        toast.success(data.message || '入库成功');
+        setShowStockInDialog(false);
+        setStockInForm({
+          product_id: '',
+          sku: '',
+          product_name: '',
+          warehouse: 'domestic',
+          quantity: '',
+          batch_no: '',
+          notes: '',
+        });
+        fetchInventory();
+      } else {
+        toast.error(data.message || '入库失败');
+      }
+    } catch (error) {
+      console.error('入库失败:', error);
+      toast.error('入库失败');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -142,7 +222,7 @@ export default function ERPInventoryPage() {
               <Download className="h-4 w-4 mr-2" />
               导出
             </Button>
-            <Button onClick={() => toast.info('入库功能开发中...')}>
+            <Button onClick={() => setShowStockInDialog(true)}>
               <PlusCircle className="h-4 w-4 mr-2" />
               入库
             </Button>
@@ -322,6 +402,88 @@ export default function ERPInventoryPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* 入库对话框 */}
+      <Dialog open={showStockInDialog} onOpenChange={setShowStockInDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>商品入库</DialogTitle>
+            <DialogDescription>填写入库信息，将商品添加到库存</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="product_name">商品名称 *</Label>
+              <Input
+                id="product_name"
+                value={stockInForm.product_name}
+                onChange={(e) => setStockInForm({ ...stockInForm, product_name: e.target.value })}
+                placeholder="输入商品名称"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="sku">SKU</Label>
+                <Input
+                  id="sku"
+                  value={stockInForm.sku}
+                  onChange={(e) => setStockInForm({ ...stockInForm, sku: e.target.value })}
+                  placeholder="可选"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="quantity">入库数量 *</Label>
+                <Input
+                  id="quantity"
+                  type="number"
+                  value={stockInForm.quantity}
+                  onChange={(e) => setStockInForm({ ...stockInForm, quantity: e.target.value })}
+                  placeholder="0"
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="warehouse">入库仓库</Label>
+              <select
+                id="warehouse"
+                className="w-full px-3 py-2 border border-border rounded-md text-[14px]"
+                value={stockInForm.warehouse}
+                onChange={(e) => setStockInForm({ ...stockInForm, warehouse: e.target.value })}
+              >
+                <option value="domestic">国内仓</option>
+                <option value="overseas">海外仓</option>
+                <option value="third_party">第三方仓</option>
+              </select>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="batch_no">批次号</Label>
+                <Input
+                  id="batch_no"
+                  value={stockInForm.batch_no}
+                  onChange={(e) => setStockInForm({ ...stockInForm, batch_no: e.target.value })}
+                  placeholder="可选"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="notes">备注</Label>
+                <Input
+                  id="notes"
+                  value={stockInForm.notes}
+                  onChange={(e) => setStockInForm({ ...stockInForm, notes: e.target.value })}
+                  placeholder="可选"
+                />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowStockInDialog(false)}>取消</Button>
+            <Button onClick={handleStockIn} disabled={submitting}>
+              {submitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              确认入库
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </MainLayout>
   );
 }

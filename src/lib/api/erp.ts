@@ -54,6 +54,8 @@ export interface PurchaseOrder {
   id: string;
   po_number: string;
   product_id: string;
+  product_name?: string;
+  sku?: string;
   qty: number;
   unit_price: number;
   total_amount: number;
