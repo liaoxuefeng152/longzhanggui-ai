@@ -308,6 +308,35 @@ export async function generateActionItems(report: Record<string, unknown>): Prom
   return apiClient.post('/ai/action-items', report);
 }
 
+// ============ 视频生成智能体 ============
+
+export interface GenerateVideoRequest {
+  product_name: string;
+  product_images?: string[];
+  video_type?: 'script' | 'voiceover' | 'slideshow' | 'full';
+  duration?: number;
+  style?: string;
+  language?: string;
+}
+
+export interface VideoGenerationResult {
+  task_id: string;
+  status: string;
+  video_type: string;
+  script?: string;
+  video_url?: string;
+  duration?: number;
+  thumbnail_url?: string;
+  created_at: string;
+}
+
+export async function generateVideo(request: GenerateVideoRequest): Promise<{
+  success: boolean;
+  data: VideoGenerationResult;
+}> {
+  return apiClient.post('/ai/generate-video', request);
+}
+
 // ============ 智能体列表 ============
 
 export interface AgentInfo {

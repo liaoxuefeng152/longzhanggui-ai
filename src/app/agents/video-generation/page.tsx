@@ -9,6 +9,21 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
   Video,
   Search,
   Shield,
@@ -30,7 +45,10 @@ import {
   Clock,
   Film,
   Sparkles,
+  Loader2,
 } from 'lucide-react';
+import { toast } from 'sonner';
+import { generateVideo, GenerateVideoRequest } from '@/lib/api/ai-agents';
 
 interface VideoTask {
   id: string;
@@ -105,6 +123,16 @@ export default function VideoAgentPage() {
   const [activeTab, setActiveTab] = useState('tasks');
   const [agentStatus, setAgentStatus] = useState<'online' | 'offline' | 'processing'>('online');
   const [videoTasks, setVideoTasks] = useState<VideoTask[]>(mockVideoTasks);
+  
+  // 新建视频对话框状态
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [newVideo, setNewVideo] = useState({
+    product_name: '',
+    video_type: 'full' as 'script' | 'voiceover' | 'slideshow' | 'full',
+    duration: 30,
+    style: 'promotional',
+  });
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -114,6 +142,60 @@ export default function VideoAgentPage() {
     }
     setUser(JSON.parse(userData));
   }, [router]);
+
+  // 新建视频
+  const handleGenerateVideo = async () => {
+    if (!newVideo.product_name.trim()) {
+      toast.error('请输入产品名称');
+      return;
+    }
+
+    setIsGenerating(true);
+    setAgentStatus('processing');
+
+    try {
+      const request: GenerateVideoRequest = {
+        product_name: newVideo.product_name,
+        video_type: newVideo.video_type,
+        duration: newVideo.duration,
+        style: newVideo.style,
+      };
+
+      const result = await generateVideo(request);
+
+      if (result.success && result.data) {
+        const newTask: VideoTask = {
+          id: result.data.task_id,
+          productName: newVideo.product_name,
+          type: newVideo.video_type,
+          status: 'completed',
+          complianceStatus: 'passed',
+          preCheckResult: { passed: true, issues: [] },
+          duration: result.data.duration || newVideo.duration,
+          publishStatus: 'draft',
+          generatedAt: new Date().toLocaleString('zh-CN'),
+          videoUrl: result.data.video_url,
+        };
+        setVideoTasks([newTask, ...videoTasks]);
+        toast.success('视频生成成功！');
+        setIsDialogOpen(false);
+        setNewVideo({
+          product_name: '',
+          video_type: 'full',
+          duration: 30,
+          style: 'promotional',
+        });
+      } else {
+        toast.error('视频生成失败');
+      }
+    } catch (error: any) {
+      console.error('视频生成失败:', error);
+      toast.error(error.message || '视频生成失败');
+    } finally {
+      setIsGenerating(false);
+      setAgentStatus('online');
+    }
+  };
 
   const getTypeLabel = (type: string) => {
     const labels: Record<string, string> = {
@@ -183,7 +265,7 @@ export default function VideoAgentPage() {
               <RefreshCw className="h-4 w-4 mr-2" />
               刷新
             </Button>
-            <Button>
+            <Button onClick={() => setIsDialogOpen(true)}>
               <Play className="h-4 w-4 mr-2" />
               新建视频
             </Button>
@@ -508,6 +590,99 @@ export default function VideoAgentPage() {
             </Card>
           </TabsContent>
         </Tabs>
+
+        {/* 新建视频对话框 */}
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogContent className="sm:max-w-[500px]">
+            <DialogHeader>
+              <DialogTitle>新建视频</DialogTitle>
+              <DialogDescription>
+                输入产品信息，AI将自动生成视频脚本和内容
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <label className="text-[13px] font-medium text-foreground">产品名称 *</label>
+                <input
+                  type="text"
+                  placeholder="例如：宠物自动喂食器 5L大容量"
+                  value={newVideo.product_name}
+                  onChange={(e) => setNewVideo({ ...newVideo, product_name: e.target.value })}
+                  className="w-full px-4 py-2 border border-border rounded-md text-[14px] focus:outline-none focus:ring-2 focus:ring-primary/50"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[13px] font-medium text-foreground">视频类型</label>
+                <Select
+                  value={newVideo.video_type}
+                  onValueChange={(value: any) => setNewVideo({ ...newVideo, video_type: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="script">脚本生成</SelectItem>
+                    <SelectItem value="voiceover">AI配音</SelectItem>
+                    <SelectItem value="slideshow">图文轮播</SelectItem>
+                    <SelectItem value="full">完整视频</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-[13px] font-medium text-foreground">视频时长（秒）</label>
+                <Select
+                  value={newVideo.duration.toString()}
+                  onValueChange={(value) => setNewVideo({ ...newVideo, duration: parseInt(value) })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="15">15秒</SelectItem>
+                    <SelectItem value="30">30秒</SelectItem>
+                    <SelectItem value="45">45秒</SelectItem>
+                    <SelectItem value="60">60秒</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-[13px] font-medium text-foreground">视频风格</label>
+                <Select
+                  value={newVideo.style}
+                  onValueChange={(value) => setNewVideo({ ...newVideo, style: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="promotional">促销风格</SelectItem>
+                    <SelectItem value="tutorial">教程风格</SelectItem>
+                    <SelectItem value="lifestyle">生活场景</SelectItem>
+                    <SelectItem value="review">评测风格</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+                取消
+              </Button>
+              <Button onClick={handleGenerateVideo} disabled={isGenerating}>
+                {isGenerating ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    生成中...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="h-4 w-4 mr-2" />
+                    开始生成
+                  </>
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </MainLayout>
   );
