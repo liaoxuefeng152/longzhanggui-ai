@@ -1,14 +1,14 @@
 """
-广告投放智能体
+广告投放智能体 - 使用豆包大模型（Pro模型支持复杂推理）
 """
 from typing import TypedDict, Annotated, Sequence
 from langchain_core.messages import BaseMessage, HumanMessage, AIMessage
 from langgraph.graph import StateGraph, END
-from langchain_openai import ChatOpenAI
 import operator
 import json
 
 from app.agents.base import AgentState
+from app.services.llm_service import get_llm_for_agent
 
 
 class AdvertisingState(TypedDict):
@@ -102,20 +102,13 @@ class AdvertisingAgent:
     
     def __init__(
         self,
-        model: str = "gpt-4o-mini",
-        temperature: float = 0.5,
-        api_key: str = None,
-        base_url: str = None
+        temperature: float = 0.5
     ):
-        self.model = model
+        """初始化广告智能体，使用豆包Pro模型（复杂推理）"""
         self.temperature = temperature
         
-        self.llm = ChatOpenAI(
-            model=model,
-            temperature=temperature,
-            api_key=api_key,
-            base_url=base_url
-        )
+        # 使用豆包大模型 - Pro模型（广告策略需要复杂推理）
+        self.llm = get_llm_for_agent("advertising", temperature=temperature)
         
         self.workflow = self._build_workflow()
         self.app = self.workflow.compile()
@@ -211,7 +204,6 @@ class AdvertisingAgent:
         
         response = await self.llm.ainvoke(messages)
         
-        # 解析广告结构
         campaign_structure = {
             "campaigns": [
                 {
@@ -241,8 +233,6 @@ class AdvertisingAgent:
     
     async def _create_ad_creatives(self, state: AdvertisingState) -> dict:
         """创建广告素材"""
-        platform = state.get('platform', 'amazon_ads')
-        
         prompt = f"""创建广告素材：
 
 广告结构：{json.dumps(state.get('campaign_structure', {}), ensure_ascii=False)}
@@ -267,7 +257,6 @@ class AdvertisingAgent:
         
         response = await self.llm.ainvoke(messages)
         
-        # 模拟广告素材
         ad_creatives = [
             {
                 "headline": f"{state.get('product_name', 'Product')} - 限时特惠",
@@ -312,19 +301,18 @@ class AdvertisingAgent:
         
         response = await self.llm.ainvoke(messages)
         
-        # 出价策略
         bidding_strategy = {
             "strategy": goal_strategy['bidding'],
-            "initial_bid": state.get('budget', 0) * 0.05,  # 初始出价约为预算的5%
+            "initial_bid": state.get('budget', 0) * 0.05,
             "adjustment_rules": [
                 "CTR低于1%时提高出价",
                 "CPA高于目标时降低出价",
                 "ROAS达标时保持出价"
             ],
             "budget_allocation": {
-                "testing": 0.3,    # 30%用于测试
-                "scaling": 0.5,    # 50%用于扩量
-                "retention": 0.2   # 20%用于维持
+                "testing": 0.3,
+                "scaling": 0.5,
+                "retention": 0.2
             }
         }
         
@@ -364,7 +352,6 @@ class AdvertisingAgent:
         
         response = await self.llm.ainvoke(messages)
         
-        # 效果预测
         performance_prediction = {
             "impressions": {"min": int(budget * 10), "max": int(budget * 50)},
             "clicks": {"min": int(budget * 0.5), "max": int(budget * 2)},

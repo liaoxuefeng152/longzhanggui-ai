@@ -1,15 +1,15 @@
 """
-视频生成智能体
+视频生成智能体 - 使用豆包大模型
 """
 from typing import TypedDict, Annotated, Sequence
 from langchain_core.messages import BaseMessage, HumanMessage, AIMessage
 from langgraph.graph import StateGraph, END
-from langchain_openai import ChatOpenAI
 import operator
 import json
 import httpx
 
 from app.agents.base import AgentState
+from app.services.llm_service import get_llm_for_agent
 
 
 class VideoGenerationState(TypedDict):
@@ -17,9 +17,9 @@ class VideoGenerationState(TypedDict):
     messages: Annotated[Sequence[BaseMessage], operator.add]
     product_name: str        # 商品名称
     product_description: str # 商品描述
-    video_type: str          # 视频类型：product_showcase, tutorial, unboxing, lifestyle
+    video_type: str          # 视频类型
     duration: int            # 时长（秒）
-    platform: str            # 目标平台：tiktok, instagram, youtube
+    platform: str            # 目标平台
     script: str              # 视频脚本
     scenes: list[dict]       # 场景列表
     generated_video: dict    # 生成的视频信息
@@ -98,24 +98,17 @@ class VideoGenerationAgent:
     
     def __init__(
         self,
-        model: str = "gpt-4o-mini",
         temperature: float = 0.7,
-        api_key: str = None,
-        base_url: str = None,
         video_api_key: str = None,
         video_api_url: str = None
     ):
-        self.model = model
+        """初始化视频生成智能体，使用豆包Lite模型"""
         self.temperature = temperature
         self.video_api_key = video_api_key
         self.video_api_url = video_api_url
         
-        self.llm = ChatOpenAI(
-            model=model,
-            temperature=temperature,
-            api_key=api_key,
-            base_url=base_url
-        )
+        # 使用豆包大模型 - Lite模型（视频脚本创作）
+        self.llm = get_llm_for_agent("video_generation", temperature=temperature)
         
         self.workflow = self._build_workflow()
         self.app = self.workflow.compile()
@@ -124,17 +117,14 @@ class VideoGenerationAgent:
         """构建视频生成工作流"""
         workflow = StateGraph(VideoGenerationState)
         
-        # 添加节点
         workflow.add_node("analyze_requirements", self._analyze_requirements)
         workflow.add_node("create_script", self._create_script)
         workflow.add_node("design_scenes", self._design_scenes)
         workflow.add_node("generate_video", self._generate_video)
         workflow.add_node("optimize_output", self._optimize_output)
         
-        # 设置入口
         workflow.set_entry_point("analyze_requirements")
         
-        # 添加边
         workflow.add_edge("analyze_requirements", "create_script")
         workflow.add_edge("create_script", "design_scenes")
         workflow.add_edge("design_scenes", "generate_video")
@@ -152,7 +142,6 @@ class VideoGenerationAgent:
         platform_spec = self.PLATFORM_SPECS.get(platform, self.PLATFORM_SPECS['tiktok'])
         video_template = self.VIDEO_TEMPLATES.get(video_type, self.VIDEO_TEMPLATES['product_showcase'])
         
-        # 验证时长
         min_dur, max_dur = platform_spec['duration_range']
         adjusted_duration = max(min_dur, min(max_dur, duration))
         
@@ -195,7 +184,6 @@ class VideoGenerationAgent:
         duration = state.get('duration', 30)
         video_template = self.VIDEO_TEMPLATES.get(video_type, self.VIDEO_TEMPLATES['product_showcase'])
         
-        # 计算每个场景时长
         scene_count = len(video_template['structure'])
         duration_per_scene = duration // scene_count
         
@@ -251,7 +239,6 @@ class VideoGenerationAgent:
         
         response = await self.llm.ainvoke(messages)
         
-        # 解析场景
         try:
             content = response.content
             if "```json" in content:
@@ -277,11 +264,8 @@ class VideoGenerationAgent:
         
         generated_video = {}
         
-        # 如果配置了视频生成API
         if self.video_api_key and self.video_api_url:
             try:
-                # 这里可以调用实际的AI视频生成API
-                # 如 RunwayML、Pika、Sora 等
                 async with httpx.AsyncClient(timeout=120.0) as client:
                     response = await client.post(
                         f"{self.video_api_url}/generate",
@@ -302,7 +286,6 @@ class VideoGenerationAgent:
             except Exception as e:
                 generated_video = {"error": str(e)}
         else:
-            # 模拟视频生成
             generated_video = {
                 "status": "simulated",
                 "message": "视频生成API未配置",

@@ -15,8 +15,13 @@ from app.schemas.agent import (
     AgentCreate, AgentUpdate, AgentConfigUpdate,
     TaskResponse
 )
-from app.agents import get_agent_class
 from loguru import logger
+
+# 延迟导入，避免循环依赖
+def get_agent_class(agent_type: str):
+    """获取智能体类（延迟导入）"""
+    from app.agents import AGENT_CLASSES
+    return AGENT_CLASSES.get(agent_type)
 
 
 class ModelService:

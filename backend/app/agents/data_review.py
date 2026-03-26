@@ -1,15 +1,15 @@
 """
-数据复盘智能体
+数据复盘智能体 - 使用豆包大模型（Pro模型支持复杂分析）
 """
 from typing import TypedDict, Annotated, Sequence
 from langchain_core.messages import BaseMessage, HumanMessage, AIMessage
 from langgraph.graph import StateGraph, END
-from langchain_openai import ChatOpenAI
 import operator
 import json
 from datetime import datetime
 
 from app.agents.base import AgentState
+from app.services.llm_service import get_llm_for_agent
 
 
 class DataReviewState(TypedDict):
@@ -72,29 +72,22 @@ class DataReviewAgent:
     
     # 异常检测阈值
     ANOMALY_THRESHOLDS = {
-        "sales_drop": -20,      # 销售下降20%
-        "traffic_drop": -30,    # 流量下降30%
-        "ctr_drop": -15,        # 点击率下降15%
-        "roas_low": 2.0,        # ROAS低于2
-        "refund_high": 5        # 退款率高于5%
+        "sales_drop": -20,
+        "traffic_drop": -30,
+        "ctr_drop": -15,
+        "roas_low": 2.0,
+        "refund_high": 5
     }
     
     def __init__(
         self,
-        model: str = "gpt-4o-mini",
-        temperature: float = 0.3,
-        api_key: str = None,
-        base_url: str = None
+        temperature: float = 0.3
     ):
-        self.model = model
+        """初始化数据复盘智能体，使用豆包Pro模型"""
         self.temperature = temperature
         
-        self.llm = ChatOpenAI(
-            model=model,
-            temperature=temperature,
-            api_key=api_key,
-            base_url=base_url
-        )
+        # 使用豆包大模型 - Pro模型（数据分析需要复杂推理）
+        self.llm = get_llm_for_agent("data_review", temperature=temperature)
         
         self.workflow = self._build_workflow()
         self.app = self.workflow.compile()
@@ -103,7 +96,6 @@ class DataReviewAgent:
         """构建数据复盘工作流"""
         workflow = StateGraph(DataReviewState)
         
-        # 添加节点
         workflow.add_node("collect_data", self._collect_data)
         workflow.add_node("analyze_trends", self._analyze_trends)
         workflow.add_node("detect_anomalies", self._detect_anomalies)
@@ -111,10 +103,8 @@ class DataReviewAgent:
         workflow.add_node("create_recommendations", self._create_recommendations)
         workflow.add_node("generate_report", self._generate_report)
         
-        # 设置入口
         workflow.set_entry_point("collect_data")
         
-        # 添加边
         workflow.add_edge("collect_data", "analyze_trends")
         workflow.add_edge("analyze_trends", "detect_anomalies")
         workflow.add_edge("detect_anomalies", "generate_insights")
@@ -221,7 +211,6 @@ class DataReviewAgent:
         
         response = await self.llm.ainvoke(messages)
         
-        # 解析异常信息
         anomalies = []
         try:
             content = response.content
@@ -231,7 +220,6 @@ class DataReviewAgent:
             if isinstance(parsed, list):
                 anomalies = parsed
         except:
-            # 模拟异常检测结果
             anomalies = [
                 {
                     "metric": "转化率",
@@ -281,7 +269,6 @@ class DataReviewAgent:
         
         response = await self.llm.ainvoke(messages)
         
-        # 解析洞察
         insights = [
             {
                 "category": "销售增长",
@@ -289,13 +276,6 @@ class DataReviewAgent:
                 "evidence": "移动端转化率环比提升23%",
                 "impact": "贡献总GMV增长的40%",
                 "confidence": "high"
-            },
-            {
-                "category": "流量优化",
-                "finding": "搜索流量成本上升",
-                "evidence": "CPC环比上涨18%",
-                "impact": "广告ROI下降",
-                "confidence": "medium"
             }
         ]
         
@@ -314,20 +294,8 @@ class DataReviewAgent:
 
 请制定具体可执行的优化建议：
 1. 短期行动建议（1-7天）
-   - 行动内容
-   - 预期效果
-   - 负责人/资源需求
-   - 优先级
-
 2. 中期优化建议（1-4周）
-   - 优化方向
-   - 具体措施
-   - 预期收益
-
 3. 长期战略建议（1-3月）
-   - 战略方向
-   - 关键举措
-   - 资源投入
 
 每条建议需包含：
 - 具体行动步骤
@@ -349,14 +317,6 @@ class DataReviewAgent:
                 "steps": ["压缩图片提升加载速度", "优化购买按钮位置", "简化结算流程"],
                 "expected_impact": "转化率提升5-10%",
                 "risk": "需要前端开发资源"
-            },
-            {
-                "timeframe": "medium",
-                "priority": "medium",
-                "action": "调整广告出价策略",
-                "steps": ["降低低效关键词出价", "增加高效关键词预算", "测试新广告素材"],
-                "expected_impact": "ROAS提升20%",
-                "risk": "短期可能影响流量"
             }
         ]
         

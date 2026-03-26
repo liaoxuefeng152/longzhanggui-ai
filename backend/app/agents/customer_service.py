@@ -1,14 +1,15 @@
 """
-AI客服智能体
+AI客服智能体 - 使用豆包大模型
+支持多语言客服对话
 """
 from typing import TypedDict, Annotated, Sequence
 from langchain_core.messages import BaseMessage, HumanMessage, AIMessage
 from langgraph.graph import StateGraph, END
-from langchain_openai import ChatOpenAI
 import operator
 import json
 
 from app.agents.base import AgentState
+from app.services.llm_service import get_llm_for_agent, LLMService
 
 
 class CustomerServiceState(TypedDict):
@@ -52,20 +53,13 @@ class CustomerServiceAgent:
     
     def __init__(
         self,
-        model: str = "gpt-4o-mini",
-        temperature: float = 0.7,
-        api_key: str = None,
-        base_url: str = None
+        temperature: float = 0.7
     ):
-        self.model = model
+        """初始化客服智能体，使用豆包Mini模型（快速响应）"""
         self.temperature = temperature
         
-        self.llm = ChatOpenAI(
-            model=model,
-            temperature=temperature,
-            api_key=api_key,
-            base_url=base_url
-        )
+        # 使用豆包大模型 - Mini模型（客服场景需要快速响应）
+        self.llm = get_llm_for_agent("customer_service", temperature=temperature)
         
         self.workflow = self._build_workflow()
         self.app = self.workflow.compile()
@@ -105,9 +99,7 @@ class CustomerServiceAgent:
 
 只需返回意图关键词，不需要其他内容。"""
         
-        response = await self.llm.ainvoke([
-            {"role": "user", "content": prompt}
-        ])
+        response = await self.llm.ainvoke([{"role": "user", "content": prompt}])
         
         intent = response.content.strip().lower()
         
@@ -144,7 +136,6 @@ class CustomerServiceAgent:
     
     async def _check_satisfaction(self, state: CustomerServiceState) -> dict:
         """检查回复满意度标记"""
-        # 这里可以添加满意度检测逻辑
         return {
             "next_action": "completed"
         }
@@ -170,22 +161,15 @@ class CustomerServiceAgent:
         return result
 
 
-# 多语言翻译辅助
 class TranslationAgent:
     """翻译智能体"""
     
     def __init__(
         self,
-        model: str = "gpt-4o-mini",
-        api_key: str = None,
-        base_url: str = None
+        temperature: float = 0.3
     ):
-        self.llm = ChatOpenAI(
-            model=model,
-            temperature=0.3,
-            api_key=api_key,
-            base_url=base_url
-        )
+        """初始化翻译智能体"""
+        self.llm = get_llm_for_agent("translation", temperature=temperature)
     
     async def translate(
         self,
@@ -200,8 +184,18 @@ class TranslationAgent:
 
 只返回翻译结果，不要添加其他内容。"""
         
-        response = await self.llm.ainvoke([
-            {"role": "user", "content": prompt}
-        ])
-        
+        response = await self.llm.ainvoke([{"role": "user", "content": prompt}])
         return response.content
+    
+    async def batch_translate(
+        self,
+        texts: list[str],
+        source_lang: str,
+        target_lang: str
+    ) -> list[str]:
+        """批量翻译"""
+        results = []
+        for text in texts:
+            result = await self.translate(text, source_lang, target_lang)
+            results.append(result)
+        return results

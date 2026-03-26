@@ -1,13 +1,12 @@
 """
-LangGraph智能体基础模块
+LangGraph智能体基础模块 - 使用豆包大模型
 """
 from typing import TypedDict, Annotated, Sequence
 from langchain_core.messages import BaseMessage
 from langgraph.graph import StateGraph, END
-from langgraph.prebuilt import ToolNode
-from langchain_openai import ChatOpenAI
-from langchain_core.tools import tool
 import operator
+
+from app.services.llm_service import get_llm_for_agent, AgentLLMWrapper
 
 
 class AgentState(TypedDict):
@@ -20,27 +19,30 @@ class AgentState(TypedDict):
 
 
 class BaseAgent:
-    """智能体基类"""
+    """智能体基类 - 所有智能体默认使用豆包大模型"""
     
     def __init__(
         self,
         name: str,
-        model: str = "gpt-4o-mini",
-        temperature: float = 0.7,
-        api_key: str = None,
-        base_url: str = None
+        agent_type: str = None,
+        temperature: float = 0.7
     ):
+        """
+        初始化智能体基类
+        
+        Args:
+            name: 智能体名称
+            agent_type: 智能体类型（用于自动选择合适的模型）
+            temperature: 温度参数
+        """
         self.name = name
-        self.model = model
         self.temperature = temperature
         
-        # 初始化LLM
-        self.llm = ChatOpenAI(
-            model=model,
-            temperature=temperature,
-            api_key=api_key,
-            base_url=base_url
-        )
+        # 使用豆包大模型
+        if agent_type:
+            self.llm = get_llm_for_agent(agent_type, temperature=temperature)
+        else:
+            self.llm = AgentLLMWrapper(temperature=temperature)
         
         # 构建工作流
         self.workflow = self._build_workflow()

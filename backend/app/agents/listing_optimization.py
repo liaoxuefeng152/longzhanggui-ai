@@ -1,15 +1,15 @@
 """
-Listing优化智能体
+Listing优化智能体 - 使用豆包大模型
 """
 from typing import TypedDict, Annotated, Sequence
 from langchain_core.messages import BaseMessage, HumanMessage, AIMessage
 from langgraph.graph import StateGraph, END
-from langchain_openai import ChatOpenAI
 import operator
 import json
 import re
 
 from app.agents.base import AgentState
+from app.services.llm_service import get_llm_for_agent
 
 
 class ListingOptimizationState(TypedDict):
@@ -85,20 +85,13 @@ class ListingOptimizationAgent:
     
     def __init__(
         self,
-        model: str = "gpt-4o-mini",
-        temperature: float = 0.5,
-        api_key: str = None,
-        base_url: str = None
+        temperature: float = 0.5
     ):
-        self.model = model
+        """初始化Listing优化智能体，使用豆包Lite模型"""
         self.temperature = temperature
         
-        self.llm = ChatOpenAI(
-            model=model,
-            temperature=temperature,
-            api_key=api_key,
-            base_url=base_url
-        )
+        # 使用豆包大模型 - Lite模型（平衡性能和成本）
+        self.llm = get_llm_for_agent("listing_optimization", temperature=temperature)
         
         self.workflow = self._build_workflow()
         self.app = self.workflow.compile()
@@ -226,7 +219,6 @@ class ListingOptimizationAgent:
         
         # 提取推荐的标题
         content = response.content
-        # 简单提取第一个标题作为优化标题
         lines = content.split('\n')
         optimized_title = state.get('original_title', '')
         for line in lines:
@@ -274,12 +266,10 @@ class ListingOptimizationAgent:
         for line in content.split('\n'):
             line = line.strip()
             if line and (line.startswith('-') or line.startswith('•') or line[0].isdigit()):
-                # 清理格式
                 bullet = re.sub(r'^[-•\d.]+\s*', '', line)
                 if bullet and len(bullet) < platform_spec['bullet_chars']:
                     bullets.append(bullet)
         
-        # 确保不超过平台限制
         bullets = bullets[:platform_spec['bullet_max']]
         
         return {
@@ -354,7 +344,6 @@ class ListingOptimizationAgent:
         
         response = await self.llm.ainvoke(messages)
         
-        # 解析评分
         seo_score = {
             "overall": 85,
             "details": {

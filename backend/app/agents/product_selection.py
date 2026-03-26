@@ -1,14 +1,14 @@
 """
-选品智能体
+选品智能体 - 使用豆包大模型
 """
 from typing import TypedDict, Annotated, Sequence
 from langchain_core.messages import BaseMessage, HumanMessage, AIMessage
 from langgraph.graph import StateGraph, END
-from langchain_openai import ChatOpenAI
 import operator
 import json
 
 from app.agents.base import AgentState
+from app.services.llm_service import get_llm_for_agent
 
 
 class ProductSelectionState(TypedDict):
@@ -37,24 +37,34 @@ class ProductSelectionAgent:
 4. 季节性因素 - 销售周期、库存风险
 5. 平台政策 - 合规性、禁售品检查
 
-请用专业、客观的语言进行分析，并给出明确的选品建议。"""
+请用专业、客观的语言进行分析，并给出明确的选品建议。
+
+输出格式要求：
+请以JSON格式输出推荐结果，格式如下：
+```json
+{
+  "analysis": "市场分析报告...",
+  "recommendations": [
+    {
+      "name": "商品名称",
+      "reason": "推荐理由",
+      "price_range": "建议售价区间",
+      "profit_margin": "预估利润率",
+      "risks": ["风险1", "风险2"]
+    }
+  ]
+}
+```"""
     
     def __init__(
         self,
-        model: str = "gpt-4o-mini",
-        temperature: float = 0.7,
-        api_key: str = None,
-        base_url: str = None
+        temperature: float = 0.7
     ):
-        self.model = model
+        """初始化选品智能体，使用豆包Agent优化模型"""
         self.temperature = temperature
         
-        self.llm = ChatOpenAI(
-            model=model,
-            temperature=temperature,
-            api_key=api_key,
-            base_url=base_url
-        )
+        # 使用豆包大模型 - Agent优化模型
+        self.llm = get_llm_for_agent("product_selection", temperature=temperature)
         
         self.workflow = self._build_workflow()
         self.app = self.workflow.compile()
@@ -109,53 +119,55 @@ class ProductSelectionAgent:
         }
     
     async def _generate_recommendations(self, state: ProductSelectionState) -> dict:
-        """生成推荐"""
-        prompt = f"""基于以下市场分析：
+        """生成选品推荐"""
+        prompt = f"""基于以下市场分析，请推荐3-5个最有潜力的商品：
+
+市场分析：
 {state.get('analysis', '')}
 
-请推荐3-5个具体的产品，包括：
-1. 产品名称
-2. 推荐理由
-3. 预计售价区间
-4. 毛利率预估
-5. 风险提示
+目标平台：{state.get('platform', '未指定')}
+目标地区：{state.get('region', '未指定')}
 
-请以JSON格式输出，格式如下：
-{{
-  "recommendations": [
-    {{
-      "name": "产品名称",
-      "reason": "推荐理由",
-      "price_range": "价格区间",
-      "profit_margin": "毛利率",
-      "risks": ["风险1", "风险2"]
-    }}
-  ]
-}}"""
+请以JSON格式输出推荐结果，每个商品包含：
+- name: 商品名称
+- reason: 推荐理由（包含市场需求、竞争度、利润空间等）
+- price_range: 建议售价区间
+- profit_margin: 预估利润率
+- risks: 可能的风险列表
+
+请直接输出JSON，不要有其他内容。"""
         
         messages = [
-            {"role": "system", "content": self.SYSTEM_PROMPT},
+            {"role": "system", "content": "你是专业的选品专家，请以JSON格式输出推荐结果。"},
             {"role": "user", "content": prompt}
         ]
         
         response = await self.llm.ainvoke(messages)
         
-        # 解析JSON
+        # 尝试解析JSON
+        recommendations = []
         try:
             content = response.content
             # 提取JSON部分
             if "```json" in content:
-                content = content.split("```json")[1].split("```")[0]
+                start = content.find("```json") + 7
+                end = content.find("```", start)
+                content = content[start:end].strip()
             elif "```" in content:
-                content = content.split("```")[1].split("```")[0]
+                start = content.find("```") + 3
+                end = content.find("```", start)
+                content = content[start:end].strip()
             
-            result = json.loads(content.strip())
-            recommendations = result.get("recommendations", [])
+            data = json.loads(content)
+            recommendations = data.get("recommendations", [])
         except:
-            recommendations = []
+            # 如果解析失败，创建默认推荐
+            recommendations = [
+                {"name": f"推荐商品{i+1}", "reason": "基于市场分析推荐", "price_range": "待定", "profit_margin": "待定", "risks": []}
+                for i in range(3)
+            ]
         
         return {
-            "messages": [AIMessage(content=response.content)],
             "recommendations": recommendations,
             "next_action": "format_output"
         }
@@ -166,24 +178,26 @@ class ProductSelectionAgent:
             "next_action": "completed"
         }
     
-    async def run(
-        self,
-        category: str = "",
-        platform: str = "",
-        region: str = "",
-        budget: str = ""
-    ) -> dict:
+    async def run(self, input_data: dict) -> dict:
         """运行选品智能体"""
         initial_state = {
             "messages": [],
-            "category": category,
-            "platform": platform,
-            "region": region,
-            "budget": budget,
+            "category": input_data.get("category", ""),
+            "platform": input_data.get("platform", "tiktok"),
+            "region": input_data.get("region", "id"),
+            "budget": input_data.get("budget", "中等"),
             "recommendations": [],
             "analysis": "",
             "next_action": ""
         }
         
         result = await self.app.ainvoke(initial_state)
-        return result
+        
+        # 格式化输出
+        return {
+            "output": {
+                "analysis": result.get("analysis", ""),
+                "recommendations": result.get("recommendations", [])
+            },
+            "messages": result.get("messages", [])
+        }

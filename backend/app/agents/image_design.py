@@ -1,15 +1,15 @@
 """
-图片设计智能体
+图片设计智能体 - 使用豆包大模型（含视觉能力）
 """
 from typing import TypedDict, Annotated, Sequence, Optional
 from langchain_core.messages import BaseMessage, HumanMessage, AIMessage
 from langgraph.graph import StateGraph, END
-from langchain_openai import ChatOpenAI
 import operator
 import json
 import httpx
 
 from app.agents.base import AgentState
+from app.services.llm_service import get_llm_for_agent, LLMService
 
 
 class ImageDesignState(TypedDict):
@@ -62,24 +62,17 @@ class ImageDesignAgent:
     
     def __init__(
         self,
-        model: str = "gpt-4o-mini",
         temperature: float = 0.7,
-        api_key: str = None,
-        base_url: str = None,
         image_api_key: str = None,
         image_api_url: str = None
     ):
-        self.model = model
+        """初始化图片设计智能体，使用豆包视觉模型"""
         self.temperature = temperature
         self.image_api_key = image_api_key
         self.image_api_url = image_api_url or "https://api.openai.com/v1"
         
-        self.llm = ChatOpenAI(
-            model=model,
-            temperature=temperature,
-            api_key=api_key,
-            base_url=base_url
-        )
+        # 使用豆包大模型 - 视觉模型（支持图片理解）
+        self.llm = get_llm_for_agent("image_design", temperature=temperature)
         
         self.workflow = self._build_workflow()
         self.app = self.workflow.compile()
@@ -276,3 +269,61 @@ class ImageDesignAgent:
         
         result = await self.app.ainvoke(initial_state)
         return result
+    
+    async def analyze_image(self, image_url: str, question: str = None) -> str:
+        """
+        分析图片（使用豆包视觉模型）
+        
+        Args:
+            image_url: 图片URL
+            question: 问题（可选）
+        
+        Returns:
+            分析结果
+        """
+        llm_service = LLMService.for_agent("image_design")
+        
+        messages = [
+            HumanMessage(content=[
+                {"type": "text", "text": question or "请详细描述这张图片的内容，包括主体、背景、颜色、风格等。"},
+                {"type": "image_url", "image_url": {"url": image_url}}
+            ])
+        ]
+        
+        return await llm_service.chat(messages)
+    
+    async def translate_image_text(self, image_url: str, target_lang: str = "en") -> dict:
+        """
+        识别图片中的文字并翻译
+        
+        Args:
+            image_url: 图片URL
+            target_lang: 目标语言
+        
+        Returns:
+            包含原文和翻译的字典
+        """
+        llm_service = LLMService.for_agent("image_design")
+        
+        prompt = f"""请完成以下任务：
+1. 识别图片中的所有文字
+2. 将识别的文字翻译成{target_lang}
+
+请以JSON格式输出：
+{{
+  "original_text": "识别到的原文",
+  "translated_text": "翻译后的文字",
+  "text_positions": [
+    {{"text": "文字内容", "position": "位置描述"}}
+  ]
+}}"""
+        
+        messages = [
+            HumanMessage(content=[
+                {"type": "text", "text": prompt},
+                {"type": "image_url", "image_url": {"url": image_url}}
+            ])
+        ]
+        
+        response = await llm_service.json_chat(messages)
+        return response
