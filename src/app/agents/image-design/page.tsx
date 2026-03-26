@@ -118,7 +118,8 @@ export default function ImageAgentPage() {
   // 处理图片
   const handleProcessImage = async () => {
     if (!imageUrl) {
-      toast.error('请输入图片URL');
+      toast.error('请先输入图片URL');
+      setActiveTab('tasks'); // 自动切换到任务Tab
       return;
     }
 
@@ -150,6 +151,8 @@ export default function ImageAgentPage() {
         setImageTasks([newTask, ...imageTasks]);
         toast.success('图片处理成功！');
         setImageUrl('');
+      } else {
+        toast.error('图片处理失败，请重试');
       }
     } catch (error: any) {
       console.error('图片处理失败:', error);
@@ -319,6 +322,13 @@ export default function ImageAgentPage() {
                       className="w-full pl-10 pr-4 py-2 border border-border rounded-md text-[14px] focus:outline-none focus:ring-2 focus:ring-primary/50"
                     />
                   </div>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setImageUrl('https://cbu01.alicdn.com/img/ibank/O1CN01ZHpS6j1lyP5qYpYXC_!!2208722477892-0-cib.jpg')}
+                  >
+                    示例URL
+                  </Button>
                   <select 
                     className="px-4 py-2 border border-border rounded-md text-[14px]"
                     value={processMode}
