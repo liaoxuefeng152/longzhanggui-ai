@@ -32,7 +32,8 @@ async function request<T>(
     signal?: AbortSignal;
   }
 ): Promise<T> {
-  const url = `${API_BASE_URL}${endpoint}`;
+  // 如果endpoint以/api开头，直接使用；否则添加API_BASE_URL前缀
+  const url = endpoint.startsWith('/api') ? endpoint : `${API_BASE_URL}${endpoint}`;
   const headers = getAuthHeaders(options?.token);
   
   const config: RequestInit = {

@@ -84,11 +84,11 @@ const nextConfig: NextConfig = {
         source: '/api/v1/auth/:path*',
         destination: `${backendUrl}/api/v1/auth/:path*`,
       },
-      // 模型管理API - 后端处理
-      {
-        source: '/api/v1/models/:path*',
-        destination: `${backendUrl}/api/v1/models/:path*`,
-      },
+      // 模型管理API - 前端处理（本地存储，开发模式）
+      // {
+      //   source: '/api/v1/models/:path*',
+      //   destination: `${backendUrl}/api/v1/models/:path*`,
+      // },
       // Prompt管理API - 后端处理
       {
         source: '/api/v1/prompts/:path*',

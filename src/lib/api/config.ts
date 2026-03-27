@@ -17,12 +17,12 @@ export const API_ENDPOINTS = {
     sendCode: '/auth/send-code',
   },
   
-  // 模型管理
+  // 模型管理 - 使用前端API路由
   models: {
-    list: '/models',
-    detail: (id: string) => `/models/${id}`,
-    test: (id: string) => `/models/${id}/test`,
-    status: '/models/status/list',
+    list: '/api/models',
+    detail: (id: string) => `/api/models/${id}`,
+    test: (id: string) => `/api/models/${id}/test`,
+    status: '/api/models/status',
   },
   
   // Prompt管理
