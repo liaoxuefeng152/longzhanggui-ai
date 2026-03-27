@@ -53,6 +53,11 @@ interface ImageTask {
   generatedAt?: string;
   imageUrl?: string;
   processedUrl?: string;
+  // AI分析结果
+  mode?: string;
+  modeLabel?: string;
+  analysis?: Record<string, any>;
+  aiResponse?: string;
 }
 
 const mockImageTasks: ImageTask[] = [
@@ -154,7 +159,7 @@ export default function ImageAgentPage() {
         // 更新任务列表
         const newTask: ImageTask = {
           id: result.data.task_id,
-          productName: '新图片处理',
+          productName: result.data.mode_label || '图片处理',
           type: 'main',
           platform: 'TK',
           status: result.data.status === 'completed' ? 'completed' : 'processing',
@@ -163,9 +168,13 @@ export default function ImageAgentPage() {
           generatedAt: new Date().toLocaleString('zh-CN'),
           imageUrl: imageUrl,
           processedUrl: result.data.processed_url,
+          mode: result.data.mode,
+          modeLabel: result.data.mode_label,
+          analysis: result.data.analysis,
+          aiResponse: result.data.ai_response,
         };
         setImageTasks([newTask, ...imageTasks]);
-        toast.success('图片处理成功！');
+        toast.success(`${result.data.mode_label || '图片处理'}完成！`);
         setImageUrl('');
       } else {
         toast.error('图片处理失败，请重试');
@@ -418,7 +427,7 @@ export default function ImageAgentPage() {
                   <Button 
                     variant="outline" 
                     size="sm"
-                    onClick={() => setImageUrl('https://cbu01.alicdn.com/img/ibank/O1CN01ZHpS6j1lyP5qYpYXC_!!2208722477892-0-cib.jpg')}
+                    onClick={() => setImageUrl('https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500')}
                   >
                     示例URL
                   </Button>
@@ -489,13 +498,27 @@ export default function ImageAgentPage() {
                 <Card key={task.id} className="bg-white border-border shadow-sm">
                   <CardContent className="p-4">
                     <div className="flex items-start gap-4">
-                      <div className="w-24 h-24 bg-muted rounded-lg flex items-center justify-center flex-shrink-0">
-                        {task.status === 'completed' ? (
-                          <Image className="h-10 w-10 text-muted-foreground" />
-                        ) : task.status === 'processing' ? (
+                      <div className="w-24 h-24 bg-muted rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden">
+                        {task.status === 'processing' ? (
                           <RefreshCw className="h-10 w-10 text-primary animate-spin" />
-                        ) : (
+                        ) : task.status === 'failed' ? (
                           <AlertTriangle className="h-10 w-10 text-destructive" />
+                        ) : (task.processedUrl || task.imageUrl) ? (
+                          <img 
+                            src={task.processedUrl || task.imageUrl} 
+                            alt={task.productName}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              // 图片加载失败时显示占位图标
+                              e.currentTarget.style.display = 'none';
+                              const parent = e.currentTarget.parentElement;
+                              if (parent) {
+                                parent.innerHTML = '<svg class="h-10 w-10 text-muted-foreground" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>';
+                              }
+                            }}
+                          />
+                        ) : (
+                          <Image className="h-10 w-10 text-muted-foreground" />
                         )}
                       </div>
                       <div className="flex-1 space-y-2">
@@ -517,7 +540,47 @@ export default function ImageAgentPage() {
                         </div>
                         <div className="text-[11px] text-muted-foreground">
                           ID: {task.id} · {task.generatedAt || '生成中...'}
+                          {task.modeLabel && <span className="ml-2 text-primary">· {task.modeLabel}</span>}
                         </div>
+                        
+                        {/* AI分析结果摘要 */}
+                        {task.status === 'completed' && task.analysis && (
+                          <div className="mt-2 p-2 bg-primary/5 rounded text-[11px]">
+                            {task.analysis.original_texts && (
+                              <div className="text-muted-foreground">
+                                原文: {task.analysis.original_texts?.slice(0, 2).join(', ')}
+                                {(task.analysis.original_texts?.length || 0) > 2 && '...'}
+                              </div>
+                            )}
+                            {task.analysis.translated_texts && (
+                              <div className="text-foreground font-medium">
+                                译文: {task.analysis.translated_texts?.slice(0, 2).join(', ')}
+                                {(task.analysis.translated_texts?.length || 0) > 2 && '...'}
+                              </div>
+                            )}
+                            {task.analysis.quality_score && (
+                              <div className="flex items-center gap-1">
+                                <span className="text-muted-foreground">质量评分:</span>
+                                <span className="text-foreground font-medium">{task.analysis.quality_score}/10</span>
+                              </div>
+                            )}
+                            {task.analysis.has_watermark !== undefined && (
+                              <div className="flex items-center gap-1">
+                                <span className="text-muted-foreground">水印检测:</span>
+                                <span className={task.analysis.has_watermark ? 'text-warning' : 'text-success font-medium'}>
+                                  {task.analysis.has_watermark ? '检测到水印' : '无水印'}
+                                </span>
+                              </div>
+                            )}
+                            {task.analysis.subject && (
+                              <div className="flex items-center gap-1">
+                                <span className="text-muted-foreground">识别主体:</span>
+                                <span className="text-foreground font-medium">{task.analysis.subject}</span>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        
                         <div className="flex items-center gap-2 pt-2">
                           <Button 
                             variant="outline" 
@@ -546,6 +609,19 @@ export default function ImageAgentPage() {
                               </>
                             )}
                           </Button>
+                          {task.aiResponse && (
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => {
+                                setPreviewTask(task);
+                                setPreviewOpen(true);
+                              }}
+                            >
+                              <FileImage className="h-3 w-3 mr-1" />
+                              详情
+                            </Button>
+                          )}
                           {task.complianceStatus === 'failed' && (
                             <Button size="sm" onClick={() => handleRegenerate(task)}>
                               <RotateCcw className="h-3 w-3 mr-1" />
@@ -761,23 +837,150 @@ export default function ImageAgentPage() {
               
               {/* 任务信息 */}
               {previewTask && (
-                <div className="w-full grid grid-cols-2 gap-4 text-sm">
-                  <div className="flex items-center gap-2">
-                    <span className="text-muted-foreground">类型:</span>
-                    <Badge variant="outline">{getTypeLabel(previewTask.type)}</Badge>
+                <div className="w-full space-y-4">
+                  {/* 基本信息 */}
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div className="flex items-center gap-2">
+                      <span className="text-muted-foreground">类型:</span>
+                      <Badge variant="outline">{getTypeLabel(previewTask.type)}</Badge>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-muted-foreground">平台:</span>
+                      <Badge variant="outline">{previewTask.platform}</Badge>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-muted-foreground">合规状态:</span>
+                      {getComplianceBadge(previewTask.complianceStatus)}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-muted-foreground">生成时间:</span>
+                      <span>{previewTask.generatedAt}</span>
+                    </div>
+                    {previewTask.modeLabel && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-muted-foreground">处理模式:</span>
+                        <Badge variant="outline" className="text-primary">{previewTask.modeLabel}</Badge>
+                      </div>
+                    )}
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-muted-foreground">平台:</span>
-                    <Badge variant="outline">{previewTask.platform}</Badge>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-muted-foreground">合规状态:</span>
-                    {getComplianceBadge(previewTask.complianceStatus)}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-muted-foreground">生成时间:</span>
-                    <span>{previewTask.generatedAt}</span>
-                  </div>
+                  
+                  {/* AI分析结果 */}
+                  {previewTask.analysis && (
+                    <div className="w-full p-4 bg-muted/30 rounded-lg">
+                      <div className="text-[13px] font-medium text-foreground mb-3 flex items-center gap-2">
+                        <Zap className="h-4 w-4 text-primary" />
+                        AI分析结果
+                      </div>
+                      <div className="space-y-2 text-[12px]">
+                        {/* 翻译结果 */}
+                        {previewTask.analysis.original_texts && (
+                          <div className="p-2 bg-white rounded">
+                            <div className="text-muted-foreground mb-1">原文内容:</div>
+                            <div className="text-foreground">{previewTask.analysis.original_texts.join(' | ')}</div>
+                          </div>
+                        )}
+                        {previewTask.analysis.translated_texts && (
+                          <div className="p-2 bg-primary/5 rounded">
+                            <div className="text-muted-foreground mb-1">翻译结果:</div>
+                            <div className="text-foreground font-medium">{previewTask.analysis.translated_texts.join(' | ')}</div>
+                          </div>
+                        )}
+                        {previewTask.analysis.notes && (
+                          <div className="text-muted-foreground italic">{previewTask.analysis.notes}</div>
+                        )}
+                        
+                        {/* 优化结果 */}
+                        {previewTask.analysis.quality_score && (
+                          <div className="flex items-center gap-4 p-2 bg-white rounded">
+                            <div>
+                              <span className="text-muted-foreground">质量评分: </span>
+                              <span className="text-foreground font-semibold">{previewTask.analysis.quality_score}/10</span>
+                            </div>
+                            {previewTask.analysis.product_detected && (
+                              <div>
+                                <span className="text-muted-foreground">识别产品: </span>
+                                <span className="text-foreground">{previewTask.analysis.product_detected}</span>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        {previewTask.analysis.issues && previewTask.analysis.issues.length > 0 && (
+                          <div className="p-2 bg-warning/10 rounded">
+                            <div className="text-warning mb-1">发现问题:</div>
+                            <ul className="list-disc list-inside text-foreground">
+                              {previewTask.analysis.issues.map((issue: string, i: number) => (
+                                <li key={i}>{issue}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                        {previewTask.analysis.suggestions && previewTask.analysis.suggestions.length > 0 && (
+                          <div className="p-2 bg-success/10 rounded">
+                            <div className="text-success mb-1">优化建议:</div>
+                            <ul className="list-disc list-inside text-foreground">
+                              {previewTask.analysis.suggestions.map((suggestion: string, i: number) => (
+                                <li key={i}>{suggestion}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                        
+                        {/* 水印检测 */}
+                        {previewTask.analysis.has_watermark !== undefined && (
+                          <div className="flex items-center gap-4 p-2 bg-white rounded">
+                            <div>
+                              <span className="text-muted-foreground">水印检测: </span>
+                              <span className={previewTask.analysis.has_watermark ? 'text-warning font-medium' : 'text-success font-medium'}>
+                                {previewTask.analysis.has_watermark ? '检测到水印' : '无水印'}
+                              </span>
+                            </div>
+                            {previewTask.analysis.watermark_position && (
+                              <div>
+                                <span className="text-muted-foreground">位置: </span>
+                                <span className="text-foreground">{previewTask.analysis.watermark_position}</span>
+                              </div>
+                            )}
+                            {previewTask.analysis.removal_difficulty && (
+                              <div>
+                                <span className="text-muted-foreground">去除难度: </span>
+                                <span className="text-foreground">{previewTask.analysis.removal_difficulty}</span>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        
+                        {/* 白底图分析 */}
+                        {previewTask.analysis.subject && (
+                          <div className="p-2 bg-white rounded space-y-2">
+                            <div>
+                              <span className="text-muted-foreground">识别主体: </span>
+                              <span className="text-foreground font-medium">{previewTask.analysis.subject}</span>
+                            </div>
+                            {previewTask.analysis.current_background && (
+                              <div>
+                                <span className="text-muted-foreground">当前背景: </span>
+                                <span className="text-foreground">{previewTask.analysis.current_background}</span>
+                              </div>
+                            )}
+                            {previewTask.analysis.cutout_difficulty && (
+                              <div>
+                                <span className="text-muted-foreground">抠图难度: </span>
+                                <span className="text-foreground">{previewTask.analysis.cutout_difficulty}</span>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* AI原始响应 */}
+                  {previewTask.aiResponse && !previewTask.analysis && (
+                    <div className="w-full p-4 bg-muted/30 rounded-lg max-h-[200px] overflow-auto">
+                      <div className="text-[13px] font-medium text-foreground mb-2">AI响应:</div>
+                      <div className="text-[12px] text-muted-foreground whitespace-pre-wrap">{previewTask.aiResponse}</div>
+                    </div>
+                  )}
                 </div>
               )}
               

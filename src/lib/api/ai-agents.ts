@@ -84,6 +84,11 @@ export interface ImageProcessResult {
   status: string;
   original_url: string;
   processed_url?: string;
+  mode?: string;
+  mode_label?: string;
+  analysis?: Record<string, any>;
+  ai_response?: string;
+  target_language?: string;
   error?: string;
 }
 
