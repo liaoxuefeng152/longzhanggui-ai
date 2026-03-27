@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-// 模拟Prompt数据（与父路由共享）
-const mockPrompts = [
+// 全局Prompt存储声明
+declare global {
+  var promptsStore: any[] | undefined;
+}
+
+// 默认Prompt数据
+const DEFAULT_PROMPTS = [
   {
     id: 'prompt-001',
     name: '印尼语客服询盘回复',
@@ -124,17 +129,27 @@ const mockPrompts = [
   },
 ];
 
+// 确保全局存储已初始化
+function getPromptsStore(): any[] {
+  if (!global.promptsStore) {
+    global.promptsStore = [...DEFAULT_PROMPTS];
+  }
+  return global.promptsStore;
+}
+
+// GET - 获取单个Prompt详情
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id } = await params;
-    const prompt = mockPrompts.find((p) => p.id === id);
+    const promptsStore = getPromptsStore();
+    const prompt = promptsStore.find((p) => p.id === id);
     
     if (!prompt) {
       return NextResponse.json(
-        { error: 'Prompt不存在' },
+        { error: 'Prompt不存在', detail: 'Prompt不存在' },
         { status: 404 }
       );
     }
@@ -143,12 +158,13 @@ export async function GET(
   } catch (error) {
     console.error('Get prompt error:', error);
     return NextResponse.json(
-      { error: '获取Prompt详情失败' },
+      { error: '获取Prompt详情失败', detail: '获取Prompt详情失败' },
       { status: 500 }
     );
   }
 }
 
+// PUT - 更新Prompt
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -156,45 +172,54 @@ export async function PUT(
   try {
     const { id } = await params;
     const body = await request.json();
+    const promptsStore = getPromptsStore();
     
-    const promptIndex = mockPrompts.findIndex((p) => p.id === id);
+    const promptIndex = promptsStore.findIndex((p) => p.id === id);
     if (promptIndex === -1) {
       return NextResponse.json(
-        { error: 'Prompt不存在' },
+        { error: 'Prompt不存在', detail: 'Prompt不存在' },
         { status: 404 }
       );
     }
 
     const updatedPrompt = {
-      ...mockPrompts[promptIndex],
+      ...promptsStore[promptIndex],
       ...body,
       updated_at: new Date().toISOString(),
     };
+    
+    // 更新全局存储
+    promptsStore[promptIndex] = updatedPrompt;
 
     return NextResponse.json(updatedPrompt);
   } catch (error) {
     console.error('Update prompt error:', error);
     return NextResponse.json(
-      { error: '更新Prompt失败' },
+      { error: '更新Prompt失败', detail: '更新Prompt失败' },
       { status: 500 }
     );
   }
 }
 
+// DELETE - 删除Prompt
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id } = await params;
+    const promptsStore = getPromptsStore();
     
-    const promptIndex = mockPrompts.findIndex((p) => p.id === id);
+    const promptIndex = promptsStore.findIndex((p) => p.id === id);
     if (promptIndex === -1) {
       return NextResponse.json(
-        { error: 'Prompt不存在' },
+        { error: 'Prompt不存在', detail: 'Prompt不存在' },
         { status: 404 }
       );
     }
+    
+    // 从全局存储中删除
+    promptsStore.splice(promptIndex, 1);
 
     return NextResponse.json({
       success: true,
@@ -203,7 +228,7 @@ export async function DELETE(
   } catch (error) {
     console.error('Delete prompt error:', error);
     return NextResponse.json(
-      { error: '删除Prompt失败' },
+      { error: '删除Prompt失败', detail: '删除Prompt失败' },
       { status: 500 }
     );
   }

@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-// 模拟Prompt数据
-const mockPrompts = [
+// 全局Prompt存储
+declare global {
+  var promptsStore: any[] | undefined;
+}
+
+// 默认Prompt数据
+const DEFAULT_PROMPTS = [
   {
     id: 'prompt-001',
     name: '印尼语客服询盘回复',
@@ -124,53 +129,71 @@ const mockPrompts = [
   },
 ];
 
-export async function GET(request: NextRequest) {
-  try {
-    const searchParams = request.nextUrl.searchParams;
-    const category = searchParams.get('category');
-    const agentType = searchParams.get('agent_type');
-    const page = parseInt(searchParams.get('page') || '1');
-    const pageSize = parseInt(searchParams.get('page_size') || '20');
-
-    // 过滤
-    let filtered = [...mockPrompts];
-    if (category && category !== 'all') {
-      filtered = filtered.filter((p) => p.category === category);
-    }
-    if (agentType && agentType !== 'all') {
-      filtered = filtered.filter((p) => p.agent_type === agentType);
-    }
-
-    // 分页
-    const total = filtered.length;
-    const start = (page - 1) * pageSize;
-    const items = filtered.slice(start, start + pageSize);
-
-    return NextResponse.json({
-      items,
-      prompts: items, // 兼容字段
-      total,
-      page,
-      page_size: pageSize,
-    });
-  } catch (error) {
-    console.error('Get prompts error:', error);
-    return NextResponse.json(
-      { error: '获取Prompt模板失败' },
-      { status: 500 }
-    );
+// 确保全局存储已初始化
+function getPromptsStore(): any[] {
+  if (!global.promptsStore) {
+    global.promptsStore = [...DEFAULT_PROMPTS];
   }
+  return global.promptsStore;
 }
 
+// 生成唯一ID
+function generateId(): string {
+  return `prompt-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+}
+
+// GET - 获取Prompt列表
+export async function GET(request: NextRequest) {
+  const promptsStore = getPromptsStore();
+  const { searchParams } = new URL(request.url);
+  const page = parseInt(searchParams.get('page') || '1');
+  const pageSize = parseInt(searchParams.get('page_size') || '100');
+  const agentType = searchParams.get('agent_type');
+  const status = searchParams.get('status');
+  
+  let filteredPrompts = [...promptsStore];
+  
+  if (agentType && agentType !== 'all') {
+    filteredPrompts = filteredPrompts.filter(p => p.agent_type === agentType);
+  }
+  
+  if (status && status !== 'all') {
+    filteredPrompts = filteredPrompts.filter(p => p.status === status);
+  }
+  
+  const total = filteredPrompts.length;
+  const start = (page - 1) * pageSize;
+  const items = filteredPrompts.slice(start, start + pageSize);
+  
+  return NextResponse.json({
+    items,
+    prompts: items,
+    total,
+    page,
+    page_size: pageSize,
+  });
+}
+
+// POST - 创建Prompt
 export async function POST(request: NextRequest) {
+  const promptsStore = getPromptsStore();
+  
   try {
     const body = await request.json();
     
+    // 验证必填字段
+    if (!body.name || !body.content) {
+      return NextResponse.json(
+        { detail: '请填写必填项：模板名称、Prompt内容' },
+        { status: 400 }
+      );
+    }
+    
     const newPrompt = {
-      id: `prompt-${Date.now()}`,
-      name: body.name || '新Prompt',
-      category: body.category || 'general',
-      content: body.content || '',
+      id: generateId(),
+      name: body.name,
+      category: body.category || body.agent_type || 'general',
+      content: body.content,
       model_id: body.model_id || 'doubao-seed-2-0-lite-260215',
       agent_type: body.agent_type || 'product-selection',
       platform: body.platform || 'all',
@@ -181,12 +204,14 @@ export async function POST(request: NextRequest) {
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
-
-    return NextResponse.json(newPrompt);
+    
+    promptsStore.push(newPrompt);
+    
+    return NextResponse.json(newPrompt, { status: 201 });
   } catch (error) {
-    console.error('Create prompt error:', error);
+    console.error('创建Prompt失败:', error);
     return NextResponse.json(
-      { error: '创建Prompt失败' },
+      { detail: '创建Prompt失败' },
       { status: 500 }
     );
   }

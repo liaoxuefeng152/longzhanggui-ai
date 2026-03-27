@@ -25,10 +25,10 @@ export const API_ENDPOINTS = {
     status: '/api/models/status',
   },
   
-  // Prompt管理
+  // Prompt管理 - 使用前端API路由
   prompts: {
-    list: '/prompts',
-    detail: (id: string) => `/prompts/${id}`,
+    list: '/api/prompts',
+    detail: (id: string) => `/api/prompts/${id}`,
   },
   
   // 智能体
