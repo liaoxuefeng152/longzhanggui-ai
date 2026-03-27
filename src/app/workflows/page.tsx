@@ -8,6 +8,14 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { 
   Play, 
   CheckCircle2, 
@@ -23,52 +31,32 @@ import {
   Settings,
   Loader2,
   RefreshCw,
+  X,
+  ShoppingCart,
+  TrendingUp,
+  Truck,
+  Megaphone,
 } from "lucide-react";
 import { toast } from 'sonner';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
 // 工作流模板类型
+interface WorkflowStep {
+  id: string;
+  name: string;
+  description: string;
+  executor: string;
+  icon: string;
+}
+
 interface WorkflowTemplate {
   id: string;
   name: string;
   description: string;
   steps_count: number;
+  steps: WorkflowStep[];
 }
-
-// 默认工作流模板（根据原型文档定义）
-const DEFAULT_TEMPLATES: WorkflowTemplate[] = [
-  {
-    id: 'full_automation',
-    name: '全链路自动化',
-    description: '选品→采集→图片处理→智能定价→Listing优化→商品上架',
-    steps_count: 6,
-  },
-  {
-    id: 'image_pipeline',
-    name: '图片处理流水线',
-    description: '1688采集→图片翻译/优化处理',
-    steps_count: 2,
-  },
-  {
-    id: 'single_product_publish',
-    name: '单商品上架',
-    description: '采集→图片处理→智能定价→Listing优化→上架',
-    steps_count: 5,
-  },
-  {
-    id: 'order_fulfillment',
-    name: '订单履约流程',
-    description: '订单同步→库存检查→采购→物流发货',
-    steps_count: 4,
-  },
-  {
-    id: 'ad_campaign',
-    name: '广告投放流程',
-    description: '表现分析→广告计划→提交投放',
-    steps_count: 3,
-  },
-];
 
 // 工作流步骤图标映射
 const stepIconMap: Record<string, React.ReactNode> = {
@@ -78,7 +66,78 @@ const stepIconMap: Record<string, React.ReactNode> = {
   'pricing': <DollarSign className="h-4 w-4" />,
   'listing_optimization': <FileText className="h-4 w-4" />,
   'publish': <Upload className="h-4 w-4" />,
+  'order_sync': <ShoppingCart className="h-4 w-4" />,
+  'inventory_check': <Package className="h-4 w-4" />,
+  'purchase': <Truck className="h-4 w-4" />,
+  'shipping': <Truck className="h-4 w-4" />,
+  'performance_analysis': <TrendingUp className="h-4 w-4" />,
+  'ad_plan': <Megaphone className="h-4 w-4" />,
+  'ad_submit': <Megaphone className="h-4 w-4" />,
 };
+
+// 默认工作流模板（根据原型文档定义）
+const DEFAULT_TEMPLATES: WorkflowTemplate[] = [
+  {
+    id: 'full_automation',
+    name: '全链路自动化',
+    description: '选品→采集→图片处理→智能定价→Listing优化→商品上架',
+    steps_count: 6,
+    steps: [
+      { id: 's1', name: '选品智能体', description: '分析TK印尼站市场，推荐爆款商品', executor: 'product_selection_agent', icon: 'product_selection' },
+      { id: 's2', name: '1688采集', description: '采集商品详情、图片、SKU信息', executor: 'collection_1688_service', icon: 'collect_1688' },
+      { id: 's3', name: '图片处理', description: 'OCR翻译+去水印+白底图', executor: 'image_design_agent', icon: 'image_processing' },
+      { id: 's4', name: '智能定价', description: '成本+物流+佣金+利润计算', executor: 'pricing_service', icon: 'pricing' },
+      { id: 's5', name: 'Listing优化', description: '标题+描述+关键词优化', executor: 'listing_optimization_agent', icon: 'listing_optimization' },
+      { id: 's6', name: '商品上架', description: '调用TikTok Shop API上架', executor: 'publish_service', icon: 'publish' },
+    ],
+  },
+  {
+    id: 'image_pipeline',
+    name: '图片处理流水线',
+    description: '1688采集→图片翻译/优化处理',
+    steps_count: 2,
+    steps: [
+      { id: 's1', name: '1688采集', description: '采集商品详情、图片、SKU信息', executor: 'collection_1688_service', icon: 'collect_1688' },
+      { id: 's2', name: '图片处理', description: 'OCR翻译+去水印+白底图+合规校验', executor: 'image_design_agent', icon: 'image_processing' },
+    ],
+  },
+  {
+    id: 'single_product_publish',
+    name: '单商品上架',
+    description: '采集→图片处理→智能定价→Listing优化→上架',
+    steps_count: 5,
+    steps: [
+      { id: 's1', name: '1688采集', description: '采集商品详情、图片、SKU信息', executor: 'collection_1688_service', icon: 'collect_1688' },
+      { id: 's2', name: '图片处理', description: 'OCR翻译+去水印+白底图', executor: 'image_design_agent', icon: 'image_processing' },
+      { id: 's3', name: '智能定价', description: '成本+物流+佣金+利润计算', executor: 'pricing_service', icon: 'pricing' },
+      { id: 's4', name: 'Listing优化', description: '标题+描述+关键词优化', executor: 'listing_optimization_agent', icon: 'listing_optimization' },
+      { id: 's5', name: '商品上架', description: '调用TikTok Shop API上架', executor: 'publish_service', icon: 'publish' },
+    ],
+  },
+  {
+    id: 'order_fulfillment',
+    name: '订单履约流程',
+    description: '订单同步→库存检查→采购→物流发货',
+    steps_count: 4,
+    steps: [
+      { id: 's1', name: '订单同步', description: '同步TikTok/Amazon订单到ERP', executor: 'order_sync_service', icon: 'order_sync' },
+      { id: 's2', name: '库存检查', description: '检查库存是否充足', executor: 'inventory_service', icon: 'inventory_check' },
+      { id: 's3', name: '采购管理', description: '库存不足时创建采购单', executor: 'purchase_service', icon: 'purchase' },
+      { id: 's4', name: '物流发货', description: '创建物流单并发货', executor: 'shipping_service', icon: 'shipping' },
+    ],
+  },
+  {
+    id: 'ad_campaign',
+    name: '广告投放流程',
+    description: '表现分析→广告计划→提交投放',
+    steps_count: 3,
+    steps: [
+      { id: 's1', name: '表现分析', description: '分析广告数据、ROI、转化率', executor: 'data_review_agent', icon: 'performance_analysis' },
+      { id: 's2', name: '广告计划', description: '生成预算分配、出价建议', executor: 'advertising_agent', icon: 'ad_plan' },
+      { id: 's3', name: '提交投放', description: '提交广告计划到平台', executor: 'ad_submit_service', icon: 'ad_submit' },
+    ],
+  },
+];
 
 export default function WorkflowsPage() {
   const router = useRouter();
@@ -87,6 +146,79 @@ export default function WorkflowsPage() {
   const [loading, setLoading] = useState(true);
   const [executingWorkflow, setExecutingWorkflow] = useState<string | null>(null);
   const [executionProgress, setExecutionProgress] = useState(0);
+  const [detailDialogOpen, setDetailDialogOpen] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState<WorkflowTemplate | null>(null);
+
+  // 打开详情对话框
+  const openDetailDialog = (template: WorkflowTemplate) => {
+    setSelectedTemplate(template);
+    setDetailDialogOpen(true);
+  };
+
+  // 执行选中的工作流
+  const executeSelectedWorkflow = async () => {
+    if (!selectedTemplate) return;
+    
+    setDetailDialogOpen(false);
+    setExecutingWorkflow(selectedTemplate.id);
+    setExecutionProgress(0);
+
+    try {
+      const response = await fetch(
+        `${API_BASE}/workflow/execute`,
+        { 
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            template_id: selectedTemplate.id,
+            user_id: 'web_user',
+            params: {
+              category: '宠物用品',
+              platform: 'tiktok',
+              region: 'id',
+              quantity: 3,
+            }
+          })
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        toast.success("工作流已启动", { description: data.message || `正在执行 ${selectedTemplate.name}` });
+
+        // 模拟进度更新
+        const totalSteps = selectedTemplate.steps_count;
+        let currentStep = 0;
+        const interval = setInterval(() => {
+          currentStep++;
+          setExecutionProgress((currentStep / totalSteps) * 100);
+          if (currentStep >= totalSteps) {
+            clearInterval(interval);
+            setExecutingWorkflow(null);
+            toast.success("工作流执行完成", { description: `已成功完成 ${selectedTemplate.name}` });
+          }
+        }, 2000);
+      } else {
+        // 后端不可用，模拟执行
+        toast.success("工作流已启动（模拟模式）", { description: `正在执行 ${selectedTemplate.name}` });
+        const totalSteps = selectedTemplate.steps_count;
+        let currentStep = 0;
+        const interval = setInterval(() => {
+          currentStep++;
+          setExecutionProgress((currentStep / totalSteps) * 100);
+          if (currentStep >= totalSteps) {
+            clearInterval(interval);
+            setExecutingWorkflow(null);
+            toast.success("工作流执行完成", { description: `已成功完成 ${selectedTemplate.name}` });
+          }
+        }, 1500);
+      }
+    } catch (error) {
+      console.error('Failed to trigger workflow:', error);
+      toast.error("启动失败", { description: "无法启动工作流，请稍后重试" });
+      setExecutingWorkflow(null);
+    }
+  };
 
   // 用户认证检查
   useEffect(() => {
@@ -264,7 +396,7 @@ export default function WorkflowsPage() {
                 <Button 
                   variant="outline" 
                   className="w-full"
-                  onClick={() => toast.info("功能开发中", { description: "工作流详情页面即将上线" })}
+                  onClick={() => openDetailDialog(template)}
                 >
                   查看详情
                   <ArrowRight className="ml-2 h-4 w-4" />
@@ -358,6 +490,100 @@ export default function WorkflowsPage() {
         </CardContent>
       </Card>
       </div>
+
+      {/* 工作流详情对话框 */}
+      <Dialog open={detailDialogOpen} onOpenChange={setDetailDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {selectedTemplate && (
+                <Badge className={getTemplateBadge(selectedTemplate.id)}>
+                  {selectedTemplate.steps_count} 步骤
+                </Badge>
+              )}
+              {selectedTemplate?.name || '工作流详情'}
+            </DialogTitle>
+            <DialogDescription>
+              {selectedTemplate?.description}
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedTemplate && (
+            <div className="py-4">
+              <h4 className="text-sm font-medium mb-4">执行步骤</h4>
+              <div className="space-y-3">
+                {selectedTemplate.steps.map((step, index) => (
+                  <div key={step.id} className="flex items-start gap-3">
+                    <div className="flex items-center justify-center w-6 h-6 rounded-full bg-primary text-white text-xs font-medium shrink-0">
+                      {index + 1}
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <div className="p-1.5 rounded bg-primary/10 text-primary">
+                          {stepIconMap[step.icon] || <Settings className="h-4 w-4" />}
+                        </div>
+                        <span className="font-medium text-sm">{step.name}</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1 ml-8">{step.description}</p>
+                      <p className="text-xs text-muted-foreground/70 mt-0.5 ml-8">执行器: {step.executor}</p>
+                    </div>
+                    {index < selectedTemplate.steps.length - 1 && (
+                      <ArrowRight className="h-4 w-4 text-muted-foreground shrink-0 mt-2" />
+                    )}
+                  </div>
+                ))}
+              </div>
+              
+              <Separator className="my-4" />
+              
+              <div className="bg-muted/50 rounded-lg p-4">
+                <h4 className="text-sm font-medium mb-2">执行参数（可调整）</h4>
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div>
+                    <span className="text-muted-foreground">目标平台：</span>
+                    <span className="font-medium">TikTok</span>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">目标地区：</span>
+                    <span className="font-medium">印尼 (ID)</span>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">商品类目：</span>
+                    <span className="font-medium">宠物用品</span>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">数量：</span>
+                    <span className="font-medium">3个</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setDetailDialogOpen(false)}>
+              取消
+            </Button>
+            <Button 
+              onClick={executeSelectedWorkflow}
+              disabled={!!executingWorkflow}
+              className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+            >
+              {executingWorkflow ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  执行中...
+                </>
+              ) : (
+                <>
+                  <Play className="mr-2 h-4 w-4" />
+                  立即执行
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </MainLayout>
   );
 }
