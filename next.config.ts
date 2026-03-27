@@ -42,16 +42,100 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: false,
   },
 
-  // API 代理 - 本地开发使用 Next.js API 路由，不转发到后端
-  // 如需连接后端服务，取消注释以下配置
-  // async rewrites() {
-  //   return [
-  //     {
-  //       source: '/api/v1/:path*',
-  //       destination: 'http://localhost:8000/api/v1/:path*',
-  //     },
-  //   ];
-  // },
+  // API 代理 - 将需要后端处理的请求转发到FastAPI后端
+  // 前端自己处理的API：erp, customer-tickets, task-logs, packages, 1688
+  // 后端处理的API：workflow, ai, tiktok, feishu, agents, auth, models, prompts等
+  async rewrites() {
+    const backendUrl = process.env.BACKEND_URL || 'http://localhost:8000';
+    
+    return [
+      // 工作流编排API - 后端处理
+      {
+        source: '/api/v1/workflow/:path*',
+        destination: `${backendUrl}/api/v1/workflow/:path*`,
+      },
+      // AI智能体API - 后端处理（需要调用AI模型）
+      {
+        source: '/api/v1/ai/:path*',
+        destination: `${backendUrl}/api/v1/ai/:path*`,
+      },
+      // AI智能体API（无v1前缀）- 后端处理
+      {
+        source: '/api/ai/:path*',
+        destination: `${backendUrl}/api/v1/ai/:path*`,
+      },
+      // TikTok Shop API - 后端处理
+      {
+        source: '/api/v1/tiktok/:path*',
+        destination: `${backendUrl}/api/v1/tiktok/:path*`,
+      },
+      // 飞书API - 后端处理
+      {
+        source: '/api/v1/feishu/:path*',
+        destination: `${backendUrl}/api/v1/feishu/:path*`,
+      },
+      // 智能体管理API - 后端处理
+      {
+        source: '/api/v1/agents/:path*',
+        destination: `${backendUrl}/api/v1/agents/:path*`,
+      },
+      // 认证API - 后端处理
+      {
+        source: '/api/v1/auth/:path*',
+        destination: `${backendUrl}/api/v1/auth/:path*`,
+      },
+      // 模型管理API - 后端处理
+      {
+        source: '/api/v1/models/:path*',
+        destination: `${backendUrl}/api/v1/models/:path*`,
+      },
+      // Prompt管理API - 后端处理
+      {
+        source: '/api/v1/prompts/:path*',
+        destination: `${backendUrl}/api/v1/prompts/:path*`,
+      },
+      // 报表API - 后端处理
+      {
+        source: '/api/v1/reports/:path*',
+        destination: `${backendUrl}/api/v1/reports/:path*`,
+      },
+      // 用户管理API - 后端处理
+      {
+        source: '/api/v1/users/:path*',
+        destination: `${backendUrl}/api/v1/users/:path*`,
+      },
+      // 飞书用户API - 后端处理
+      {
+        source: '/api/v1/feishu-users/:path*',
+        destination: `${backendUrl}/api/v1/feishu-users/:path*`,
+      },
+      // 平台绑定API - 后端处理
+      {
+        source: '/api/v1/platform-bindings/:path*',
+        destination: `${backendUrl}/api/v1/platform-bindings/:path*`,
+      },
+      // 设置API - 后端处理
+      {
+        source: '/api/v1/settings/:path*',
+        destination: `${backendUrl}/api/v1/settings/:path*`,
+      },
+      // 仪表盘API - 后端处理
+      {
+        source: '/api/v1/dashboard/:path*',
+        destination: `${backendUrl}/api/v1/dashboard/:path*`,
+      },
+      // 订单中心API - 后端处理
+      {
+        source: '/api/v1/orders/:path*',
+        destination: `${backendUrl}/api/v1/orders/:path*`,
+      },
+      // 商品库API - 后端处理
+      {
+        source: '/api/v1/products/:path*',
+        destination: `${backendUrl}/api/v1/products/:path*`,
+      },
+    ];
+  },
 };
 
 export default nextConfig;
