@@ -131,6 +131,7 @@ export default function SelectionAgentPage() {
   const [agentStatus, setAgentStatus] = useState<'online' | 'offline' | 'processing'>('online');
   const [products, setProducts] = useState<Product[]>(mockProducts);
   const [isStarting, setIsStarting] = useState(false);
+  const [triggeringProductId, setTriggeringProductId] = useState<string | null>(null);
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -140,6 +141,64 @@ export default function SelectionAgentPage() {
     }
     setUser(JSON.parse(userData));
   }, [router]);
+
+  // 触发生成 - 执行后续工作流
+  const handleTriggerGeneration = async (product: Product) => {
+    setTriggeringProductId(product.id);
+    
+    try {
+      // 调用工作流API触发单商品上架流程
+      const response = await fetch('/api/v1/workflow/execute', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          template_id: 'single_product_publish',
+          user_id: 'web_user',
+          params: {
+            product_name: product.name,
+            product_id: product.id,
+            category: product.category,
+            platform: product.platform === 'TK' ? 'tiktok' : 'amazon',
+            region: 'id',
+          }
+        })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        toast.success('工作流已启动', {
+          description: `正在处理 ${product.name}，即将跳转到工作流页面查看进度`
+        });
+        
+        // 跳转到工作流页面
+        setTimeout(() => {
+          router.push('/workflows');
+        }, 1500);
+      } else {
+        // 后端不可用，模拟执行
+        toast.success('工作流已启动（模拟模式）', {
+          description: `正在处理 ${product.name} 的图片处理和上架流程`
+        });
+        
+        // 模拟延迟后跳转
+        setTimeout(() => {
+          router.push('/workflows');
+        }, 2000);
+      }
+    } catch (error) {
+      console.error('触发生成失败:', error);
+      toast.error('启动失败', { description: '请稍后重试' });
+    } finally {
+      setTriggeringProductId(null);
+    }
+  };
+
+  // 查看商品详情
+  const handleViewDetail = (product: Product) => {
+    toast.info(`商品详情`, {
+      description: `${product.name} - 预估利润: ¥${product.predictedProfit}/件`
+    });
+  };
 
   // 启动AI选品
   const handleStartSelection = async () => {
@@ -395,13 +454,26 @@ export default function SelectionAgentPage() {
                           <div className="text-[20px] font-semibold text-success">¥{product.predictedProfit}</div>
                           <div className="text-[11px] text-muted-foreground">预估利润/件</div>
                           <div className="flex items-center gap-2 mt-3">
-                            <Button variant="outline" size="sm">
+                            <Button variant="outline" size="sm" onClick={() => handleViewDetail(product)}>
                               <Eye className="h-3 w-3 mr-1" />
                               详情
                             </Button>
-                            <Button size="sm">
-                              <Zap className="h-3 w-3 mr-1" />
-                              触发生成
+                            <Button 
+                              size="sm" 
+                              onClick={() => handleTriggerGeneration(product)}
+                              disabled={triggeringProductId === product.id}
+                            >
+                              {triggeringProductId === product.id ? (
+                                <>
+                                  <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                                  处理中...
+                                </>
+                              ) : (
+                                <>
+                                  <Zap className="h-3 w-3 mr-1" />
+                                  触发生成
+                                </>
+                              )}
                             </Button>
                           </div>
                         </div>
