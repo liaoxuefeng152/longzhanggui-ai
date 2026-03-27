@@ -128,6 +128,14 @@ export interface ListingResult {
   bullet_points: string[];
   keywords: string[];
   seo_score: number;
+  seo_details?: {
+    title_score: number;
+    description_score: number;
+    keywords_score: number;
+  };
+  platform?: string;
+  language?: string;
+  generated_at?: string;
 }
 
 export async function optimizeListing(request: OptimizeListingRequest): Promise<{

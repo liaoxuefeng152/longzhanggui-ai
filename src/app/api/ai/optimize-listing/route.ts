@@ -39,12 +39,15 @@ export async function POST(request: NextRequest) {
         description,
         bullet_points: bulletPoints,
         keywords: generatedKeywords,
-        seo_score: {
+        seo_score: 87, // 整体SEO评分
+        seo_details: {
           title_score: 85,
           description_score: 90,
           keywords_score: 88,
-          overall_score: 87,
         },
+        platform,
+        language,
+        generated_at: new Date().toISOString(),
       },
     });
   } catch (error) {

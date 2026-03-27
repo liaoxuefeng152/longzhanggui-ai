@@ -417,10 +417,21 @@ export default function ListingAgentPage() {
                         <Button 
                           variant="outline" 
                           size="sm" 
-                          disabled={task.status !== 'completed'}
+                          disabled={task.status !== 'completed' || !task.result}
                           onClick={() => {
                             if (task.result) {
-                              handleCopy(task.result.title);
+                              const fullContent = [
+                                `标题: ${task.result.title}`,
+                                '',
+                                `描述:`,
+                                task.result.description,
+                                '',
+                                `五点描述:`,
+                                ...(task.result.bullet_points || []).map((b, i) => `${i + 1}. ${b}`),
+                                '',
+                                `关键词: ${task.result.keywords?.join(', ')}`,
+                              ].join('\n');
+                              handleCopy(fullContent);
                             }
                           }}
                         >
@@ -428,7 +439,13 @@ export default function ListingAgentPage() {
                           复制
                         </Button>
                         {task.status === 'completed' && (
-                          <Button size="sm">
+                          <Button 
+                            size="sm"
+                            onClick={() => {
+                              handlePreview(task);
+                              toast.success('请在预览页面点击"上架到平台"按钮完成上架');
+                            }}
+                          >
                             <Zap className="h-3 w-3 mr-1" />
                             上架
                           </Button>
@@ -730,43 +747,89 @@ export default function ListingAgentPage() {
 
         {/* 预览对话框 */}
         <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
-          <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
+          <DialogContent className="sm:max-w-[650px] max-h-[85vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Listing详情 - {previewTask?.productName}</DialogTitle>
               <DialogDescription>
-                查看生成的Listing内容
+                查看生成的Listing内容，支持复制或上架到平台
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
-              {previewTask?.result && (
+              {previewTask?.result ? (
                 <>
+                  {/* 平台和语言信息 */}
+                  <div className="flex items-center gap-2 text-[12px]">
+                    <Badge variant="outline">{previewTask.platform}</Badge>
+                    <Badge variant="outline" className="bg-primary/5">
+                      {previewTask.result.language === 'id' ? '印尼语' : 
+                       previewTask.result.language === 'th' ? '泰语' : 
+                       previewTask.result.language === 'vi' ? '越南语' : '英语'}
+                    </Badge>
+                    {previewTask.result.generated_at && (
+                      <span className="text-muted-foreground">
+                        生成时间: {new Date(previewTask.result.generated_at).toLocaleString('zh-CN')}
+                      </span>
+                    )}
+                  </div>
+
                   {/* 标题 */}
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <label className="text-[13px] font-medium text-foreground">标题</label>
-                      <Button variant="ghost" size="sm" onClick={() => handleCopy(previewTask.result?.title || '')}>
+                      <label className="text-[13px] font-medium text-foreground">📝 标题</label>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => handleCopy(previewTask.result?.title || '')}
+                      >
                         <Copy className="h-3 w-3 mr-1" />
                         复制
                       </Button>
                     </div>
-                    <div className="p-3 bg-muted/30 rounded-lg text-[13px]">
+                    <div className="p-3 bg-muted/30 rounded-lg text-[13px] font-medium">
                       {previewTask.result.title}
                     </div>
                   </div>
+
+                  {/* 描述 */}
+                  {previewTask.result.description && (
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <label className="text-[13px] font-medium text-foreground">📄 描述</label>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => handleCopy(previewTask.result?.description || '')}
+                        >
+                          <Copy className="h-3 w-3 mr-1" />
+                          复制
+                        </Button>
+                      </div>
+                      <div className="p-3 bg-muted/30 rounded-lg text-[13px] whitespace-pre-wrap">
+                        {previewTask.result.description}
+                      </div>
+                    </div>
+                  )}
 
                   {/* 五点描述 */}
                   {previewTask.result.bullet_points && previewTask.result.bullet_points.length > 0 && (
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
-                        <label className="text-[13px] font-medium text-foreground">五点描述</label>
-                        <Button variant="ghost" size="sm" onClick={() => handleCopy(previewTask.result?.bullet_points?.join('\n') || '')}>
+                        <label className="text-[13px] font-medium text-foreground">📋 五点描述</label>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => handleCopy(previewTask.result?.bullet_points?.join('\n') || '')}
+                        >
                           <Copy className="h-3 w-3 mr-1" />
                           复制
                         </Button>
                       </div>
                       <div className="p-3 bg-muted/30 rounded-lg text-[13px] space-y-2">
                         {previewTask.result.bullet_points.map((bullet, idx) => (
-                          <div key={idx}>{bullet}</div>
+                          <div key={idx} className="flex items-start gap-2">
+                            <span className="text-primary font-medium">{idx + 1}.</span>
+                            <span>{bullet}</span>
+                          </div>
                         ))}
                       </div>
                     </div>
@@ -775,27 +838,88 @@ export default function ListingAgentPage() {
                   {/* 关键词 */}
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <label className="text-[13px] font-medium text-foreground">关键词</label>
-                      <Button variant="ghost" size="sm" onClick={() => handleCopy(previewTask.result?.keywords?.join(', ') || '')}>
+                      <label className="text-[13px] font-medium text-foreground">🏷️ 关键词</label>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => handleCopy(previewTask.result?.keywords?.join(', ') || '')}
+                      >
                         <Copy className="h-3 w-3 mr-1" />
                         复制
                       </Button>
                     </div>
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-wrap gap-2 p-3 bg-muted/30 rounded-lg">
                       {previewTask.result.keywords.map((keyword, idx) => (
-                        <Badge key={idx} variant="outline">{keyword}</Badge>
+                        <Badge key={idx} variant="outline" className="bg-primary/5">{keyword}</Badge>
                       ))}
                     </div>
                   </div>
 
                   {/* SEO评分 */}
-                  <div className="p-3 bg-muted/30 rounded-lg">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[13px] font-medium">SEO评分</span>
-                      <span className="text-[18px] font-bold text-success">{previewTask.result.seo_score}</span>
+                  <div className="p-4 bg-gradient-to-r from-primary/5 to-success/5 rounded-lg border border-primary/10">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-[14px] font-medium">SEO综合评分</span>
+                      <span className="text-[24px] font-bold text-success">{previewTask.result.seo_score}</span>
                     </div>
+                    {previewTask.result.seo_details && (
+                      <div className="grid grid-cols-3 gap-3 text-[12px]">
+                        <div className="text-center">
+                          <div className="text-muted-foreground">标题评分</div>
+                          <div className="text-[16px] font-semibold text-foreground">{previewTask.result.seo_details.title_score}</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-muted-foreground">描述评分</div>
+                          <div className="text-[16px] font-semibold text-foreground">{previewTask.result.seo_details.description_score}</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-muted-foreground">关键词评分</div>
+                          <div className="text-[16px] font-semibold text-foreground">{previewTask.result.seo_details.keywords_score}</div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* 操作按钮 */}
+                  <div className="flex items-center gap-2 pt-2">
+                    <Button 
+                      variant="outline" 
+                      className="flex-1"
+                      onClick={() => {
+                        const fullContent = [
+                          `标题: ${previewTask.result?.title}`,
+                          '',
+                          `描述:`,
+                          previewTask.result?.description,
+                          '',
+                          `五点描述:`,
+                          ...(previewTask.result?.bullet_points || []).map((b, i) => `${i + 1}. ${b}`),
+                          '',
+                          `关键词: ${previewTask.result?.keywords?.join(', ')}`,
+                        ].join('\n');
+                        handleCopy(fullContent);
+                      }}
+                    >
+                      <Copy className="h-4 w-4 mr-2" />
+                      复制全部
+                    </Button>
+                    <Button 
+                      className="flex-1"
+                      onClick={() => {
+                        setIsPreviewOpen(false);
+                        toast.success('已添加到上架队列，请前往ERP系统完成上架');
+                        // 实际项目中应该跳转到ERP上架页面
+                        // router.push('/erp/products/new?listing=' + previewTask.id);
+                      }}
+                    >
+                      <Zap className="h-4 w-4 mr-2" />
+                      上架到平台
+                    </Button>
                   </div>
                 </>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  暂无优化结果
+                </div>
               )}
             </div>
             <DialogFooter>
