@@ -36,6 +36,40 @@ interface WorkflowTemplate {
   steps_count: number;
 }
 
+// 默认工作流模板（根据原型文档定义）
+const DEFAULT_TEMPLATES: WorkflowTemplate[] = [
+  {
+    id: 'full_automation',
+    name: '全链路自动化',
+    description: '选品→采集→图片处理→智能定价→Listing优化→商品上架',
+    steps_count: 6,
+  },
+  {
+    id: 'image_pipeline',
+    name: '图片处理流水线',
+    description: '1688采集→图片翻译/优化处理',
+    steps_count: 2,
+  },
+  {
+    id: 'single_product_publish',
+    name: '单商品上架',
+    description: '采集→图片处理→智能定价→Listing优化→上架',
+    steps_count: 5,
+  },
+  {
+    id: 'order_fulfillment',
+    name: '订单履约流程',
+    description: '订单同步→库存检查→采购→物流发货',
+    steps_count: 4,
+  },
+  {
+    id: 'ad_campaign',
+    name: '广告投放流程',
+    description: '表现分析→广告计划→提交投放',
+    steps_count: 3,
+  },
+];
+
 // 工作流步骤图标映射
 const stepIconMap: Record<string, React.ReactNode> = {
   'product_selection': <Bot className="h-4 w-4" />,
@@ -74,10 +108,21 @@ export default function WorkflowsPage() {
       const response = await fetch(`${API_BASE}/workflow/templates`);
       if (response.ok) {
         const data = await response.json();
-        setTemplates(data);
+        // 如果后端返回数据，使用后端数据；否则使用默认模板
+        if (data && data.length > 0) {
+          setTemplates(data);
+        } else {
+          setTemplates(DEFAULT_TEMPLATES);
+        }
+      } else {
+        // 后端请求失败，使用默认模板
+        console.log('后端API不可用，使用默认模板');
+        setTemplates(DEFAULT_TEMPLATES);
       }
     } catch (error) {
       console.error('Failed to fetch templates:', error);
+      // 请求异常，使用默认模板
+      setTemplates(DEFAULT_TEMPLATES);
     } finally {
       setLoading(false);
     }
