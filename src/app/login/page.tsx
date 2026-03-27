@@ -200,8 +200,12 @@ export default function LoginPage() {
         {/* 提示信息 */}
         <div className="mt-8 p-4 bg-primary/5 rounded-lg border border-primary/10">
           <p className="text-[12px] text-muted-foreground text-center mb-2">
-            <span className="text-primary font-medium">默认管理员账号：</span>
-            13800138000 / admin123
+            <span className="text-primary font-medium">管理员账号：</span>
+            admin / admin123
+          </p>
+          <p className="text-[12px] text-muted-foreground text-center mb-2">
+            <span className="text-primary font-medium">测试账号：</span>
+            13800138000 / 123456
           </p>
           <p className="text-[12px] text-muted-foreground text-center">
             <span className="text-primary font-medium">提示：</span>

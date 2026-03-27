@@ -9,12 +9,12 @@ export const API_BASE_URL = '/api/v1';
 
 // API端点配置
 export const API_ENDPOINTS = {
-  // 认证
+  // 认证 - 使用前端API路由（不依赖后端）
   auth: {
-    login: '/auth/login',
-    logout: '/auth/logout',
-    me: '/auth/me',
-    sendCode: '/auth/send-code',
+    login: '/api/auth/login',
+    logout: '/api/auth/logout',
+    me: '/api/auth/me',
+    sendCode: '/api/auth/send-code',
   },
   
   // 模型管理 - 使用前端API路由
