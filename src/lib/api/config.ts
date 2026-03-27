@@ -42,9 +42,14 @@ export const API_ENDPOINTS = {
     taskDetail: (id: string) => `/agents/tasks/${id}`,
   },
   
-  // AI调用
+  // AI调用 - 使用前端API路由（开发环境）
   ai: {
-    invoke: '/ai/invoke',
+    invoke: '/api/ai/model/invoke',
+    selectProducts: '/api/ai/select-products',
+    processImage: '/api/ai/process-image',
+    optimizeListing: '/api/ai/optimize-listing',
+    calculatePrice: '/api/ai/calculate-price',
+    suggestKeywords: '/api/ai/suggest-keywords',
   },
   
   // 控制台
