@@ -338,9 +338,11 @@ export default function AIAgentsCenterPage() {
 
                       {/* 操作按钮 */}
                       <div className="flex items-center gap-2 pt-2">
-                        <Button size="sm" className="flex-1">
-                          <Play className="h-3 w-3 mr-1" />
-                          执行
+                        <Button size="sm" className="flex-1" asChild>
+                          <Link href={`/agents/${agent.id}`}>
+                            <Play className="h-3 w-3 mr-1" />
+                            执行
+                          </Link>
                         </Button>
                         <Button size="sm" variant="outline" asChild>
                           <Link href={`/agents/${agent.id}`}>
@@ -417,9 +419,15 @@ export default function AIAgentsCenterPage() {
                           </td>
                           <td className="p-3">
                             <div className="flex items-center gap-1">
-                              <Button size="sm" variant="ghost"><Play className="h-4 w-4" /></Button>
                               <Button size="sm" variant="ghost" asChild>
-                                <Link href={`/agents/${agent.id}`}><Settings className="h-4 w-4" /></Link>
+                                <Link href={`/agents/${agent.id}`}>
+                                  <Play className="h-4 w-4" />
+                                </Link>
+                              </Button>
+                              <Button size="sm" variant="ghost" asChild>
+                                <Link href={`/agents/${agent.id}`}>
+                                  <Settings className="h-4 w-4" />
+                                </Link>
                               </Button>
                             </div>
                           </td>
