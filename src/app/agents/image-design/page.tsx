@@ -9,6 +9,13 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
   Image,
   Search,
   Shield,
@@ -28,6 +35,9 @@ import {
   Wand2,
   RotateCcw,
   Loader2,
+  X,
+  ZoomIn,
+  ZoomOut,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { processImage, batchProcessImages, ImageProcessResult, ImageProcessMode } from '@/lib/api/ai-agents';
@@ -105,6 +115,12 @@ export default function ImageAgentPage() {
   const [imageUrl, setImageUrl] = useState('');
   const [processMode, setProcessMode] = useState<ImageProcessMode>('translate');
   const [isProcessing, setIsProcessing] = useState(false);
+  
+  // 预览对话框状态
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewTask, setPreviewTask] = useState<ImageTask | null>(null);
+  const [previewScale, setPreviewScale] = useState(1);
+  const [isDownloading, setIsDownloading] = useState<string | null>(null);
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -161,6 +177,83 @@ export default function ImageAgentPage() {
       setIsProcessing(false);
       setAgentStatus('online');
     }
+  };
+
+  // 预览图片
+  const handlePreview = (task: ImageTask) => {
+    if (task.status !== 'completed') {
+      toast.error('任务未完成，无法预览');
+      return;
+    }
+    setPreviewTask(task);
+    setPreviewScale(1);
+    setPreviewOpen(true);
+  };
+
+  // 下载图片
+  const handleDownload = async (task: ImageTask) => {
+    if (task.status !== 'completed') {
+      toast.error('任务未完成，无法下载');
+      return;
+    }
+    
+    const downloadUrl = task.processedUrl || task.imageUrl;
+    if (!downloadUrl) {
+      toast.error('没有可下载的图片');
+      return;
+    }
+
+    setIsDownloading(task.id);
+    try {
+      // 使用 fetch + blob 模式下载，支持跨域
+      const response = await fetch(downloadUrl);
+      if (!response.ok) {
+        throw new Error('下载失败');
+      }
+      
+      const blob = await response.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      
+      // 创建下载链接
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = `${task.productName}_${task.id}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // 释放 blob URL
+      window.URL.revokeObjectURL(blobUrl);
+      
+      toast.success('图片已下载');
+    } catch (error) {
+      console.error('下载失败:', error);
+      toast.error('图片下载失败，请重试');
+    } finally {
+      setIsDownloading(null);
+    }
+  };
+
+  // 重新生成
+  const handleRegenerate = (task: ImageTask) => {
+    toast.info('正在重新生成图片...');
+    // 更新任务状态为处理中
+    setImageTasks(imageTasks.map(t => 
+      t.id === task.id ? { ...t, status: 'processing' as const, complianceStatus: 'checking' as const } : t
+    ));
+    
+    // 模拟重新生成
+    setTimeout(() => {
+      setImageTasks(imageTasks.map(t => 
+        t.id === task.id ? { 
+          ...t, 
+          status: 'completed' as const, 
+          complianceStatus: 'passed' as const,
+          generatedAt: new Date().toLocaleString('zh-CN'),
+        } : t
+      ));
+      toast.success('图片重新生成成功');
+    }, 2000);
   };
 
   const getTypeLabel = (type: string) => {
@@ -426,16 +519,35 @@ export default function ImageAgentPage() {
                           ID: {task.id} · {task.generatedAt || '生成中...'}
                         </div>
                         <div className="flex items-center gap-2 pt-2">
-                          <Button variant="outline" size="sm" disabled={task.status !== 'completed'}>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            disabled={task.status !== 'completed'}
+                            onClick={() => handlePreview(task)}
+                          >
                             <Eye className="h-3 w-3 mr-1" />
                             预览
                           </Button>
-                          <Button variant="outline" size="sm" disabled={task.status !== 'completed'}>
-                            <Download className="h-3 w-3 mr-1" />
-                            下载
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            disabled={task.status !== 'completed' || isDownloading === task.id}
+                            onClick={() => handleDownload(task)}
+                          >
+                            {isDownloading === task.id ? (
+                              <>
+                                <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                                下载中...
+                              </>
+                            ) : (
+                              <>
+                                <Download className="h-3 w-3 mr-1" />
+                                下载
+                              </>
+                            )}
                           </Button>
                           {task.complianceStatus === 'failed' && (
-                            <Button size="sm">
+                            <Button size="sm" onClick={() => handleRegenerate(task)}>
                               <RotateCcw className="h-3 w-3 mr-1" />
                               重新生成
                             </Button>
@@ -583,6 +695,126 @@ export default function ImageAgentPage() {
             </Card>
           </TabsContent>
         </Tabs>
+
+        {/* 图片预览对话框 */}
+        <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Eye className="h-5 w-5" />
+                图片预览
+              </DialogTitle>
+              <DialogDescription>
+                {previewTask?.productName} - {previewTask?.id}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="flex flex-col items-center gap-4">
+              {/* 缩放控制 */}
+              <div className="flex items-center gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setPreviewScale(Math.max(0.25, previewScale - 0.25))}
+                  disabled={previewScale <= 0.25}
+                >
+                  <ZoomOut className="h-4 w-4" />
+                </Button>
+                <span className="text-sm text-muted-foreground min-w-[60px] text-center">
+                  {Math.round(previewScale * 100)}%
+                </span>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setPreviewScale(Math.min(3, previewScale + 0.25))}
+                  disabled={previewScale >= 3}
+                >
+                  <ZoomIn className="h-4 w-4" />
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setPreviewScale(1)}
+                >
+                  重置
+                </Button>
+              </div>
+              
+              {/* 图片预览区域 */}
+              <div className="w-full overflow-auto bg-muted/30 rounded-lg p-4 flex items-center justify-center" style={{ maxHeight: '60vh' }}>
+                {previewTask?.processedUrl || previewTask?.imageUrl ? (
+                  <img
+                    src={previewTask.processedUrl || previewTask.imageUrl}
+                    alt={previewTask.productName}
+                    style={{ 
+                      transform: `scale(${previewScale})`,
+                      transformOrigin: 'center',
+                      transition: 'transform 0.2s ease-in-out',
+                      maxWidth: '100%',
+                      height: 'auto',
+                    }}
+                    className="rounded-lg shadow-lg"
+                  />
+                ) : (
+                  <div className="text-muted-foreground py-12">暂无图片</div>
+                )}
+              </div>
+              
+              {/* 任务信息 */}
+              {previewTask && (
+                <div className="w-full grid grid-cols-2 gap-4 text-sm">
+                  <div className="flex items-center gap-2">
+                    <span className="text-muted-foreground">类型:</span>
+                    <Badge variant="outline">{getTypeLabel(previewTask.type)}</Badge>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-muted-foreground">平台:</span>
+                    <Badge variant="outline">{previewTask.platform}</Badge>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-muted-foreground">合规状态:</span>
+                    {getComplianceBadge(previewTask.complianceStatus)}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-muted-foreground">生成时间:</span>
+                    <span>{previewTask.generatedAt}</span>
+                  </div>
+                </div>
+              )}
+              
+              {/* 操作按钮 */}
+              <div className="flex items-center gap-2">
+                <Button 
+                  variant="outline"
+                  onClick={() => setPreviewOpen(false)}
+                >
+                  <X className="h-4 w-4 mr-2" />
+                  关闭
+                </Button>
+                {previewTask && (
+                  <Button 
+                    onClick={() => {
+                      handleDownload(previewTask);
+                      setPreviewOpen(false);
+                    }}
+                    disabled={isDownloading === previewTask.id}
+                  >
+                    {isDownloading === previewTask.id ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        下载中...
+                      </>
+                    ) : (
+                      <>
+                        <Download className="h-4 w-4 mr-2" />
+                        下载图片
+                      </>
+                    )}
+                  </Button>
+                )}
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </MainLayout>
   );
