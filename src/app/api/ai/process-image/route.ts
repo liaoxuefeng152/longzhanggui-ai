@@ -28,6 +28,31 @@ const MODE_PROMPTS: Record<string, string> = {
 4. 返回JSON格式：{"subject": "产品名称", "current_background": "描述", "cutout_difficulty": "简单/中等/困难", "edge_quality": "边缘质量评估", "suggestions": ["建议"]}`,
 };
 
+// 全局模型存储声明
+declare global {
+  var modelsStore: any[] | undefined;
+}
+
+// 获取用户配置的模型
+function getUserConfiguredModel(): { provider: string; modelId: string; apiKey: string; endpoint?: string } | null {
+  if (!global.modelsStore) return null;
+  
+  // 查找第一个活跃的用户配置模型
+  const userModels = global.modelsStore.filter(m => m.status === 'active' && m.api_key && m.api_key !== 'sk-demo-key');
+  
+  if (userModels.length > 0) {
+    const model = userModels[0];
+    return {
+      provider: model.provider,
+      modelId: model.model_id,
+      apiKey: model.api_key,
+      endpoint: model.endpoint,
+    };
+  }
+  
+  return null;
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -56,10 +81,17 @@ export async function POST(request: NextRequest) {
     // 获取对应模式的提示词
     const modePrompt = MODE_PROMPTS[mode] || MODE_PROMPTS.translate;
     
+    // 检查是否有用户配置的模型
+    const userModel = getUserConfiguredModel();
+    
     // 使用 Vision 模型分析图片
     const customHeaders = HeaderUtils.extractForwardHeaders(request.headers);
     const config = new Config();
     const client = new LLMClient(config, customHeaders);
+
+    // 选择模型：如果用户配置了 DeepSeek，使用 DeepSeek；否则使用豆包 Vision
+    // 注意：DeepSeek 不支持图片输入，所以图片处理仍然使用豆包 Vision
+    const modelName = 'doubao-seed-1-6-vision-250815'; // Vision 模型用于图片理解
 
     const messages = [
       {
@@ -78,11 +110,15 @@ export async function POST(request: NextRequest) {
     ];
 
     try {
+      console.log(`[图片处理] 使用模型: ${modelName}, 模式: ${mode}, 图片URL: ${imageUrl}`);
+      
       // 调用 Vision 模型
       const response = await client.invoke(messages, {
-        model: 'doubao-seed-1-6-vision-250815',
+        model: modelName,
         temperature: 0.3,
       });
+
+      console.log(`[图片处理] AI响应: ${response.content.substring(0, 200)}...`);
 
       // 解析 AI 返回的结果
       let analysisResult;
@@ -121,6 +157,7 @@ export async function POST(request: NextRequest) {
           analysis: analysisResult,
           ai_response: response.content,
           target_language: targetLanguage,
+          model_used: modelName,
         },
       });
     } catch (apiError: any) {
