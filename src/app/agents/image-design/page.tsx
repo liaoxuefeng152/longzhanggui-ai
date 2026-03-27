@@ -427,9 +427,9 @@ export default function ImageAgentPage() {
                   <Button 
                     variant="outline" 
                     size="sm"
-                    onClick={() => setImageUrl('https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500')}
+                    onClick={() => setImageUrl('https://coze-coding-project.tos.coze.site/coze_storage_7608954168073814022/image/generate_image_d1e6b0ad-1978-48f3-bf60-3ec3a77e021e.jpeg?sign=1806182168-96989f516b-0-ef9561ab93d1fb763cac1eea349143c8ad28e5bcc613a0f2b6820c49dc800755')}
                   >
-                    示例URL
+                    中文翻译测试
                   </Button>
                   <select 
                     className="px-4 py-2 border border-border rounded-md text-[14px]"
