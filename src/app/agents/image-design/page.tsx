@@ -119,6 +119,8 @@ export default function ImageAgentPage() {
   const [imageTasks, setImageTasks] = useState<ImageTask[]>(mockImageTasks);
   const [imageUrl, setImageUrl] = useState('');
   const [processMode, setProcessMode] = useState<ImageProcessMode>('translate');
+  const [targetLanguage, setTargetLanguage] = useState('th'); // 默认泰语
+  const [availableLanguages, setAvailableLanguages] = useState<{code: string, name: string}[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   
   // 预览对话框状态
@@ -134,6 +136,16 @@ export default function ImageAgentPage() {
       return;
     }
     setUser(JSON.parse(userData));
+    
+    // 获取支持的语言列表
+    fetch('/api/ai/process-image')
+      .then(res => res.json())
+      .then(data => {
+        if (data.languages) {
+          setAvailableLanguages(data.languages);
+        }
+      })
+      .catch(err => console.error('获取语言列表失败:', err));
   }, [router]);
 
   // 处理图片
@@ -152,7 +164,7 @@ export default function ImageAgentPage() {
         image_url: imageUrl,
         mode: processMode,
         source_language: 'zh',
-        target_language: 'en',
+        target_language: targetLanguage,
       });
 
       if (result.success && result.data) {
@@ -441,6 +453,33 @@ export default function ImageAgentPage() {
                     <option value="remove_watermark">去水印</option>
                     <option value="white_background">白底图</option>
                   </select>
+                  {/* 目标语言选择 - 仅翻译模式显示 */}
+                  {processMode === 'translate' && (
+                    <select 
+                      className="px-4 py-2 border border-border rounded-md text-[14px] bg-primary/5"
+                      value={targetLanguage}
+                      onChange={(e) => setTargetLanguage(e.target.value)}
+                    >
+                      {availableLanguages.length > 0 ? (
+                        availableLanguages.map(lang => (
+                          <option key={lang.code} value={lang.code}>{lang.name}</option>
+                        ))
+                      ) : (
+                        <>
+                          <option value="th">Thai (泰语)</option>
+                          <option value="vi">Vietnamese (越南语)</option>
+                          <option value="id">Indonesian (印尼语)</option>
+                          <option value="ms">Malay (马来语)</option>
+                          <option value="en">English</option>
+                          <option value="pt">Portuguese (葡萄牙语)</option>
+                          <option value="es">Spanish (西班牙语)</option>
+                          <option value="ja">Japanese (日语)</option>
+                          <option value="ko">Korean (韩语)</option>
+                          <option value="ar">Arabic (阿拉伯语)</option>
+                        </>
+                      )}
+                    </select>
+                  )}
                   <Button onClick={handleProcessImage} disabled={isProcessing || !imageUrl}>
                     {isProcessing ? (
                       <>
@@ -455,6 +494,14 @@ export default function ImageAgentPage() {
                     )}
                   </Button>
                 </div>
+                
+                {/* 翻译模式说明 */}
+                {processMode === 'translate' && (
+                  <div className="p-3 bg-primary/5 rounded-lg text-[12px] text-muted-foreground">
+                    <strong className="text-primary">图片翻译说明：</strong>
+                    将自动识别图片中的中文文字，翻译成目标语言，并生成新的图片。文字位置和样式会尽量保持一致。
+                  </div>
+                )}
               </CardContent>
             </Card>
 
@@ -546,16 +593,25 @@ export default function ImageAgentPage() {
                         {/* AI分析结果摘要 */}
                         {task.status === 'completed' && task.analysis && (
                           <div className="mt-2 p-2 bg-primary/5 rounded text-[11px]">
-                            {task.analysis.original_texts && (
-                              <div className="text-muted-foreground">
-                                原文: {task.analysis.original_texts?.slice(0, 2).join(', ')}
-                                {(task.analysis.original_texts?.length || 0) > 2 && '...'}
-                              </div>
-                            )}
-                            {task.analysis.translated_texts && (
-                              <div className="text-foreground font-medium">
-                                译文: {task.analysis.translated_texts?.slice(0, 2).join(', ')}
-                                {(task.analysis.translated_texts?.length || 0) > 2 && '...'}
+                            {/* 翻译结果显示 */}
+                            {task.analysis.translations && task.analysis.translations.length > 0 && (
+                              <div className="space-y-1 mb-2">
+                                <div className="text-muted-foreground font-medium">
+                                  📝 翻译结果 ({task.analysis.target_language_name || '目标语言'}):
+                                </div>
+                                {task.analysis.translations.slice(0, 3).map((t: any, i: number) => (
+                                  <div key={i} className="flex items-start gap-2 pl-2">
+                                    <span className="text-muted-foreground">•</span>
+                                    <span className="text-muted-foreground line-through">{t.original}</span>
+                                    <span className="text-primary">→</span>
+                                    <span className="text-foreground font-medium">{t.translated}</span>
+                                  </div>
+                                ))}
+                                {task.analysis.translations.length > 3 && (
+                                  <div className="text-muted-foreground pl-2">
+                                    还有 {task.analysis.translations.length - 3} 处翻译...
+                                  </div>
+                                )}
                               </div>
                             )}
                             {task.analysis.quality_score && (
