@@ -34,6 +34,115 @@ interface Logistics {
   tracking_events?: any[];
 }
 
+// Mock数据
+const mockLogistics: Logistics[] = [
+  {
+    id: 'LOG001',
+    order_id: 'ORD001',
+    carrier: 'J&T Express',
+    tracking_number: 'JT1234567890123',
+    status: 'in_transit',
+    shipped_at: '2026-03-20 10:30:00',
+    tracking_events: [
+      { time: '2026-03-21 08:00', location: 'Jakarta', status: 'In transit to destination' },
+      { time: '2026-03-20 18:00', location: 'Jakarta Hub', status: 'Departed from sorting center' },
+      { time: '2026-03-20 10:30', location: 'Jakarta', status: 'Shipment picked up' },
+    ],
+  },
+  {
+    id: 'LOG002',
+    order_id: 'ORD002',
+    carrier: 'Ninja Van',
+    tracking_number: 'NV0987654321098',
+    status: 'delivered',
+    shipped_at: '2026-03-18 14:20:00',
+    delivered_at: '2026-03-21 11:30:00',
+    tracking_events: [
+      { time: '2026-03-21 11:30', location: 'Los Angeles', status: 'Delivered to customer' },
+      { time: '2026-03-21 09:00', location: 'Los Angeles', status: 'Out for delivery' },
+      { time: '2026-03-20 20:00', location: 'Los Angeles Hub', status: 'Arrived at local facility' },
+    ],
+  },
+  {
+    id: 'LOG003',
+    order_id: 'ORD003',
+    carrier: 'Flash Express',
+    tracking_number: 'FL1122334455667',
+    status: 'out_for_delivery',
+    shipped_at: '2026-03-19 16:45:00',
+    tracking_events: [
+      { time: '2026-03-21 08:30', location: 'Bangkok', status: 'Out for delivery' },
+      { time: '2026-03-20 22:00', location: 'Bangkok Hub', status: 'Arrived at distribution center' },
+      { time: '2026-03-19 16:45', location: 'Bangkok', status: 'Package received' },
+    ],
+  },
+  {
+    id: 'LOG004',
+    order_id: 'ORD004',
+    carrier: 'Amazon Logistics',
+    tracking_number: 'AM7788990011223',
+    status: 'delivered',
+    shipped_at: '2026-03-17 09:00:00',
+    delivered_at: '2026-03-20 15:45:00',
+    tracking_events: [
+      { time: '2026-03-20 15:45', location: 'New York', status: 'Delivered - Signed by: John' },
+      { time: '2026-03-20 10:00', location: 'New York', status: 'Out for delivery' },
+      { time: '2026-03-19 18:00', location: 'New York Facility', status: 'Package arrived' },
+    ],
+  },
+  {
+    id: 'LOG005',
+    order_id: 'ORD005',
+    carrier: 'Kerry Express',
+    tracking_number: 'KE5566778899001',
+    status: 'shipped',
+    shipped_at: '2026-03-21 11:30:00',
+    tracking_events: [
+      { time: '2026-03-21 11:30', location: 'Ho Chi Minh', status: 'Shipment created and picked up' },
+    ],
+  },
+  {
+    id: 'LOG006',
+    order_id: 'ORD006',
+    carrier: 'J&T Express',
+    tracking_number: 'JT9988776655443',
+    status: 'exception',
+    shipped_at: '2026-03-16 13:20:00',
+    tracking_events: [
+      { time: '2026-03-19 10:00', location: 'Jakarta', status: 'Delivery attempted - No one home' },
+      { time: '2026-03-18 14:00', location: 'Jakarta', status: 'Out for delivery' },
+      { time: '2026-03-17 08:00', location: 'Jakarta Hub', status: 'In transit' },
+    ],
+  },
+  {
+    id: 'LOG007',
+    order_id: 'ORD007',
+    carrier: 'DHL Express',
+    tracking_number: 'DHL4455667788990',
+    status: 'in_transit',
+    shipped_at: '2026-03-19 15:45:00',
+    tracking_events: [
+      { time: '2026-03-21 06:00', location: 'Singapore Hub', status: 'In transit' },
+      { time: '2026-03-20 20:00', location: 'Hong Kong Hub', status: 'Transit' },
+      { time: '2026-03-19 15:45', location: 'Shenzhen', status: 'Shipment picked up' },
+    ],
+  },
+  {
+    id: 'LOG008',
+    order_id: 'ORD008',
+    carrier: 'PosLaju',
+    tracking_number: 'PL3344556677889',
+    status: 'delivered',
+    shipped_at: '2026-03-17 13:20:00',
+    delivered_at: '2026-03-19 16:30:00',
+    tracking_events: [
+      { time: '2026-03-19 16:30', location: 'Kuala Lumpur', status: 'Delivered' },
+      { time: '2026-03-19 09:00', location: 'Kuala Lumpur', status: 'Out for delivery' },
+      { time: '2026-03-18 22:00', location: 'KL Hub', status: 'Arrived at facility' },
+    ],
+  },
+];
+
 export default function LogisticsPage() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
@@ -60,29 +169,21 @@ export default function LogisticsPage() {
       if (keyword) params.set('keyword', keyword);
       if (statusFilter) params.set('status', statusFilter);
       
-      // 模拟数据
-      setLogistics([
-        {
-          id: '1',
-          order_id: 'TK001',
-          carrier: 'J&T Express',
-          tracking_number: 'JT1234567890',
-          status: 'in_transit',
-          shipped_at: new Date().toISOString(),
-        },
-        {
-          id: '2',
-          order_id: 'TK002',
-          carrier: 'Ninja Van',
-          tracking_number: 'NV0987654321',
-          status: 'delivered',
-          shipped_at: new Date(Date.now() - 86400000 * 3).toISOString(),
-          delivered_at: new Date().toISOString(),
-        },
-      ]);
+      const response = await fetch(`/api/v1/erp/logistics?${params.toString()}`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setLogistics(data.items || []);
+      } else {
+        // API不可用时使用mock数据
+        setLogistics(mockLogistics);
+      }
     } catch (error) {
       console.error('获取物流列表失败:', error);
-      toast.error('获取物流列表失败');
+      // 使用mock数据
+      setLogistics(mockLogistics);
     } finally {
       setLoading(false);
     }

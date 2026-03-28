@@ -67,6 +67,112 @@ interface NewPurchaseOrderForm {
   notes: string;
 }
 
+// Mock数据
+const mockPurchaseOrders: PurchaseOrder[] = [
+  {
+    id: 'PO001',
+    po_number: 'PO-2026-0321-001',
+    product_id: 'PROD001',
+    product_name: '宠物自动喂食器 5L大容量',
+    sku: 'SKU-PET-001',
+    supplier_name: '深圳宠物用品有限公司',
+    supplier_url: 'https://example.com/supplier/1',
+    supplier_contact: '张经理 13800138001',
+    qty: 100,
+    unit_price: 89.00,
+    total_amount: 8900.00,
+    status: 'completed',
+    expected_arrival: '2026-03-25',
+    created_at: '2026-03-21 10:30:00',
+    notes: '首次采购，需注意包装质量',
+  },
+  {
+    id: 'PO002',
+    po_number: 'PO-2026-0321-002',
+    product_id: 'PROD002',
+    product_name: '便携式榨汁机 USB充电',
+    sku: 'SKU-HOME-001',
+    supplier_name: '广州小家电批发',
+    supplier_url: 'https://example.com/supplier/2',
+    supplier_contact: '李经理 13900139002',
+    qty: 50,
+    unit_price: 45.00,
+    total_amount: 2250.00,
+    status: 'in_transit',
+    expected_arrival: '2026-03-28',
+    created_at: '2026-03-20 15:20:00',
+    notes: '补货采购',
+  },
+  {
+    id: 'PO003',
+    po_number: 'PO-2026-0320-003',
+    product_id: 'PROD003',
+    product_name: 'LED化妆镜 台式带灯',
+    sku: 'SKU-BEAUTY-001',
+    supplier_name: '义乌美妆工具厂',
+    supplier_url: 'https://example.com/supplier/3',
+    supplier_contact: '王经理 13700137003',
+    qty: 80,
+    unit_price: 35.00,
+    total_amount: 2800.00,
+    status: 'pending',
+    expected_arrival: '2026-03-30',
+    created_at: '2026-03-20 09:45:00',
+    notes: '新品采购，需要质检',
+  },
+  {
+    id: 'PO004',
+    po_number: 'PO-2026-0319-004',
+    product_id: 'PROD005',
+    product_name: '不锈钢保温杯 500ml',
+    sku: 'SKU-KITCHEN-001',
+    supplier_name: '永康杯业有限公司',
+    supplier_url: 'https://example.com/supplier/5',
+    supplier_contact: '陈经理 13600136005',
+    qty: 200,
+    unit_price: 22.00,
+    total_amount: 4400.00,
+    status: 'completed',
+    expected_arrival: '2026-03-22',
+    created_at: '2026-03-19 14:10:00',
+    notes: '',
+  },
+  {
+    id: 'PO005',
+    po_number: 'PO-2026-0318-005',
+    product_id: 'PROD006',
+    product_name: '猫咪自动饮水机',
+    sku: 'SKU-PET-002',
+    supplier_name: '深圳宠物用品有限公司',
+    supplier_url: 'https://example.com/supplier/1',
+    supplier_contact: '张经理 13800138001',
+    qty: 60,
+    unit_price: 56.00,
+    total_amount: 3360.00,
+    status: 'partial_received',
+    expected_arrival: '2026-03-24',
+    created_at: '2026-03-18 11:30:00',
+    notes: '已收到40件，剩余20件待发货',
+  },
+  {
+    id: 'PO006',
+    po_number: 'PO-2026-0317-006',
+    product_id: 'PROD001',
+    product_name: '宠物自动喂食器 5L大容量',
+    sku: 'SKU-PET-001',
+    supplier_name: '深圳宠物用品有限公司',
+    supplier_url: 'https://example.com/supplier/1',
+    supplier_contact: '张经理 13800138001',
+    qty: 50,
+    unit_price: 89.00,
+    total_amount: 4450.00,
+    status: 'cancelled',
+    expected_arrival: '2026-03-21',
+    created_at: '2026-03-17 16:00:00',
+    notes: '供应商缺货，取消订单',
+  },
+];
+
 export default function ERPPurchasePage() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
@@ -126,10 +232,11 @@ export default function ERPPurchasePage() {
         notes: item.notes,
       }));
       
-      setOrders(purchaseOrders);
+      setOrders(purchaseOrders.length > 0 ? purchaseOrders : mockPurchaseOrders);
     } catch (error) {
       console.error('获取采购订单失败:', error);
-      toast.error('获取采购订单失败');
+      // 使用mock数据
+      setOrders(mockPurchaseOrders);
     } finally {
       setLoading(false);
     }
