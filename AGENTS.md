@@ -77,6 +77,36 @@
 | `/api/ai/process-image` | POST | 图片处理 |
 | `/api/ai/model/invoke` | POST | 通用模型调用 |
 
+### AI智能体API路由
+| 路由 | 方法 | 功能 |
+|------|------|------|
+| `/api/ai/analyze-competition` | POST | 竞品分析 |
+| `/api/ai/suggest-keywords` | POST | 关键词建议 |
+| `/api/ai/create-ad` | POST | 创建广告计划 |
+| `/api/ai/optimize-ad/[id]` | POST | 优化广告计划 |
+| `/api/ai/customer-reply` | POST | 客服回复生成 |
+| `/api/ai/handle-dispute` | POST | 纠纷处理 |
+| `/api/ai/data-report` | POST | 数据报告生成 |
+| `/api/ai/action-items` | POST | 行动项生成 |
+| `/api/ai/generate-video` | POST | 视频生成 |
+| `/api/ai/agents` | GET | 智能体列表 |
+
+### ERP系统API路由
+| 路由 | 方法 | 功能 |
+|------|------|------|
+| `/api/v1/erp/orders` | GET/POST | 订单列表/创建 |
+| `/api/v1/erp/inventory` | GET/PUT | 库存列表/更新 |
+| `/api/v1/erp/purchases` | GET/POST | 采购单列表/创建 |
+| `/api/v1/erp/suppliers` | GET/POST | 供应商列表/创建 |
+| `/api/v1/erp/logistics` | GET | 物流追踪 |
+| `/api/v1/erp/finance/summary` | GET | 财务汇总 |
+| `/api/v1/erp/finance/records` | GET | 财务记录 |
+
+### Dashboard API
+| 路由 | 方法 | 功能 |
+|------|------|------|
+| `/api/dashboard/stats` | GET | 控制台统计数据 |
+
 ### API配置
 所有API端点配置在 `src/lib/api/config.ts`，使用相对路径 `/api/xxx`。
 
