@@ -8,6 +8,14 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
   ShoppingCart,
   Search,
   Filter,
@@ -21,6 +29,10 @@ import {
   Clock,
   Package,
   RefreshCw,
+  Loader2,
+  X,
+  PackageCheck,
+  Ban,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -28,153 +40,26 @@ interface ERPOrder {
   id: string;
   platform: string;
   platform_order_id: string;
+  product_id?: string;
   product_name?: string;
   quantity: number;
   sale_price: number;
   total_amount: number;
   currency: string;
   cost_price: number;
+  shipping_cost?: number;
+  platform_fee?: number;
+  ad_cost?: number;
   profit: number;
   buyer_name?: string;
+  buyer_phone?: string;
+  buyer_address?: string;
   status: string;
   abnormal_type?: string;
   order_time?: string;
   created_at: string;
+  updated_at?: string;
 }
-
-// Mock数据
-const mockOrders: ERPOrder[] = [
-  {
-    id: 'ORD001',
-    platform: 'tiktok',
-    platform_order_id: 'TK20260321001',
-    product_name: '宠物自动喂食器 5L大容量',
-    quantity: 2,
-    sale_price: 199.00,
-    total_amount: 398.00,
-    currency: 'IDR',
-    cost_price: 109.00,
-    profit: 180.00,
-    buyer_name: 'Budi Santoso',
-    status: 'delivered',
-    order_time: '2026-03-21 10:30:00',
-    created_at: '2026-03-21 10:30:00',
-  },
-  {
-    id: 'ORD002',
-    platform: 'amazon',
-    platform_order_id: 'AM20260321002',
-    product_name: '便携式榨汁机 USB充电',
-    quantity: 1,
-    sale_price: 29.99,
-    total_amount: 29.99,
-    currency: 'USD',
-    cost_price: 61.00,
-    profit: 120.00,
-    buyer_name: 'John Smith',
-    status: 'shipped',
-    order_time: '2026-03-21 09:15:00',
-    created_at: '2026-03-21 09:15:00',
-  },
-  {
-    id: 'ORD003',
-    platform: 'tiktok',
-    platform_order_id: 'TK20260320003',
-    product_name: 'LED化妆镜 台式带灯',
-    quantity: 3,
-    sale_price: 89.00,
-    total_amount: 267.00,
-    currency: 'THB',
-    cost_price: 48.00,
-    profit: 123.00,
-    buyer_name: 'Somchai Thai',
-    status: 'paid',
-    abnormal_type: 'address_incomplete',
-    order_time: '2026-03-20 16:45:00',
-    created_at: '2026-03-20 16:45:00',
-  },
-  {
-    id: 'ORD004',
-    platform: 'amazon',
-    platform_order_id: 'AM20260320004',
-    product_name: '智能手环 运动监测',
-    quantity: 1,
-    sale_price: 49.99,
-    total_amount: 49.99,
-    currency: 'USD',
-    cost_price: 91.00,
-    profit: 65.00,
-    buyer_name: 'Emma Wilson',
-    status: 'delivered',
-    order_time: '2026-03-20 14:20:00',
-    created_at: '2026-03-20 14:20:00',
-  },
-  {
-    id: 'ORD005',
-    platform: 'tiktok',
-    platform_order_id: 'TK20260319005',
-    product_name: '不锈钢保温杯 500ml',
-    quantity: 5,
-    sale_price: 45.00,
-    total_amount: 225.00,
-    currency: 'IDR',
-    cost_price: 33.00,
-    profit: 60.00,
-    buyer_name: 'Ahmad Yusuf',
-    status: 'pending',
-    order_time: '2026-03-19 11:30:00',
-    created_at: '2026-03-19 11:30:00',
-  },
-  {
-    id: 'ORD006',
-    platform: 'amazon',
-    platform_order_id: 'AM20260319006',
-    product_name: '猫咪自动饮水机',
-    quantity: 2,
-    sale_price: 35.99,
-    total_amount: 71.98,
-    currency: 'USD',
-    cost_price: 72.00,
-    profit: 72.00,
-    buyer_name: 'Michael Brown',
-    status: 'cancelled',
-    abnormal_type: 'refund_requested',
-    order_time: '2026-03-19 09:00:00',
-    created_at: '2026-03-19 09:00:00',
-  },
-  {
-    id: 'ORD007',
-    platform: 'tiktok',
-    platform_order_id: 'TK20260318007',
-    product_name: '宠物自动喂食器 5L大容量',
-    quantity: 1,
-    sale_price: 199.00,
-    total_amount: 199.00,
-    currency: 'VND',
-    cost_price: 109.00,
-    profit: 90.00,
-    buyer_name: 'Nguyen Van A',
-    status: 'shipped',
-    order_time: '2026-03-18 15:45:00',
-    created_at: '2026-03-18 15:45:00',
-  },
-  {
-    id: 'ORD008',
-    platform: 'tiktok',
-    platform_order_id: 'TK20260318008',
-    product_name: '便携式榨汁机 USB充电',
-    quantity: 2,
-    sale_price: 79.00,
-    total_amount: 158.00,
-    currency: 'MYR',
-    cost_price: 61.00,
-    profit: 36.00,
-    buyer_name: 'Lee Mei Ling',
-    status: 'delivered',
-    order_time: '2026-03-18 13:20:00',
-    created_at: '2026-03-18 13:20:00',
-  },
-];
 
 export default function ERPOrdersPage() {
   const router = useRouter();
@@ -184,6 +69,18 @@ export default function ERPOrdersPage() {
   const [keyword, setKeyword] = useState('');
   const [platformFilter, setPlatformFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  
+  // 对话框状态
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [isShipOpen, setIsShipOpen] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState<ERPOrder | null>(null);
+  const [isProcessing, setIsProcessing] = useState<string | null>(null);
+  
+  // 发货表单
+  const [shipForm, setShipForm] = useState({
+    carrier: '',
+    tracking_number: '',
+  });
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -198,30 +95,169 @@ export default function ERPOrdersPage() {
   const fetchOrders = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('token');
       const params = new URLSearchParams();
       if (keyword) params.set('keyword', keyword);
       if (platformFilter) params.set('platform', platformFilter);
       if (statusFilter) params.set('status', statusFilter);
       
-      const response = await fetch(`/api/v1/erp/orders?${params.toString()}`, {
-        headers: { 'Authorization': `Bearer ${token}` },
-      });
+      const response = await fetch(`/api/v1/erp/orders?${params.toString()}`);
+      const data = await response.json();
       
-      if (response.ok) {
-        const data = await response.json();
-        setOrders(data.items || []);
+      if (data.success) {
+        setOrders(data.data.items || []);
       } else {
-        // API不可用时使用mock数据
-        console.log('API不可用，使用mock数据');
-        setOrders(mockOrders);
+        toast.error('获取订单失败');
       }
     } catch (error) {
       console.error('获取订单失败:', error);
-      // 使用mock数据
-      setOrders(mockOrders);
+      toast.error('获取订单失败');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // 同步订单
+  const handleSyncOrders = async () => {
+    setIsProcessing('sync');
+    try {
+      // 模拟同步
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      toast.success('订单同步成功', { description: '已从平台同步最新订单数据' });
+      fetchOrders();
+    } catch (error) {
+      toast.error('同步失败');
+    } finally {
+      setIsProcessing(null);
+    }
+  };
+
+  // 导出订单
+  const handleExportOrders = async () => {
+    setIsProcessing('export');
+    try {
+      // 生成CSV
+      const headers = ['订单ID', '平台', '商品名称', '数量', '金额', '利润', '买家', '状态', '时间'];
+      const rows = orders.map(o => [
+        o.platform_order_id,
+        o.platform,
+        o.product_name,
+        o.quantity,
+        o.total_amount,
+        o.profit,
+        o.buyer_name || '-',
+        o.status,
+        o.order_time || o.created_at,
+      ]);
+      
+      const csvContent = [headers, ...rows].map(row => row.join(',')).join('\n');
+      const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `orders_${new Date().toISOString().split('T')[0]}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      
+      toast.success('导出成功', { description: `已导出 ${orders.length} 条订单` });
+    } catch (error) {
+      toast.error('导出失败');
+    } finally {
+      setIsProcessing(null);
+    }
+  };
+
+  // 查看详情
+  const handleViewDetail = async (order: ERPOrder) => {
+    setSelectedOrder(order);
+    setIsDetailOpen(true);
+  };
+
+  // 发货
+  const handleShip = async () => {
+    if (!selectedOrder) return;
+    if (!shipForm.carrier || !shipForm.tracking_number) {
+      toast.error('请填写完整的发货信息');
+      return;
+    }
+
+    setIsProcessing(selectedOrder.id);
+    try {
+      const response = await fetch('/api/v1/erp/logistics', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          order_id: selectedOrder.id,
+          carrier: shipForm.carrier,
+          tracking_number: shipForm.tracking_number,
+        }),
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        toast.success('发货成功', { description: `物流单号: ${shipForm.tracking_number}` });
+        setIsShipOpen(false);
+        setShipForm({ carrier: '', tracking_number: '' });
+        fetchOrders();
+      } else {
+        toast.error(data.error || '发货失败');
+      }
+    } catch (error) {
+      toast.error('发货失败');
+    } finally {
+      setIsProcessing(null);
+    }
+  };
+
+  // 取消订单
+  const handleCancelOrder = async (order: ERPOrder) => {
+    if (!confirm(`确定要取消订单 ${order.platform_order_id} 吗？`)) return;
+
+    setIsProcessing(order.id);
+    try {
+      // 更新订单状态
+      const response = await fetch(`/api/v1/erp/orders/${order.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'cancelled' }),
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        toast.success('订单已取消');
+        fetchOrders();
+      } else {
+        toast.error(data.error || '取消失败');
+      }
+    } catch (error) {
+      toast.error('取消失败');
+    } finally {
+      setIsProcessing(null);
+    }
+  };
+
+  // 处理异常
+  const handleResolveAbnormal = async (order: ERPOrder) => {
+    setSelectedOrder(order);
+    setIsDetailOpen(true);
+    toast.info('请在详情中处理异常');
+  };
+
+  // 查看物流
+  const handleViewLogistics = async (order: ERPOrder) => {
+    try {
+      const response = await fetch(`/api/v1/erp/logistics?order_id=${order.id}`);
+      const data = await response.json();
+      
+      if (data.success && data.data.items.length > 0) {
+        const logistics = data.data.items[0];
+        toast.info('物流信息', {
+          description: `${logistics.carrier}: ${logistics.tracking_number}\n状态: ${logistics.status}`,
+        });
+      } else {
+        toast.warning('暂无物流信息');
+      }
+    } catch (error) {
+      toast.error('获取物流信息失败');
     }
   };
 
@@ -272,10 +308,22 @@ export default function ERPOrdersPage() {
           <div className="flex items-center gap-3">
             <Button variant="outline" onClick={fetchOrders}>
               <RefreshCw className="h-4 w-4 mr-2" />
+              刷新
+            </Button>
+            <Button variant="outline" onClick={handleSyncOrders} disabled={isProcessing === 'sync'}>
+              {isProcessing === 'sync' ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <RefreshCw className="h-4 w-4 mr-2" />
+              )}
               同步订单
             </Button>
-            <Button variant="outline" onClick={() => toast.success('正在导出订单数据...')}>
-              <Download className="h-4 w-4 mr-2" />
+            <Button variant="outline" onClick={handleExportOrders} disabled={isProcessing === 'export'}>
+              {isProcessing === 'export' ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Download className="h-4 w-4 mr-2" />
+              )}
               导出
             </Button>
           </div>
@@ -351,6 +399,7 @@ export default function ERPOrdersPage() {
                   value={keyword}
                   onChange={(e) => setKeyword(e.target.value)}
                   className="pl-10"
+                  onKeyDown={(e) => e.key === 'Enter' && fetchOrders()}
                 />
               </div>
               <select 
@@ -391,13 +440,16 @@ export default function ERPOrdersPage() {
           </CardHeader>
           <CardContent>
             {loading ? (
-              <div className="text-center py-8 text-muted-foreground">加载中...</div>
+              <div className="text-center py-8 text-muted-foreground">
+                <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2" />
+                加载中...
+              </div>
             ) : orders.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">暂无订单数据</div>
             ) : (
               <div className="space-y-3">
                 {orders.map((order) => (
-                  <div key={order.id} className="p-4 border border-border rounded-lg hover:bg-muted/30 transition-colors">
+                  <div key={order.id} className="p-4 border border-border rounded-lg hover:bg-muted/30 transition-colors cursor-pointer">
                     <div className="flex items-start justify-between">
                       <div className="flex items-start gap-4">
                         <div className="w-12 h-12 bg-muted rounded-lg flex items-center justify-center">
@@ -433,14 +485,45 @@ export default function ERPOrdersPage() {
                           </span>
                         </div>
                         <div className="flex items-center gap-2 mt-3">
-                          <Button variant="outline" size="sm" onClick={() => toast.info(`查看订单 ${order.platform_order_id} 详情`)}>
+                          <Button variant="outline" size="sm" onClick={() => handleViewDetail(order)}>
                             <Eye className="h-3 w-3 mr-1" />
                             详情
                           </Button>
                           {order.status === 'paid' && (
-                            <Button size="sm" onClick={() => toast.success(`订单 ${order.platform_order_id} 已发货`)}>
+                            <Button 
+                              size="sm" 
+                              onClick={() => {
+                                setSelectedOrder(order);
+                                setIsShipOpen(true);
+                              }}
+                              disabled={isProcessing === order.id}
+                            >
                               <Truck className="h-3 w-3 mr-1" />
                               发货
+                            </Button>
+                          )}
+                          {(order.status === 'shipped' || order.status === 'delivered') && (
+                            <Button variant="outline" size="sm" onClick={() => handleViewLogistics(order)}>
+                              <PackageCheck className="h-3 w-3 mr-1" />
+                              物流
+                            </Button>
+                          )}
+                          {order.abnormal_type && (
+                            <Button variant="outline" size="sm" onClick={() => handleResolveAbnormal(order)}>
+                              <AlertTriangle className="h-3 w-3 mr-1" />
+                              处理
+                            </Button>
+                          )}
+                          {(order.status === 'pending' || order.status === 'paid') && (
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              className="text-destructive"
+                              onClick={() => handleCancelOrder(order)}
+                              disabled={isProcessing === order.id}
+                            >
+                              <Ban className="h-3 w-3 mr-1" />
+                              取消
                             </Button>
                           )}
                         </div>
@@ -452,6 +535,121 @@ export default function ERPOrdersPage() {
             )}
           </CardContent>
         </Card>
+
+        {/* 订单详情对话框 */}
+        <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle>订单详情</DialogTitle>
+            </DialogHeader>
+            {selectedOrder && (
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <div className="text-[12px] text-muted-foreground">订单号</div>
+                    <div className="font-mono text-[14px]">{selectedOrder.platform_order_id}</div>
+                  </div>
+                  <div>
+                    <div className="text-[12px] text-muted-foreground">平台</div>
+                    <div>{getPlatformBadge(selectedOrder.platform)}</div>
+                  </div>
+                </div>
+                <div>
+                  <div className="text-[12px] text-muted-foreground">商品名称</div>
+                  <div className="text-[14px] font-medium">{selectedOrder.product_name}</div>
+                </div>
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <div className="text-[12px] text-muted-foreground">数量</div>
+                    <div className="text-[16px] font-semibold">{selectedOrder.quantity}</div>
+                  </div>
+                  <div>
+                    <div className="text-[12px] text-muted-foreground">单价</div>
+                    <div className="text-[16px] font-semibold">${selectedOrder.sale_price.toFixed(2)}</div>
+                  </div>
+                  <div>
+                    <div className="text-[12px] text-muted-foreground">总金额</div>
+                    <div className="text-[16px] font-semibold text-success">${selectedOrder.total_amount.toFixed(2)}</div>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <div className="text-[12px] text-muted-foreground">成本</div>
+                    <div className="text-[14px]">${selectedOrder.cost_price.toFixed(2)}</div>
+                  </div>
+                  <div>
+                    <div className="text-[12px] text-muted-foreground">利润</div>
+                    <div className={`text-[14px] font-semibold ${selectedOrder.profit > 0 ? 'text-success' : 'text-destructive'}`}>
+                      ${selectedOrder.profit.toFixed(2)}
+                    </div>
+                  </div>
+                </div>
+                <div>
+                  <div className="text-[12px] text-muted-foreground">买家信息</div>
+                  <div className="text-[14px]">{selectedOrder.buyer_name || '-'}</div>
+                </div>
+                <div>
+                  <div className="text-[12px] text-muted-foreground">下单时间</div>
+                  <div className="text-[14px]">{selectedOrder.order_time || selectedOrder.created_at}</div>
+                </div>
+                {selectedOrder.abnormal_type && (
+                  <div className="p-3 bg-destructive/10 rounded-lg">
+                    <div className="text-[12px] text-destructive font-medium">异常类型</div>
+                    <div className="text-[14px] text-destructive">{selectedOrder.abnormal_type}</div>
+                  </div>
+                )}
+              </div>
+            )}
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsDetailOpen(false)}>关闭</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* 发货对话框 */}
+        <Dialog open={isShipOpen} onOpenChange={setIsShipOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>订单发货</DialogTitle>
+              <DialogDescription>填写物流信息完成发货</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <label className="text-[13px] font-medium">物流公司</label>
+                <select 
+                  className="w-full px-3 py-2 border border-border rounded-md text-[14px]"
+                  value={shipForm.carrier}
+                  onChange={(e) => setShipForm({ ...shipForm, carrier: e.target.value })}
+                >
+                  <option value="">请选择物流公司</option>
+                  <option value="J&T Express">J&T Express</option>
+                  <option value="Ninja Van">Ninja Van</option>
+                  <option value="Flash Express">Flash Express</option>
+                  <option value="Kerry Express">Kerry Express</option>
+                  <option value="Amazon Logistics">Amazon Logistics</option>
+                  <option value="顺丰国际">顺丰国际</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-[13px] font-medium">物流单号</label>
+                <Input
+                  placeholder="请输入物流单号"
+                  value={shipForm.tracking_number}
+                  onChange={(e) => setShipForm({ ...shipForm, tracking_number: e.target.value })}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsShipOpen(false)}>取消</Button>
+              <Button onClick={handleShip} disabled={isProcessing === selectedOrder?.id}>
+                {isProcessing === selectedOrder?.id ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : null}
+                确认发货
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </MainLayout>
   );

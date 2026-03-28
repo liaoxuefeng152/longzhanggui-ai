@@ -6,151 +6,95 @@ import MainLayout from '@/components/layout/MainLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
+import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { toast } from 'sonner';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import {
   BarChart3,
   Search,
+  Download,
+  RefreshCw,
   TrendingUp,
   TrendingDown,
-  RefreshCw,
-  Play,
-  Settings,
-  Download,
-  Eye,
-  Zap,
-  Calendar,
-  Clock,
-  ArrowUpRight,
-  ArrowDownRight,
-  Target,
   DollarSign,
+  Package,
   ShoppingCart,
-  Users,
+  Eye,
+  Filter,
+  Calendar,
+  PieChart,
+  Activity,
+  Target,
   AlertTriangle,
   CheckCircle,
+  Loader2,
+  Settings,
+  Play,
   FileText,
-  Bell,
-  Send,
-  RotateCcw,
+  Zap,
+  ArrowUpRight,
+  ArrowDownRight,
 } from 'lucide-react';
+import { toast } from 'sonner';
 
-interface OptimizationTask {
+interface DailyMetric {
+  date: string;
+  sales: number;
+  orders: number;
+  profit: number;
+  adSpend: number;
+  roas: number;
+  conversionRate: number;
+}
+
+interface ProductMetric {
   id: string;
-  type: 'low_roi' | 'high_conversion' | 'no_traffic' | 'high_dispute';
-  productName: string;
-  platform: 'TK' | 'Amazon';
-  trigger: string;
-  suggestion: string;
-  autoAction: string;
-  status: 'pending' | 'processing' | 'completed';
-  priority: 'high' | 'medium' | 'low';
+  product_id: string;
+  product_name: string;
+  platform: string;
+  sales: number;
+  orders: number;
+  profit: number;
+  adSpend: number;
+  roas: number;
+  conversionRate: number;
+  trend: 'up' | 'down' | 'stable';
+  insight?: string;
+}
+
+interface AIInsight {
+  id: string;
+  type: 'opportunity' | 'warning' | 'suggestion';
+  title: string;
+  description: string;
+  impact: string;
+  action: string;
   createdAt: string;
 }
 
-interface Report {
-  id: string;
-  type: 'daily' | 'weekly';
-  date: string;
-  platform: 'TK' | 'Amazon' | 'all';
-  status: 'generated' | 'sent';
-  sentAt?: string;
-}
-
-const mockOptimizationTasks: OptimizationTask[] = [
-  {
-    id: 'OPT001',
-    type: 'low_roi',
-    productName: '榨汁机-美国站',
-    platform: 'Amazon',
-    trigger: 'ROI < 1:1',
-    suggestion: '广告暂停 + Listing重新优化',
-    autoAction: '已触发广告暂停，待执行Listing优化',
-    status: 'processing',
-    priority: 'high',
-    createdAt: '2026-03-21 03:00',
-  },
-  {
-    id: 'OPT002',
-    type: 'high_conversion',
-    productName: '宠物喂食器-印尼站',
-    platform: 'TK',
-    trigger: '转化率 > 10%',
-    suggestion: '广告预算增加20%',
-    autoAction: '已自动增加广告预算',
-    status: 'completed',
-    priority: 'medium',
-    createdAt: '2026-03-21 03:00',
-  },
-  {
-    id: 'OPT003',
-    type: 'no_traffic',
-    productName: '智能手环-泰国站',
-    platform: 'TK',
-    trigger: '7天曝光 < 1000',
-    suggestion: '选品智能体重选同款替代商品',
-    autoAction: '待触发选品智能体',
-    status: 'pending',
-    priority: 'medium',
-    createdAt: '2026-03-21 03:00',
-  },
-  {
-    id: 'OPT004',
-    type: 'high_dispute',
-    productName: 'LED化妆镜-越南站',
-    platform: 'TK',
-    trigger: '纠纷率 > 5%',
-    suggestion: '商品下架 + 客服复盘',
-    autoAction: '待确认后执行',
-    status: 'pending',
-    priority: 'high',
-    createdAt: '2026-03-21 03:00',
-  },
-];
-
-const mockReports: Report[] = [
-  { id: 'RPT001', type: 'daily', date: '2026-03-21', platform: 'all', status: 'sent', sentAt: '2026-03-21 03:30' },
-  { id: 'RPT002', type: 'weekly', date: '2026-03-15~21', platform: 'all', status: 'generated' },
-  { id: 'RPT003', type: 'daily', date: '2026-03-20', platform: 'all', status: 'sent', sentAt: '2026-03-20 03:30' },
-];
-
-const taskTriggerRules = [
-  {
-    id: 'TR001',
-    condition: '低ROI商品',
-    trigger: 'ROI < 1:1',
-    action: '自动触发「广告暂停+Listing重新优化」任务',
-    status: 'active',
-  },
-  {
-    id: 'TR002',
-    condition: '高转化商品',
-    trigger: '转化率 > 10%',
-    action: '自动触发「广告预算增加20%」任务',
-    status: 'active',
-  },
-  {
-    id: 'TR003',
-    condition: '无流量商品',
-    trigger: '7天曝光 < 1000',
-    action: '自动触发「选品智能体重选同款替代商品」任务',
-    status: 'active',
-  },
-  {
-    id: 'TR004',
-    condition: '高纠纷率商品',
-    trigger: '纠纷率 > 5%',
-    action: '自动触发「商品下架+客服复盘」任务',
-    status: 'active',
-  },
-];
-
-export default function ReviewAgentPage() {
+export default function DataReviewPage() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [activeTab, setActiveTab] = useState('overview');
-  const [agentStatus, setAgentStatus] = useState<'online' | 'offline' | 'processing'>('online');
+  const [loading, setLoading] = useState(true);
+  const [dateRange, setDateRange] = useState({ start: '', end: '' });
+  
+  // 数据状态
+  const [dailyMetrics, setDailyMetrics] = useState<DailyMetric[]>([]);
+  const [productMetrics, setProductMetrics] = useState<ProductMetric[]>([]);
+  const [insights, setInsights] = useState<AIInsight[]>([]);
+  
+  // 对话框状态
+  const [isInsightOpen, setIsInsightOpen] = useState(false);
+  const [selectedInsight, setSelectedInsight] = useState<AIInsight | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -159,37 +103,160 @@ export default function ReviewAgentPage() {
       return;
     }
     setUser(JSON.parse(userData));
+    fetchData();
   }, [router]);
 
-  const getTaskTypeLabel = (type: string) => {
-    const labels: Record<string, string> = {
-      low_roi: '低ROI优化',
-      high_conversion: '高转化加推',
-      no_traffic: '无流量重选',
-      high_dispute: '高纠纷处理',
-    };
-    return labels[type] || type;
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      // 模拟数据
+      const mockDailyMetrics: DailyMetric[] = [
+        { date: '2026-03-21', sales: 15680.50, orders: 42, profit: 2838.12, adSpend: 1568.05, roas: 2.8, conversionRate: 3.2 },
+        { date: '2026-03-20', sales: 18450.00, orders: 51, profit: 3192.50, adSpend: 1845.00, roas: 3.1, conversionRate: 3.5 },
+        { date: '2026-03-19', sales: 12350.80, orders: 35, profit: 2117.68, adSpend: 1235.08, roas: 2.5, conversionRate: 2.8 },
+      ];
+      
+      const mockProductMetrics: ProductMetric[] = [
+        { 
+          id: 'PM001', product_id: 'PROD001', product_name: '宠物自动喂食器 5L大容量', platform: 'tiktok',
+          sales: 8520.00, orders: 23, profit: 1850.40, adSpend: 852.00, roas: 3.2, conversionRate: 4.1,
+          trend: 'up', insight: '销量持续增长，建议增加广告预算20%'
+        },
+        { 
+          id: 'PM002', product_id: 'PROD002', product_name: '便携式榨汁机 USB充电', platform: 'amazon',
+          sales: 6320.50, orders: 18, profit: 1320.30, adSpend: 632.05, roas: 2.8, conversionRate: 3.5,
+          trend: 'stable', insight: '表现稳定，可考虑拓展其他站点'
+        },
+        { 
+          id: 'PM003', product_id: 'PROD003', product_name: 'LED化妆镜 台式带灯', platform: 'tiktok',
+          sales: 3180.00, orders: 12, profit: 450.20, adSpend: 477.00, roas: 1.8, conversionRate: 2.2,
+          trend: 'down', insight: 'ROAS偏低，建议优化图片和Listing'
+        },
+      ];
+      
+      const mockInsights: AIInsight[] = [
+        {
+          id: 'IN001',
+          type: 'opportunity',
+          title: '宠物用品品类增长机会',
+          description: '宠物自动喂食器近期销量持续增长，且ROAS达到3.2，建议扩大该品类的广告投入',
+          impact: '预计可提升20%的销售额',
+          action: '增加广告预算',
+          createdAt: '2026-03-21 14:30',
+        },
+        {
+          id: 'IN002',
+          type: 'warning',
+          title: 'LED化妆镜ROAS过低',
+          description: '该商品ROAS仅1.8，低于2.0的盈亏线，建议优化Listing或考虑下架',
+          impact: '每月亏损约$150',
+          action: '优化或下架',
+          createdAt: '2026-03-21 12:00',
+        },
+        {
+          id: 'IN003',
+          type: 'suggestion',
+          title: 'TikTok东南亚站点扩展建议',
+          description: '当前仅布局印尼站点，建议拓展至泰国、越南等站点，扩大市场覆盖',
+          impact: '预计可提升30%的流量',
+          action: '拓展新站点',
+          createdAt: '2026-03-21 10:00',
+        },
+      ];
+      
+      setDailyMetrics(mockDailyMetrics);
+      setProductMetrics(mockProductMetrics);
+      setInsights(mockInsights);
+    } catch (error) {
+      toast.error('获取数据失败');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const getStatusBadge = (status: string) => {
-    const config: Record<string, { label: string; className: string }> = {
-      pending: { label: '待执行', className: 'bg-warning/10 text-warning border-warning/20' },
-      processing: { label: '执行中', className: 'bg-primary/10 text-primary border-primary/20' },
-      completed: { label: '已完成', className: 'bg-success/10 text-success border-success/20' },
-    };
-    const { label, className } = config[status] || config.pending;
-    return <Badge variant="outline" className={className}>{label}</Badge>;
+  // 生成AI报告
+  const handleGenerateReport = async () => {
+    setIsProcessing(true);
+    try {
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      toast.success('AI报告生成完成', { description: '已生成本周运营分析报告' });
+    } catch (error) {
+      toast.error('生成失败');
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
-  const getPriorityBadge = (priority: string) => {
-    const config: Record<string, { label: string; className: string }> = {
-      high: { label: '高', className: 'bg-destructive/10 text-destructive border-destructive/20' },
-      medium: { label: '中', className: 'bg-warning/10 text-warning border-warning/20' },
-      low: { label: '低', className: 'bg-muted text-muted-foreground' },
-    };
-    const { label, className } = config[priority] || config.low;
-    return <Badge variant="outline" className={className}>{label}</Badge>;
+  // 导出数据
+  const handleExportData = async () => {
+    setIsProcessing(true);
+    try {
+      const headers = ['日期', '销售额', '订单数', '利润', '广告花费', 'ROAS', '转化率'];
+      const rows = dailyMetrics.map(m => [
+        m.date, m.sales.toFixed(2), m.orders, m.profit.toFixed(2), m.adSpend.toFixed(2), m.roas.toFixed(2), `${m.conversionRate}%`
+      ]);
+      
+      const csvContent = [headers, ...rows].map(row => row.join(',')).join('\n');
+      const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `data_review_${new Date().toISOString().split('T')[0]}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      
+      toast.success('导出成功');
+    } catch (error) {
+      toast.error('导出失败');
+    } finally {
+      setIsProcessing(false);
+    }
   };
+
+  // 查看洞察详情
+  const handleViewInsight = (insight: AIInsight) => {
+    setSelectedInsight(insight);
+    setIsInsightOpen(true);
+  };
+
+  // 执行建议
+  const handleExecuteAction = async (insight: AIInsight) => {
+    setIsProcessing(true);
+    try {
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      toast.success('操作已执行', { description: insight.action });
+      setIsInsightOpen(false);
+    } catch (error) {
+      toast.error('执行失败');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const getInsightTypeBadge = (type: string) => {
+    const config: Record<string, { label: string; className: string; icon: any }> = {
+      opportunity: { label: '机会', className: 'bg-success/10 text-success', icon: TrendingUp },
+      warning: { label: '警告', className: 'bg-destructive/10 text-destructive', icon: AlertTriangle },
+      suggestion: { label: '建议', className: 'bg-primary/10 text-primary', icon: Zap },
+    };
+    return config[type] || config.suggestion;
+  };
+
+  const getTrendBadge = (trend: string) => {
+    const config: Record<string, { icon: any; className: string }> = {
+      up: { icon: TrendingUp, className: 'text-success' },
+      down: { icon: TrendingDown, className: 'text-destructive' },
+      stable: { icon: Activity, className: 'text-muted-foreground' },
+    };
+    return config[trend] || config.stable;
+  };
+
+  // 汇总数据
+  const totalSales = dailyMetrics.reduce((sum, m) => sum + m.sales, 0);
+  const totalOrders = dailyMetrics.reduce((sum, m) => sum + m.orders, 0);
+  const totalProfit = dailyMetrics.reduce((sum, m) => sum + m.profit, 0);
+  const totalAdSpend = dailyMetrics.reduce((sum, m) => sum + m.adSpend, 0);
+  const avgRoas = totalAdSpend > 0 ? totalSales / totalAdSpend : 0;
 
   if (!user) return null;
 
@@ -204,19 +271,24 @@ export default function ReviewAgentPage() {
             </div>
             <div>
               <h1 className="text-[18px] font-semibold text-foreground">数据复盘智能体</h1>
-              <p className="text-[14px] text-muted-foreground">销售分析 · 流量分析 · ROI计算 · 自动化任务转化</p>
+              <p className="text-[14px] text-muted-foreground">数据分析 · AI洞察 · 运营优化 · 自动报告</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <Badge className={agentStatus === 'online' ? 'bg-success text-white' : 'bg-warning text-white'}>
-              {agentStatus === 'online' ? '在线运行' : agentStatus === 'processing' ? '处理中' : '离线'}
-            </Badge>
-            <Button variant="outline" onClick={() => toast.success('数据已刷新')}>
+            <Button variant="outline" onClick={fetchData}>
               <RefreshCw className="h-4 w-4 mr-2" />
               刷新
             </Button>
-            <Button onClick={() => { console.log('生成报告按钮被点击'); toast.success('数据复盘报告生成中...'); }}>
-              <Play className="h-4 w-4 mr-2" />
+            <Button variant="outline" onClick={handleExportData} disabled={isProcessing}>
+              {isProcessing ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Download className="h-4 w-4 mr-2" />
+              )}
+              导出
+            </Button>
+            <Button onClick={handleGenerateReport} disabled={isProcessing}>
+              <FileText className="h-4 w-4 mr-2" />
               生成报告
             </Button>
           </div>
@@ -225,20 +297,20 @@ export default function ReviewAgentPage() {
         {/* 核心能力标签 */}
         <div className="flex items-center gap-2">
           <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
+            <Activity className="h-3 w-3 mr-1" />
+            数据分析
+          </Badge>
+          <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
             <Zap className="h-3 w-3 mr-1" />
-            自动任务转化
+            AI洞察
           </Badge>
           <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
-            <BarChart3 className="h-3 w-3 mr-1" />
-            销售分析
+            <Target className="h-3 w-3 mr-1" />
+            运营优化
           </Badge>
           <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
-            <TrendingUp className="h-3 w-3 mr-1" />
-            流量分析
-          </Badge>
-          <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
-            <DollarSign className="h-3 w-3 mr-1" />
-            ROI计算
+            <FileText className="h-3 w-3 mr-1" />
+            自动报告
           </Badge>
         </div>
 
@@ -246,43 +318,51 @@ export default function ReviewAgentPage() {
         <div className="grid grid-cols-5 gap-4">
           <Card className="bg-white border-border shadow-sm">
             <CardContent className="p-4">
-              <div className="text-[12px] text-muted-foreground mb-1">今日销售额</div>
-              <div className="text-[24px] font-semibold text-foreground">¥12,580</div>
-              <div className="text-[11px] text-success mt-1 flex items-center gap-1">
-                <ArrowUpRight className="h-3 w-3" />
-                18% vs 昨日
+              <div className="flex items-center justify-between mb-1">
+                <div className="text-[12px] text-muted-foreground">总销售额</div>
+                <TrendingUp className="h-4 w-4 text-success" />
               </div>
+              <div className="text-[24px] font-semibold text-success">${totalSales.toFixed(2)}</div>
+              <div className="text-[11px] text-success mt-1">↑ 12.5% vs 上周</div>
             </CardContent>
           </Card>
           <Card className="bg-white border-border shadow-sm">
             <CardContent className="p-4">
-              <div className="text-[12px] text-muted-foreground mb-1">订单数</div>
-              <div className="text-[24px] font-semibold text-foreground">156</div>
-              <div className="text-[11px] text-success mt-1 flex items-center gap-1">
-                <ArrowUpRight className="h-3 w-3" />
-                12% vs 昨日
+              <div className="flex items-center justify-between mb-1">
+                <div className="text-[12px] text-muted-foreground">订单数</div>
+                <ShoppingCart className="h-4 w-4 text-muted-foreground" />
               </div>
+              <div className="text-[24px] font-semibold text-foreground">{totalOrders}</div>
+              <div className="text-[11px] text-muted-foreground mt-1">本周累计</div>
             </CardContent>
           </Card>
           <Card className="bg-white border-border shadow-sm">
             <CardContent className="p-4">
-              <div className="text-[12px] text-muted-foreground mb-1">平均ROI</div>
-              <div className="text-[24px] font-semibold text-success">2.35</div>
-              <div className="text-[11px] text-muted-foreground mt-1">目标 ≥1:1</div>
+              <div className="flex items-center justify-between mb-1">
+                <div className="text-[12px] text-muted-foreground">毛利润</div>
+                <DollarSign className="h-4 w-4 text-success" />
+              </div>
+              <div className="text-[24px] font-semibold text-success">${totalProfit.toFixed(2)}</div>
+              <div className="text-[11px] text-muted-foreground mt-1">利润率 {(totalProfit / totalSales * 100).toFixed(1)}%</div>
             </CardContent>
           </Card>
           <Card className="bg-white border-border shadow-sm">
             <CardContent className="p-4">
-              <div className="text-[12px] text-muted-foreground mb-1">转化率</div>
-              <div className="text-[24px] font-semibold text-foreground">8.6%</div>
-              <div className="text-[11px] text-muted-foreground mt-1">行业平均 5%</div>
+              <div className="flex items-center justify-between mb-1">
+                <div className="text-[12px] text-muted-foreground">广告花费</div>
+              </div>
+              <div className="text-[24px] font-semibold text-foreground">${totalAdSpend.toFixed(2)}</div>
+              <div className="text-[11px] text-muted-foreground mt-1">占比 {(totalAdSpend / totalSales * 100).toFixed(1)}%</div>
             </CardContent>
           </Card>
           <Card className="bg-white border-border shadow-sm">
             <CardContent className="p-4">
-              <div className="text-[12px] text-muted-foreground mb-1">模型调用</div>
-              <div className="text-[24px] font-semibold text-foreground">560</div>
-              <div className="text-[11px] text-muted-foreground mt-1">DeepSeek-V3</div>
+              <div className="flex items-center justify-between mb-1">
+                <div className="text-[12px] text-muted-foreground">ROAS</div>
+                <Activity className="h-4 w-4 text-primary" />
+              </div>
+              <div className="text-[24px] font-semibold text-foreground">{avgRoas.toFixed(2)}x</div>
+              <div className="text-[11px] text-success mt-1">表现良好</div>
             </CardContent>
           </Card>
         </div>
@@ -291,254 +371,221 @@ export default function ReviewAgentPage() {
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="bg-muted/50">
             <TabsTrigger value="overview">数据概览</TabsTrigger>
-            <TabsTrigger value="tasks">优化任务</TabsTrigger>
-            <TabsTrigger value="rules">转化规则</TabsTrigger>
-            <TabsTrigger value="reports">报告管理</TabsTrigger>
+            <TabsTrigger value="products">商品分析</TabsTrigger>
+            <TabsTrigger value="insights">AI洞察</TabsTrigger>
+            <TabsTrigger value="reports">报告中心</TabsTrigger>
             <TabsTrigger value="config">配置设置</TabsTrigger>
           </TabsList>
 
           {/* 数据概览 */}
           <TabsContent value="overview" className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
+              {/* 每日趋势 */}
               <Card className="bg-white border-border shadow-sm">
                 <CardHeader>
-                  <CardTitle className="text-[15px]">平台销售分布</CardTitle>
-                  <CardDescription>TK东南亚 vs 亚马逊美国站</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div>
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-[13px]">TK东南亚</span>
-                        <span className="text-[13px] font-medium">¥7,280 (58%)</span>
-                      </div>
-                      <Progress value={58} className="h-2" />
-                    </div>
-                    <div>
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-[13px]">亚马逊美国站</span>
-                        <span className="text-[13px] font-medium">¥5,300 (42%)</span>
-                      </div>
-                      <Progress value={42} className="h-2" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-white border-border shadow-sm">
-                <CardHeader>
-                  <CardTitle className="text-[15px]">TOP商品表现</CardTitle>
-                  <CardDescription>按销售额排序</CardDescription>
+                  <CardTitle className="text-[15px]">销售趋势</CardTitle>
+                  <CardDescription>近7天销售额与利润趋势</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    {[
-                      { name: '宠物喂食器', sales: 3280, roi: 2.8, trend: 'up' },
-                      { name: '便携榨汁机', sales: 2150, roi: 1.5, trend: 'down' },
-                      { name: 'LED化妆镜', sales: 1890, roi: 2.1, trend: 'up' },
-                    ].map((item, i) => (
-                      <div key={i} className="flex items-center justify-between p-2 bg-muted/30 rounded">
-                        <div className="flex items-center gap-2">
-                          <span className="text-[11px] text-muted-foreground w-4">{i + 1}</span>
-                          <span className="text-[12px]">{item.name}</span>
+                    {dailyMetrics.map((metric) => (
+                      <div key={metric.date} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+                        <div>
+                          <div className="text-[13px] font-medium">{metric.date}</div>
+                          <div className="text-[12px] text-muted-foreground">{metric.orders} 单</div>
                         </div>
-                        <div className="flex items-center gap-3">
-                          <span className="text-[12px]">¥{item.sales}</span>
-                          <span className={`text-[11px] ${item.roi >= 2 ? 'text-success' : 'text-warning'}`}>ROI {item.roi}</span>
-                          {item.trend === 'up' ? (
-                            <TrendingUp className="h-3 w-3 text-success" />
-                          ) : (
-                            <TrendingDown className="h-3 w-3 text-destructive" />
-                          )}
+                        <div className="text-right">
+                          <div className="text-[16px] font-semibold text-success">${metric.sales.toFixed(2)}</div>
+                          <div className="text-[12px] text-muted-foreground">利润 ${metric.profit.toFixed(2)}</div>
                         </div>
                       </div>
                     ))}
                   </div>
                 </CardContent>
               </Card>
+
+              {/* 关键指标 */}
+              <Card className="bg-white border-border shadow-sm">
+                <CardHeader>
+                  <CardTitle className="text-[15px]">关键指标</CardTitle>
+                  <CardDescription>本周核心运营指标</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="p-4 border border-border rounded-lg">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-[13px] text-muted-foreground">平均ROAS</span>
+                        <span className="text-[20px] font-semibold text-foreground">{avgRoas.toFixed(2)}x</span>
+                      </div>
+                      <div className="w-full h-2 bg-muted rounded-full">
+                        <div className="h-2 bg-success rounded-full" style={{ width: `${Math.min(avgRoas * 25, 100)}%` }} />
+                      </div>
+                    </div>
+                    <div className="p-4 border border-border rounded-lg">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-[13px] text-muted-foreground">广告花费占比</span>
+                        <span className="text-[20px] font-semibold text-foreground">{(totalAdSpend / totalSales * 100).toFixed(1)}%</span>
+                      </div>
+                      <div className="w-full h-2 bg-muted rounded-full">
+                        <div className="h-2 bg-warning rounded-full" style={{ width: `${(totalAdSpend / totalSales * 100) * 2}%` }} />
+                      </div>
+                    </div>
+                    <div className="p-4 border border-border rounded-lg">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-[13px] text-muted-foreground">利润率</span>
+                        <span className="text-[20px] font-semibold text-success">{(totalProfit / totalSales * 100).toFixed(1)}%</span>
+                      </div>
+                      <div className="w-full h-2 bg-muted rounded-full">
+                        <div className="h-2 bg-success rounded-full" style={{ width: `${(totalProfit / totalSales * 100) * 2}%` }} />
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
+          </TabsContent>
 
-            {/* 复盘摘要 */}
+          {/* 商品分析 */}
+          <TabsContent value="products" className="space-y-4">
             <Card className="bg-white border-border shadow-sm">
-              <CardHeader>
-                <CardTitle className="text-[15px]">今日复盘摘要</CardTitle>
-                <CardDescription>AI自动分析生成，每日凌晨3点更新</CardDescription>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-[15px]">商品表现分析</CardTitle>
+                <CardDescription>各商品销售数据与AI优化建议</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-4 gap-4">
-                  <div className="p-3 bg-success/5 border border-success/20 rounded-lg">
-                    <div className="text-[12px] text-success font-medium mb-1">表现优秀</div>
-                    <div className="text-[20px] font-semibold text-foreground">12</div>
-                    <div className="text-[11px] text-muted-foreground">高转化商品</div>
+                {loading ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2" />
+                    加载中...
                   </div>
-                  <div className="p-3 bg-warning/5 border border-warning/20 rounded-lg">
-                    <div className="text-[12px] text-warning font-medium mb-1">需要关注</div>
-                    <div className="text-[20px] font-semibold text-foreground">3</div>
-                    <div className="text-[11px] text-muted-foreground">低ROI商品</div>
+                ) : (
+                  <div className="space-y-3">
+                    {productMetrics.map((product) => {
+                      const TrendIcon = getTrendBadge(product.trend).icon;
+                      return (
+                        <div key={product.id} className="p-4 border border-border rounded-lg">
+                          <div className="flex items-start justify-between">
+                            <div className="flex items-start gap-4">
+                              <div className="w-12 h-12 bg-muted rounded-lg flex items-center justify-center">
+                                <Package className="h-6 w-6 text-muted-foreground" />
+                              </div>
+                              <div className="space-y-2">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-[14px] font-medium text-foreground">{product.product_name}</span>
+                                  <Badge variant="outline">{product.platform}</Badge>
+                                  <TrendIcon className={`h-4 w-4 ${getTrendBadge(product.trend).className}`} />
+                                </div>
+                                <div className="flex items-center gap-6 text-[12px]">
+                                  <span>销售: <span className="font-medium text-success">${product.sales.toFixed(2)}</span></span>
+                                  <span>订单: <span className="font-medium">{product.orders}</span></span>
+                                  <span>ROAS: <span className={`font-medium ${product.roas >= 2 ? 'text-success' : 'text-destructive'}`}>{product.roas.toFixed(2)}x</span></span>
+                                  <span>转化率: <span className="font-medium">{product.conversionRate}%</span></span>
+                                </div>
+                                {product.insight && (
+                                  <div className="text-[12px] text-primary flex items-center gap-1">
+                                    <Zap className="h-3 w-3" />
+                                    {product.insight}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <div className="text-[16px] font-semibold text-success">${product.profit.toFixed(2)}</div>
+                              <div className="text-[11px] text-muted-foreground">利润</div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
-                  <div className="p-3 bg-muted/30 border border-border rounded-lg">
-                    <div className="text-[12px] text-muted-foreground font-medium mb-1">无流量</div>
-                    <div className="text-[20px] font-semibold text-foreground">2</div>
-                    <div className="text-[11px] text-muted-foreground">需重新选品</div>
-                  </div>
-                  <div className="p-3 bg-destructive/5 border border-destructive/20 rounded-lg">
-                    <div className="text-[12px] text-destructive font-medium mb-1">高纠纷</div>
-                    <div className="text-[20px] font-semibold text-foreground">1</div>
-                    <div className="text-[11px] text-muted-foreground">需下架处理</div>
-                  </div>
-                </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
 
-          {/* 优化任务 */}
-          <TabsContent value="tasks" className="space-y-4">
+          {/* AI洞察 */}
+          <TabsContent value="insights" className="space-y-4">
             <Card className="bg-white border-border shadow-sm">
-              <CardHeader>
-                <CardTitle className="text-[15px]">自动化优化任务</CardTitle>
-                <CardDescription>复盘结果自动转化为优化任务，推送至龙虾调度中枢自动执行</CardDescription>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-[15px]">AI运营洞察</CardTitle>
+                <CardDescription>基于数据分析生成的智能建议</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {mockOptimizationTasks.map((task) => (
-                    <div key={task.id} className="p-4 border border-border rounded-lg">
-                      <div className="flex items-start justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          <span className="text-[13px] font-medium text-foreground">{task.productName}</span>
-                          <Badge variant="outline" className="text-[11px]">{task.platform}</Badge>
-                          <Badge variant="outline" className="text-[11px]">{getTaskTypeLabel(task.type)}</Badge>
-                          {getStatusBadge(task.status)}
-                          {getPriorityBadge(task.priority)}
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-3 gap-4 text-[12px] mb-2">
-                        <div>
-                          <span className="text-muted-foreground">触发条件: </span>
-                          <span className="text-foreground font-medium">{task.trigger}</span>
-                        </div>
-                        <div>
-                          <span className="text-muted-foreground">建议操作: </span>
-                          <span className="text-primary font-medium">{task.suggestion}</span>
-                        </div>
-                        <div>
-                          <span className="text-muted-foreground">自动动作: </span>
-                          <span className="text-foreground">{task.autoAction}</span>
-                        </div>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-[11px] text-muted-foreground">{task.createdAt}</span>
-                        <div className="flex items-center gap-2">
-                          {task.status === 'pending' && (
-                            <>
-                              <Button variant="outline" size="sm" onClick={() => toast.info('已跳过该任务')}>跳过</Button>
-                              <Button size="sm" onClick={() => toast.success('正在执行数据复盘任务...')}>
-                                <Send className="h-3 w-3 mr-1" />
-                                执行
-                              </Button>
-                            </>
-                          )}
-                          {task.status === 'processing' && (
-                            <Button variant="outline" size="sm" onClick={() => toast.info('正在查看任务进度...')}>
+                  {insights.map((insight) => {
+                    const config = getInsightTypeBadge(insight.type);
+                    const Icon = config.icon;
+                    return (
+                      <div 
+                        key={insight.id} 
+                        className="p-4 border border-border rounded-lg hover:bg-muted/30 transition-colors cursor-pointer"
+                        onClick={() => handleViewInsight(insight)}
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-start gap-3">
+                            <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${insight.type === 'opportunity' ? 'bg-success/10' : insight.type === 'warning' ? 'bg-destructive/10' : 'bg-primary/10'}`}>
+                              <Icon className={`h-5 w-5 ${config.className.split(' ')[1]}`} />
+                            </div>
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-2">
+                                <span className="text-[14px] font-medium text-foreground">{insight.title}</span>
+                                <Badge variant="outline" className={config.className}>{config.label}</Badge>
+                              </div>
+                              <div className="text-[12px] text-muted-foreground">{insight.description}</div>
+                              <div className="text-[12px] text-primary">影响: {insight.impact}</div>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Button variant="outline" size="sm">
                               <Eye className="h-3 w-3 mr-1" />
-                              查看进度
+                              查看
                             </Button>
-                          )}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </CardContent>
             </Card>
           </TabsContent>
 
-          {/* 转化规则 */}
-          <TabsContent value="rules" className="space-y-4">
-            <Card className="bg-white border-border shadow-sm">
-              <CardHeader>
-                <CardTitle className="text-[15px]">复盘→任务自动化转化规则</CardTitle>
-                <CardDescription>实现"运营→分析→优化"的自动化循环，无人工干预也能持续优化</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {taskTriggerRules.map((rule) => (
-                    <div key={rule.id} className="p-4 border border-border rounded-lg">
-                      <div className="flex items-start justify-between">
-                        <div className="space-y-2">
-                          <div className="flex items-center gap-2">
-                            <span className="text-[13px] font-medium text-foreground">{rule.condition}</span>
-                            <Badge variant="outline" className="text-[11px] bg-primary/5 text-primary">{rule.trigger}</Badge>
-                          </div>
-                          <div className="text-[12px] text-muted-foreground">
-                            触发动作: <span className="text-primary">{rule.action}</span>
-                          </div>
-                        </div>
-                        <Badge variant="outline" className="bg-success/10 text-success">已启用</Badge>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* 报告管理 */}
+          {/* 报告中心 */}
           <TabsContent value="reports" className="space-y-4">
-            <Card className="bg-white border-border shadow-sm">
-              <CardHeader>
-                <CardTitle className="text-[15px]">复盘报告</CardTitle>
-                <CardDescription>日报（每日凌晨3点）、周报（每周一凌晨3点）</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {mockReports.map((report) => (
-                    <div key={report.id} className="flex items-center justify-between p-4 border border-border rounded-lg">
-                      <div className="flex items-center gap-4">
-                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${report.type === 'daily' ? 'bg-primary/10' : 'bg-success/10'}`}>
-                          <FileText className={`h-5 w-5 ${report.type === 'daily' ? 'text-primary' : 'text-success'}`} />
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-[13px] font-medium text-foreground">
-                              {report.type === 'daily' ? '日报' : '周报'}
-                            </span>
-                            <Badge variant="outline" className="text-[11px]">{report.platform === 'all' ? '全平台' : report.platform}</Badge>
-                          </div>
-                          <div className="text-[12px] text-muted-foreground">{report.date}</div>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        {report.status === 'sent' ? (
-                          <Badge variant="outline" className="bg-success/10 text-success">
-                            <CheckCircle className="h-3 w-3 mr-1" />
-                            已推送飞书
-                          </Badge>
-                        ) : (
-                          <Badge variant="outline" className="bg-warning/10 text-warning">
-                            <Clock className="h-3 w-3 mr-1" />
-                            待发送
-                          </Badge>
-                        )}
-                        <Button variant="outline" size="sm" onClick={() => toast.info('正在查看报告详情...')}>
-                          <Eye className="h-3 w-3 mr-1" />
-                          查看
-                        </Button>
-                        <Button variant="outline" size="sm" onClick={() => toast.success('报告已导出')}>
-                          <Download className="h-3 w-3 mr-1" />
-                          导出
-                        </Button>
-                        {report.status !== 'sent' && (
-                          <Button size="sm" onClick={() => toast.success('报告已发送')}>
-                            <Send className="h-3 w-3 mr-1" />
-                            发送
-                          </Button>
-                        )}
-                      </div>
+            <div className="grid grid-cols-2 gap-4">
+              <Card className="bg-white border-border shadow-sm hover:shadow-md transition-shadow cursor-pointer">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
+                      <FileText className="h-6 w-6 text-primary" />
                     </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+                    <div>
+                      <div className="text-[14px] font-medium">周报</div>
+                      <div className="text-[12px] text-muted-foreground">本周运营数据汇总</div>
+                    </div>
+                  </div>
+                  <Button variant="outline" className="w-full mt-4" onClick={handleGenerateReport}>
+                    生成报告
+                  </Button>
+                </CardContent>
+              </Card>
+              <Card className="bg-white border-border shadow-sm hover:shadow-md transition-shadow cursor-pointer">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-lg bg-success/10 flex items-center justify-center">
+                      <BarChart3 className="h-6 w-6 text-success" />
+                    </div>
+                    <div>
+                      <div className="text-[14px] font-medium">月报</div>
+                      <div className="text-[12px] text-muted-foreground">本月详细分析报告</div>
+                    </div>
+                  </div>
+                  <Button variant="outline" className="w-full mt-4">
+                    生成报告
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
 
           {/* 配置设置 */}
@@ -546,56 +593,72 @@ export default function ReviewAgentPage() {
             <Card className="bg-white border-border shadow-sm">
               <CardHeader>
                 <CardTitle className="text-[15px]">智能体配置</CardTitle>
-                <CardDescription>模型选择、复盘频率、任务转化规则配置</CardDescription>
+                <CardDescription>模型选择、分析维度、报告模板配置</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
                   <div className="flex items-center justify-between p-4 border border-border rounded-lg">
                     <div>
                       <div className="text-[13px] font-medium text-foreground">调用模型</div>
-                      <div className="text-[11px] text-muted-foreground">DeepSeek-V3 用于数据分析和报告生成</div>
+                      <div className="text-[11px] text-muted-foreground">当前使用豆包-Pro进行数据分析</div>
                     </div>
-                    <select className="px-4 py-2 border border-border rounded-md text-[14px] focus:outline-none focus:ring-2 focus:ring-primary/50">
+                    <select className="px-4 py-2 border border-border rounded-md text-[14px]">
+                      <option value="doubao-pro">豆包-Pro</option>
                       <option value="deepseek">DeepSeek-V3</option>
-                      <option value="doubao">豆包-Seed-1.8</option>
                     </select>
                   </div>
                   <div className="flex items-center justify-between p-4 border border-border rounded-lg">
                     <div>
-                      <div className="text-[13px] font-medium text-foreground">日报生成时间</div>
-                      <div className="text-[11px] text-muted-foreground">每日凌晨3点自动生成并发送</div>
+                      <div className="text-[13px] font-medium text-foreground">自动报告</div>
+                      <div className="text-[11px] text-muted-foreground">每周一自动生成上周运营报告</div>
                     </div>
-                    <div className="text-[14px] font-semibold text-foreground">03:00</div>
-                  </div>
-                  <div className="flex items-center justify-between p-4 border border-border rounded-lg">
-                    <div>
-                      <div className="text-[13px] font-medium text-foreground">周报生成时间</div>
-                      <div className="text-[11px] text-muted-foreground">每周一凌晨3点自动生成并发送</div>
-                    </div>
-                    <div className="text-[14px] font-semibold text-foreground">周一 03:00</div>
-                  </div>
-                  <div className="flex items-center justify-between p-4 border border-border rounded-lg">
-                    <div>
-                      <div className="text-[13px] font-medium text-foreground">自动任务转化</div>
-                      <div className="text-[11px] text-muted-foreground">复盘结果自动转化为优化任务，推送至调度中枢</div>
-                    </div>
-                    <Badge variant="outline" className="bg-success/10 text-success">已启用</Badge>
-                  </div>
-                  <div className="flex items-center justify-between p-4 border border-border rounded-lg">
-                    <div>
-                      <div className="text-[13px] font-medium text-foreground">数据源</div>
-                      <div className="text-[11px] text-muted-foreground">ERP全量销售、订单、广告、物流、客服数据</div>
-                    </div>
-                    <Button variant="outline" size="sm" onClick={() => toast.info('正在打开配置页面...')}>
-                      <Settings className="h-4 w-4 mr-2" />
-                      配置
-                    </Button>
+                    <Badge className="bg-success text-white">已开启</Badge>
                   </div>
                 </div>
               </CardContent>
             </Card>
           </TabsContent>
         </Tabs>
+
+        {/* 洞察详情对话框 */}
+        <Dialog open={isInsightOpen} onOpenChange={setIsInsightOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>{selectedInsight?.title}</DialogTitle>
+              <DialogDescription>
+                <Badge variant="outline" className={getInsightTypeBadge(selectedInsight?.type || 'suggestion').className}>
+                  {getInsightTypeBadge(selectedInsight?.type || 'suggestion').label}
+                </Badge>
+              </DialogDescription>
+            </DialogHeader>
+            {selectedInsight && (
+              <div className="space-y-4 py-4">
+                <div>
+                  <div className="text-[12px] text-muted-foreground mb-1">分析描述</div>
+                  <div className="text-[14px]">{selectedInsight.description}</div>
+                </div>
+                <div>
+                  <div className="text-[12px] text-muted-foreground mb-1">预期影响</div>
+                  <div className="text-[14px] text-primary">{selectedInsight.impact}</div>
+                </div>
+                <div>
+                  <div className="text-[12px] text-muted-foreground mb-1">建议操作</div>
+                  <div className="p-3 bg-muted/30 rounded-lg text-[14px]">{selectedInsight.action}</div>
+                </div>
+                <div>
+                  <div className="text-[12px] text-muted-foreground">生成时间: {selectedInsight.createdAt}</div>
+                </div>
+              </div>
+            )}
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsInsightOpen(false)}>关闭</Button>
+              <Button onClick={() => handleExecuteAction(selectedInsight!)} disabled={isProcessing}>
+                {isProcessing && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                执行建议
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </MainLayout>
   );

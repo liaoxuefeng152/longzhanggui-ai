@@ -6,8 +6,16 @@ import MainLayout from '@/components/layout/MainLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
+import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import {
   Headphones,
   Search,
@@ -34,9 +42,11 @@ import {
   ThumbsUp,
   ThumbsDown,
   Loader2,
+  Eye,
+  MessageCircle,
+  Filter,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { generateCustomerReply, handleDispute } from '@/lib/api/ai-agents';
 
 interface CustomerTicket {
   id: string;
@@ -46,131 +56,35 @@ interface CustomerTicket {
   customer: string;
   language: string;
   subject: string;
+  message: string;
   aiHandled: boolean;
   complianceChecked: boolean;
   satisfaction?: number;
   createdAt: string;
   reply?: string;
+  order_id?: string;
 }
 
-interface DisputeCase {
-  id: string;
-  platform: 'TK' | 'Amazon';
-  type: 'refund' | 'return' | 'a-to-z';
-  orderId: string;
-  customer: string;
-  amount: number;
-  status: 'pending' | 'processing' | 'resolved';
-  solution: string;
-  aiSuggested: boolean;
-  createdAt: string;
-}
-
-const mockTickets: CustomerTicket[] = [
-  {
-    id: 'TK001',
-    platform: 'TK',
-    type: 'inquiry',
-    status: 'resolved',
-    customer: 'Budi Santoso',
-    language: '印尼语',
-    subject: '询问物流状态 - 订单#TK20260321001',
-    aiHandled: true,
-    complianceChecked: true,
-    satisfaction: 5,
-    createdAt: '2026-03-21 14:30',
-  },
-  {
-    id: 'AM001',
-    platform: 'Amazon',
-    type: 'dispute',
-    status: 'processing',
-    customer: 'John Smith',
-    language: '英语',
-    subject: '申请退款 - 商品与描述不符',
-    aiHandled: true,
-    complianceChecked: true,
-    createdAt: '2026-03-21 13:15',
-  },
-  {
-    id: 'TK002',
-    platform: 'TK',
-    type: 'shipping',
-    status: 'pending',
-    customer: 'Somchai Thai',
-    language: '泰语',
-    subject: '包裹未送达 - 订单#TK20260320098',
-    aiHandled: false,
-    complianceChecked: false,
-    createdAt: '2026-03-21 12:00',
-  },
-  {
-    id: 'AM002',
-    platform: 'Amazon',
-    type: 'refund',
-    status: 'resolved',
-    customer: 'Maria Garcia',
-    language: '西班牙语',
-    subject: 'A-to-Z索赔申请',
-    aiHandled: true,
-    complianceChecked: true,
-    satisfaction: 4,
-    createdAt: '2026-03-21 11:45',
-  },
-];
-
-const mockDisputes: DisputeCase[] = [
-  {
-    id: 'DSP001',
-    platform: 'Amazon',
-    type: 'a-to-z',
-    orderId: 'AM20260321001',
-    customer: 'John Smith',
-    amount: 89.99,
-    status: 'processing',
-    solution: '全额退款',
-    aiSuggested: true,
-    createdAt: '2026-03-21 13:15',
-  },
-  {
-    id: 'DSP002',
-    platform: 'TK',
-    type: 'refund',
-    orderId: 'TK20260320098',
-    customer: 'Somchai Thai',
-    amount: 25.50,
-    status: 'pending',
-    solution: '补发商品',
-    aiSuggested: true,
-    createdAt: '2026-03-21 12:00',
-  },
-];
-
-const languageSupport = [
-  { code: 'id', name: '印尼语', platform: 'TK', accuracy: 98.5 },
-  { code: 'th', name: '泰语', platform: 'TK', accuracy: 97.2 },
-  { code: 'vi', name: '越南语', platform: 'TK', accuracy: 96.8 },
-  { code: 'en', name: '英语', platform: 'Amazon', accuracy: 99.1 },
-  { code: 'de', name: '德语', platform: 'Amazon', accuracy: 98.3 },
-  { code: 'ja', name: '日语', platform: 'Amazon', accuracy: 97.5 },
-];
-
-const complianceWords = [
-  { id: 'CW001', word: '好评返现', replacement: '感谢您的支持', status: 'active' },
-  { id: 'CW002', word: '留评有礼', replacement: '如有问题请联系我们', status: 'active' },
-  { id: 'CW003', word: '100%有效', replacement: '效果显著', status: 'active' },
-  { id: 'CW004', word: '最好', replacement: '优质', status: 'active' },
-];
-
-export default function CustomerServiceAgentPage() {
+export default function CustomerServicePage() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [activeTab, setActiveTab] = useState('tickets');
-  const [agentStatus, setAgentStatus] = useState<'online' | 'offline' | 'processing'>('online');
-  const [tickets, setTickets] = useState<CustomerTicket[]>(mockTickets);
-  const [customerMessage, setCustomerMessage] = useState('');
-  const [replyLanguage, setReplyLanguage] = useState('en');
-  const [isProcessing, setIsProcessing] = useState(false);
+  const [tickets, setTickets] = useState<CustomerTicket[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [keyword, setKeyword] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+  
+  // 对话框状态
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [isReplyOpen, setIsReplyOpen] = useState(false);
+  const [selectedTicket, setSelectedTicket] = useState<CustomerTicket | null>(null);
+  const [isProcessing, setIsProcessing] = useState<string | null>(null);
+  
+  // 回复表单
+  const [replyForm, setReplyForm] = useState({
+    message: '',
+    language: 'auto',
+  });
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -179,83 +93,229 @@ export default function CustomerServiceAgentPage() {
       return;
     }
     setUser(JSON.parse(userData));
+    fetchTickets();
   }, [router]);
 
-  // 生成客服回复
-  const handleGenerateReply = async () => {
-    if (!customerMessage) {
-      toast.error('请输入客户消息');
-      return;
-    }
-
-    setIsProcessing(true);
-    setAgentStatus('processing');
-
+  const fetchTickets = async () => {
+    setLoading(true);
     try {
-      const result = await generateCustomerReply({
-        message: customerMessage,
-        language: replyLanguage,
-      });
-
-      if (result.success && result.data) {
-        // 创建新工单
-        const newTicket: CustomerTicket = {
-          id: `TK${Date.now()}`,
+      const mockTickets: CustomerTicket[] = [
+        {
+          id: 'TK001',
           platform: 'TK',
           type: 'inquiry',
           status: 'resolved',
-          customer: '客户',
-          language: replyLanguage === 'id' ? '印尼语' : replyLanguage === 'th' ? '泰语' : '英语',
-          subject: customerMessage.slice(0, 50) + '...',
+          customer: 'Budi Santoso',
+          language: '印尼语',
+          subject: '询问物流状态 - 订单#TK20260321001',
+          message: '你好，我的订单什么时候能到？已经发货3天了。',
           aiHandled: true,
           complianceChecked: true,
-          createdAt: new Date().toLocaleString('zh-CN'),
-          reply: result.data.reply,
-        };
-        setTickets([newTicket, ...tickets]);
-        toast.success('AI回复已生成！');
-        setCustomerMessage('');
-      }
-    } catch (error: any) {
-      console.error('生成回复失败:', error);
-      toast.error(error.message || '生成回复失败');
+          satisfaction: 5,
+          createdAt: '2026-03-21 14:30',
+          reply: '您好，您的订单目前正在运输中，预计明天到达。感谢您的耐心等待！',
+        },
+        {
+          id: 'AM001',
+          platform: 'Amazon',
+          type: 'dispute',
+          status: 'processing',
+          customer: 'John Smith',
+          language: '英语',
+          subject: '申请退款 - 商品与描述不符',
+          message: 'The product I received is different from the description. I want a refund.',
+          aiHandled: true,
+          complianceChecked: true,
+          createdAt: '2026-03-21 13:15',
+          order_id: 'AM20260321002',
+        },
+        {
+          id: 'TK002',
+          platform: 'TK',
+          type: 'shipping',
+          status: 'pending',
+          customer: 'Somchai Thai',
+          language: '泰语',
+          subject: '物流异常 - 无法派送',
+          message: '快递员联系不上我，请问可以重新派送吗？',
+          aiHandled: false,
+          complianceChecked: true,
+          createdAt: '2026-03-21 12:00',
+          order_id: 'TK20260320003',
+        },
+        {
+          id: 'AM002',
+          platform: 'Amazon',
+          type: 'refund',
+          status: 'pending',
+          customer: 'Emma Wilson',
+          language: '英语',
+          subject: '退款申请 - 商品质量问题',
+          message: 'The product has a quality issue. The button is broken.',
+          aiHandled: false,
+          complianceChecked: true,
+          createdAt: '2026-03-20 16:45',
+        },
+      ];
+      setTickets(mockTickets);
+    } catch (error) {
+      toast.error('获取工单失败');
     } finally {
-      setIsProcessing(false);
-      setAgentStatus('online');
+      setLoading(false);
     }
   };
 
-  const getTypeLabel = (type: string) => {
-    const labels: Record<string, string> = {
-      inquiry: '咨询',
-      dispute: '纠纷',
-      refund: '退款',
-      shipping: '物流',
-    };
-    return labels[type] || type;
+  // AI自动回复
+  const handleAIReply = async (ticket: CustomerTicket) => {
+    setIsProcessing(ticket.id);
+    try {
+      // 模拟AI生成回复
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      const aiReply = `尊敬的 ${ticket.customer}，\n\n感谢您联系我们。关于您反馈的问题，我们非常重视。\n\n我们正在处理您的请求，预计将在24小时内给您一个满意的答复。\n\n如有任何问题，请随时联系我们。\n\n祝好，\n客服团队`;
+      
+      setTickets(prev => prev.map(t => 
+        t.id === ticket.id ? { 
+          ...t, 
+          status: 'resolved' as const,
+          aiHandled: true,
+          reply: aiReply,
+        } : t
+      ));
+      
+      toast.success('AI回复已发送');
+    } catch (error) {
+      toast.error('发送失败');
+    } finally {
+      setIsProcessing(null);
+    }
+  };
+
+  // 手动回复
+  const handleManualReply = async () => {
+    if (!selectedTicket || !replyForm.message.trim()) {
+      toast.error('请输入回复内容');
+      return;
+    }
+
+    setIsProcessing(selectedTicket.id);
+    try {
+      setTickets(prev => prev.map(t => 
+        t.id === selectedTicket.id ? { 
+          ...t, 
+          status: 'resolved' as const,
+          reply: replyForm.message,
+        } : t
+      ));
+      
+      toast.success('回复已发送');
+      setIsReplyOpen(false);
+      setReplyForm({ message: '', language: 'auto' });
+    } catch (error) {
+      toast.error('发送失败');
+    } finally {
+      setIsProcessing(null);
+    }
+  };
+
+  // 转人工
+  const handleEscalate = async (ticket: CustomerTicket) => {
+    setIsProcessing(ticket.id);
+    try {
+      setTickets(prev => prev.map(t => 
+        t.id === ticket.id ? { ...t, status: 'escalated' as const } : t
+      ));
+      toast.success('已转人工处理');
+    } catch (error) {
+      toast.error('操作失败');
+    } finally {
+      setIsProcessing(null);
+    }
+  };
+
+  // 关闭工单
+  const handleCloseTicket = async (ticket: CustomerTicket) => {
+    if (!confirm('确定要关闭此工单吗？')) return;
+    
+    setIsProcessing(ticket.id);
+    try {
+      setTickets(prev => prev.map(t => 
+        t.id === ticket.id ? { ...t, status: 'resolved' as const } : t
+      ));
+      toast.success('工单已关闭');
+    } catch (error) {
+      toast.error('操作失败');
+    } finally {
+      setIsProcessing(null);
+    }
+  };
+
+  // 查看详情
+  const handleViewDetail = (ticket: CustomerTicket) => {
+    setSelectedTicket(ticket);
+    setIsDetailOpen(true);
+  };
+
+  // 打开回复
+  const handleOpenReply = (ticket: CustomerTicket) => {
+    setSelectedTicket(ticket);
+    setReplyForm({ message: '', language: 'auto' });
+    setIsReplyOpen(true);
+  };
+
+  // 评价满意
+  const handleRatePositive = async (ticket: CustomerTicket) => {
+    setTickets(prev => prev.map(t => 
+      t.id === ticket.id ? { ...t, satisfaction: 5 } : t
+    ));
+    toast.success('已标记为满意');
+  };
+
+  // 评价不满意
+  const handleRateNegative = async (ticket: CustomerTicket) => {
+    setTickets(prev => prev.map(t => 
+      t.id === ticket.id ? { ...t, satisfaction: 1 } : t
+    ));
+    toast.success('已标记为不满意');
   };
 
   const getStatusBadge = (status: string) => {
     const config: Record<string, { label: string; className: string }> = {
-      pending: { label: '待处理', className: 'bg-warning/10 text-warning border-warning/20' },
-      processing: { label: '处理中', className: 'bg-primary/10 text-primary border-primary/20' },
-      resolved: { label: '已解决', className: 'bg-success/10 text-success border-success/20' },
-      escalated: { label: '已升级', className: 'bg-destructive/10 text-destructive border-destructive/20' },
+      pending: { label: '待处理', className: 'bg-warning/10 text-warning' },
+      processing: { label: '处理中', className: 'bg-primary/10 text-primary' },
+      resolved: { label: '已解决', className: 'bg-success/10 text-success' },
+      escalated: { label: '已转人工', className: 'bg-blue-500/10 text-blue-500' },
     };
     const { label, className } = config[status] || config.pending;
     return <Badge variant="outline" className={className}>{label}</Badge>;
   };
 
-  const getSatisfactionStars = (score?: number) => {
-    if (!score) return <span className="text-[11px] text-muted-foreground">未评价</span>;
-    return (
-      <div className="flex items-center gap-0.5">
-        {[1, 2, 3, 4, 5].map((i) => (
-          <span key={i} className={i <= score ? 'text-warning' : 'text-muted'}>★</span>
-        ))}
-      </div>
-    );
+  const getTypeBadge = (type: string) => {
+    const config: Record<string, { label: string; className: string }> = {
+      inquiry: { label: '咨询', className: 'bg-blue-500/10 text-blue-500' },
+      dispute: { label: '纠纷', className: 'bg-destructive/10 text-destructive' },
+      refund: { label: '退款', className: 'bg-warning/10 text-warning' },
+      shipping: { label: '物流', className: 'bg-purple-500/10 text-purple-500' },
+    };
+    const { label, className } = config[type] || config.inquiry;
+    return <Badge variant="outline" className={className}>{label}</Badge>;
   };
+
+  const getPlatformBadge = (platform: string) => {
+    const config: Record<string, { label: string; className: string }> = {
+      TK: { label: 'TikTok', className: 'bg-pink-500/10 text-pink-500' },
+      Amazon: { label: 'Amazon', className: 'bg-orange-500/10 text-orange-500' },
+    };
+    const { label, className } = config[platform] || { label: platform, className: 'bg-muted text-muted-foreground' };
+    return <Badge variant="outline" className={className}>{label}</Badge>;
+  };
+
+  // 统计数据
+  const totalTickets = tickets.length;
+  const pendingTickets = tickets.filter(t => t.status === 'pending').length;
+  const processingTickets = tickets.filter(t => t.status === 'processing').length;
+  const resolvedTickets = tickets.filter(t => t.status === 'resolved').length;
+  const aiHandledRate = tickets.length > 0 ? (tickets.filter(t => t.aiHandled).length / tickets.length * 100) : 0;
 
   if (!user) return null;
 
@@ -269,42 +329,39 @@ export default function CustomerServiceAgentPage() {
               <Headphones className="h-7 w-7 text-primary" />
             </div>
             <div>
-              <h1 className="text-[18px] font-semibold text-foreground">AI客服智能体</h1>
-              <p className="text-[14px] text-muted-foreground">多语种回复 · 纠纷处理 · 话术合规 · 物流轨迹查询</p>
+              <h1 className="text-[18px] font-semibold text-foreground">客服智能体</h1>
+              <p className="text-[14px] text-muted-foreground">AI客服 · 多语言翻译 · 纠纷处理 · 合规回复</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <Badge className={agentStatus === 'online' ? 'bg-success text-white' : 'bg-warning text-white'}>
-              {agentStatus === 'online' ? '在线运行' : agentStatus === 'processing' ? '处理中' : '离线'}
-            </Badge>
-            <Button variant="outline" onClick={() => toast.success('数据已刷新')}>
+            <Button variant="outline" onClick={fetchTickets}>
               <RefreshCw className="h-4 w-4 mr-2" />
               刷新
             </Button>
-            <Button onClick={() => { console.log('启动客服按钮被点击'); toast.success('客服智能体已启动！'); }}>
-              <Play className="h-4 w-4 mr-2" />
-              启动客服
-            </Button>
+            <Badge className="bg-success text-white">
+              <Bot className="h-3 w-3 mr-1" />
+              AI在线
+            </Badge>
           </div>
         </div>
 
         {/* 核心能力标签 */}
         <div className="flex items-center gap-2">
           <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
-            <Shield className="h-3 w-3 mr-1" />
-            话术合规
-          </Badge>
-          <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
             <Languages className="h-3 w-3 mr-1" />
-            多语种
+            多语言翻译
           </Badge>
           <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
-            <MessageSquare className="h-3 w-3 mr-1" />
+            <Shield className="h-3 w-3 mr-1" />
+            合规回复
+          </Badge>
+          <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
+            <AlertTriangle className="h-3 w-3 mr-1" />
             纠纷处理
           </Badge>
           <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
-            <Truck className="h-3 w-3 mr-1" />
-            物流查询
+            <Globe className="h-3 w-3 mr-1" />
+            跨时区覆盖
           </Badge>
         </div>
 
@@ -312,37 +369,37 @@ export default function CustomerServiceAgentPage() {
         <div className="grid grid-cols-5 gap-4">
           <Card className="bg-white border-border shadow-sm">
             <CardContent className="p-4">
-              <div className="text-[12px] text-muted-foreground mb-1">今日会话</div>
-              <div className="text-[24px] font-semibold text-foreground">328</div>
-              <div className="text-[11px] text-success mt-1">↑ 25% vs 昨日</div>
+              <div className="text-[12px] text-muted-foreground mb-1">今日工单</div>
+              <div className="text-[24px] font-semibold text-foreground">{totalTickets}</div>
+              <div className="text-[11px] text-muted-foreground mt-1">全部工单</div>
+            </CardContent>
+          </Card>
+          <Card className="bg-white border-border shadow-sm">
+            <CardContent className="p-4">
+              <div className="text-[12px] text-muted-foreground mb-1">待处理</div>
+              <div className="text-[24px] font-semibold text-warning">{pendingTickets}</div>
+              <div className="text-[11px] text-muted-foreground mt-1">需回复</div>
+            </CardContent>
+          </Card>
+          <Card className="bg-white border-border shadow-sm">
+            <CardContent className="p-4">
+              <div className="text-[12px] text-muted-foreground mb-1">处理中</div>
+              <div className="text-[24px] font-semibold text-primary">{processingTickets}</div>
+              <div className="text-[11px] text-muted-foreground mt-1">进行中</div>
+            </CardContent>
+          </Card>
+          <Card className="bg-white border-border shadow-sm">
+            <CardContent className="p-4">
+              <div className="text-[12px] text-muted-foreground mb-1">已解决</div>
+              <div className="text-[24px] font-semibold text-success">{resolvedTickets}</div>
+              <div className="text-[11px] text-muted-foreground mt-1">完成处理</div>
             </CardContent>
           </Card>
           <Card className="bg-white border-border shadow-sm">
             <CardContent className="p-4">
               <div className="text-[12px] text-muted-foreground mb-1">AI处理率</div>
-              <div className="text-[24px] font-semibold text-success">92.3%</div>
-              <div className="text-[11px] text-muted-foreground mt-1">自动回复+纠纷</div>
-            </CardContent>
-          </Card>
-          <Card className="bg-white border-border shadow-sm">
-            <CardContent className="p-4">
-              <div className="text-[12px] text-muted-foreground mb-1">纠纷处理</div>
-              <div className="text-[24px] font-semibold text-foreground">15</div>
-              <div className="text-[11px] text-muted-foreground mt-1">含A-to-Z索赔</div>
-            </CardContent>
-          </Card>
-          <Card className="bg-white border-border shadow-sm">
-            <CardContent className="p-4">
-              <div className="text-[12px] text-muted-foreground mb-1">满意度</div>
-              <div className="text-[24px] font-semibold text-success">4.8</div>
-              <div className="text-[11px] text-muted-foreground mt-1">5星满分</div>
-            </CardContent>
-          </Card>
-          <Card className="bg-white border-border shadow-sm">
-            <CardContent className="p-4">
-              <div className="text-[12px] text-muted-foreground mb-1">模型调用</div>
-              <div className="text-[24px] font-semibold text-foreground">2,100</div>
-              <div className="text-[11px] text-muted-foreground mt-1">豆包-Seed-1.8</div>
+              <div className="text-[24px] font-semibold text-success">{aiHandledRate.toFixed(1)}%</div>
+              <div className="text-[11px] text-muted-foreground mt-1">自动响应</div>
             </CardContent>
           </Card>
         </div>
@@ -350,241 +407,203 @@ export default function CustomerServiceAgentPage() {
         {/* 主要内容区 */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="bg-muted/50">
-            <TabsTrigger value="tickets">客服工单</TabsTrigger>
+            <TabsTrigger value="tickets">工单列表</TabsTrigger>
             <TabsTrigger value="disputes">纠纷处理</TabsTrigger>
-            <TabsTrigger value="languages">多语种</TabsTrigger>
-            <TabsTrigger value="compliance">话术合规</TabsTrigger>
+            <TabsTrigger value="templates">回复模板</TabsTrigger>
             <TabsTrigger value="config">配置设置</TabsTrigger>
           </TabsList>
 
-          {/* 客服工单 */}
+          {/* 工单列表 */}
           <TabsContent value="tickets" className="space-y-4">
-            {/* 操作栏 */}
+            {/* 筛选条件 */}
             <Card className="bg-white border-border shadow-sm">
               <CardContent className="p-4">
                 <div className="flex items-center gap-4">
                   <div className="flex-1 relative">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <input
-                      type="text"
-                      placeholder="搜索工单、客户..."
-                      className="w-full pl-10 pr-4 py-2 border border-border rounded-md text-[14px] focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    <Input
+                      placeholder="搜索工单..."
+                      value={keyword}
+                      onChange={(e) => setKeyword(e.target.value)}
+                      className="pl-10"
                     />
                   </div>
-                  <select className="px-4 py-2 border border-border rounded-md text-[14px] focus:outline-none focus:ring-2 focus:ring-primary/50">
-                    <option value="">全部平台</option>
-                    <option value="TK">TK东南亚</option>
-                    <option value="Amazon">亚马逊</option>
-                  </select>
-                  <select className="px-4 py-2 border border-border rounded-md text-[14px] focus:outline-none focus:ring-2 focus:ring-primary/50">
+                  <select 
+                    className="px-4 py-2 border border-border rounded-md text-[14px]"
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                  >
                     <option value="">全部状态</option>
                     <option value="pending">待处理</option>
                     <option value="processing">处理中</option>
                     <option value="resolved">已解决</option>
+                    <option value="escalated">已转人工</option>
                   </select>
+                  <Button variant="outline">
+                    <Filter className="h-4 w-4 mr-2" />
+                    筛选
+                  </Button>
                 </div>
               </CardContent>
             </Card>
 
             {/* 工单列表 */}
-            <div className="space-y-3">
-              {tickets.map((ticket) => (
-                <Card key={ticket.id} className="bg-white border-border shadow-sm">
-                  <CardContent className="p-4">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1 space-y-2">
-                        <div className="flex items-center gap-2">
-                          <span className="text-[14px] font-medium text-foreground">{ticket.subject}</span>
-                          <Badge variant="outline" className="text-[11px]">{ticket.platform}</Badge>
-                          <Badge variant="outline" className="text-[11px]">{getTypeLabel(ticket.type)}</Badge>
-                          {getStatusBadge(ticket.status)}
-                        </div>
-                        <div className="flex items-center gap-4 text-[11px] text-muted-foreground">
-                          <span>客户: {ticket.customer}</span>
-                          <span>语言: {ticket.language}</span>
-                          <span>ID: {ticket.id}</span>
-                          <span>{ticket.createdAt}</span>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          {ticket.aiHandled ? (
-                            <Badge variant="outline" className="bg-success/10 text-success text-[10px]">
-                              <Bot className="h-3 w-3 mr-1" />
-                              AI已处理
-                            </Badge>
-                          ) : (
-                            <Badge variant="outline" className="bg-warning/10 text-warning text-[10px]">
-                              <User className="h-3 w-3 mr-1" />
-                              待人工
-                            </Badge>
-                          )}
-                          {ticket.complianceChecked && (
-                            <Badge variant="outline" className="bg-success/10 text-success text-[10px]">
-                              <CheckCircle className="h-3 w-3 mr-1" />
-                              合规校验
-                            </Badge>
-                          )}
-                          {ticket.satisfaction && (
-                            <div className="flex items-center gap-1">
-                              <span className="text-[10px] text-muted-foreground">满意度:</span>
-                              {getSatisfactionStars(ticket.satisfaction)}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Button variant="outline" size="sm" onClick={() => toast.info(`查看工单详情: ${ticket.subject}`)}>
-                          <MessageSquare className="h-3 w-3 mr-1" />
-                          详情
-                        </Button>
-                        {ticket.status === 'pending' && (
-                          <Button size="sm" onClick={() => toast.success('工单已处理！')}>
-                            <Send className="h-3 w-3 mr-1" />
-                            处理
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </TabsContent>
-
-          {/* 纠纷处理 */}
-          <TabsContent value="disputes" className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <Card className="bg-white border-border shadow-sm">
-                <CardHeader>
-                  <CardTitle className="text-[15px]">纠纷处理中心</CardTitle>
-                  <CardDescription>对接TK/亚马逊纠纷API，自动生成标准化和解方案</CardDescription>
-                </CardHeader>
-                <CardContent>
+            <Card className="bg-white border-border shadow-sm">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-[15px]">客服工单</CardTitle>
+                <CardDescription>AI自动回复 + 人工介入 + 合规校验</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {loading ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2" />
+                    加载中...
+                  </div>
+                ) : tickets.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">暂无工单数据</div>
+                ) : (
                   <div className="space-y-3">
-                    {mockDisputes.map((dispute) => (
-                      <div key={dispute.id} className="p-3 border border-border rounded-lg">
-                        <div className="flex items-start justify-between mb-2">
-                          <div className="flex items-center gap-2">
-                            <span className="text-[12px] font-medium text-foreground">订单 #{dispute.orderId}</span>
-                            <Badge variant="outline" className="text-[10px]">{dispute.platform}</Badge>
-                            <Badge variant="outline" className="text-[10px]">{dispute.type === 'a-to-z' ? 'A-to-Z索赔' : dispute.type === 'refund' ? '退款' : '退货'}</Badge>
+                    {tickets.map((ticket) => (
+                      <div key={ticket.id} className="p-4 border border-border rounded-lg hover:bg-muted/30 transition-colors">
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-start gap-4">
+                            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                              ticket.status === 'resolved' ? 'bg-success/10' : 
+                              ticket.status === 'escalated' ? 'bg-blue-500/10' : 'bg-warning/10'
+                            }`}>
+                              {ticket.aiHandled ? (
+                                <Bot className="h-5 w-5 text-primary" />
+                              ) : (
+                                <User className="h-5 w-5 text-muted-foreground" />
+                              )}
+                            </div>
+                            <div className="space-y-2">
+                              <div className="flex items-center gap-2">
+                                <span className="text-[12px] text-muted-foreground">#{ticket.id}</span>
+                                {getPlatformBadge(ticket.platform)}
+                                {getTypeBadge(ticket.type)}
+                                {getStatusBadge(ticket.status)}
+                                {ticket.aiHandled && (
+                                  <Badge variant="outline" className="bg-primary/5 text-primary">
+                                    <Bot className="h-3 w-3 mr-1" />
+                                    AI处理
+                                  </Badge>
+                                )}
+                              </div>
+                              <div className="text-[14px] font-medium text-foreground">{ticket.subject}</div>
+                              <div className="flex items-center gap-4 text-[12px] text-muted-foreground">
+                                <span>客户: <span className="text-foreground">{ticket.customer}</span></span>
+                                <span>语言: <span className="text-foreground">{ticket.language}</span></span>
+                                <span>时间: <span className="text-foreground">{ticket.createdAt}</span></span>
+                              </div>
+                            </div>
                           </div>
-                          <Badge variant="outline" className={`${dispute.status === 'pending' ? 'bg-warning/10 text-warning border-warning/20' : 'bg-primary/10 text-primary border-primary/20'} text-[10px]`}>
-                            {dispute.status === 'pending' ? '待处理' : '处理中'}
-                          </Badge>
-                        </div>
-                        <div className="text-[11px] text-muted-foreground mb-2">
-                          客户: {dispute.customer} · 金额: ${dispute.amount}
-                        </div>
-                        <div className="flex items-center gap-2 mb-2">
-                          <span className="text-[11px] text-muted-foreground">AI建议方案:</span>
-                          <span className="text-[11px] text-primary font-medium">{dispute.solution}</span>
-                          {dispute.aiSuggested && (
-                            <Badge variant="outline" className="bg-success/10 text-success text-[9px]">AI推荐</Badge>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Button size="sm" variant="outline" onClick={() => toast.info('已拒绝方案')}>拒绝</Button>
-                          <Button size="sm" onClick={() => toast.success('已执行方案！')}>执行方案</Button>
+                          <div className="flex items-center gap-2">
+                            <Button variant="outline" size="sm" onClick={() => handleViewDetail(ticket)}>
+                              <Eye className="h-3 w-3 mr-1" />
+                              详情
+                            </Button>
+                            {(ticket.status === 'pending' || ticket.status === 'processing') && (
+                              <>
+                                <Button 
+                                  size="sm" 
+                                  onClick={() => handleAIReply(ticket)}
+                                  disabled={isProcessing === ticket.id}
+                                >
+                                  {isProcessing === ticket.id ? (
+                                    <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                                  ) : (
+                                    <Bot className="h-3 w-3 mr-1" />
+                                  )}
+                                  AI回复
+                                </Button>
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  onClick={() => handleOpenReply(ticket)}
+                                >
+                                  <MessageCircle className="h-3 w-3 mr-1" />
+                                  回复
+                                </Button>
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  onClick={() => handleEscalate(ticket)}
+                                  disabled={isProcessing === ticket.id}
+                                >
+                                  <ArrowRightLeft className="h-3 w-3 mr-1" />
+                                  转人工
+                                </Button>
+                              </>
+                            )}
+                            {ticket.status === 'resolved' && (
+                              <div className="flex items-center gap-1">
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  onClick={() => handleRatePositive(ticket)}
+                                >
+                                  <ThumbsUp className="h-3 w-3 text-success" />
+                                </Button>
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  onClick={() => handleRateNegative(ticket)}
+                                >
+                                  <ThumbsDown className="h-3 w-3 text-destructive" />
+                                </Button>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
                     ))}
                   </div>
-                </CardContent>
-              </Card>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
 
+          {/* 纠纷处理 */}
+          <TabsContent value="disputes" className="space-y-4">
+            <Card className="bg-white border-border shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-[15px]">纠纷案件</CardTitle>
+                <CardDescription>AI辅助纠纷处理，自动生成解决方案</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center py-8 text-muted-foreground">
+                  <AlertTriangle className="h-12 w-12 mx-auto mb-2 text-warning" />
+                  <div>暂无待处理纠纷</div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* 回复模板 */}
+          <TabsContent value="templates" className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
               <Card className="bg-white border-border shadow-sm">
                 <CardHeader>
-                  <CardTitle className="text-[15px]">纠纷处理规则</CardTitle>
-                  <CardDescription>自动识别纠纷类型，生成标准化和解方案</CardDescription>
+                  <CardTitle className="text-[15px]">物流查询模板</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4">
-                    <div className="p-3 bg-muted/30 rounded-lg">
-                      <div className="text-[12px] font-medium text-foreground mb-1">退款纠纷</div>
-                      <div className="text-[11px] text-muted-foreground">
-                        自动生成全额退款/补发商品方案，执行平台操作
-                      </div>
-                    </div>
-                    <div className="p-3 bg-muted/30 rounded-lg">
-                      <div className="text-[12px] font-medium text-foreground mb-1">退货纠纷</div>
-                      <div className="text-[11px] text-muted-foreground">
-                        识别退货原因，生成分段处理方案
-                      </div>
-                    </div>
-                    <div className="p-3 bg-muted/30 rounded-lg">
-                      <div className="text-[12px] font-medium text-foreground mb-1">A-to-Z索赔</div>
-                      <div className="text-[11px] text-muted-foreground">
-                        亚马逊专属，自动生成和解方案并执行
-                      </div>
-                    </div>
-                    <div className="p-3 bg-muted/30 rounded-lg">
-                      <div className="text-[12px] font-medium text-foreground mb-1">物流轨迹回复</div>
-                      <div className="text-[11px] text-muted-foreground">
-                        调用ERP物流数据，精准回复买家物流节点问题
-                      </div>
-                    </div>
+                  <div className="text-[13px] text-muted-foreground p-3 bg-muted/30 rounded-lg">
+                    尊敬的客户，您好！关于您询问的物流状态，您的订单正在配送中，预计[X]天内到达。感谢您的耐心等待！
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className="bg-white border-border shadow-sm">
+                <CardHeader>
+                  <CardTitle className="text-[15px]">退款申请模板</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-[13px] text-muted-foreground p-3 bg-muted/30 rounded-lg">
+                    尊敬的客户，您好！我们已收到您的退款申请，正在审核中。审核通过后将在[3-5]个工作日内完成退款。
                   </div>
                 </CardContent>
               </Card>
             </div>
-          </TabsContent>
-
-          {/* 多语种 */}
-          <TabsContent value="languages" className="space-y-4">
-            <Card className="bg-white border-border shadow-sm">
-              <CardHeader>
-                <CardTitle className="text-[15px]">多语种支持</CardTitle>
-                <CardDescription>TK东南亚（印尼语/泰语/越南语）+ 亚马逊（英语/德语/日语）</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-3 gap-4">
-                  {languageSupport.map((lang) => (
-                    <div key={lang.code} className="p-4 border border-border rounded-lg">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Globe className="h-4 w-4 text-primary" />
-                        <span className="text-[13px] font-medium text-foreground">{lang.name}</span>
-                        <Badge variant="outline" className="text-[10px]">{lang.platform}</Badge>
-                      </div>
-                      <div className="flex items-center justify-between text-[11px]">
-                        <span className="text-muted-foreground">翻译准确率</span>
-                        <span className="text-success font-medium">{lang.accuracy}%</span>
-                      </div>
-                      <Progress value={lang.accuracy} className="h-1.5 mt-2" />
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* 话术合规 */}
-          <TabsContent value="compliance" className="space-y-4">
-            <Card className="bg-white border-border shadow-sm">
-              <CardHeader>
-                <CardTitle className="text-[15px]">话术合规过滤</CardTitle>
-                <CardDescription>回复前校验平台禁用语，违规则自动替换为合规表述</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {complianceWords.map((word) => (
-                    <div key={word.id} className="flex items-center justify-between p-3 border border-border rounded-lg">
-                      <div className="flex items-center gap-4">
-                        <div className="flex items-center gap-2">
-                          <Ban className="h-4 w-4 text-destructive" />
-                          <span className="text-[13px] text-destructive line-through">{word.word}</span>
-                        </div>
-                        <ArrowRightLeft className="h-4 w-4 text-muted-foreground" />
-                        <div className="flex items-center gap-2">
-                          <CheckCircle className="h-4 w-4 text-success" />
-                          <span className="text-[13px] text-success">{word.replacement}</span>
-                        </div>
-                      </div>
-                      <Badge variant="outline" className="bg-success/10 text-success text-[10px]">已启用</Badge>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
           </TabsContent>
 
           {/* 配置设置 */}
@@ -592,49 +611,143 @@ export default function CustomerServiceAgentPage() {
             <Card className="bg-white border-border shadow-sm">
               <CardHeader>
                 <CardTitle className="text-[15px]">智能体配置</CardTitle>
-                <CardDescription>模型选择、回复策略、话术模板配置</CardDescription>
+                <CardDescription>模型选择、回复模板、多语言配置</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
                   <div className="flex items-center justify-between p-4 border border-border rounded-lg">
                     <div>
                       <div className="text-[13px] font-medium text-foreground">调用模型</div>
-                      <div className="text-[11px] text-muted-foreground">豆包-Seed-1.8 用于多语种客服回复</div>
+                      <div className="text-[11px] text-muted-foreground">当前使用豆包-Mini进行客服回复</div>
                     </div>
-                    <select className="px-4 py-2 border border-border rounded-md text-[14px] focus:outline-none focus:ring-2 focus:ring-primary/50">
-                      <option value="doubao">豆包-Seed-1.8</option>
-                      <option value="deepseek">DeepSeek-V3</option>
+                    <select className="px-4 py-2 border border-border rounded-md text-[14px]">
+                      <option value="doubao-mini">豆包-Mini</option>
+                      <option value="doubao-pro">豆包-Pro</option>
                     </select>
                   </div>
                   <div className="flex items-center justify-between p-4 border border-border rounded-lg">
                     <div>
-                      <div className="text-[13px] font-medium text-foreground">自动回复模式</div>
-                      <div className="text-[11px] text-muted-foreground">AI自动回复 + 纠纷自动处理</div>
+                      <div className="text-[13px] font-medium text-foreground">自动翻译</div>
+                      <div className="text-[11px] text-muted-foreground">自动将客户消息翻译为目标语言</div>
                     </div>
-                    <Badge variant="outline" className="bg-success/10 text-success">已启用</Badge>
-                  </div>
-                  <div className="flex items-center justify-between p-4 border border-border rounded-lg">
-                    <div>
-                      <div className="text-[13px] font-medium text-foreground">话术合规校验</div>
-                      <div className="text-[11px] text-muted-foreground">回复前自动校验平台禁用语</div>
-                    </div>
-                    <Badge variant="outline" className="bg-success/10 text-success">已启用</Badge>
-                  </div>
-                  <div className="flex items-center justify-between p-4 border border-border rounded-lg">
-                    <div>
-                      <div className="text-[13px] font-medium text-foreground">物流数据对接</div>
-                      <div className="text-[11px] text-muted-foreground">ERP物流轨迹API</div>
-                    </div>
-                    <Button variant="outline" size="sm" onClick={() => toast.info('打开配置页面')}>
-                      <Settings className="h-4 w-4 mr-2" />
-                      配置
-                    </Button>
+                    <Badge className="bg-success text-white">已开启</Badge>
                   </div>
                 </div>
               </CardContent>
             </Card>
           </TabsContent>
         </Tabs>
+
+        {/* 详情对话框 */}
+        <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle>工单详情</DialogTitle>
+            </DialogHeader>
+            {selectedTicket && (
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <div className="text-[12px] text-muted-foreground">工单ID</div>
+                    <div className="font-mono text-[14px]">#{selectedTicket.id}</div>
+                  </div>
+                  <div>
+                    <div className="text-[12px] text-muted-foreground">状态</div>
+                    <div>{getStatusBadge(selectedTicket.status)}</div>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <div className="text-[12px] text-muted-foreground">平台</div>
+                    <div>{getPlatformBadge(selectedTicket.platform)}</div>
+                  </div>
+                  <div>
+                    <div className="text-[12px] text-muted-foreground">类型</div>
+                    <div>{getTypeBadge(selectedTicket.type)}</div>
+                  </div>
+                </div>
+                <div>
+                  <div className="text-[12px] text-muted-foreground">主题</div>
+                  <div className="text-[14px] font-medium">{selectedTicket.subject}</div>
+                </div>
+                <div>
+                  <div className="text-[12px] text-muted-foreground">客户消息</div>
+                  <div className="p-3 bg-muted/30 rounded-lg text-[14px]">{selectedTicket.message}</div>
+                </div>
+                {selectedTicket.reply && (
+                  <div>
+                    <div className="text-[12px] text-muted-foreground">回复内容</div>
+                    <div className="p-3 bg-success/10 rounded-lg text-[14px]">{selectedTicket.reply}</div>
+                  </div>
+                )}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <div className="text-[12px] text-muted-foreground">客户</div>
+                    <div className="text-[14px]">{selectedTicket.customer}</div>
+                  </div>
+                  <div>
+                    <div className="text-[12px] text-muted-foreground">语言</div>
+                    <div className="text-[14px]">{selectedTicket.language}</div>
+                  </div>
+                </div>
+                <div>
+                  <div className="text-[12px] text-muted-foreground">创建时间</div>
+                  <div className="text-[14px]">{selectedTicket.createdAt}</div>
+                </div>
+              </div>
+            )}
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsDetailOpen(false)}>关闭</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* 回复对话框 */}
+        <Dialog open={isReplyOpen} onOpenChange={setIsReplyOpen}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle>回复客户</DialogTitle>
+              <DialogDescription>{selectedTicket?.subject}</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="p-3 bg-muted/30 rounded-lg">
+                <div className="text-[12px] text-muted-foreground mb-1">客户消息</div>
+                <div className="text-[13px]">{selectedTicket?.message}</div>
+              </div>
+              <div className="space-y-2">
+                <label className="text-[13px] font-medium">回复内容</label>
+                <textarea 
+                  className="w-full h-32 p-3 border border-border rounded-md text-[14px] resize-none"
+                  placeholder="请输入回复内容..."
+                  value={replyForm.message}
+                  onChange={(e) => setReplyForm({ ...replyForm, message: e.target.value })}
+                />
+              </div>
+              <div className="flex items-center gap-4">
+                <label className="text-[13px] font-medium">翻译语言</label>
+                <select 
+                  className="px-3 py-2 border border-border rounded-md text-[14px]"
+                  value={replyForm.language}
+                  onChange={(e) => setReplyForm({ ...replyForm, language: e.target.value })}
+                >
+                  <option value="auto">自动检测</option>
+                  <option value="id">印尼语</option>
+                  <option value="th">泰语</option>
+                  <option value="vi">越南语</option>
+                  <option value="en">英语</option>
+                  <option value="zh">中文</option>
+                </select>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsReplyOpen(false)}>取消</Button>
+              <Button onClick={handleManualReply} disabled={isProcessing === selectedTicket?.id}>
+                {isProcessing === selectedTicket?.id && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                发送回复
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </MainLayout>
   );

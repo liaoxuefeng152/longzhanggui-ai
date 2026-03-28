@@ -8,6 +8,14 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
   DollarSign,
   Search,
   Filter,
@@ -17,12 +25,17 @@ import {
   TrendingDown,
   BarChart3,
   PieChart,
-  LineChart,
   ArrowUpRight,
   ArrowDownRight,
   Calculator,
   FileText,
   Wallet,
+  RefreshCw,
+  Loader2,
+  CreditCard,
+  Receipt,
+  Banknote,
+  Truck,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -44,7 +57,7 @@ interface DailySummary {
 interface FinancialRecord {
   id: string;
   record_date: string;
-  record_type: string;
+  record_type: 'income' | 'expense' | 'refund' | 'fee';
   category: string;
   amount: number;
   currency: string;
@@ -54,177 +67,6 @@ interface FinancialRecord {
   created_at: string;
 }
 
-// Mock数据 - 每日汇总
-const mockSummaries: DailySummary[] = [
-  {
-    id: 'SUM001',
-    date: '2026-03-21',
-    total_sales: 15680.50,
-    total_cost: 8920.30,
-    shipping_fee: 1250.00,
-    platform_fee: 784.03,
-    ad_cost: 1568.05,
-    other_cost: 320.00,
-    gross_profit: 2838.12,
-    profit_rate: 18.1,
-    order_count: 42,
-    refund_amount: 0,
-  },
-  {
-    id: 'SUM002',
-    date: '2026-03-20',
-    total_sales: 18450.00,
-    total_cost: 10560.00,
-    shipping_fee: 1480.00,
-    platform_fee: 922.50,
-    ad_cost: 1845.00,
-    other_cost: 450.00,
-    gross_profit: 3192.50,
-    profit_rate: 17.3,
-    order_count: 51,
-    refund_amount: 199.00,
-  },
-  {
-    id: 'SUM003',
-    date: '2026-03-19',
-    total_sales: 12350.80,
-    total_cost: 7120.50,
-    shipping_fee: 980.00,
-    platform_fee: 617.54,
-    ad_cost: 1235.08,
-    other_cost: 280.00,
-    gross_profit: 2117.68,
-    profit_rate: 17.1,
-    order_count: 35,
-    refund_amount: 0,
-  },
-  {
-    id: 'SUM004',
-    date: '2026-03-18',
-    total_sales: 21300.00,
-    total_cost: 12400.00,
-    shipping_fee: 1680.00,
-    platform_fee: 1065.00,
-    ad_cost: 2130.00,
-    other_cost: 520.00,
-    gross_profit: 3505.00,
-    profit_rate: 16.5,
-    order_count: 58,
-    refund_amount: 89.00,
-  },
-  {
-    id: 'SUM005',
-    date: '2026-03-17',
-    total_sales: 16890.00,
-    total_cost: 9780.00,
-    shipping_fee: 1320.00,
-    platform_fee: 844.50,
-    ad_cost: 1689.00,
-    other_cost: 380.00,
-    gross_profit: 2876.50,
-    profit_rate: 17.0,
-    order_count: 47,
-    refund_amount: 0,
-  },
-];
-
-// Mock数据 - 财务记录
-const mockRecords: FinancialRecord[] = [
-  {
-    id: 'REC001',
-    record_date: '2026-03-21',
-    record_type: 'income',
-    category: '销售收入',
-    amount: 15680.50,
-    currency: 'CNY',
-    description: '平台订单收入',
-    platform: 'tiktok',
-    source: 'order_settlement',
-    created_at: '2026-03-21 23:00:00',
-  },
-  {
-    id: 'REC002',
-    record_date: '2026-03-21',
-    record_type: 'expense',
-    category: '采购成本',
-    amount: 8920.30,
-    currency: 'CNY',
-    description: '商品采购支出',
-    source: 'purchase',
-    created_at: '2026-03-21 22:00:00',
-  },
-  {
-    id: 'REC003',
-    record_date: '2026-03-21',
-    record_type: 'expense',
-    category: '广告费用',
-    amount: 1568.05,
-    currency: 'CNY',
-    description: 'TikTok广告投放',
-    platform: 'tiktok',
-    source: 'ad_spend',
-    created_at: '2026-03-21 21:00:00',
-  },
-  {
-    id: 'REC004',
-    record_date: '2026-03-21',
-    record_type: 'expense',
-    category: '物流费用',
-    amount: 1250.00,
-    currency: 'CNY',
-    description: '国际物流运费',
-    source: 'shipping',
-    created_at: '2026-03-21 20:00:00',
-  },
-  {
-    id: 'REC005',
-    record_date: '2026-03-20',
-    record_type: 'refund',
-    category: '退款',
-    amount: 199.00,
-    currency: 'CNY',
-    description: '订单退款-商品破损',
-    platform: 'amazon',
-    source: 'refund',
-    created_at: '2026-03-20 18:30:00',
-  },
-  {
-    id: 'REC006',
-    record_date: '2026-03-20',
-    record_type: 'income',
-    category: '销售收入',
-    amount: 18450.00,
-    currency: 'CNY',
-    description: '平台订单收入',
-    platform: 'amazon',
-    source: 'order_settlement',
-    created_at: '2026-03-20 23:00:00',
-  },
-  {
-    id: 'REC007',
-    record_date: '2026-03-19',
-    record_type: 'expense',
-    category: '平台佣金',
-    amount: 617.54,
-    currency: 'CNY',
-    description: 'TikTok平台佣金',
-    platform: 'tiktok',
-    source: 'commission',
-    created_at: '2026-03-19 23:00:00',
-  },
-  {
-    id: 'REC008',
-    record_date: '2026-03-18',
-    record_type: 'adjustment',
-    category: '调整',
-    amount: 150.00,
-    currency: 'CNY',
-    description: '物流费差价调整',
-    source: 'manual_adjust',
-    created_at: '2026-03-18 15:00:00',
-  },
-];
-
 export default function ERPFinancePage() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
@@ -232,7 +74,12 @@ export default function ERPFinancePage() {
   const [records, setRecords] = useState<FinancialRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [dateRange, setDateRange] = useState({ start: '', end: '' });
-  const [typeFilter, setTypeFilter] = useState('');
+  const [keyword, setKeyword] = useState('');
+  
+  // 对话框状态
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [selectedRecord, setSelectedRecord] = useState<FinancialRecord | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -247,66 +94,91 @@ export default function ERPFinancePage() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('token');
-      const params = new URLSearchParams();
-      if (dateRange.start) params.set('start_date', dateRange.start);
-      if (dateRange.end) params.set('end_date', dateRange.end);
-      if (typeFilter) params.set('record_type', typeFilter);
-      
+      // 并行获取汇总和记录
       const [summaryRes, recordsRes] = await Promise.all([
-        fetch(`/api/v1/erp/finance/summary?${params.toString()}`, {
-          headers: { 'Authorization': `Bearer ${token}` },
-        }),
-        fetch(`/api/v1/erp/finance/records?${params.toString()}`, {
-          headers: { 'Authorization': `Bearer ${token}` },
-        }),
+        fetch('/api/v1/erp/finance/summary'),
+        fetch('/api/v1/erp/finance/records'),
       ]);
       
-      if (summaryRes.ok) {
-        const data = await summaryRes.json();
-        setSummaries(data.items || []);
-      }
-      if (recordsRes.ok) {
-        const data = await recordsRes.json();
-        setRecords(data.items || []);
-      }
+      const summaryData = await summaryRes.json();
+      const recordsData = await recordsRes.json();
       
-      // 如果API返回空数据，使用mock数据
-      if (summaries.length === 0) {
-        setSummaries(mockSummaries);
+      if (summaryData.success) {
+        setSummaries(summaryData.data.summaries || []);
       }
-      if (records.length === 0) {
-        setRecords(mockRecords);
+      if (recordsData.success) {
+        setRecords(recordsData.data.records || []);
       }
     } catch (error) {
       console.error('获取财务数据失败:', error);
-      // 使用mock数据
-      setSummaries(mockSummaries);
-      setRecords(mockRecords);
+      toast.error('获取财务数据失败');
     } finally {
       setLoading(false);
     }
   };
 
-  const getTypeBadge = (type: string) => {
+  // 导出财务报表
+  const handleExportReport = async () => {
+    setIsProcessing(true);
+    try {
+      const headers = ['日期', '销售额', '成本', '运费', '平台费', '广告费', '其他费用', '毛利润', '利润率', '订单数'];
+      const rows = summaries.map(s => [
+        s.date,
+        s.total_sales.toFixed(2),
+        s.total_cost.toFixed(2),
+        s.shipping_fee.toFixed(2),
+        s.platform_fee.toFixed(2),
+        s.ad_cost.toFixed(2),
+        s.other_cost.toFixed(2),
+        s.gross_profit.toFixed(2),
+        `${s.profit_rate.toFixed(1)}%`,
+        s.order_count,
+      ]);
+      
+      const csvContent = [headers, ...rows].map(row => row.join(',')).join('\n');
+      const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `finance_report_${new Date().toISOString().split('T')[0]}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      
+      toast.success('导出成功');
+    } catch (error) {
+      toast.error('导出失败');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  // 查看详情
+  const handleViewRecord = (record: FinancialRecord) => {
+    setSelectedRecord(record);
+    setIsDetailOpen(true);
+  };
+
+  // 计算汇总数据
+  const totalSales = summaries.reduce((sum, s) => sum + s.total_sales, 0);
+  const totalCost = summaries.reduce((sum, s) => sum + s.total_cost, 0);
+  const totalAdCost = summaries.reduce((sum, s) => sum + s.ad_cost, 0);
+  const totalPlatformFee = summaries.reduce((sum, s) => sum + s.platform_fee, 0);
+  const totalShipping = summaries.reduce((sum, s) => sum + s.shipping_fee, 0);
+  const totalProfit = summaries.reduce((sum, s) => sum + s.gross_profit, 0);
+  const avgProfitRate = totalSales > 0 ? (totalProfit / totalSales * 100) : 0;
+  const totalOrders = summaries.reduce((sum, s) => sum + s.order_count, 0);
+  const totalRefund = summaries.reduce((sum, s) => sum + s.refund_amount, 0);
+
+  const getRecordTypeBadge = (type: string) => {
     const config: Record<string, { label: string; className: string }> = {
       income: { label: '收入', className: 'bg-success/10 text-success' },
       expense: { label: '支出', className: 'bg-destructive/10 text-destructive' },
       refund: { label: '退款', className: 'bg-warning/10 text-warning' },
-      adjustment: { label: '调整', className: 'bg-purple-500/10 text-purple-500' },
+      fee: { label: '费用', className: 'bg-muted text-muted-foreground' },
     };
-    const { label, className } = config[type] || { label: type, className: 'bg-muted text-muted-foreground' };
+    const { label, className } = config[type] || config.fee;
     return <Badge variant="outline" className={className}>{label}</Badge>;
   };
-
-  // 统计数据
-  const totalSales = summaries.reduce((sum, s) => sum + s.total_sales, 0);
-  const totalCost = summaries.reduce((sum, s) => sum + s.total_cost, 0);
-  const totalProfit = summaries.reduce((sum, s) => sum + s.gross_profit, 0);
-  const avgProfitRate = summaries.length > 0 
-    ? (summaries.reduce((sum, s) => sum + s.profit_rate, 0) / summaries.length) 
-    : 0;
-  const totalOrders = summaries.reduce((sum, s) => sum + s.order_count, 0);
 
   if (!user) return null;
 
@@ -321,60 +193,21 @@ export default function ERPFinancePage() {
             </div>
             <div>
               <h1 className="text-[18px] font-semibold text-foreground">ERP财务管理</h1>
-              <p className="text-[14px] text-muted-foreground">收支统计 · 利润分析 · 成本核算 · 财务报表</p>
+              <p className="text-[14px] text-muted-foreground">利润核算 · 成本分析 · 财务报表 · 资金流水</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <Button variant="outline" onClick={async () => {
-              try {
-                const params = new URLSearchParams();
-                params.set('type', 'summary');
-                if (dateRange.start) params.set('start_date', dateRange.start);
-                if (dateRange.end) params.set('end_date', dateRange.end);
-                
-                const response = await fetch(`/api/v1/erp/finance/export?${params.toString()}`);
-                if (!response.ok) throw new Error('导出失败');
-                
-                const blob = await response.blob();
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `财务汇总报表_${new Date().toISOString().split('T')[0]}.csv`;
-                a.click();
-                window.URL.revokeObjectURL(url);
-                toast.success('财务汇总报表导出成功');
-              } catch (error) {
-                toast.error('导出失败，请重试');
-              }
-            }}>
-              <FileText className="h-4 w-4 mr-2" />
-              导出报表
+            <Button variant="outline" onClick={fetchData}>
+              <RefreshCw className="h-4 w-4 mr-2" />
+              刷新
             </Button>
-            <Button variant="outline" onClick={async () => {
-              try {
-                const params = new URLSearchParams();
-                params.set('type', 'detail');
-                if (dateRange.start) params.set('start_date', dateRange.start);
-                if (dateRange.end) params.set('end_date', dateRange.end);
-                if (typeFilter) params.set('record_type', typeFilter);
-                
-                const response = await fetch(`/api/v1/erp/finance/export?${params.toString()}`);
-                if (!response.ok) throw new Error('导出失败');
-                
-                const blob = await response.blob();
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `财务明细报表_${new Date().toISOString().split('T')[0]}.csv`;
-                a.click();
-                window.URL.revokeObjectURL(url);
-                toast.success('财务明细报表导出成功');
-              } catch (error) {
-                toast.error('导出失败，请重试');
-              }
-            }}>
-              <Download className="h-4 w-4 mr-2" />
-              导出明细
+            <Button variant="outline" onClick={handleExportReport} disabled={isProcessing}>
+              {isProcessing ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Download className="h-4 w-4 mr-2" />
+              )}
+              导出报表
             </Button>
           </div>
         </div>
@@ -383,196 +216,349 @@ export default function ERPFinancePage() {
         <div className="flex items-center gap-2">
           <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
             <Calculator className="h-3 w-3 mr-1" />
-            成本核算
+            自动核算
           </Badge>
           <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
-            <PieChart className="h-3 w-3 mr-1" />
+            <BarChart3 className="h-3 w-3 mr-1" />
             利润分析
           </Badge>
           <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
-            <LineChart className="h-3 w-3 mr-1" />
-            趋势分析
+            <FileText className="h-3 w-3 mr-1" />
+            财务报表
           </Badge>
           <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
             <Wallet className="h-3 w-3 mr-1" />
-            资金流水
+            资金管理
           </Badge>
         </div>
 
-        {/* 核心指标 */}
+        {/* 核心财务指标 */}
         <div className="grid grid-cols-5 gap-4">
           <Card className="bg-white border-border shadow-sm">
             <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-[12px] text-muted-foreground">总销售额</span>
-                <ArrowUpRight className="h-4 w-4 text-success" />
+              <div className="flex items-center justify-between mb-1">
+                <div className="text-[12px] text-muted-foreground">总销售额</div>
+                <TrendingUp className="h-4 w-4 text-success" />
               </div>
-              <div className="text-[24px] font-semibold text-foreground">${totalSales.toFixed(2)}</div>
-              <div className="text-[11px] text-muted-foreground mt-1">{totalOrders} 笔订单</div>
+              <div className="text-[24px] font-semibold text-success">${totalSales.toFixed(2)}</div>
+              <div className="text-[11px] text-muted-foreground mt-1">本期累计</div>
             </CardContent>
           </Card>
           <Card className="bg-white border-border shadow-sm">
             <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-[12px] text-muted-foreground">总成本</span>
-                <ArrowDownRight className="h-4 w-4 text-destructive" />
+              <div className="flex items-center justify-between mb-1">
+                <div className="text-[12px] text-muted-foreground">总成本</div>
+                <DollarSign className="h-4 w-4 text-muted-foreground" />
               </div>
-              <div className="text-[24px] font-semibold text-destructive">${totalCost.toFixed(2)}</div>
-              <div className="text-[11px] text-muted-foreground mt-1">采购+物流+费用</div>
+              <div className="text-[24px] font-semibold text-foreground">${totalCost.toFixed(2)}</div>
+              <div className="text-[11px] text-muted-foreground mt-1">商品成本</div>
             </CardContent>
           </Card>
           <Card className="bg-white border-border shadow-sm">
             <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-[12px] text-muted-foreground">毛利润</span>
+              <div className="flex items-center justify-between mb-1">
+                <div className="text-[12px] text-muted-foreground">毛利润</div>
                 <TrendingUp className="h-4 w-4 text-success" />
               </div>
               <div className="text-[24px] font-semibold text-success">${totalProfit.toFixed(2)}</div>
-              <div className="text-[11px] text-muted-foreground mt-1">销售额 - 总成本</div>
+              <div className="text-[11px] text-success mt-1">利润率 {avgProfitRate.toFixed(1)}%</div>
             </CardContent>
           </Card>
           <Card className="bg-white border-border shadow-sm">
             <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-[12px] text-muted-foreground">平均利润率</span>
+              <div className="flex items-center justify-between mb-1">
+                <div className="text-[12px] text-muted-foreground">广告花费</div>
                 <BarChart3 className="h-4 w-4 text-primary" />
               </div>
-              <div className="text-[24px] font-semibold text-foreground">{(avgProfitRate * 100).toFixed(1)}%</div>
-              <div className="text-[11px] text-muted-foreground mt-1">毛利/销售额</div>
+              <div className="text-[24px] font-semibold text-foreground">${totalAdCost.toFixed(2)}</div>
+              <div className="text-[11px] text-muted-foreground mt-1">占比 {totalSales > 0 ? (totalAdCost / totalSales * 100).toFixed(1) : 0}%</div>
             </CardContent>
           </Card>
           <Card className="bg-white border-border shadow-sm">
             <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-[12px] text-muted-foreground">退款金额</span>
-                <TrendingDown className="h-4 w-4 text-warning" />
+              <div className="flex items-center justify-between mb-1">
+                <div className="text-[12px] text-muted-foreground">订单数</div>
+                <Receipt className="h-4 w-4 text-muted-foreground" />
               </div>
-              <div className="text-[24px] font-semibold text-warning">
-                ${summaries.reduce((sum, s) => sum + s.refund_amount, 0).toFixed(2)}
-              </div>
-              <div className="text-[11px] text-muted-foreground mt-1">累计退款</div>
+              <div className="text-[24px] font-semibold text-foreground">{totalOrders}</div>
+              <div className="text-[11px] text-muted-foreground mt-1">退款 {totalRefund.toFixed(2)}</div>
             </CardContent>
           </Card>
         </div>
 
-        {/* 筛选条件 */}
+        {/* 费用明细卡片 */}
+        <div className="grid grid-cols-4 gap-4">
+          <Card className="bg-white border-border shadow-sm">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
+                  <Truck className="h-5 w-5 text-blue-500" />
+                </div>
+                <div>
+                  <div className="text-[12px] text-muted-foreground">运费</div>
+                  <div className="text-[18px] font-semibold">${totalShipping.toFixed(2)}</div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="bg-white border-border shadow-sm">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-orange-500/10 flex items-center justify-center">
+                  <CreditCard className="h-5 w-5 text-orange-500" />
+                </div>
+                <div>
+                  <div className="text-[12px] text-muted-foreground">平台费用</div>
+                  <div className="text-[18px] font-semibold">${totalPlatformFee.toFixed(2)}</div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="bg-white border-border shadow-sm">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-pink-500/10 flex items-center justify-center">
+                  <BarChart3 className="h-5 w-5 text-pink-500" />
+                </div>
+                <div>
+                  <div className="text-[12px] text-muted-foreground">广告费用</div>
+                  <div className="text-[18px] font-semibold">${totalAdCost.toFixed(2)}</div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="bg-white border-border shadow-sm">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-red-500/10 flex items-center justify-center">
+                  <ArrowDownRight className="h-5 w-5 text-red-500" />
+                </div>
+                <div>
+                  <div className="text-[12px] text-muted-foreground">退款金额</div>
+                  <div className="text-[18px] font-semibold text-destructive">${totalRefund.toFixed(2)}</div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* 利润构成 */}
+        <div className="grid grid-cols-2 gap-4">
+          <Card className="bg-white border-border shadow-sm">
+            <CardHeader>
+              <CardTitle className="text-[15px]">利润构成</CardTitle>
+              <CardDescription>销售额 - 各项成本 = 毛利润</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between p-3 bg-success/5 rounded-lg">
+                  <span className="text-[13px] text-muted-foreground">销售额</span>
+                  <span className="text-[16px] font-semibold text-success">${totalSales.toFixed(2)}</span>
+                </div>
+                <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+                  <span className="text-[13px] text-muted-foreground">商品成本</span>
+                  <span className="text-[16px] font-semibold">-${totalCost.toFixed(2)}</span>
+                </div>
+                <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+                  <span className="text-[13px] text-muted-foreground">运费</span>
+                  <span className="text-[16px] font-semibold">-${totalShipping.toFixed(2)}</span>
+                </div>
+                <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+                  <span className="text-[13px] text-muted-foreground">平台费</span>
+                  <span className="text-[16px] font-semibold">-${totalPlatformFee.toFixed(2)}</span>
+                </div>
+                <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+                  <span className="text-[13px] text-muted-foreground">广告费</span>
+                  <span className="text-[16px] font-semibold">-${totalAdCost.toFixed(2)}</span>
+                </div>
+                <div className="flex items-center justify-between p-3 bg-primary/5 rounded-lg border border-primary/20">
+                  <span className="text-[13px] font-medium">毛利润</span>
+                  <span className="text-[20px] font-bold text-success">${totalProfit.toFixed(2)}</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-white border-border shadow-sm">
+            <CardHeader>
+              <CardTitle className="text-[15px]">每日汇总</CardTitle>
+              <CardDescription>按日期查看财务数据</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Loader2 className="h-6 w-6 animate-spin mx-auto" />
+                </div>
+              ) : summaries.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">暂无数据</div>
+              ) : (
+                <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                  {summaries.map((summary) => (
+                    <div key={summary.id} className="p-3 border border-border rounded-lg hover:bg-muted/30 transition-colors">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-[13px] font-medium">{summary.date}</span>
+                        <span className="text-[12px] text-muted-foreground">{summary.order_count} 单</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4 text-[12px]">
+                          <span>销售: <span className="text-success font-medium">${summary.total_sales.toFixed(2)}</span></span>
+                          <span>成本: <span className="text-foreground">${summary.total_cost.toFixed(2)}</span></span>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-[14px] font-semibold text-success">${summary.gross_profit.toFixed(2)}</div>
+                          <div className="text-[11px] text-muted-foreground">{summary.profit_rate.toFixed(1)}%</div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* 财务流水记录 */}
         <Card className="bg-white border-border shadow-sm">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-4">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-[15px]">财务流水</CardTitle>
+                <CardDescription>收支明细记录</CardDescription>
+              </div>
               <div className="flex items-center gap-2">
-                <span className="text-[14px] text-muted-foreground">日期范围:</span>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="搜索..."
+                    value={keyword}
+                    onChange={(e) => setKeyword(e.target.value)}
+                    className="pl-10 w-48"
+                  />
+                </div>
                 <Input
                   type="date"
                   value={dateRange.start}
                   onChange={(e) => setDateRange({ ...dateRange, start: e.target.value })}
-                  className="w-40"
+                  className="w-36"
                 />
-                <span className="text-muted-foreground">-</span>
+                <span className="text-muted-foreground">至</span>
                 <Input
                   type="date"
                   value={dateRange.end}
                   onChange={(e) => setDateRange({ ...dateRange, end: e.target.value })}
-                  className="w-40"
+                  className="w-36"
                 />
               </div>
-              <select 
-                className="px-4 py-2 border border-border rounded-md text-[14px]"
-                value={typeFilter}
-                onChange={(e) => setTypeFilter(e.target.value)}
-              >
-                <option value="">全部类型</option>
-                <option value="income">收入</option>
-                <option value="expense">支出</option>
-                <option value="refund">退款</option>
-                <option value="adjustment">调整</option>
-              </select>
-              <Button variant="outline" onClick={fetchData}>
-                <Filter className="h-4 w-4 mr-2" />
-                筛选
-              </Button>
             </div>
+          </CardHeader>
+          <CardContent>
+            {loading ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <Loader2 className="h-6 w-6 animate-spin mx-auto" />
+              </div>
+            ) : records.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">暂无流水记录</div>
+            ) : (
+              <div className="space-y-2">
+                {records.slice(0, 10).map((record) => (
+                  <div 
+                    key={record.id} 
+                    className="flex items-center justify-between p-3 border border-border rounded-lg hover:bg-muted/30 transition-colors cursor-pointer"
+                    onClick={() => handleViewRecord(record)}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                        record.record_type === 'income' ? 'bg-success/10' :
+                        record.record_type === 'expense' ? 'bg-destructive/10' :
+                        record.record_type === 'refund' ? 'bg-warning/10' : 'bg-muted'
+                      }`}>
+                        {record.record_type === 'income' ? (
+                          <ArrowUpRight className="h-5 w-5 text-success" />
+                        ) : record.record_type === 'expense' ? (
+                          <ArrowDownRight className="h-5 w-5 text-destructive" />
+                        ) : record.record_type === 'refund' ? (
+                          <RefreshCw className="h-5 w-5 text-warning" />
+                        ) : (
+                          <Receipt className="h-5 w-5 text-muted-foreground" />
+                        )}
+                      </div>
+                      <div>
+                        <div className="text-[13px] font-medium">{record.category}</div>
+                        <div className="text-[12px] text-muted-foreground">
+                          {record.description || '无描述'} {record.platform && `· ${record.platform}`}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      {getRecordTypeBadge(record.record_type)}
+                      <div className="text-right">
+                        <div className={`text-[16px] font-semibold ${
+                          record.record_type === 'income' ? 'text-success' : 
+                          record.record_type === 'expense' || record.record_type === 'refund' ? 'text-destructive' : 'text-foreground'
+                        }`}>
+                          {record.record_type === 'income' ? '+' : '-'}${record.amount.toFixed(2)}
+                        </div>
+                        <div className="text-[11px] text-muted-foreground">{record.record_date}</div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
 
-        <div className="grid grid-cols-3 gap-6">
-          {/* 每日汇总 */}
-          <Card className="bg-white border-border shadow-sm col-span-2">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-[15px]">每日财务汇总</CardTitle>
-              <CardDescription>按日期统计销售额、成本、利润</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {loading ? (
-                <div className="text-center py-8 text-muted-foreground">加载中...</div>
-              ) : summaries.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">暂无财务数据</div>
-              ) : (
-                <div className="space-y-2">
-                  <div className="grid grid-cols-6 text-[12px] text-muted-foreground border-b pb-2">
-                    <div>日期</div>
-                    <div>销售额</div>
-                    <div>成本</div>
-                    <div>广告费</div>
-                    <div>毛利润</div>
-                    <div>利润率</div>
+        {/* 记录详情对话框 */}
+        <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>流水详情</DialogTitle>
+            </DialogHeader>
+            {selectedRecord && (
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <div className="text-[12px] text-muted-foreground">类型</div>
+                    <div>{getRecordTypeBadge(selectedRecord.record_type)}</div>
                   </div>
-                  {summaries.slice(0, 10).map((summary) => (
-                    <div key={summary.id} className="grid grid-cols-6 text-[13px] py-2 border-b border-border/50">
-                      <div className="font-mono">{summary.date}</div>
-                      <div className="text-success">${summary.total_sales.toFixed(2)}</div>
-                      <div className="text-destructive">${summary.total_cost.toFixed(2)}</div>
-                      <div className="text-warning">${summary.ad_cost.toFixed(2)}</div>
-                      <div className={summary.gross_profit > 0 ? 'text-success font-medium' : 'text-destructive font-medium'}>
-                        ${summary.gross_profit.toFixed(2)}
-                      </div>
-                      <div>
-                        <span className={summary.profit_rate > 0.2 ? 'text-success' : summary.profit_rate > 0.1 ? 'text-warning' : 'text-destructive'}>
-                          {(summary.profit_rate * 100).toFixed(1)}%
-                        </span>
-                      </div>
+                  <div>
+                    <div className="text-[12px] text-muted-foreground">金额</div>
+                    <div className={`text-[18px] font-semibold ${
+                      selectedRecord.record_type === 'income' ? 'text-success' : 'text-destructive'
+                    }`}>
+                      {selectedRecord.record_type === 'income' ? '+' : '-'}${selectedRecord.amount.toFixed(2)}
                     </div>
-                  ))}
+                  </div>
                 </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* 财务明细 */}
-          <Card className="bg-white border-border shadow-sm">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-[15px]">财务明细</CardTitle>
-              <CardDescription>最近收支记录</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {loading ? (
-                <div className="text-center py-8 text-muted-foreground">加载中...</div>
-              ) : records.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">暂无记录</div>
-              ) : (
-                <div className="space-y-3">
-                  {records.slice(0, 8).map((record) => (
-                    <div key={record.id} className="flex items-center justify-between py-2 border-b border-border/50">
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          {getTypeBadge(record.record_type)}
-                          <span className="text-[12px] text-muted-foreground">{record.category}</span>
-                        </div>
-                        {record.description && (
-                          <div className="text-[11px] text-muted-foreground truncate max-w-[150px]">
-                            {record.description}
-                          </div>
-                        )}
-                      </div>
-                      <div className={`text-[14px] font-medium ${record.record_type === 'income' ? 'text-success' : 'text-destructive'}`}>
-                        {record.record_type === 'income' ? '+' : '-'}${record.amount.toFixed(2)}
-                      </div>
-                    </div>
-                  ))}
+                <div>
+                  <div className="text-[12px] text-muted-foreground">类别</div>
+                  <div className="text-[14px] font-medium">{selectedRecord.category}</div>
                 </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+                <div>
+                  <div className="text-[12px] text-muted-foreground">描述</div>
+                  <div className="text-[14px]">{selectedRecord.description || '-'}</div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <div className="text-[12px] text-muted-foreground">平台</div>
+                    <div className="text-[14px]">{selectedRecord.platform || '-'}</div>
+                  </div>
+                  <div>
+                    <div className="text-[12px] text-muted-foreground">来源</div>
+                    <div className="text-[14px]">{selectedRecord.source || '-'}</div>
+                  </div>
+                </div>
+                <div>
+                  <div className="text-[12px] text-muted-foreground">时间</div>
+                  <div className="text-[14px]">{selectedRecord.record_date} {selectedRecord.created_at}</div>
+                </div>
+              </div>
+            )}
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsDetailOpen(false)}>关闭</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </MainLayout>
   );

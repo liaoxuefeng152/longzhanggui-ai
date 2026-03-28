@@ -2,17 +2,23 @@ import { NextRequest, NextResponse } from 'next/server';
 import store from '@/lib/store';
 import { LLMClient, Config } from 'coze-coding-dev-sdk';
 
-// 工作流模板定义
-const WORKFLOW_TEMPLATES: Record<string, {
+// 工作流步骤定义类型
+interface WorkflowStep {
+  id: string;
+  name: string;
+  agent: string;
+  required: boolean;
+}
+
+// 工作流模板定义类型
+interface WorkflowTemplate {
   name: string;
   description: string;
-  steps: Array<{
-    id: string;
-    name: string;
-    agent: string;
-    required: boolean;
-  }>;
-}> = {
+  steps: WorkflowStep[];
+}
+
+// 工作流模板定义
+const WORKFLOW_TEMPLATES: Record<string, WorkflowTemplate> = {
   'single_product_publish': {
     name: '单品上架流程',
     description: '选品→图片→Listing→定价→上架',
@@ -156,7 +162,7 @@ export async function POST(request: NextRequest) {
 // 异步执行工作流
 async function executeWorkflowAsync(
   workflowId: string, 
-  template: typeof WORKFLOW_TEMPLATES[string],
+  template: WorkflowTemplate,
   productId?: string,
   params?: Record<string, any>
 ) {
@@ -366,5 +372,3 @@ async function executeAdCreate(product: any, params?: any): Promise<any> {
     status: ad.status,
   };
 }
-
-export { WORKFLOW_TEMPLATES };

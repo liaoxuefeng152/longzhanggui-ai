@@ -7,7 +7,6 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import {
   Dialog,
   DialogContent,
@@ -33,9 +32,11 @@ import {
   Package,
   ExternalLink,
   Loader2,
+  RefreshCw,
+  Ban,
+  TruckIcon,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { getPurchaseOrders, PurchaseOrder as ERPurchaseOrder } from '@/lib/api/erp';
 
 interface PurchaseOrder {
   id: string;
@@ -47,144 +48,42 @@ interface PurchaseOrder {
   supplier_url?: string;
   supplier_contact?: string;
   qty: number;
+  received_qty?: number;
   unit_price: number;
   total_amount: number;
-  status: string;
+  status: 'pending' | 'confirmed' | 'shipped' | 'received' | 'cancelled';
   expected_arrival?: string;
   created_at: string;
   notes?: string;
 }
 
-interface NewPurchaseOrderForm {
-  product_name: string;
-  sku: string;
-  qty: string;
-  unit_price: string;
-  supplier_name: string;
-  supplier_url: string;
-  supplier_contact: string;
-  expected_arrival: string;
-  notes: string;
+interface Supplier {
+  id: string;
+  name: string;
+  contact?: string;
+  phone?: string;
+  address?: string;
+  products_count: number;
+  rating: number;
 }
-
-// Mock数据
-const mockPurchaseOrders: PurchaseOrder[] = [
-  {
-    id: 'PO001',
-    po_number: 'PO-2026-0321-001',
-    product_id: 'PROD001',
-    product_name: '宠物自动喂食器 5L大容量',
-    sku: 'SKU-PET-001',
-    supplier_name: '深圳宠物用品有限公司',
-    supplier_url: 'https://example.com/supplier/1',
-    supplier_contact: '张经理 13800138001',
-    qty: 100,
-    unit_price: 89.00,
-    total_amount: 8900.00,
-    status: 'completed',
-    expected_arrival: '2026-03-25',
-    created_at: '2026-03-21 10:30:00',
-    notes: '首次采购，需注意包装质量',
-  },
-  {
-    id: 'PO002',
-    po_number: 'PO-2026-0321-002',
-    product_id: 'PROD002',
-    product_name: '便携式榨汁机 USB充电',
-    sku: 'SKU-HOME-001',
-    supplier_name: '广州小家电批发',
-    supplier_url: 'https://example.com/supplier/2',
-    supplier_contact: '李经理 13900139002',
-    qty: 50,
-    unit_price: 45.00,
-    total_amount: 2250.00,
-    status: 'in_transit',
-    expected_arrival: '2026-03-28',
-    created_at: '2026-03-20 15:20:00',
-    notes: '补货采购',
-  },
-  {
-    id: 'PO003',
-    po_number: 'PO-2026-0320-003',
-    product_id: 'PROD003',
-    product_name: 'LED化妆镜 台式带灯',
-    sku: 'SKU-BEAUTY-001',
-    supplier_name: '义乌美妆工具厂',
-    supplier_url: 'https://example.com/supplier/3',
-    supplier_contact: '王经理 13700137003',
-    qty: 80,
-    unit_price: 35.00,
-    total_amount: 2800.00,
-    status: 'pending',
-    expected_arrival: '2026-03-30',
-    created_at: '2026-03-20 09:45:00',
-    notes: '新品采购，需要质检',
-  },
-  {
-    id: 'PO004',
-    po_number: 'PO-2026-0319-004',
-    product_id: 'PROD005',
-    product_name: '不锈钢保温杯 500ml',
-    sku: 'SKU-KITCHEN-001',
-    supplier_name: '永康杯业有限公司',
-    supplier_url: 'https://example.com/supplier/5',
-    supplier_contact: '陈经理 13600136005',
-    qty: 200,
-    unit_price: 22.00,
-    total_amount: 4400.00,
-    status: 'completed',
-    expected_arrival: '2026-03-22',
-    created_at: '2026-03-19 14:10:00',
-    notes: '',
-  },
-  {
-    id: 'PO005',
-    po_number: 'PO-2026-0318-005',
-    product_id: 'PROD006',
-    product_name: '猫咪自动饮水机',
-    sku: 'SKU-PET-002',
-    supplier_name: '深圳宠物用品有限公司',
-    supplier_url: 'https://example.com/supplier/1',
-    supplier_contact: '张经理 13800138001',
-    qty: 60,
-    unit_price: 56.00,
-    total_amount: 3360.00,
-    status: 'partial_received',
-    expected_arrival: '2026-03-24',
-    created_at: '2026-03-18 11:30:00',
-    notes: '已收到40件，剩余20件待发货',
-  },
-  {
-    id: 'PO006',
-    po_number: 'PO-2026-0317-006',
-    product_id: 'PROD001',
-    product_name: '宠物自动喂食器 5L大容量',
-    sku: 'SKU-PET-001',
-    supplier_name: '深圳宠物用品有限公司',
-    supplier_url: 'https://example.com/supplier/1',
-    supplier_contact: '张经理 13800138001',
-    qty: 50,
-    unit_price: 89.00,
-    total_amount: 4450.00,
-    status: 'cancelled',
-    expected_arrival: '2026-03-21',
-    created_at: '2026-03-17 16:00:00',
-    notes: '供应商缺货，取消订单',
-  },
-];
 
 export default function ERPPurchasePage() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [orders, setOrders] = useState<PurchaseOrder[]>([]);
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [loading, setLoading] = useState(true);
   const [keyword, setKeyword] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   
-  // 新建采购单对话框
-  const [showCreateDialog, setShowCreateDialog] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [newOrder, setNewOrder] = useState<NewPurchaseOrderForm>({
+  // 对话框状态
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState<PurchaseOrder | null>(null);
+  const [isProcessing, setIsProcessing] = useState<string | null>(null);
+  
+  // 创建采购单表单
+  const [createForm, setCreateForm] = useState({
     product_name: '',
     sku: '',
     qty: '',
@@ -203,76 +102,59 @@ export default function ERPPurchasePage() {
       return;
     }
     setUser(JSON.parse(userData));
-    fetchOrders();
+    fetchData();
   }, [router]);
 
-  const fetchOrders = async () => {
+  const fetchData = async () => {
     setLoading(true);
     try {
-      const data = await getPurchaseOrders({
-        status: statusFilter || undefined,
-      });
+      const params = new URLSearchParams();
+      if (keyword) params.set('keyword', keyword);
+      if (statusFilter) params.set('status', statusFilter);
       
-      // 转换数据格式
-      const purchaseOrders: PurchaseOrder[] = (data || []).map((item: ERPurchaseOrder) => ({
-        id: item.id,
-        po_number: item.po_number,
-        product_id: item.product_id,
-        product_name: item.product_name,
-        sku: item.sku,
-        supplier_name: item.supplier_name,
-        supplier_url: item.supplier_url,
-        supplier_contact: item.supplier_contact,
-        qty: item.qty,
-        unit_price: item.unit_price,
-        total_amount: item.total_amount,
-        status: item.status,
-        expected_arrival: item.expected_arrival,
-        created_at: item.created_at,
-        notes: item.notes,
-      }));
+      const response = await fetch(`/api/v1/erp/purchases?${params.toString()}`);
+      const data = await response.json();
       
-      setOrders(purchaseOrders.length > 0 ? purchaseOrders : mockPurchaseOrders);
+      if (data.success) {
+        setOrders(data.data.items || []);
+        setSuppliers(data.data.suppliers || []);
+      } else {
+        toast.error('获取采购单失败');
+      }
     } catch (error) {
-      console.error('获取采购订单失败:', error);
-      // 使用mock数据
-      setOrders(mockPurchaseOrders);
+      console.error('获取采购单失败:', error);
+      toast.error('获取采购单失败');
     } finally {
       setLoading(false);
     }
   };
 
+  // 创建采购单
   const handleCreateOrder = async () => {
-    if (!newOrder.product_name) {
-      toast.error('请输入商品名称');
-      return;
-    }
-    if (!newOrder.qty || parseInt(newOrder.qty) <= 0) {
-      toast.error('请输入有效的采购数量');
-      return;
-    }
-    if (!newOrder.unit_price || parseFloat(newOrder.unit_price) <= 0) {
-      toast.error('请输入有效的单价');
+    if (!createForm.product_name || !createForm.qty || !createForm.unit_price) {
+      toast.error('请填写完整的采购信息');
       return;
     }
 
-    setSubmitting(true);
+    setIsProcessing('create');
     try {
-      const response = await fetch('/api/v1/erp/purchase-orders', {
+      const response = await fetch('/api/v1/erp/purchases', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          ...newOrder,
-          qty: parseInt(newOrder.qty),
-          unit_price: parseFloat(newOrder.unit_price),
+          ...createForm,
+          qty: parseInt(createForm.qty),
+          unit_price: parseFloat(createForm.unit_price),
+          total_amount: parseInt(createForm.qty) * parseFloat(createForm.unit_price),
+          status: 'pending',
         }),
       });
 
       const data = await response.json();
       if (data.success) {
-        toast.success('采购单创建成功');
-        setShowCreateDialog(false);
-        setNewOrder({
+        toast.success('采购单创建成功', { description: `采购单号: ${data.data.po_number || data.data.id}` });
+        setIsCreateOpen(false);
+        setCreateForm({
           product_name: '',
           sku: '',
           qty: '',
@@ -283,47 +165,176 @@ export default function ERPPurchasePage() {
           expected_arrival: '',
           notes: '',
         });
-        fetchOrders();
+        fetchData();
       } else {
-        toast.error(data.message || '创建失败');
+        toast.error(data.error || '创建失败');
       }
     } catch (error) {
-      console.error('创建采购单失败:', error);
-      toast.error('创建采购单失败');
+      toast.error('创建失败');
     } finally {
-      setSubmitting(false);
+      setIsProcessing(null);
+    }
+  };
+
+  // 确认采购单
+  const handleConfirmOrder = async (order: PurchaseOrder) => {
+    setIsProcessing(order.id);
+    try {
+      const response = await fetch(`/api/v1/erp/purchases/${order.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'confirmed' }),
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        toast.success('采购单已确认');
+        fetchData();
+      } else {
+        toast.error(data.error || '确认失败');
+      }
+    } catch (error) {
+      toast.error('确认失败');
+    } finally {
+      setIsProcessing(null);
+    }
+  };
+
+  // 标记发货
+  const handleMarkShipped = async (order: PurchaseOrder) => {
+    setIsProcessing(order.id);
+    try {
+      const response = await fetch(`/api/v1/erp/purchases/${order.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'shipped' }),
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        toast.success('已标记为发货中');
+        fetchData();
+      } else {
+        toast.error(data.error || '操作失败');
+      }
+    } catch (error) {
+      toast.error('操作失败');
+    } finally {
+      setIsProcessing(null);
+    }
+  };
+
+  // 确认入库
+  const handleReceiveOrder = async (order: PurchaseOrder) => {
+    setIsProcessing(order.id);
+    try {
+      const response = await fetch(`/api/v1/erp/purchases/${order.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          status: 'received',
+          received_qty: order.qty,
+        }),
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        toast.success('入库成功', { description: `已入库 ${order.qty} 件` });
+        fetchData();
+      } else {
+        toast.error(data.error || '入库失败');
+      }
+    } catch (error) {
+      toast.error('入库失败');
+    } finally {
+      setIsProcessing(null);
+    }
+  };
+
+  // 取消采购单
+  const handleCancelOrder = async (order: PurchaseOrder) => {
+    if (!confirm(`确定要取消采购单 ${order.po_number} 吗？`)) return;
+
+    setIsProcessing(order.id);
+    try {
+      const response = await fetch(`/api/v1/erp/purchases/${order.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'cancelled' }),
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        toast.success('采购单已取消');
+        fetchData();
+      } else {
+        toast.error(data.error || '取消失败');
+      }
+    } catch (error) {
+      toast.error('取消失败');
+    } finally {
+      setIsProcessing(null);
+    }
+  };
+
+  // 查看详情
+  const handleViewDetail = (order: PurchaseOrder) => {
+    setSelectedOrder(order);
+    setIsDetailOpen(true);
+  };
+
+  // 导出
+  const handleExport = async () => {
+    setIsProcessing('export');
+    try {
+      const headers = ['采购单号', '商品名称', 'SKU', '供应商', '数量', '单价', '总额', '状态', '预计到货', '创建时间'];
+      const rows = orders.map(o => [
+        o.po_number,
+        o.product_name,
+        o.sku,
+        o.supplier_name,
+        o.qty,
+        o.unit_price,
+        o.total_amount,
+        o.status,
+        o.expected_arrival || '-',
+        o.created_at,
+      ]);
+      
+      const csvContent = [headers, ...rows].map(row => row.join(',')).join('\n');
+      const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `purchase_orders_${new Date().toISOString().split('T')[0]}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      
+      toast.success('导出成功');
+    } catch (error) {
+      toast.error('导出失败');
+    } finally {
+      setIsProcessing(null);
     }
   };
 
   const getStatusBadge = (status: string) => {
-    const config: Record<string, { label: string; className: string; icon: any }> = {
-      draft: { label: '草稿', className: 'bg-muted text-muted-foreground', icon: Clock },
-      pending: { label: '待审核', className: 'bg-warning/10 text-warning', icon: Clock },
-      approved: { label: '已批准', className: 'bg-primary/10 text-primary', icon: CheckCircle },
-      ordered: { label: '已下单', className: 'bg-blue-500/10 text-blue-500', icon: ShoppingCart },
-      received: { label: '已到货', className: 'bg-success/10 text-success', icon: Package },
-      cancelled: { label: '已取消', className: 'bg-destructive/10 text-destructive', icon: XCircle },
+    const config: Record<string, { label: string; className: string }> = {
+      pending: { label: '待确认', className: 'bg-warning/10 text-warning' },
+      confirmed: { label: '已确认', className: 'bg-primary/10 text-primary' },
+      shipped: { label: '发货中', className: 'bg-blue-500/10 text-blue-500' },
+      received: { label: '已入库', className: 'bg-success/10 text-success' },
+      cancelled: { label: '已取消', className: 'bg-muted text-muted-foreground' },
     };
-    const { label, className, icon: Icon } = config[status] || config.draft;
-    return (
-      <Badge variant="outline" className={className}>
-        <Icon className="h-3 w-3 mr-1" />
-        {label}
-      </Badge>
-    );
+    const { label, className } = config[status] || config.pending;
+    return <Badge variant="outline" className={className}>{label}</Badge>;
   };
 
   // 统计数据
   const totalOrders = orders.length;
-  const pendingOrders = orders.filter(o => o.status === 'pending' || o.status === 'approved').length;
-  const totalAmount = orders.reduce((sum, o) => sum + o.total_amount, 0);
-  const overdueOrders = orders.filter(o => {
-    if (!o.expected_arrival || o.status === 'received' || o.status === 'cancelled') return false;
-    return new Date(o.expected_arrival) < new Date();
-  }).length;
-
-  // 计算总金额
-  const calculatedTotal = ((parseFloat(newOrder.qty) || 0) * (parseFloat(newOrder.unit_price) || 0)).toFixed(2);
+  const pendingOrders = orders.filter(o => o.status === 'pending').length;
+  const inTransitOrders = orders.filter(o => o.status === 'shipped').length;
+  const totalAmount = orders.filter(o => o.status !== 'cancelled').reduce((sum, o) => sum + o.total_amount, 0);
 
   if (!user) return null;
 
@@ -338,17 +349,25 @@ export default function ERPPurchasePage() {
             </div>
             <div>
               <h1 className="text-[18px] font-semibold text-foreground">ERP采购管理</h1>
-              <p className="text-[14px] text-muted-foreground">采购申请 · 供应商管理 · 入库验收 · 成本核算</p>
+              <p className="text-[14px] text-muted-foreground">采购申请 · 供应商管理 · 入库确认 · 成本核算</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <Button variant="outline" onClick={() => toast.success('正在导出采购数据...')}>
-              <Download className="h-4 w-4 mr-2" />
+            <Button variant="outline" onClick={fetchData}>
+              <RefreshCw className="h-4 w-4 mr-2" />
+              刷新
+            </Button>
+            <Button variant="outline" onClick={handleExport} disabled={isProcessing === 'export'}>
+              {isProcessing === 'export' ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Download className="h-4 w-4 mr-2" />
+              )}
               导出
             </Button>
-            <Button onClick={() => setShowCreateDialog(true)}>
+            <Button onClick={() => setIsCreateOpen(true)}>
               <Plus className="h-4 w-4 mr-2" />
-              新建采购单
+              新建采购
             </Button>
           </div>
         </div>
@@ -361,15 +380,15 @@ export default function ERPPurchasePage() {
           </Badge>
           <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
             <Truck className="h-3 w-3 mr-1" />
-            物流跟踪
+            物流追踪
           </Badge>
           <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
             <Package className="h-3 w-3 mr-1" />
-            入库验收
+            入库管理
           </Badge>
           <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
             <DollarSign className="h-3 w-3 mr-1" />
-            成本控制
+            成本核算
           </Badge>
         </div>
 
@@ -377,39 +396,37 @@ export default function ERPPurchasePage() {
         <div className="grid grid-cols-5 gap-4">
           <Card className="bg-white border-border shadow-sm">
             <CardContent className="p-4">
-              <div className="text-[12px] text-muted-foreground mb-1">采购订单</div>
+              <div className="text-[12px] text-muted-foreground mb-1">采购单数</div>
               <div className="text-[24px] font-semibold text-foreground">{totalOrders}</div>
-              <div className="text-[11px] text-muted-foreground mt-1">全部采购单</div>
+              <div className="text-[11px] text-muted-foreground mt-1">全部采购</div>
             </CardContent>
           </Card>
           <Card className="bg-white border-border shadow-sm">
             <CardContent className="p-4">
-              <div className="text-[12px] text-muted-foreground mb-1">待处理</div>
+              <div className="text-[12px] text-muted-foreground mb-1">待确认</div>
               <div className="text-[24px] font-semibold text-warning">{pendingOrders}</div>
-              <div className="text-[11px] text-muted-foreground mt-1">待审核/待下单</div>
+              <div className="text-[11px] text-muted-foreground mt-1">需处理</div>
+            </CardContent>
+          </Card>
+          <Card className="bg-white border-border shadow-sm">
+            <CardContent className="p-4">
+              <div className="text-[12px] text-muted-foreground mb-1">运输中</div>
+              <div className="text-[24px] font-semibold text-blue-500">{inTransitOrders}</div>
+              <div className="text-[11px] text-muted-foreground mt-1">待入库</div>
             </CardContent>
           </Card>
           <Card className="bg-white border-border shadow-sm">
             <CardContent className="p-4">
               <div className="text-[12px] text-muted-foreground mb-1">采购金额</div>
-              <div className="text-[24px] font-semibold text-foreground">¥{totalAmount.toFixed(2)}</div>
-              <div className="text-[11px] text-muted-foreground mt-1">累计采购</div>
+              <div className="text-[24px] font-semibold text-foreground">${totalAmount.toFixed(2)}</div>
+              <div className="text-[11px] text-muted-foreground mt-1">总金额</div>
             </CardContent>
           </Card>
           <Card className="bg-white border-border shadow-sm">
             <CardContent className="p-4">
-              <div className="text-[12px] text-muted-foreground mb-1">已到货</div>
-              <div className="text-[24px] font-semibold text-success">
-                {orders.filter(o => o.status === 'received').length}
-              </div>
-              <div className="text-[11px] text-muted-foreground mt-1">完成入库</div>
-            </CardContent>
-          </Card>
-          <Card className="bg-white border-border shadow-sm">
-            <CardContent className="p-4">
-              <div className="text-[12px] text-muted-foreground mb-1">逾期订单</div>
-              <div className="text-[24px] font-semibold text-destructive">{overdueOrders}</div>
-              <div className="text-[11px] text-muted-foreground mt-1">超期未到货</div>
+              <div className="text-[12px] text-muted-foreground mb-1">供应商</div>
+              <div className="text-[24px] font-semibold text-foreground">{suppliers.length}</div>
+              <div className="text-[11px] text-muted-foreground mt-1">合作供应商</div>
             </CardContent>
           </Card>
         </div>
@@ -421,10 +438,11 @@ export default function ERPPurchasePage() {
               <div className="flex-1 relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="搜索采购单号、供应商..."
+                  placeholder="搜索采购单号、商品名称..."
                   value={keyword}
                   onChange={(e) => setKeyword(e.target.value)}
                   className="pl-10"
+                  onKeyDown={(e) => e.key === 'Enter' && fetchData()}
                 />
               </div>
               <select 
@@ -433,14 +451,13 @@ export default function ERPPurchasePage() {
                 onChange={(e) => setStatusFilter(e.target.value)}
               >
                 <option value="">全部状态</option>
-                <option value="draft">草稿</option>
-                <option value="pending">待审核</option>
-                <option value="approved">已批准</option>
-                <option value="ordered">已下单</option>
-                <option value="received">已到货</option>
+                <option value="pending">待确认</option>
+                <option value="confirmed">已确认</option>
+                <option value="shipped">发货中</option>
+                <option value="received">已入库</option>
                 <option value="cancelled">已取消</option>
               </select>
-              <Button variant="outline" onClick={fetchOrders}>
+              <Button variant="outline" onClick={fetchData}>
                 <Filter className="h-4 w-4 mr-2" />
                 筛选
               </Button>
@@ -448,17 +465,20 @@ export default function ERPPurchasePage() {
           </CardContent>
         </Card>
 
-        {/* 采购订单列表 */}
+        {/* 采购单列表 */}
         <Card className="bg-white border-border shadow-sm">
           <CardHeader className="pb-3">
-            <CardTitle className="text-[15px]">采购订单列表</CardTitle>
-            <CardDescription>支持1688一键下单、自动生成采购单</CardDescription>
+            <CardTitle className="text-[15px]">采购单列表</CardTitle>
+            <CardDescription>管理采购流程，从申请到入库</CardDescription>
           </CardHeader>
           <CardContent>
             {loading ? (
-              <div className="text-center py-8 text-muted-foreground">加载中...</div>
+              <div className="text-center py-8 text-muted-foreground">
+                <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2" />
+                加载中...
+              </div>
             ) : orders.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">暂无采购订单</div>
+              <div className="text-center py-8 text-muted-foreground">暂无采购单数据</div>
             ) : (
               <div className="space-y-3">
                 {orders.map((order) => (
@@ -466,50 +486,70 @@ export default function ERPPurchasePage() {
                     <div className="flex items-start justify-between">
                       <div className="flex items-start gap-4">
                         <div className="w-12 h-12 bg-muted rounded-lg flex items-center justify-center">
-                          <ShoppingCart className="h-6 w-6 text-muted-foreground" />
+                          <Package className="h-6 w-6 text-muted-foreground" />
                         </div>
                         <div className="space-y-2">
                           <div className="flex items-center gap-2">
-                            <span className="text-[14px] font-mono font-medium">{order.po_number}</span>
+                            <span className="text-[12px] text-muted-foreground font-mono">{order.po_number}</span>
                             {getStatusBadge(order.status)}
-                            {order.expected_arrival && new Date(order.expected_arrival) < new Date() && order.status !== 'received' && order.status !== 'cancelled' && (
-                              <Badge variant="outline" className="bg-destructive/10 text-destructive">
-                                <AlertTriangle className="h-3 w-3 mr-1" />
-                                逾期
-                              </Badge>
-                            )}
                           </div>
-                          <div className="text-[14px] font-medium text-foreground">{order.supplier_name}</div>
+                          <div className="text-[14px] font-medium text-foreground">{order.product_name || '未知商品'}</div>
                           <div className="flex items-center gap-4 text-[12px] text-muted-foreground">
-                            <span>数量: <span className="text-foreground">{order.qty}</span></span>
-                            <span>创建时间: <span className="text-foreground">{new Date(order.created_at).toLocaleString()}</span></span>
-                            {order.expected_arrival && (
-                              <span>预计到货: <span className="text-foreground">{order.expected_arrival}</span></span>
-                            )}
+                            <span>SKU: <span className="text-foreground">{order.sku || '-'}</span></span>
+                            <span>供应商: <span className="text-foreground">{order.supplier_name || '-'}</span></span>
+                            <span>预计到货: <span className="text-foreground">{order.expected_arrival || '-'}</span></span>
                           </div>
-                          {order.notes && (
-                            <div className="text-[12px] text-muted-foreground">备注: {order.notes}</div>
-                          )}
                         </div>
                       </div>
                       <div className="text-right space-y-2">
-                        <div className="text-[20px] font-semibold text-foreground">¥{order.total_amount.toFixed(2)}</div>
-                        <div className="text-[11px] text-muted-foreground">采购金额</div>
-                        <div className="flex items-center gap-2 mt-3">
-                          <Button variant="outline" size="sm" onClick={() => toast.info(`查看采购单 ${order.po_number} 详情`)}>
+                        <div className="text-[20px] font-semibold text-foreground">${order.total_amount.toFixed(2)}</div>
+                        <div className="text-[11px] text-muted-foreground">{order.qty}件 × ${order.unit_price.toFixed(2)}</div>
+                        <div className="flex items-center justify-end gap-2 mt-3">
+                          <Button variant="outline" size="sm" onClick={() => handleViewDetail(order)}>
                             <Eye className="h-3 w-3 mr-1" />
                             详情
                           </Button>
-                          {order.status === 'draft' && (
-                            <Button variant="outline" size="sm" onClick={() => toast.info(`编辑采购单 ${order.po_number}`)}>
-                              <Edit className="h-3 w-3 mr-1" />
-                              编辑
+                          {order.status === 'pending' && (
+                            <>
+                              <Button 
+                                size="sm" 
+                                onClick={() => handleConfirmOrder(order)}
+                                disabled={isProcessing === order.id}
+                              >
+                                <CheckCircle className="h-3 w-3 mr-1" />
+                                确认
+                              </Button>
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                className="text-destructive"
+                                onClick={() => handleCancelOrder(order)}
+                                disabled={isProcessing === order.id}
+                              >
+                                <Ban className="h-3 w-3 mr-1" />
+                                取消
+                              </Button>
+                            </>
+                          )}
+                          {order.status === 'confirmed' && (
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => handleMarkShipped(order)}
+                              disabled={isProcessing === order.id}
+                            >
+                              <TruckIcon className="h-3 w-3 mr-1" />
+                              发货
                             </Button>
                           )}
-                          {order.status === 'approved' && (
-                            <Button size="sm" onClick={() => toast.success(`采购单 ${order.po_number} 已下单`)}>
-                              <ExternalLink className="h-3 w-3 mr-1" />
-                              下单
+                          {order.status === 'shipped' && (
+                            <Button 
+                              size="sm"
+                              onClick={() => handleReceiveOrder(order)}
+                              disabled={isProcessing === order.id}
+                            >
+                              <Package className="h-3 w-3 mr-1" />
+                              入库
                             </Button>
                           )}
                         </div>
@@ -521,123 +561,198 @@ export default function ERPPurchasePage() {
             )}
           </CardContent>
         </Card>
-      </div>
 
-      {/* 新建采购单对话框 */}
-      <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>新建采购单</DialogTitle>
-            <DialogDescription>填写采购信息创建新的采购单</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="product_name">商品名称 *</Label>
-                <Input
-                  id="product_name"
-                  value={newOrder.product_name}
-                  onChange={(e) => setNewOrder({ ...newOrder, product_name: e.target.value })}
-                  placeholder="输入商品名称"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="sku">SKU</Label>
-                <Input
-                  id="sku"
-                  value={newOrder.sku}
-                  onChange={(e) => setNewOrder({ ...newOrder, sku: e.target.value })}
-                  placeholder="可选"
-                />
-              </div>
-            </div>
-            <div className="grid grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="qty">采购数量 *</Label>
-                <Input
-                  id="qty"
-                  type="number"
-                  value={newOrder.qty}
-                  onChange={(e) => setNewOrder({ ...newOrder, qty: e.target.value })}
-                  placeholder="0"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="unit_price">单价(元) *</Label>
-                <Input
-                  id="unit_price"
-                  type="number"
-                  value={newOrder.unit_price}
-                  onChange={(e) => setNewOrder({ ...newOrder, unit_price: e.target.value })}
-                  placeholder="0.00"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>总金额</Label>
-                <div className="h-9 px-3 py-2 bg-muted rounded-md text-[14px] flex items-center">
-                  ¥{calculatedTotal}
+        {/* 创建采购单对话框 */}
+        <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle>新建采购单</DialogTitle>
+              <DialogDescription>创建新的采购申请</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4 max-h-[60vh] overflow-y-auto">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-[13px] font-medium">商品名称 *</label>
+                  <Input
+                    placeholder="请输入商品名称"
+                    value={createForm.product_name}
+                    onChange={(e) => setCreateForm({ ...createForm, product_name: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[13px] font-medium">SKU</label>
+                  <Input
+                    placeholder="请输入SKU"
+                    value={createForm.sku}
+                    onChange={(e) => setCreateForm({ ...createForm, sku: e.target.value })}
+                  />
                 </div>
               </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="supplier_name">供应商名称</Label>
-                <Input
-                  id="supplier_name"
-                  value={newOrder.supplier_name}
-                  onChange={(e) => setNewOrder({ ...newOrder, supplier_name: e.target.value })}
-                  placeholder="输入供应商名称"
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-[13px] font-medium">采购数量 *</label>
+                  <Input
+                    type="number"
+                    placeholder="请输入数量"
+                    value={createForm.qty}
+                    onChange={(e) => setCreateForm({ ...createForm, qty: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[13px] font-medium">单价 ($) *</label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    placeholder="请输入单价"
+                    value={createForm.unit_price}
+                    onChange={(e) => setCreateForm({ ...createForm, unit_price: e.target.value })}
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-[13px] font-medium">供应商名称</label>
+                  <Input
+                    placeholder="请输入供应商"
+                    value={createForm.supplier_name}
+                    onChange={(e) => setCreateForm({ ...createForm, supplier_name: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[13px] font-medium">供应商联系方式</label>
+                  <Input
+                    placeholder="联系人/电话"
+                    value={createForm.supplier_contact}
+                    onChange={(e) => setCreateForm({ ...createForm, supplier_contact: e.target.value })}
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-[13px] font-medium">供应商链接</label>
+                  <Input
+                    placeholder="https://..."
+                    value={createForm.supplier_url}
+                    onChange={(e) => setCreateForm({ ...createForm, supplier_url: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[13px] font-medium">预计到货日期</label>
+                  <Input
+                    type="date"
+                    value={createForm.expected_arrival}
+                    onChange={(e) => setCreateForm({ ...createForm, expected_arrival: e.target.value })}
+                  />
+                </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="supplier_contact">供应商联系方式</Label>
+                <label className="text-[13px] font-medium">备注</label>
                 <Input
-                  id="supplier_contact"
-                  value={newOrder.supplier_contact}
-                  onChange={(e) => setNewOrder({ ...newOrder, supplier_contact: e.target.value })}
-                  placeholder="电话/微信"
-                />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="supplier_url">供应商链接</Label>
-              <Input
-                id="supplier_url"
-                value={newOrder.supplier_url}
-                onChange={(e) => setNewOrder({ ...newOrder, supplier_url: e.target.value })}
-                placeholder="https://shop12345678.1688.com"
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="expected_arrival">预计到货日期</Label>
-                <Input
-                  id="expected_arrival"
-                  type="date"
-                  value={newOrder.expected_arrival}
-                  onChange={(e) => setNewOrder({ ...newOrder, expected_arrival: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="notes">备注</Label>
-                <Input
-                  id="notes"
-                  value={newOrder.notes}
-                  onChange={(e) => setNewOrder({ ...newOrder, notes: e.target.value })}
                   placeholder="备注信息"
+                  value={createForm.notes}
+                  onChange={(e) => setCreateForm({ ...createForm, notes: e.target.value })}
                 />
               </div>
+              {createForm.qty && createForm.unit_price && (
+                <div className="p-3 bg-muted/30 rounded-lg">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[13px] text-muted-foreground">采购总额</span>
+                    <span className="text-[20px] font-semibold text-foreground">
+                      ${(parseInt(createForm.qty) * parseFloat(createForm.unit_price || '0')).toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowCreateDialog(false)}>取消</Button>
-            <Button onClick={handleCreateOrder} disabled={submitting}>
-              {submitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              创建采购单
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsCreateOpen(false)}>取消</Button>
+              <Button onClick={handleCreateOrder} disabled={isProcessing === 'create'}>
+                {isProcessing === 'create' && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                创建采购单
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* 采购单详情对话框 */}
+        <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle>采购单详情</DialogTitle>
+            </DialogHeader>
+            {selectedOrder && (
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <div className="text-[12px] text-muted-foreground">采购单号</div>
+                    <div className="font-mono text-[14px]">{selectedOrder.po_number}</div>
+                  </div>
+                  <div>
+                    <div className="text-[12px] text-muted-foreground">状态</div>
+                    <div>{getStatusBadge(selectedOrder.status)}</div>
+                  </div>
+                </div>
+                <div>
+                  <div className="text-[12px] text-muted-foreground">商品名称</div>
+                  <div className="text-[14px] font-medium">{selectedOrder.product_name}</div>
+                </div>
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <div className="text-[12px] text-muted-foreground">数量</div>
+                    <div className="text-[16px] font-semibold">{selectedOrder.qty}</div>
+                  </div>
+                  <div>
+                    <div className="text-[12px] text-muted-foreground">单价</div>
+                    <div className="text-[16px] font-semibold">${selectedOrder.unit_price.toFixed(2)}</div>
+                  </div>
+                  <div>
+                    <div className="text-[12px] text-muted-foreground">总额</div>
+                    <div className="text-[16px] font-semibold text-success">${selectedOrder.total_amount.toFixed(2)}</div>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <div className="text-[12px] text-muted-foreground">供应商</div>
+                    <div className="text-[14px]">{selectedOrder.supplier_name || '-'}</div>
+                  </div>
+                  <div>
+                    <div className="text-[12px] text-muted-foreground">联系方式</div>
+                    <div className="text-[14px]">{selectedOrder.supplier_contact || '-'}</div>
+                  </div>
+                </div>
+                {selectedOrder.supplier_url && (
+                  <div>
+                    <div className="text-[12px] text-muted-foreground">供应商链接</div>
+                    <a href={selectedOrder.supplier_url} target="_blank" rel="noopener noreferrer" className="text-[14px] text-primary hover:underline flex items-center gap-1">
+                      {selectedOrder.supplier_url}
+                      <ExternalLink className="h-3 w-3" />
+                    </a>
+                  </div>
+                )}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <div className="text-[12px] text-muted-foreground">预计到货</div>
+                    <div className="text-[14px]">{selectedOrder.expected_arrival || '-'}</div>
+                  </div>
+                  <div>
+                    <div className="text-[12px] text-muted-foreground">创建时间</div>
+                    <div className="text-[14px]">{selectedOrder.created_at}</div>
+                  </div>
+                </div>
+                {selectedOrder.notes && (
+                  <div>
+                    <div className="text-[12px] text-muted-foreground">备注</div>
+                    <div className="text-[14px]">{selectedOrder.notes}</div>
+                  </div>
+                )}
+              </div>
+            )}
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsDetailOpen(false)}>关闭</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
     </MainLayout>
   );
 }

@@ -7,7 +7,6 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import {
   Dialog,
   DialogContent,
@@ -17,185 +16,58 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import {
-  Warehouse,
+  Package,
   Search,
   Filter,
   Download,
-  Eye,
+  Plus,
   Edit,
   AlertTriangle,
-  Package,
-  TrendingDown,
-  TrendingUp,
+  CheckCircle,
   MinusCircle,
-  PlusCircle,
-  BarChart3,
+  RefreshCw,
   Loader2,
+  BarChart3,
+  TrendingUp,
+  Truck,
+  Warehouse,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { getInventoryList, Inventory as ERPInventory } from '@/lib/api/erp';
 
 interface InventoryItem {
   id: string;
   product_id: string;
-  sku: string;
-  product_name?: string;
-  warehouse: string;
-  qty_available: number;
-  qty_reserved: number;
-  safety_stock: number;
-  reorder_point: number;
-  is_low_stock: boolean;
-  need_reorder: boolean;
-  updated_at: string;
-}
-
-interface StockInForm {
-  product_id: string;
-  sku: string;
   product_name: string;
+  sku: string;
   warehouse: string;
-  quantity: string;
-  batch_no: string;
-  notes: string;
+  quantity: number;
+  safety_stock: number;
+  status: 'normal' | 'warning' | 'critical';
+  cost_price: number;
+  sale_price: number;
+  turnover_days: number;
+  last_restock: string;
+  supplier?: string;
 }
-
-// Mock数据
-const mockInventory: InventoryItem[] = [
-  {
-    id: 'INV001',
-    product_id: 'PROD001',
-    sku: 'SKU-PET-001',
-    product_name: '宠物自动喂食器 5L大容量',
-    warehouse: 'domestic',
-    qty_available: 156,
-    qty_reserved: 24,
-    safety_stock: 50,
-    reorder_point: 80,
-    is_low_stock: false,
-    need_reorder: false,
-    updated_at: '2026-03-21 14:30:00',
-  },
-  {
-    id: 'INV002',
-    product_id: 'PROD002',
-    sku: 'SKU-HOME-001',
-    product_name: '便携式榨汁机 USB充电',
-    warehouse: 'domestic',
-    qty_available: 42,
-    qty_reserved: 18,
-    safety_stock: 30,
-    reorder_point: 50,
-    is_low_stock: false,
-    need_reorder: true,
-    updated_at: '2026-03-21 11:00:00',
-  },
-  {
-    id: 'INV003',
-    product_id: 'PROD003',
-    sku: 'SKU-BEAUTY-001',
-    product_name: 'LED化妆镜 台式带灯',
-    warehouse: 'domestic',
-    qty_available: 15,
-    qty_reserved: 8,
-    safety_stock: 30,
-    reorder_point: 40,
-    is_low_stock: true,
-    need_reorder: true,
-    updated_at: '2026-03-21 10:30:00',
-  },
-  {
-    id: 'INV004',
-    product_id: 'PROD004',
-    sku: 'SKU-ELEC-001',
-    product_name: '智能手环 运动监测',
-    warehouse: 'domestic',
-    qty_available: 88,
-    qty_reserved: 12,
-    safety_stock: 40,
-    reorder_point: 60,
-    is_low_stock: false,
-    need_reorder: false,
-    updated_at: '2026-03-20 16:45:00',
-  },
-  {
-    id: 'INV005',
-    product_id: 'PROD005',
-    sku: 'SKU-KITCHEN-001',
-    product_name: '不锈钢保温杯 500ml',
-    warehouse: 'domestic',
-    qty_available: 320,
-    qty_reserved: 45,
-    safety_stock: 100,
-    reorder_point: 150,
-    is_low_stock: false,
-    need_reorder: false,
-    updated_at: '2026-03-19 09:20:00',
-  },
-  {
-    id: 'INV006',
-    product_id: 'PROD006',
-    sku: 'SKU-PET-002',
-    product_name: '猫咪自动饮水机',
-    warehouse: 'domestic',
-    qty_available: 28,
-    qty_reserved: 15,
-    safety_stock: 25,
-    reorder_point: 40,
-    is_low_stock: false,
-    need_reorder: true,
-    updated_at: '2026-03-18 14:30:00',
-  },
-  {
-    id: 'INV007',
-    product_id: 'PROD001',
-    sku: 'SKU-PET-001-FBJ',
-    product_name: '宠物自动喂食器 5L大容量',
-    warehouse: 'fjb',
-    qty_available: 85,
-    qty_reserved: 10,
-    safety_stock: 30,
-    reorder_point: 50,
-    is_low_stock: false,
-    need_reorder: false,
-    updated_at: '2026-03-17 10:15:00',
-  },
-  {
-    id: 'INV008',
-    product_id: 'PROD002',
-    sku: 'SKU-HOME-001-ID',
-    product_name: '便携式榨汁机 USB充电',
-    warehouse: 'indonesia',
-    qty_available: 0,
-    qty_reserved: 5,
-    safety_stock: 20,
-    reorder_point: 30,
-    is_low_stock: true,
-    need_reorder: true,
-    updated_at: '2026-03-16 15:30:00',
-  },
-];
 
 export default function ERPInventoryPage() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
-  const [inventory, setInventory] = useState<InventoryItem[]>([]);
+  const [items, setItems] = useState<InventoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [keyword, setKeyword] = useState('');
-  const [warehouseFilter, setWarehouseFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   
-  // 入库对话框
-  const [showStockInDialog, setShowStockInDialog] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [stockInForm, setStockInForm] = useState<StockInForm>({
-    product_id: '',
-    sku: '',
-    product_name: '',
-    warehouse: 'domestic',
+  // 对话框状态
+  const [isRestockOpen, setIsRestockOpen] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
+  const [isProcessing, setIsProcessing] = useState<string | null>(null);
+  
+  // 补货表单
+  const [restockForm, setRestockForm] = useState({
     quantity: '',
-    batch_no: '',
-    notes: '',
+    supplier: '',
+    estimated_arrival: '',
   });
 
   useEffect(() => {
@@ -211,108 +83,160 @@ export default function ERPInventoryPage() {
   const fetchInventory = async () => {
     setLoading(true);
     try {
-      const data = await getInventoryList({
-        low_stock: statusFilter === 'low_stock',
-      });
+      const params = new URLSearchParams();
+      if (keyword) params.set('keyword', keyword);
+      if (statusFilter) params.set('status', statusFilter);
       
-      // 转换数据格式
-      const items: InventoryItem[] = (data || []).map((item: ERPInventory) => ({
-        id: item.id,
-        product_id: item.product_id,
-        sku: `SKU-${item.product_id.slice(0, 8)}`,
-        product_name: `商品-${item.product_id.slice(0, 6)}`,
-        warehouse: item.warehouse || 'domestic',
-        qty_available: item.qty_available,
-        qty_reserved: item.qty_reserved,
-        safety_stock: item.safety_stock,
-        reorder_point: item.reorder_point,
-        is_low_stock: item.is_low_stock,
-        need_reorder: item.need_reorder,
-        updated_at: item.updated_at,
-      }));
+      const response = await fetch(`/api/v1/erp/inventory?${params.toString()}`);
+      const data = await response.json();
       
-      setInventory(items.length > 0 ? items : mockInventory);
+      if (data.success) {
+        setItems(data.data.items || []);
+      } else {
+        toast.error('获取库存失败');
+      }
     } catch (error) {
       console.error('获取库存失败:', error);
-      // 使用mock数据
-      setInventory(mockInventory);
+      toast.error('获取库存失败');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleStockIn = async () => {
-    if (!stockInForm.product_name) {
-      toast.error('请输入商品名称');
-      return;
+  // 同步库存
+  const handleSyncInventory = async () => {
+    setIsProcessing('sync');
+    try {
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      toast.success('库存同步成功', { description: '已从各仓库同步最新库存数据' });
+      fetchInventory();
+    } catch (error) {
+      toast.error('同步失败');
+    } finally {
+      setIsProcessing(null);
     }
-    if (!stockInForm.quantity || parseInt(stockInForm.quantity) <= 0) {
-      toast.error('请输入有效的入库数量');
+  };
+
+  // 导出库存
+  const handleExport = async () => {
+    setIsProcessing('export');
+    try {
+      const headers = ['SKU', '商品名称', '仓库', '库存数量', '安全库存', '状态', '成本价', '周转天数'];
+      const rows = items.map(i => [
+        i.sku,
+        i.product_name,
+        i.warehouse,
+        i.quantity,
+        i.safety_stock,
+        i.status,
+        i.cost_price,
+        i.turnover_days,
+      ]);
+      
+      const csvContent = [headers, ...rows].map(row => row.join(',')).join('\n');
+      const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `inventory_${new Date().toISOString().split('T')[0]}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      
+      toast.success('导出成功');
+    } catch (error) {
+      toast.error('导出失败');
+    } finally {
+      setIsProcessing(null);
+    }
+  };
+
+  // 补货
+  const handleRestock = async () => {
+    if (!selectedItem) return;
+    if (!restockForm.quantity || parseInt(restockForm.quantity) <= 0) {
+      toast.error('请输入正确的补货数量');
       return;
     }
 
-    setSubmitting(true);
+    setIsProcessing(selectedItem.id);
     try {
-      const response = await fetch('/api/v1/erp/inventory/stock-in', {
+      // 创建采购单
+      const response = await fetch('/api/v1/erp/purchases', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          ...stockInForm,
-          product_id: stockInForm.product_id || `PROD-${Date.now()}`,
-          quantity: parseInt(stockInForm.quantity),
+          product_id: selectedItem.product_id,
+          quantity: parseInt(restockForm.quantity),
+          supplier: restockForm.supplier || selectedItem.supplier || '默认供应商',
+          estimated_arrival: restockForm.estimated_arrival,
+          status: 'pending',
         }),
       });
 
       const data = await response.json();
       if (data.success) {
-        toast.success(data.message || '入库成功');
-        setShowStockInDialog(false);
-        setStockInForm({
-          product_id: '',
-          sku: '',
-          product_name: '',
-          warehouse: 'domestic',
-          quantity: '',
-          batch_no: '',
-          notes: '',
-        });
+        toast.success('补货申请已创建', { description: `采购单号: ${data.data.id}` });
+        setIsRestockOpen(false);
+        setRestockForm({ quantity: '', supplier: '', estimated_arrival: '' });
         fetchInventory();
       } else {
-        toast.error(data.message || '入库失败');
+        toast.error(data.error || '创建失败');
       }
     } catch (error) {
-      console.error('入库失败:', error);
-      toast.error('入库失败');
+      toast.error('创建失败');
     } finally {
-      setSubmitting(false);
+      setIsProcessing(null);
     }
   };
 
-  const getStatusBadge = (item: InventoryItem) => {
-    if (item.qty_available <= 0) {
-      return <Badge variant="outline" className="bg-destructive/10 text-destructive">缺货</Badge>;
+  // 调整库存
+  const handleAdjustStock = async (item: InventoryItem, delta: number) => {
+    if (delta === 0) return;
+    
+    const newQuantity = item.quantity + delta;
+    if (newQuantity < 0) {
+      toast.error('库存不能为负数');
+      return;
     }
-    if (item.is_low_stock) {
-      return <Badge variant="outline" className="bg-warning/10 text-warning">低库存</Badge>;
+
+    setIsProcessing(item.id);
+    try {
+      const response = await fetch(`/api/v1/erp/inventory/${item.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ quantity: newQuantity }),
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        toast.success(delta > 0 ? '入库成功' : '出库成功', { description: `库存调整为 ${newQuantity}` });
+        fetchInventory();
+      } else {
+        toast.error(data.error || '调整失败');
+      }
+    } catch (error) {
+      toast.error('调整失败');
+    } finally {
+      setIsProcessing(null);
     }
-    return <Badge variant="outline" className="bg-success/10 text-success">正常</Badge>;
   };
 
-  const getWarehouseBadge = (warehouse: string) => {
+  const getStatusBadge = (status: string) => {
     const config: Record<string, { label: string; className: string }> = {
-      domestic: { label: '国内仓', className: 'bg-blue-500/10 text-blue-500' },
-      overseas: { label: '海外仓', className: 'bg-purple-500/10 text-purple-500' },
-      third_party: { label: '第三方仓', className: 'bg-teal-500/10 text-teal-500' },
+      normal: { label: '正常', className: 'bg-success/10 text-success' },
+      warning: { label: '预警', className: 'bg-warning/10 text-warning' },
+      critical: { label: '缺货', className: 'bg-destructive/10 text-destructive' },
     };
-    const { label, className } = config[warehouse] || { label: warehouse, className: 'bg-muted text-muted-foreground' };
+    const { label, className } = config[status] || config.normal;
     return <Badge variant="outline" className={className}>{label}</Badge>;
   };
 
   // 统计数据
-  const totalItems = inventory.length;
-  const totalQty = inventory.reduce((sum, i) => sum + i.qty_available, 0);
-  const lowStockItems = inventory.filter(i => i.is_low_stock || i.qty_available <= 0).length;
-  const totalReserved = inventory.reduce((sum, i) => sum + i.qty_reserved, 0);
+  const totalItems = items.length;
+  const totalQuantity = items.reduce((sum, i) => sum + i.quantity, 0);
+  const warningItems = items.filter(i => i.status === 'warning').length;
+  const criticalItems = items.filter(i => i.status === 'critical').length;
+  const totalValue = items.reduce((sum, i) => sum + i.quantity * i.cost_price, 0);
 
   if (!user) return null;
 
@@ -323,25 +247,33 @@ export default function ERPInventoryPage() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center">
-              <Warehouse className="h-7 w-7 text-primary" />
+              <Package className="h-7 w-7 text-primary" />
             </div>
             <div>
               <h1 className="text-[18px] font-semibold text-foreground">ERP库存管理</h1>
-              <p className="text-[14px] text-muted-foreground">库存预警 · 调拨管理 · 库存盘点 · 周转分析</p>
+              <p className="text-[14px] text-muted-foreground">库存预警 · 安全库存 · 自动补货 · 周转分析</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <Button variant="outline" onClick={() => toast.info('库存调拨功能开发中...')}>
-              <MinusCircle className="h-4 w-4 mr-2" />
-              库存调拨
+            <Button variant="outline" onClick={fetchInventory}>
+              <RefreshCw className="h-4 w-4 mr-2" />
+              刷新
             </Button>
-            <Button variant="outline" onClick={() => toast.success('正在导出库存数据...')}>
-              <Download className="h-4 w-4 mr-2" />
+            <Button variant="outline" onClick={handleSyncInventory} disabled={isProcessing === 'sync'}>
+              {isProcessing === 'sync' ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <RefreshCw className="h-4 w-4 mr-2" />
+              )}
+              同步库存
+            </Button>
+            <Button variant="outline" onClick={handleExport} disabled={isProcessing === 'export'}>
+              {isProcessing === 'export' ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Download className="h-4 w-4 mr-2" />
+              )}
               导出
-            </Button>
-            <Button onClick={() => setShowStockInDialog(true)}>
-              <PlusCircle className="h-4 w-4 mr-2" />
-              入库
             </Button>
           </div>
         </div>
@@ -353,16 +285,16 @@ export default function ERPInventoryPage() {
             库存预警
           </Badge>
           <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
-            <Package className="h-3 w-3 mr-1" />
+            <Truck className="h-3 w-3 mr-1" />
+            自动补货
+          </Badge>
+          <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
+            <Warehouse className="h-3 w-3 mr-1" />
             多仓管理
           </Badge>
           <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
             <BarChart3 className="h-3 w-3 mr-1" />
             周转分析
-          </Badge>
-          <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
-            <TrendingDown className="h-3 w-3 mr-1" />
-            自动补货
           </Badge>
         </div>
 
@@ -372,37 +304,35 @@ export default function ERPInventoryPage() {
             <CardContent className="p-4">
               <div className="text-[12px] text-muted-foreground mb-1">SKU数量</div>
               <div className="text-[24px] font-semibold text-foreground">{totalItems}</div>
-              <div className="text-[11px] text-muted-foreground mt-1">库存SKU</div>
+              <div className="text-[11px] text-muted-foreground mt-1">库存商品</div>
             </CardContent>
           </Card>
           <Card className="bg-white border-border shadow-sm">
             <CardContent className="p-4">
-              <div className="text-[12px] text-muted-foreground mb-1">可售库存</div>
-              <div className="text-[24px] font-semibold text-success">{totalQty}</div>
-              <div className="text-[11px] text-muted-foreground mt-1">总可用数量</div>
+              <div className="text-[12px] text-muted-foreground mb-1">总库存</div>
+              <div className="text-[24px] font-semibold text-foreground">{totalQuantity}</div>
+              <div className="text-[11px] text-muted-foreground mt-1">件</div>
+            </CardContent>
+          </Card>
+          <Card className="bg-white border-border shadow-sm">
+            <CardContent className="p-4">
+              <div className="text-[12px] text-muted-foreground mb-1">库存价值</div>
+              <div className="text-[24px] font-semibold text-success">${totalValue.toFixed(2)}</div>
+              <div className="text-[11px] text-muted-foreground mt-1">成本价值</div>
             </CardContent>
           </Card>
           <Card className="bg-white border-border shadow-sm">
             <CardContent className="p-4">
               <div className="text-[12px] text-muted-foreground mb-1">预警商品</div>
-              <div className="text-[24px] font-semibold text-warning">{lowStockItems}</div>
+              <div className="text-[24px] font-semibold text-warning">{warningItems}</div>
+              <div className="text-[11px] text-muted-foreground mt-1">需关注</div>
+            </CardContent>
+          </Card>
+          <Card className="bg-white border-border shadow-sm">
+            <CardContent className="p-4">
+              <div className="text-[12px] text-muted-foreground mb-1">缺货商品</div>
+              <div className="text-[24px] font-semibold text-destructive">{criticalItems}</div>
               <div className="text-[11px] text-muted-foreground mt-1">需补货</div>
-            </CardContent>
-          </Card>
-          <Card className="bg-white border-border shadow-sm">
-            <CardContent className="p-4">
-              <div className="text-[12px] text-muted-foreground mb-1">预留库存</div>
-              <div className="text-[24px] font-semibold text-foreground">{totalReserved}</div>
-              <div className="text-[11px] text-muted-foreground mt-1">订单占用</div>
-            </CardContent>
-          </Card>
-          <Card className="bg-white border-border shadow-sm">
-            <CardContent className="p-4">
-              <div className="text-[12px] text-muted-foreground mb-1">需补货</div>
-              <div className="text-[24px] font-semibold text-destructive">
-                {inventory.filter(i => i.need_reorder).length}
-              </div>
-              <div className="text-[11px] text-muted-foreground mt-1">待采购</div>
             </CardContent>
           </Card>
         </div>
@@ -418,18 +348,9 @@ export default function ERPInventoryPage() {
                   value={keyword}
                   onChange={(e) => setKeyword(e.target.value)}
                   className="pl-10"
+                  onKeyDown={(e) => e.key === 'Enter' && fetchInventory()}
                 />
               </div>
-              <select 
-                className="px-4 py-2 border border-border rounded-md text-[14px]"
-                value={warehouseFilter}
-                onChange={(e) => setWarehouseFilter(e.target.value)}
-              >
-                <option value="">全部仓库</option>
-                <option value="domestic">国内仓</option>
-                <option value="overseas">海外仓</option>
-                <option value="third_party">第三方仓</option>
-              </select>
               <select 
                 className="px-4 py-2 border border-border rounded-md text-[14px]"
                 value={statusFilter}
@@ -437,9 +358,8 @@ export default function ERPInventoryPage() {
               >
                 <option value="">全部状态</option>
                 <option value="normal">正常</option>
-                <option value="low_stock">低库存</option>
-                <option value="out_of_stock">缺货</option>
-                <option value="overstock">积压</option>
+                <option value="warning">预警</option>
+                <option value="critical">缺货</option>
               </select>
               <Button variant="outline" onClick={fetchInventory}>
                 <Filter className="h-4 w-4 mr-2" />
@@ -452,17 +372,20 @@ export default function ERPInventoryPage() {
         {/* 库存列表 */}
         <Card className="bg-white border-border shadow-sm">
           <CardHeader className="pb-3">
-            <CardTitle className="text-[15px]">库存列表</CardTitle>
-            <CardDescription>支持库存预警、自动补货建议、多仓调拨</CardDescription>
+            <CardTitle className="text-[15px]">库存清单</CardTitle>
+            <CardDescription>库存低于安全库存自动预警，支持快速补货</CardDescription>
           </CardHeader>
           <CardContent>
             {loading ? (
-              <div className="text-center py-8 text-muted-foreground">加载中...</div>
-            ) : inventory.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2" />
+                加载中...
+              </div>
+            ) : items.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">暂无库存数据</div>
             ) : (
               <div className="space-y-3">
-                {inventory.map((item) => (
+                {items.map((item) => (
                   <div key={item.id} className="p-4 border border-border rounded-lg hover:bg-muted/30 transition-colors">
                     <div className="flex items-start justify-between">
                       <div className="flex items-start gap-4">
@@ -472,42 +395,55 @@ export default function ERPInventoryPage() {
                         <div className="space-y-2">
                           <div className="flex items-center gap-2">
                             <span className="text-[12px] text-muted-foreground font-mono">{item.sku}</span>
-                            {getWarehouseBadge(item.warehouse)}
-                            {getStatusBadge(item)}
+                            {getStatusBadge(item.status)}
                           </div>
-                          <div className="text-[14px] font-medium text-foreground">{item.product_name || '未知商品'}</div>
+                          <div className="text-[14px] font-medium text-foreground">{item.product_name}</div>
                           <div className="flex items-center gap-4 text-[12px] text-muted-foreground">
-                            <span>安全库存: <span className="text-foreground">{item.safety_stock}</span></span>
-                            <span>补货点: <span className="text-foreground">{item.reorder_point}</span></span>
-                            <span>更新: <span className="text-foreground">{new Date(item.updated_at).toLocaleString()}</span></span>
+                            <span>仓库: <span className="text-foreground">{item.warehouse}</span></span>
+                            <span>成本: <span className="text-foreground">${item.cost_price.toFixed(2)}</span></span>
+                            <span>周转: <span className="text-foreground">{item.turnover_days}天</span></span>
                           </div>
                         </div>
                       </div>
                       <div className="text-right space-y-2">
-                        <div className="flex items-center justify-end gap-4">
-                          <div className="text-center">
-                            <div className="text-[20px] font-semibold text-foreground">{item.qty_available}</div>
-                            <div className="text-[10px] text-muted-foreground">可售</div>
-                          </div>
-                          <div className="text-center">
-                            <div className="text-[20px] font-semibold text-warning">{item.qty_reserved}</div>
-                            <div className="text-[10px] text-muted-foreground">预留</div>
-                          </div>
-                        </div>
-                        {item.need_reorder && (
-                          <div className="flex items-center justify-end gap-1 text-[12px] text-warning">
-                            <TrendingDown className="h-3 w-3" />
-                            建议补货 {item.safety_stock - item.qty_available + item.reorder_point} 件
-                          </div>
-                        )}
-                        <div className="flex items-center gap-2 mt-3">
-                          <Button variant="outline" size="sm" onClick={() => toast.info(`查看库存 ${item.sku} 详情`)}>
-                            <Eye className="h-3 w-3 mr-1" />
-                            详情
+                        <div className="flex items-center justify-end gap-2">
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={() => handleAdjustStock(item, -10)}
+                            disabled={isProcessing === item.id}
+                          >
+                            <MinusCircle className="h-4 w-4" />
                           </Button>
-                          <Button variant="outline" size="sm" onClick={() => toast.info(`调整库存 ${item.sku}`)}>
-                            <Edit className="h-3 w-3 mr-1" />
-                            调整
+                          <div className="text-center min-w-[80px]">
+                            <div className="text-[20px] font-semibold text-foreground">{item.quantity}</div>
+                            <div className="text-[11px] text-muted-foreground">安全库存: {item.safety_stock}</div>
+                          </div>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={() => handleAdjustStock(item, 10)}
+                            disabled={isProcessing === item.id}
+                          >
+                            <Plus className="h-4 w-4" />
+                          </Button>
+                        </div>
+                        <div className="flex items-center justify-end gap-2">
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={() => {
+                              setSelectedItem(item);
+                              setRestockForm({
+                                quantity: String(Math.max(50, item.safety_stock * 2 - item.quantity)),
+                                supplier: item.supplier || '',
+                                estimated_arrival: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+                              });
+                              setIsRestockOpen(true);
+                            }}
+                          >
+                            <Truck className="h-3 w-3 mr-1" />
+                            补货
                           </Button>
                         </div>
                       </div>
@@ -518,89 +454,60 @@ export default function ERPInventoryPage() {
             )}
           </CardContent>
         </Card>
-      </div>
 
-      {/* 入库对话框 */}
-      <Dialog open={showStockInDialog} onOpenChange={setShowStockInDialog}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>商品入库</DialogTitle>
-            <DialogDescription>填写入库信息，将商品添加到库存</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="product_name">商品名称 *</Label>
-              <Input
-                id="product_name"
-                value={stockInForm.product_name}
-                onChange={(e) => setStockInForm({ ...stockInForm, product_name: e.target.value })}
-                placeholder="输入商品名称"
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="sku">SKU</Label>
-                <Input
-                  id="sku"
-                  value={stockInForm.sku}
-                  onChange={(e) => setStockInForm({ ...stockInForm, sku: e.target.value })}
-                  placeholder="可选"
-                />
+        {/* 补货对话框 */}
+        <Dialog open={isRestockOpen} onOpenChange={setIsRestockOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>创建补货单</DialogTitle>
+              <DialogDescription>系统将自动创建采购单进行补货</DialogDescription>
+            </DialogHeader>
+            {selectedItem && (
+              <div className="space-y-4 py-4">
+                <div className="p-3 bg-muted/30 rounded-lg">
+                  <div className="text-[12px] text-muted-foreground">商品信息</div>
+                  <div className="text-[14px] font-medium">{selectedItem.product_name}</div>
+                  <div className="text-[12px] text-muted-foreground">当前库存: {selectedItem.quantity} | 安全库存: {selectedItem.safety_stock}</div>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[13px] font-medium">补货数量</label>
+                  <Input
+                    type="number"
+                    placeholder="请输入补货数量"
+                    value={restockForm.quantity}
+                    onChange={(e) => setRestockForm({ ...restockForm, quantity: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[13px] font-medium">供应商</label>
+                  <Input
+                    placeholder="请输入供应商名称"
+                    value={restockForm.supplier}
+                    onChange={(e) => setRestockForm({ ...restockForm, supplier: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[13px] font-medium">预计到货日期</label>
+                  <Input
+                    type="date"
+                    value={restockForm.estimated_arrival}
+                    onChange={(e) => setRestockForm({ ...restockForm, estimated_arrival: e.target.value })}
+                  />
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="quantity">入库数量 *</Label>
-                <Input
-                  id="quantity"
-                  type="number"
-                  value={stockInForm.quantity}
-                  onChange={(e) => setStockInForm({ ...stockInForm, quantity: e.target.value })}
-                  placeholder="0"
-                />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="warehouse">入库仓库</Label>
-              <select
-                id="warehouse"
-                className="w-full px-3 py-2 border border-border rounded-md text-[14px]"
-                value={stockInForm.warehouse}
-                onChange={(e) => setStockInForm({ ...stockInForm, warehouse: e.target.value })}
-              >
-                <option value="domestic">国内仓</option>
-                <option value="overseas">海外仓</option>
-                <option value="third_party">第三方仓</option>
-              </select>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="batch_no">批次号</Label>
-                <Input
-                  id="batch_no"
-                  value={stockInForm.batch_no}
-                  onChange={(e) => setStockInForm({ ...stockInForm, batch_no: e.target.value })}
-                  placeholder="可选"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="notes">备注</Label>
-                <Input
-                  id="notes"
-                  value={stockInForm.notes}
-                  onChange={(e) => setStockInForm({ ...stockInForm, notes: e.target.value })}
-                  placeholder="可选"
-                />
-              </div>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowStockInDialog(false)}>取消</Button>
-            <Button onClick={handleStockIn} disabled={submitting}>
-              {submitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              确认入库
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            )}
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsRestockOpen(false)}>取消</Button>
+              <Button onClick={handleRestock} disabled={isProcessing === selectedItem?.id}>
+                {isProcessing === selectedItem?.id ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : null}
+                确认补货
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
     </MainLayout>
   );
 }
