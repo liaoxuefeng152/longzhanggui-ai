@@ -22,7 +22,6 @@ import {
   Plus,
   Filter,
   Download,
-  Upload,
   Eye,
   Edit,
   Trash2,
@@ -33,8 +32,18 @@ import {
   Clock,
   Box,
   Loader2,
+  Play,
+  Rocket,
+  RefreshCw,
+  MoreHorizontal,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 interface ERPProduct {
   id: string;
@@ -48,9 +57,16 @@ interface ERPProduct {
   first_mile_shipping: number;
   total_cost: number;
   image_status: string;
+  listing_status?: string;
   compliance_status: string;
-  category_name?: string;
+  compliance_issues?: string[];
+  category?: string;
   status: string;
+  selection_score?: number;
+  total_sales?: number;
+  total_orders?: number;
+  total_profit?: number;
+  platform_listings?: any[];
   created_at: string;
   updated_at: string;
 }
@@ -62,121 +78,9 @@ interface NewProductForm {
   domestic_shipping: string;
   first_mile_shipping: string;
   supplier_name: string;
-  category_name: string;
+  category: string;
   source_url: string;
 }
-
-// Mock数据
-const mockProducts: ERPProduct[] = [
-  {
-    id: 'PROD001',
-    internal_sku: 'SKU-PET-001',
-    name_zh: '宠物自动喂食器 5L大容量',
-    name_en: 'Automatic Pet Feeder 5L',
-    source_url: 'https://example.com/product/1',
-    supplier_name: '深圳宠物用品有限公司',
-    cost_price: 89.00,
-    domestic_shipping: 5.00,
-    first_mile_shipping: 15.00,
-    total_cost: 109.00,
-    image_status: 'done',
-    compliance_status: 'passed',
-    category_name: '宠物用品',
-    status: 'active',
-    created_at: '2026-03-20 10:30:00',
-    updated_at: '2026-03-21 14:20:00',
-  },
-  {
-    id: 'PROD002',
-    internal_sku: 'SKU-HOME-001',
-    name_zh: '便携式榨汁机 USB充电',
-    name_en: 'Portable Juicer USB Rechargeable',
-    source_url: 'https://example.com/product/2',
-    supplier_name: '广州小家电批发',
-    cost_price: 45.00,
-    domestic_shipping: 4.00,
-    first_mile_shipping: 12.00,
-    total_cost: 61.00,
-    image_status: 'done',
-    compliance_status: 'passed',
-    category_name: '家居电器',
-    status: 'active',
-    created_at: '2026-03-19 15:20:00',
-    updated_at: '2026-03-21 11:00:00',
-  },
-  {
-    id: 'PROD003',
-    internal_sku: 'SKU-BEAUTY-001',
-    name_zh: 'LED化妆镜 台式带灯',
-    name_en: 'LED Makeup Mirror Desktop',
-    source_url: 'https://example.com/product/3',
-    supplier_name: '义乌美妆工具厂',
-    cost_price: 35.00,
-    domestic_shipping: 3.00,
-    first_mile_shipping: 10.00,
-    total_cost: 48.00,
-    image_status: 'processing',
-    compliance_status: 'pending',
-    category_name: '美妆工具',
-    status: 'active',
-    created_at: '2026-03-18 09:45:00',
-    updated_at: '2026-03-21 10:30:00',
-  },
-  {
-    id: 'PROD004',
-    internal_sku: 'SKU-ELEC-001',
-    name_zh: '智能手环 运动监测',
-    name_en: 'Smart Fitness Tracker',
-    source_url: 'https://example.com/product/4',
-    supplier_name: '深圳电子科技有限公司',
-    cost_price: 68.00,
-    domestic_shipping: 5.00,
-    first_mile_shipping: 18.00,
-    total_cost: 91.00,
-    image_status: 'pending',
-    compliance_status: 'failed',
-    category_name: '电子数码',
-    status: 'draft',
-    created_at: '2026-03-17 14:10:00',
-    updated_at: '2026-03-20 16:45:00',
-  },
-  {
-    id: 'PROD005',
-    internal_sku: 'SKU-KITCHEN-001',
-    name_zh: '不锈钢保温杯 500ml',
-    name_en: 'Stainless Steel Vacuum Flask 500ml',
-    source_url: 'https://example.com/product/5',
-    supplier_name: '永康杯业有限公司',
-    cost_price: 22.00,
-    domestic_shipping: 3.00,
-    first_mile_shipping: 8.00,
-    total_cost: 33.00,
-    image_status: 'done',
-    compliance_status: 'passed',
-    category_name: '厨房用品',
-    status: 'active',
-    created_at: '2026-03-16 11:30:00',
-    updated_at: '2026-03-19 09:20:00',
-  },
-  {
-    id: 'PROD006',
-    internal_sku: 'SKU-PET-002',
-    name_zh: '猫咪自动饮水机',
-    name_en: 'Automatic Cat Water Fountain',
-    source_url: 'https://example.com/product/6',
-    supplier_name: '深圳宠物用品有限公司',
-    cost_price: 56.00,
-    domestic_shipping: 4.00,
-    first_mile_shipping: 12.00,
-    total_cost: 72.00,
-    image_status: 'done',
-    compliance_status: 'passed',
-    category_name: '宠物用品',
-    status: 'active',
-    created_at: '2026-03-15 16:00:00',
-    updated_at: '2026-03-18 14:30:00',
-  },
-];
 
 export default function ERPProductsPage() {
   const router = useRouter();
@@ -185,19 +89,22 @@ export default function ERPProductsPage() {
   const [loading, setLoading] = useState(true);
   const [keyword, setKeyword] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
-  const [complianceFilter, setComplianceFilter] = useState('');
   
-  // 新增商品对话框
-  const [showAddDialog, setShowAddDialog] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
+  // 对话框状态
+  const [isNewProductOpen, setIsNewProductOpen] = useState(false);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<ERPProduct | null>(null);
+  const [isProcessing, setIsProcessing] = useState<string | null>(null);
+  const [isPublishing, setIsPublishing] = useState<string | null>(null);
+  
   const [newProduct, setNewProduct] = useState<NewProductForm>({
     name_zh: '',
     name_en: '',
     cost_price: '',
-    domestic_shipping: '0',
-    first_mile_shipping: '0',
+    domestic_shipping: '5',
+    first_mile_shipping: '15',
     supplier_name: '',
-    category_name: '',
+    category: '',
     source_url: '',
   });
 
@@ -214,112 +121,202 @@ export default function ERPProductsPage() {
   const fetchProducts = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('token');
       const params = new URLSearchParams();
       if (keyword) params.set('keyword', keyword);
       if (statusFilter) params.set('status', statusFilter);
-      if (complianceFilter) params.set('compliance_status', complianceFilter);
       
-      const response = await fetch(`/api/v1/erp/products?${params.toString()}`, {
-        headers: { 'Authorization': `Bearer ${token}` },
-      });
+      const response = await fetch(`/api/v1/erp/products?${params.toString()}`);
+      const data = await response.json();
       
-      if (response.ok) {
-        const data = await response.json();
-        setProducts(data.items || []);
+      if (data.success) {
+        setProducts(data.data.items || []);
       } else {
-        // API不可用时使用mock数据
-        console.log('API不可用，使用mock数据');
-        setProducts(mockProducts);
+        toast.error('获取商品列表失败');
       }
     } catch (error) {
       console.error('获取商品失败:', error);
-      // 使用mock数据
-      setProducts(mockProducts);
+      toast.error('获取商品列表失败');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleAddProduct = async () => {
+  const handleCreateProduct = async () => {
     if (!newProduct.name_zh) {
-      toast.error('请输入商品中文名称');
-      return;
-    }
-    if (!newProduct.cost_price || parseFloat(newProduct.cost_price) <= 0) {
-      toast.error('请输入有效的采购价格');
+      toast.error('请输入商品名称');
       return;
     }
 
-    setSubmitting(true);
     try {
       const response = await fetch('/api/v1/erp/products', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newProduct),
+        body: JSON.stringify({
+          name_zh: newProduct.name_zh,
+          name_en: newProduct.name_en,
+          cost_price: parseFloat(newProduct.cost_price) || 0,
+          domestic_shipping: parseFloat(newProduct.domestic_shipping) || 0,
+          first_mile_shipping: parseFloat(newProduct.first_mile_shipping) || 0,
+          supplier_name: newProduct.supplier_name,
+          category: newProduct.category,
+          source_url: newProduct.source_url,
+          status: 'selected',
+        }),
       });
 
       const data = await response.json();
       if (data.success) {
         toast.success('商品创建成功');
-        setShowAddDialog(false);
+        setIsNewProductOpen(false);
         setNewProduct({
           name_zh: '',
           name_en: '',
           cost_price: '',
-          domestic_shipping: '0',
-          first_mile_shipping: '0',
+          domestic_shipping: '5',
+          first_mile_shipping: '15',
           supplier_name: '',
-          category_name: '',
+          category: '',
           source_url: '',
         });
         fetchProducts();
       } else {
-        toast.error(data.message || '创建失败');
+        toast.error(data.error || '创建失败');
       }
     } catch (error) {
       console.error('创建商品失败:', error);
       toast.error('创建商品失败');
+    }
+  };
+
+  const handleProcessProduct = async (productId: string) => {
+    setIsProcessing(productId);
+    try {
+      const response = await fetch(`/api/v1/erp/products/${productId}/process`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          steps: ['image', 'listing', 'compliance', 'pricing'],
+        }),
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        toast.success('处理流程已启动', {
+          description: '请稍后刷新查看处理结果',
+        });
+        // 跳转到工作流页面
+        setTimeout(() => {
+          router.push('/workflows');
+        }, 1500);
+      } else {
+        toast.error(data.error || '启动失败');
+      }
+    } catch (error) {
+      console.error('启动处理失败:', error);
+      toast.error('启动处理失败');
     } finally {
-      setSubmitting(false);
+      setIsProcessing(null);
+    }
+  };
+
+  const handlePublishProduct = async (productId: string) => {
+    setIsPublishing(productId);
+    try {
+      const response = await fetch(`/api/v1/erp/products/${productId}/publish`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          platform: 'tiktok',
+          region: 'id',
+          auto_ad: true,
+          ad_budget: 100,
+        }),
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        toast.success('商品已上架', {
+          description: '广告投放已自动启动',
+        });
+        fetchProducts();
+      } else {
+        toast.error(data.error || '上架失败');
+      }
+    } catch (error) {
+      console.error('上架失败:', error);
+      toast.error('上架失败');
+    } finally {
+      setIsPublishing(null);
+    }
+  };
+
+  const handleDeleteProduct = async (productId: string) => {
+    if (!confirm('确定要删除此商品吗？')) return;
+
+    try {
+      const response = await fetch(`/api/v1/erp/products/${productId}`, {
+        method: 'DELETE',
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        toast.success('商品已删除');
+        fetchProducts();
+      } else {
+        toast.error(data.error || '删除失败');
+      }
+    } catch (error) {
+      console.error('删除商品失败:', error);
+      toast.error('删除商品失败');
+    }
+  };
+
+  const handleViewDetail = async (productId: string) => {
+    try {
+      const response = await fetch(`/api/v1/erp/products/${productId}`);
+      const data = await response.json();
+      if (data.success) {
+        setSelectedProduct(data.data);
+        setIsDetailOpen(true);
+      }
+    } catch (error) {
+      console.error('获取商品详情失败:', error);
     }
   };
 
   const getStatusBadge = (status: string) => {
     const config: Record<string, { label: string; className: string }> = {
       draft: { label: '草稿', className: 'bg-muted text-muted-foreground' },
-      active: { label: '在售', className: 'bg-success/10 text-success' },
-      inactive: { label: '下架', className: 'bg-warning/10 text-warning' },
-      archived: { label: '归档', className: 'bg-muted text-muted-foreground' },
+      selected: { label: '已选品', className: 'bg-primary/10 text-primary' },
+      processing: { label: '处理中', className: 'bg-warning/10 text-warning' },
+      ready: { label: '待上架', className: 'bg-success/10 text-success' },
+      published: { label: '已上架', className: 'bg-success text-white' },
+      archived: { label: '已归档', className: 'bg-muted text-muted-foreground' },
     };
     const { label, className } = config[status] || config.draft;
     return <Badge variant="outline" className={className}>{label}</Badge>;
   };
 
-  const getComplianceBadge = (status: string) => {
-    const config: Record<string, { label: string; className: string; icon: any }> = {
-      pending: { label: '待校验', className: 'bg-warning/10 text-warning', icon: Clock },
-      passed: { label: '合规通过', className: 'bg-success/10 text-success', icon: CheckCircle },
-      failed: { label: '合规失败', className: 'bg-destructive/10 text-destructive', icon: AlertTriangle },
-    };
-    const { label, className, icon: Icon } = config[status] || config.pending;
-    return (
-      <Badge variant="outline" className={className}>
-        <Icon className="h-3 w-3 mr-1" />
-        {label}
-      </Badge>
-    );
-  };
-
   const getImageStatusBadge = (status: string) => {
     const config: Record<string, { label: string; className: string }> = {
       pending: { label: '待处理', className: 'bg-muted text-muted-foreground' },
-      processing: { label: '处理中', className: 'bg-primary/10 text-primary' },
+      processing: { label: '处理中', className: 'bg-warning/10 text-warning' },
       done: { label: '已完成', className: 'bg-success/10 text-success' },
-      failed: { label: '处理失败', className: 'bg-destructive/10 text-destructive' },
+      failed: { label: '失败', className: 'bg-destructive/10 text-destructive' },
     };
     const { label, className } = config[status] || config.pending;
-    return <Badge variant="outline" className={className}>{label}</Badge>;
+    return <Badge variant="outline" className={`text-[11px] ${className}`}>{label}</Badge>;
+  };
+
+  const getComplianceBadge = (status: string) => {
+    const config: Record<string, { label: string; className: string }> = {
+      pending: { label: '待校验', className: 'bg-muted text-muted-foreground' },
+      checking: { label: '校验中', className: 'bg-warning/10 text-warning' },
+      passed: { label: '合规', className: 'bg-success/10 text-success' },
+      failed: { label: '不合规', className: 'bg-destructive/10 text-destructive' },
+    };
+    const { label, className } = config[status] || config.pending;
+    return <Badge variant="outline" className={`text-[11px] ${className}`}>{label}</Badge>;
   };
 
   if (!user) return null;
@@ -331,47 +328,27 @@ export default function ERPProductsPage() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center">
-              <Box className="h-7 w-7 text-primary" />
+              <Package className="h-7 w-7 text-primary" />
             </div>
             <div>
-              <h1 className="text-[18px] font-semibold text-foreground">ERP商品管理</h1>
-              <p className="text-[14px] text-muted-foreground">商品库 · 库存管理 · 采购管理 · 成本核算</p>
+              <h1 className="text-[18px] font-semibold text-foreground">商品中心</h1>
+              <p className="text-[14px] text-muted-foreground">选品入库 · 图片处理 · Listing优化 · 上架发布</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <Button variant="outline" onClick={() => toast.info('批量导入功能开发中...')}>
-              <Upload className="h-4 w-4 mr-2" />
-              批量导入
+            <Button variant="outline" onClick={fetchProducts}>
+              <RefreshCw className="h-4 w-4 mr-2" />
+              刷新
             </Button>
-            <Button variant="outline" onClick={() => toast.success('正在导出商品数据...')}>
-              <Download className="h-4 w-4 mr-2" />
-              导出
+            <Button onClick={() => router.push('/agents/product-selection')}>
+              <Search className="h-4 w-4 mr-2" />
+              AI选品
             </Button>
-            <Button onClick={() => setShowAddDialog(true)}>
+            <Button onClick={() => setIsNewProductOpen(true)}>
               <Plus className="h-4 w-4 mr-2" />
               新增商品
             </Button>
           </div>
-        </div>
-
-        {/* 核心能力标签 */}
-        <div className="flex items-center gap-2">
-          <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
-            <Package className="h-3 w-3 mr-1" />
-            商品库
-          </Badge>
-          <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
-            <DollarSign className="h-3 w-3 mr-1" />
-            成本核算
-          </Badge>
-          <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
-            <ImageIcon className="h-3 w-3 mr-1" />
-            图片处理
-          </Badge>
-          <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
-            <CheckCircle className="h-3 w-3 mr-1" />
-            合规校验
-          </Badge>
         </div>
 
         {/* 统计概览 */}
@@ -380,43 +357,30 @@ export default function ERPProductsPage() {
             <CardContent className="p-4">
               <div className="text-[12px] text-muted-foreground mb-1">商品总数</div>
               <div className="text-[24px] font-semibold text-foreground">{products.length}</div>
-              <div className="text-[11px] text-muted-foreground mt-1">全部商品</div>
             </CardContent>
           </Card>
           <Card className="bg-white border-border shadow-sm">
             <CardContent className="p-4">
-              <div className="text-[12px] text-muted-foreground mb-1">在售商品</div>
-              <div className="text-[24px] font-semibold text-success">
-                {products.filter(p => p.status === 'active').length}
-              </div>
-              <div className="text-[11px] text-muted-foreground mt-1">正常销售</div>
+              <div className="text-[12px] text-muted-foreground mb-1">已选品</div>
+              <div className="text-[24px] font-semibold text-primary">{products.filter(p => p.status === 'selected').length}</div>
             </CardContent>
           </Card>
           <Card className="bg-white border-border shadow-sm">
             <CardContent className="p-4">
-              <div className="text-[12px] text-muted-foreground mb-1">合规通过</div>
-              <div className="text-[24px] font-semibold text-success">
-                {products.filter(p => p.compliance_status === 'passed').length}
-              </div>
-              <div className="text-[11px] text-muted-foreground mt-1">已校验</div>
+              <div className="text-[12px] text-muted-foreground mb-1">处理中</div>
+              <div className="text-[24px] font-semibold text-warning">{products.filter(p => p.status === 'processing').length}</div>
             </CardContent>
           </Card>
           <Card className="bg-white border-border shadow-sm">
             <CardContent className="p-4">
-              <div className="text-[12px] text-muted-foreground mb-1">图片已处理</div>
-              <div className="text-[24px] font-semibold text-foreground">
-                {products.filter(p => p.image_status === 'done').length}
-              </div>
-              <div className="text-[11px] text-muted-foreground mt-1">翻译/优化完成</div>
+              <div className="text-[12px] text-muted-foreground mb-1">待上架</div>
+              <div className="text-[24px] font-semibold text-success">{products.filter(p => p.status === 'ready').length}</div>
             </CardContent>
           </Card>
           <Card className="bg-white border-border shadow-sm">
             <CardContent className="p-4">
-              <div className="text-[12px] text-muted-foreground mb-1">待处理</div>
-              <div className="text-[24px] font-semibold text-warning">
-                {products.filter(p => p.compliance_status === 'pending' || p.image_status === 'pending').length}
-              </div>
-              <div className="text-[11px] text-muted-foreground mt-1">需处理商品</div>
+              <div className="text-[12px] text-muted-foreground mb-1">已上架</div>
+              <div className="text-[24px] font-semibold text-success">{products.filter(p => p.status === 'published').length}</div>
             </CardContent>
           </Card>
         </div>
@@ -428,7 +392,7 @@ export default function ERPProductsPage() {
               <div className="flex-1 relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="搜索SKU、商品名称..."
+                  placeholder="搜索商品名称、SKU、供应商..."
                   value={keyword}
                   onChange={(e) => setKeyword(e.target.value)}
                   className="pl-10"
@@ -440,19 +404,10 @@ export default function ERPProductsPage() {
                 onChange={(e) => setStatusFilter(e.target.value)}
               >
                 <option value="">全部状态</option>
-                <option value="draft">草稿</option>
-                <option value="active">在售</option>
-                <option value="inactive">下架</option>
-              </select>
-              <select 
-                className="px-4 py-2 border border-border rounded-md text-[14px]"
-                value={complianceFilter}
-                onChange={(e) => setComplianceFilter(e.target.value)}
-              >
-                <option value="">全部合规状态</option>
-                <option value="pending">待校验</option>
-                <option value="passed">合规通过</option>
-                <option value="failed">合规失败</option>
+                <option value="selected">已选品</option>
+                <option value="processing">处理中</option>
+                <option value="ready">待上架</option>
+                <option value="published">已上架</option>
               </select>
               <Button variant="outline" onClick={fetchProducts}>
                 <Filter className="h-4 w-4 mr-2" />
@@ -466,13 +421,18 @@ export default function ERPProductsPage() {
         <Card className="bg-white border-border shadow-sm">
           <CardHeader className="pb-3">
             <CardTitle className="text-[15px]">商品列表</CardTitle>
-            <CardDescription>ERP商品库，支持1688采集、图片智能处理、合规校验</CardDescription>
+            <CardDescription>商品全生命周期管理：选品 → 处理 → 上架 → 销售</CardDescription>
           </CardHeader>
           <CardContent>
             {loading ? (
-              <div className="text-center py-8 text-muted-foreground">加载中...</div>
+              <div className="text-center py-8 text-muted-foreground">
+                <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2" />
+                加载中...
+              </div>
             ) : products.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">暂无商品数据</div>
+              <div className="text-center py-8 text-muted-foreground">
+                暂无商品数据，点击"AI选品"或"新增商品"开始
+              </div>
             ) : (
               <div className="space-y-3">
                 {products.map((product) => (
@@ -480,40 +440,93 @@ export default function ERPProductsPage() {
                     <div className="flex items-start justify-between">
                       <div className="flex items-start gap-4">
                         <div className="w-16 h-16 bg-muted rounded-lg flex items-center justify-center">
-                          <ImageIcon className="h-8 w-8 text-muted-foreground" />
+                          <Package className="h-8 w-8 text-muted-foreground" />
                         </div>
                         <div className="space-y-2">
                           <div className="flex items-center gap-2">
                             <span className="text-[12px] text-muted-foreground font-mono">{product.internal_sku}</span>
                             {getStatusBadge(product.status)}
-                            {getComplianceBadge(product.compliance_status)}
-                            {getImageStatusBadge(product.image_status)}
                           </div>
                           <div className="text-[14px] font-medium text-foreground">{product.name_zh}</div>
                           {product.name_en && (
                             <div className="text-[12px] text-muted-foreground">{product.name_en}</div>
                           )}
                           <div className="flex items-center gap-4 text-[12px] text-muted-foreground">
+                            <span>分类: <span className="text-foreground">{product.category || '-'}</span></span>
                             <span>供应商: <span className="text-foreground">{product.supplier_name || '-'}</span></span>
-                            <span>分类: <span className="text-foreground">{product.category_name || '-'}</span></span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {getImageStatusBadge(product.image_status)}
+                            {getComplianceBadge(product.compliance_status)}
                           </div>
                         </div>
                       </div>
                       <div className="text-right space-y-2">
                         <div className="text-[20px] font-semibold text-foreground">¥{product.total_cost.toFixed(2)}</div>
                         <div className="text-[11px] text-muted-foreground">总成本</div>
-                        <div className="text-[11px] text-muted-foreground">
-                          采购 ¥{product.cost_price.toFixed(2)} + 运费 ¥{(product.domestic_shipping + product.first_mile_shipping).toFixed(2)}
-                        </div>
+                        {product.selection_score && (
+                          <div className="flex items-center justify-end gap-1 text-[12px]">
+                            <span className="text-muted-foreground">选品得分:</span>
+                            <span className="text-primary font-medium">{product.selection_score}</span>
+                          </div>
+                        )}
                         <div className="flex items-center gap-2 mt-3">
-                          <Button variant="outline" size="sm" onClick={() => toast.info(`查看商品 ${product.internal_sku} 详情`)}>
+                          {product.status === 'selected' && (
+                            <Button 
+                              size="sm" 
+                              onClick={() => handleProcessProduct(product.id)}
+                              disabled={isProcessing === product.id}
+                            >
+                              {isProcessing === product.id ? (
+                                <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                              ) : (
+                                <Play className="h-3 w-3 mr-1" />
+                              )}
+                              开始处理
+                            </Button>
+                          )}
+                          {product.status === 'ready' && (
+                            <Button 
+                              size="sm" 
+                              onClick={() => handlePublishProduct(product.id)}
+                              disabled={isPublishing === product.id}
+                            >
+                              {isPublishing === product.id ? (
+                                <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                              ) : (
+                                <Rocket className="h-3 w-3 mr-1" />
+                              )}
+                              上架发布
+                            </Button>
+                          )}
+                          <Button variant="outline" size="sm" onClick={() => handleViewDetail(product.id)}>
                             <Eye className="h-3 w-3 mr-1" />
                             详情
                           </Button>
-                          <Button variant="outline" size="sm" onClick={() => toast.info(`编辑商品 ${product.internal_sku}`)}>
-                            <Edit className="h-3 w-3 mr-1" />
-                            编辑
-                          </Button>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="outline" size="sm">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => router.push(`/agents/product-selection`)}>
+                                重新选品分析
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => router.push(`/agents/image-design`)}>
+                                图片处理
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => router.push(`/agents/listing-optimization`)}>
+                                Listing优化
+                              </DropdownMenuItem>
+                              <DropdownMenuItem 
+                                className="text-destructive"
+                                onClick={() => handleDeleteProduct(product.id)}
+                              >
+                                删除商品
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
                       </div>
                     </div>
@@ -523,114 +536,187 @@ export default function ERPProductsPage() {
             )}
           </CardContent>
         </Card>
-      </div>
 
-      {/* 新增商品对话框 */}
-      <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>新增商品</DialogTitle>
-            <DialogDescription>填写商品信息创建新的商品记录</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="grid grid-cols-2 gap-4">
+        {/* 新增商品对话框 */}
+        <Dialog open={isNewProductOpen} onOpenChange={setIsNewProductOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>新增商品</DialogTitle>
+              <DialogDescription>手动添加商品到商品库</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
               <div className="space-y-2">
-                <Label htmlFor="name_zh">商品名称(中文) *</Label>
+                <Label>商品名称（中文）*</Label>
                 <Input
-                  id="name_zh"
                   value={newProduct.name_zh}
                   onChange={(e) => setNewProduct({ ...newProduct, name_zh: e.target.value })}
-                  placeholder="输入商品中文名称"
+                  placeholder="请输入商品名称"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="name_en">商品名称(英文)</Label>
+                <Label>商品名称（英文）</Label>
                 <Input
-                  id="name_en"
                   value={newProduct.name_en}
                   onChange={(e) => setNewProduct({ ...newProduct, name_en: e.target.value })}
-                  placeholder="输入商品英文名称"
+                  placeholder="Product Name"
                 />
               </div>
-            </div>
-            <div className="grid grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="cost_price">采购价格(元) *</Label>
-                <Input
-                  id="cost_price"
-                  type="number"
-                  value={newProduct.cost_price}
-                  onChange={(e) => setNewProduct({ ...newProduct, cost_price: e.target.value })}
-                  placeholder="0.00"
-                />
+              <div className="grid grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label>成本价</Label>
+                  <Input
+                    type="number"
+                    value={newProduct.cost_price}
+                    onChange={(e) => setNewProduct({ ...newProduct, cost_price: e.target.value })}
+                    placeholder="0.00"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>国内运费</Label>
+                  <Input
+                    type="number"
+                    value={newProduct.domestic_shipping}
+                    onChange={(e) => setNewProduct({ ...newProduct, domestic_shipping: e.target.value })}
+                    placeholder="5.00"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>头程运费</Label>
+                  <Input
+                    type="number"
+                    value={newProduct.first_mile_shipping}
+                    onChange={(e) => setNewProduct({ ...newProduct, first_mile_shipping: e.target.value })}
+                    placeholder="15.00"
+                  />
+                </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="domestic_shipping">国内运费(元)</Label>
+                <Label>供应商</Label>
                 <Input
-                  id="domestic_shipping"
-                  type="number"
-                  value={newProduct.domestic_shipping}
-                  onChange={(e) => setNewProduct({ ...newProduct, domestic_shipping: e.target.value })}
-                  placeholder="0.00"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="first_mile_shipping">头程运费(元)</Label>
-                <Input
-                  id="first_mile_shipping"
-                  type="number"
-                  value={newProduct.first_mile_shipping}
-                  onChange={(e) => setNewProduct({ ...newProduct, first_mile_shipping: e.target.value })}
-                  placeholder="0.00"
-                />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="supplier_name">供应商名称</Label>
-                <Input
-                  id="supplier_name"
                   value={newProduct.supplier_name}
                   onChange={(e) => setNewProduct({ ...newProduct, supplier_name: e.target.value })}
-                  placeholder="输入供应商名称"
+                  placeholder="供应商名称"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="category_name">商品分类</Label>
+                <Label>分类</Label>
                 <Input
-                  id="category_name"
-                  value={newProduct.category_name}
-                  onChange={(e) => setNewProduct({ ...newProduct, category_name: e.target.value })}
-                  placeholder="输入商品分类"
+                  value={newProduct.category}
+                  onChange={(e) => setNewProduct({ ...newProduct, category: e.target.value })}
+                  placeholder="商品分类"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>货源链接</Label>
+                <Input
+                  value={newProduct.source_url}
+                  onChange={(e) => setNewProduct({ ...newProduct, source_url: e.target.value })}
+                  placeholder="https://..."
                 />
               </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="source_url">货源链接</Label>
-              <Input
-                id="source_url"
-                value={newProduct.source_url}
-                onChange={(e) => setNewProduct({ ...newProduct, source_url: e.target.value })}
-                placeholder="https://detail.1688.com/offer/xxx.html"
-              />
-            </div>
-            <div className="text-[12px] text-muted-foreground">
-              总成本：¥{
-                ((parseFloat(newProduct.cost_price) || 0) + 
-                (parseFloat(newProduct.domestic_shipping) || 0) + 
-                (parseFloat(newProduct.first_mile_shipping) || 0)).toFixed(2)
-              }
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowAddDialog(false)}>取消</Button>
-            <Button onClick={handleAddProduct} disabled={submitting}>
-              {submitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              创建商品
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsNewProductOpen(false)}>取消</Button>
+              <Button onClick={handleCreateProduct}>创建商品</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* 商品详情对话框 */}
+        <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
+          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>商品详情</DialogTitle>
+            </DialogHeader>
+            {selectedProduct && (
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-muted-foreground">商品ID</Label>
+                    <div className="font-mono text-[14px]">{selectedProduct.id}</div>
+                  </div>
+                  <div>
+                    <Label className="text-muted-foreground">SKU</Label>
+                    <div className="font-mono text-[14px]">{selectedProduct.internal_sku}</div>
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-muted-foreground">商品名称</Label>
+                  <div className="text-[16px] font-medium">{selectedProduct.name_zh}</div>
+                  {selectedProduct.name_en && (
+                    <div className="text-[14px] text-muted-foreground">{selectedProduct.name_en}</div>
+                  )}
+                </div>
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <Label className="text-muted-foreground">成本价</Label>
+                    <div className="text-[18px] font-semibold">¥{selectedProduct.cost_price}</div>
+                  </div>
+                  <div>
+                    <Label className="text-muted-foreground">总成本</Label>
+                    <div className="text-[18px] font-semibold">¥{selectedProduct.total_cost}</div>
+                  </div>
+                  <div>
+                    <Label className="text-muted-foreground">状态</Label>
+                    <div>{getStatusBadge(selectedProduct.status)}</div>
+                  </div>
+                </div>
+                
+                {selectedProduct.total_orders !== undefined && selectedProduct.total_orders > 0 && (
+                  <div className="grid grid-cols-3 gap-4 p-4 bg-muted/50 rounded-lg">
+                    <div>
+                      <Label className="text-muted-foreground">总销量</Label>
+                      <div className="text-[20px] font-semibold text-success">{selectedProduct.total_sales}</div>
+                    </div>
+                    <div>
+                      <Label className="text-muted-foreground">订单数</Label>
+                      <div className="text-[20px] font-semibold">{selectedProduct.total_orders}</div>
+                    </div>
+                    <div>
+                      <Label className="text-muted-foreground">总利润</Label>
+                      <div className="text-[20px] font-semibold text-success">¥{selectedProduct.total_profit?.toFixed(2)}</div>
+                    </div>
+                  </div>
+                )}
+
+                {selectedProduct.platform_listings && selectedProduct.platform_listings.length > 0 && (
+                  <div>
+                    <Label className="text-muted-foreground">上架平台</Label>
+                    <div className="space-y-2 mt-2">
+                      {selectedProduct.platform_listings.map((listing: any) => (
+                        <div key={listing.id} className="flex items-center justify-between p-3 bg-muted/50 rounded">
+                          <div className="flex items-center gap-2">
+                            <Badge>{listing.platform}</Badge>
+                            <span className="text-[14px]">{listing.region?.toUpperCase()}</span>
+                          </div>
+                          <Badge variant="outline">{listing.status}</Badge>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {(selectedProduct as any).inventory && (selectedProduct as any).inventory.length > 0 && (
+                  <div>
+                    <Label className="text-muted-foreground">库存信息</Label>
+                    <div className="space-y-2 mt-2">
+                      {(selectedProduct as any).inventory.map((inv: any) => (
+                        <div key={inv.id} className="flex items-center justify-between p-3 bg-muted/50 rounded">
+                          <div className="flex items-center gap-2">
+                            <Badge variant="outline">{inv.warehouse}</Badge>
+                            {inv.location && <span className="text-[12px] text-muted-foreground">{inv.location}</span>}
+                          </div>
+                          <span className="font-medium">{inv.qty_available} 可用</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
+      </div>
     </MainLayout>
   );
 }

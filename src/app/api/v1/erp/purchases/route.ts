@@ -1,86 +1,35 @@
 import { NextRequest, NextResponse } from 'next/server';
-
-// Mock采购单数据
-const mockPurchases = [
-  {
-    id: 'PUR001',
-    supplier: '深圳市电子科技有限公司',
-    items: [
-      { product_id: 'PROD001', product_name: '宠物自动喂食器 5L', qty: 100, unit_cost: 55.00, total_cost: 5500.00 },
-      { product_id: 'PROD002', product_name: '便携式榨汁机 USB', qty: 80, unit_cost: 31.00, total_cost: 2480.00 },
-    ],
-    total_amount: 7980.00,
-    currency: 'CNY',
-    status: 'received',
-    order_date: '2026-03-15',
-    expected_date: '2026-03-20',
-    received_date: '2026-03-19',
-    notes: '常规补货',
-  },
-  {
-    id: 'PUR002',
-    supplier: '广州市家居用品有限公司',
-    items: [
-      { product_id: 'PROD003', product_name: 'LED化妆镜 台式带灯', qty: 150, unit_cost: 24.00, total_cost: 3600.00 },
-    ],
-    total_amount: 3600.00,
-    currency: 'CNY',
-    status: 'shipped',
-    order_date: '2026-03-18',
-    expected_date: '2026-03-23',
-    received_date: null,
-    notes: '新品首批备货',
-  },
-  {
-    id: 'PUR003',
-    supplier: '东莞市健身器材厂',
-    items: [
-      { product_id: 'PROD004', product_name: '智能手环 运动监测', qty: 120, unit_cost: 46.00, total_cost: 5520.00 },
-      { product_id: 'PROD005', product_name: '瑜伽垫 加厚防滑', qty: 200, unit_cost: 18.00, total_cost: 3600.00 },
-    ],
-    total_amount: 9120.00,
-    currency: 'CNY',
-    status: 'pending',
-    order_date: '2026-03-21',
-    expected_date: '2026-03-26',
-    received_date: null,
-    notes: 'TikTok爆款备货',
-  },
-  {
-    id: 'PUR004',
-    supplier: '深圳市电子科技有限公司',
-    items: [
-      { product_id: 'PROD006', product_name: '蓝牙耳机 无线', qty: 60, unit_cost: 38.00, total_cost: 2280.00 },
-    ],
-    total_amount: 2280.00,
-    currency: 'CNY',
-    status: 'partial',
-    order_date: '2026-03-10',
-    expected_date: '2026-03-15',
-    received_date: '2026-03-14',
-    notes: '部分收货，剩余30件延期',
-  },
-];
+import store from '@/lib/store';
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const status = searchParams.get('status');
     const supplier = searchParams.get('supplier');
+    const status = searchParams.get('status');
 
-    let filtered = [...mockPurchases];
+    let purchases = Array.from(store.purchases.values());
 
-    if (status) {
-      filtered = filtered.filter(p => p.status === status);
-    }
+    // 过滤
     if (supplier) {
-      filtered = filtered.filter(p => p.supplier.includes(supplier));
+      purchases = purchases.filter(p => p.supplier_name.includes(supplier));
+    }
+    if (status) {
+      purchases = purchases.filter(p => p.status === status);
     }
 
-    return NextResponse.json({ items: filtered, total: filtered.length });
+    // 排序：按创建时间倒序
+    purchases.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+    return NextResponse.json({
+      success: true,
+      data: {
+        items: purchases,
+        total: purchases.length,
+      }
+    });
   } catch (error) {
     console.error('Get purchases error:', error);
-    return NextResponse.json({ items: [], total: 0 }, { status: 500 });
+    return NextResponse.json({ success: false, error: '获取采购单失败' }, { status: 500 });
   }
 }
 
@@ -88,15 +37,45 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     
-    const newPurchase = {
-      id: `PUR${Date.now()}`,
-      ...body,
-      status: 'pending',
-      order_date: new Date().toISOString().split('T')[0],
-      received_date: null,
+    const id = store.generateId('PUR');
+    const now = store.now();
+    
+    // 计算总金额
+    const totalAmount = body.items?.reduce((sum: number, item: any) => sum + item.total_cost, 0) || 0;
+    
+    const purchase: import('@/lib/store').Purchase = {
+      id,
+      supplier_id: body.supplier_id,
+      supplier_name: body.supplier_name || '',
+      items: body.items || [],
+      total_amount: totalAmount,
+      currency: body.currency || 'CNY',
+      status: 'pending' as const,
+      order_date: now.split(' ')[0],
+      expected_date: body.expected_date,
+      received_date: undefined,
+      notes: body.notes,
+      created_at: now,
+      updated_at: now,
     };
-
-    return NextResponse.json({ success: true, data: newPurchase });
+    
+    store.purchases.set(id, purchase);
+    
+    // 更新商品的供应商信息
+    for (const item of body.items || []) {
+      if (item.product_id) {
+        const product = store.getProduct(item.product_id);
+        if (product && !product.supplier_name) {
+          store.updateProduct(item.product_id, { 
+            supplier_name: body.supplier_name,
+            cost_price: item.unit_cost,
+            total_cost: item.unit_cost + (product.domestic_shipping || 0) + (product.first_mile_shipping || 0),
+          });
+        }
+      }
+    }
+    
+    return NextResponse.json({ success: true, data: purchase });
   } catch (error) {
     console.error('Create purchase error:', error);
     return NextResponse.json({ success: false, error: '创建采购单失败' }, { status: 500 });

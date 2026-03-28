@@ -1,152 +1,103 @@
 import { NextRequest, NextResponse } from 'next/server';
+import store, { Product } from '@/lib/store';
 
-// 模拟商品数据库
-const products: any[] = [
-  {
-    id: 'PROD-001',
-    internal_sku: 'SKU-2026-001',
-    name_zh: '示例商品1',
-    name_en: 'Sample Product 1',
-    source_url: 'https://detail.1688.com/offer/123456.html',
-    supplier_name: '示例供应商',
-    cost_price: 25.5,
-    domestic_shipping: 3,
-    first_mile_shipping: 5,
-    total_cost: 33.5,
-    image_status: 'done',
-    compliance_status: 'passed',
-    category_name: '家居用品',
-    status: 'active',
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-  },
-  {
-    id: 'PROD-002',
-    internal_sku: 'SKU-2026-002',
-    name_zh: '示例商品2',
-    name_en: 'Sample Product 2',
-    source_url: 'https://detail.1688.com/offer/234567.html',
-    supplier_name: '测试供应商',
-    cost_price: 15.8,
-    domestic_shipping: 2,
-    first_mile_shipping: 4,
-    total_cost: 21.8,
-    image_status: 'pending',
-    compliance_status: 'pending',
-    category_name: '电子产品',
-    status: 'draft',
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-  },
-];
-
-/**
- * 获取商品列表
- * GET /api/v1/erp/products
- */
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const keyword = searchParams.get('keyword') || '';
-    const status = searchParams.get('status') || '';
-    const compliance_status = searchParams.get('compliance_status') || '';
-    
-    let filtered = [...products];
-    
+    const keyword = searchParams.get('keyword');
+    const status = searchParams.get('status');
+    const category = searchParams.get('category');
+    const page = parseInt(searchParams.get('page') || '1');
+    const pageSize = parseInt(searchParams.get('page_size') || '20');
+
+    let products = store.getProducts();
+
+    // 过滤
     if (keyword) {
-      filtered = filtered.filter(p => 
+      products = products.filter(p => 
         p.name_zh.includes(keyword) || 
+        p.name_en?.includes(keyword) ||
         p.internal_sku.includes(keyword) ||
-        (p.name_en && p.name_en.toLowerCase().includes(keyword.toLowerCase()))
+        p.supplier_name?.includes(keyword)
       );
     }
-    
     if (status) {
-      filtered = filtered.filter(p => p.status === status);
+      products = products.filter(p => p.status === status);
     }
-    
-    if (compliance_status) {
-      filtered = filtered.filter(p => p.compliance_status === compliance_status);
+    if (category) {
+      products = products.filter(p => p.category === category);
     }
-    
+
+    // 排序：按更新时间倒序
+    products.sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
+
+    // 分页
+    const total = products.length;
+    const start = (page - 1) * pageSize;
+    const items = products.slice(start, start + pageSize);
+
     return NextResponse.json({
       success: true,
-      items: filtered,
-      total: filtered.length,
+      data: {
+        items,
+        total,
+        page,
+        page_size: pageSize,
+        total_pages: Math.ceil(total / pageSize),
+      }
     });
   } catch (error) {
-    console.error('获取商品列表失败:', error);
-    return NextResponse.json(
-      { success: false, message: '获取商品列表失败' },
-      { status: 500 }
-    );
+    console.error('Get products error:', error);
+    return NextResponse.json({ success: false, error: '获取商品列表失败' }, { status: 500 });
   }
 }
 
-/**
- * 新增商品
- * POST /api/v1/erp/products
- */
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const {
-      name_zh,
-      name_en,
-      cost_price,
-      domestic_shipping,
-      first_mile_shipping,
-      supplier_name,
-      category_name,
-      source_url,
-    } = body;
+    
+    // 计算总成本
+    const costPrice = body.cost_price || 0;
+    const domesticShipping = body.domestic_shipping || 0;
+    const firstMileShipping = body.first_mile_shipping || 0;
+    const totalCost = costPrice + domesticShipping + firstMileShipping;
+    
+    const product = store.createProduct({
+      ...body,
+      total_cost: totalCost,
+      status: body.status || 'selected',
+    });
 
-    if (!name_zh) {
-      return NextResponse.json(
-        { success: false, message: '请输入商品中文名称' },
-        { status: 400 }
-      );
+    // 如果有初始库存，创建库存记录
+    if (body.initial_stock) {
+      const inventoryId = store.generateId('INV');
+      const inventory = {
+        id: inventoryId,
+        product_id: product.id,
+        warehouse: body.warehouse || 'domestic',
+        location: body.location,
+        qty_available: body.initial_stock,
+        qty_reserved: 0,
+        qty_in_transit: 0,
+        safety_stock: body.safety_stock || 30,
+        reorder_point: body.reorder_point || 50,
+        reorder_qty: body.reorder_qty || 100,
+        avg_daily_sales: 0,
+        days_of_stock: 999,
+        is_low_stock: false,
+        need_reorder: false,
+        created_at: store.now(),
+        updated_at: store.now(),
+      };
+      store.inventory.set(inventoryId, inventory);
+      const existing = store.productInventory.get(product.id) || [];
+      existing.push(inventoryId);
+      store.productInventory.set(product.id, existing);
     }
 
-    // 生成SKU
-    const skuId = String(products.length + 1).padStart(3, '0');
-    const internal_sku = `SKU-${new Date().getFullYear()}-${skuId}`;
-    
-    const total_cost = (parseFloat(cost_price) || 0) + 
-                       (parseFloat(domestic_shipping) || 0) + 
-                       (parseFloat(first_mile_shipping) || 0);
-
-    const newProduct = {
-      id: `PROD-${Date.now()}`,
-      internal_sku,
-      name_zh,
-      name_en: name_en || '',
-      source_url: source_url || '',
-      supplier_name: supplier_name || '',
-      cost_price: parseFloat(cost_price) || 0,
-      domestic_shipping: parseFloat(domestic_shipping) || 0,
-      first_mile_shipping: parseFloat(first_mile_shipping) || 0,
-      total_cost,
-      image_status: 'pending',
-      compliance_status: 'pending',
-      category_name: category_name || '',
-      status: 'draft',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    };
-
-    products.push(newProduct);
-
-    return NextResponse.json({
-      success: true,
-      message: '商品创建成功',
-      data: newProduct,
-    });
+    return NextResponse.json({ success: true, data: product });
   } catch (error) {
-    console.error('创建商品失败:', error);
-    return NextResponse.json(
-      { success: false, message: '创建商品失败' },
-      { status: 500 }
-    );
+    console.error('Create product error:', error);
+    return NextResponse.json({ success: false, error: '创建商品失败' }, { status: 500 });
   }
 }
