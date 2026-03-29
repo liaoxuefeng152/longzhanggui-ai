@@ -43,12 +43,18 @@ const nextConfig: NextConfig = {
   },
 
   // API 代理 - 将需要后端处理的请求转发到FastAPI后端
-  // 前端自己处理的API：erp, customer-tickets, task-logs, packages, 1688
-  // 后端处理的API：workflow, ai, tiktok, feishu, agents, auth, models, prompts等
+  // ERP模块API - 后端处理（数据库持久化）
+  // 前端自己处理的API：customer-tickets, task-logs, packages, 1688
+  // 后端处理的API：erp, workflow, ai, tiktok, feishu, agents, auth, models, prompts等
   async rewrites() {
     const backendUrl = process.env.BACKEND_URL || 'http://localhost:8000';
     
     return [
+      // ERP模块API - 后端处理
+      {
+        source: '/api/v1/erp/:path*',
+        destination: `${backendUrl}/api/v1/erp/:path*`,
+      },
       // 工作流编排API - 后端处理
       {
         source: '/api/v1/workflow/:path*',

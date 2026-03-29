@@ -125,13 +125,29 @@ export default function ERPProductsPage() {
       if (keyword) params.set('keyword', keyword);
       if (statusFilter) params.set('status', statusFilter);
       
-      const response = await fetch(`/api/v1/erp/products?${params.toString()}`);
+      // 获取token
+      const token = localStorage.getItem('token');
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      
+      const response = await fetch(`/api/v1/erp/products?${params.toString()}`, { headers });
       const data = await response.json();
       
-      if (data.success) {
+      // 兼容两种返回格式:
+      // 1. 后端格式: {items: [...], total: 0, ...}
+      // 2. 前端格式: {success: true, data: {items: [...]}}
+      if (data.items !== undefined) {
+        // 后端格式
+        setProducts(data.items || []);
+      } else if (data.success && data.data) {
+        // 前端格式
         setProducts(data.data.items || []);
       } else {
-        toast.error('获取商品列表失败');
+        toast.error(data.detail || data.error || '获取商品列表失败');
       }
     } catch (error) {
       console.error('获取商品失败:', error);
@@ -148,9 +164,18 @@ export default function ERPProductsPage() {
     }
 
     try {
+      // 获取token
+      const token = localStorage.getItem('token');
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      
       const response = await fetch('/api/v1/erp/products', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           name_zh: newProduct.name_zh,
           name_en: newProduct.name_en,
@@ -158,14 +183,17 @@ export default function ERPProductsPage() {
           domestic_shipping: parseFloat(newProduct.domestic_shipping) || 0,
           first_mile_shipping: parseFloat(newProduct.first_mile_shipping) || 0,
           supplier_name: newProduct.supplier_name,
-          category: newProduct.category,
+          category_name: newProduct.category,
           source_url: newProduct.source_url,
           status: 'selected',
         }),
       });
 
       const data = await response.json();
-      if (data.success) {
+      // 兼容两种返回格式:
+      // 1. 后端格式: {id: "...", name_zh: "...", ...}
+      // 2. 前端格式: {success: true, data: {...}}
+      if (data.id || data.success) {
         toast.success('商品创建成功');
         setIsNewProductOpen(false);
         setNewProduct({
@@ -180,7 +208,7 @@ export default function ERPProductsPage() {
         });
         fetchProducts();
       } else {
-        toast.error(data.error || '创建失败');
+        toast.error(data.detail || data.error || '创建失败');
       }
     } catch (error) {
       console.error('创建商品失败:', error);

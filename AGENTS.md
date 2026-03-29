@@ -68,11 +68,20 @@
 - **样式**: Tailwind CSS 4
 - **组件**: shadcn/ui (基于 Radix UI)
 - **状态管理**: React Hooks + SWR
+- **运行端口**: 5000
 
-### 后端
-- **Python FastAPI**: 位于 `backend/` 目录 (可选)
-- **SQLite数据库**: 本地数据存储
-- **全局存储**: `src/lib/store.ts` - 运行时数据存储
+### 后端 (Python FastAPI)
+- **框架**: FastAPI
+- **ORM**: SQLAlchemy (异步)
+- **数据库**: SQLite (开发) / PostgreSQL (生产)
+- **AI模型**: 豆包大模型 (通过 coze-coding-dev-sdk)
+- **认证**: JWT
+- **运行端口**: 8000
+
+### 架构模式
+- **前后端分离**: Next.js 做前端页面渲染，Python FastAPI 做业务API和AI大脑
+- **API代理**: Next.js rewrites 将业务API请求代理到Python后端
+- **认证流程**: 前端登录获取JWT token，后续请求携带token到后端
 
 ### AI能力
 - **模型提供商**: 豆包大模型 (通过 coze-coding-dev-sdk)
