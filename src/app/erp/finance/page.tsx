@@ -38,6 +38,7 @@ import {
   Truck,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { getAuthHeaders } from '@/lib/hooks/useAuthFetch';
 
 interface DailySummary {
   id: string;
@@ -94,19 +95,27 @@ export default function ERPFinancePage() {
   const fetchData = async () => {
     setLoading(true);
     try {
+      const headers = getAuthHeaders();
+      
       // 并行获取汇总和记录
       const [summaryRes, recordsRes] = await Promise.all([
-        fetch('/api/v1/erp/finance/summary'),
-        fetch('/api/v1/erp/finance/records'),
+        fetch('/api/v1/erp/finance/summary', { headers }),
+        fetch('/api/v1/erp/finance/records', { headers }),
       ]);
       
       const summaryData = await summaryRes.json();
       const recordsData = await recordsRes.json();
       
-      if (summaryData.success) {
+      // 兼容两种返回格式
+      if (summaryData.daily_summaries !== undefined) {
+        setSummaries(summaryData.daily_summaries || []);
+      } else if (summaryData.success && summaryData.data) {
         setSummaries(summaryData.data.summaries || []);
       }
-      if (recordsData.success) {
+      
+      if (recordsData.items !== undefined) {
+        setRecords(recordsData.items || []);
+      } else if (recordsData.success && recordsData.data) {
         setRecords(recordsData.data.records || []);
       }
     } catch (error) {

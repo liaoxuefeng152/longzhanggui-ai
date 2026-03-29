@@ -9,9 +9,11 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { login } from '@/lib/api/auth';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function LoginPage() {
   const router = useRouter();
+  const { login: setAuth } = useAuth();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [captcha, setCaptcha] = useState('');
@@ -57,8 +59,8 @@ export default function LoginPage() {
         password: password,
       });
 
-      // 登录成功，保存用户信息（token已在login函数中保存）
-      localStorage.setItem('user', JSON.stringify(response.user));
+      // 使用AuthProvider的login方法保存登录状态
+      setAuth(response.access_token, response.user);
       
       toast.success('登录成功');
       router.push('/');

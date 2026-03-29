@@ -32,6 +32,7 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { getAuthHeaders } from '@/lib/hooks/useAuthFetch';
 
 interface LogisticsRecord {
   id: string;
@@ -92,13 +93,18 @@ export default function ERPLogisticsPage() {
       if (keyword) params.set('keyword', keyword);
       if (statusFilter) params.set('status', statusFilter);
       
-      const response = await fetch(`/api/v1/erp/logistics?${params.toString()}`);
+      const response = await fetch(`/api/v1/erp/logistics?${params.toString()}`, {
+        headers: getAuthHeaders(),
+      });
       const data = await response.json();
       
-      if (data.success) {
+      // 兼容两种返回格式
+      if (data.items !== undefined) {
+        setRecords(data.items || []);
+      } else if (data.success && data.data) {
         setRecords(data.data.items || []);
       } else {
-        toast.error('获取物流数据失败');
+        toast.error(data.detail || '获取物流数据失败');
       }
     } catch (error) {
       console.error('获取物流数据失败:', error);

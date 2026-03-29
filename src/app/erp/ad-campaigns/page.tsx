@@ -37,6 +37,7 @@ import {
   Zap,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { getAuthHeaders } from '@/lib/hooks/useAuthFetch';
 
 interface AdCampaign {
   id: string;
@@ -106,13 +107,18 @@ export default function AdCampaignsPage() {
       if (platformFilter) params.set('platform', platformFilter);
       if (statusFilter) params.set('status', statusFilter);
       
-      const response = await fetch(`/api/v1/erp/ad-campaigns?${params.toString()}`);
+      const response = await fetch(`/api/v1/erp/ad-campaigns?${params.toString()}`, {
+        headers: getAuthHeaders(),
+      });
       const data = await response.json();
       
-      if (data.success) {
+      // 兼容两种返回格式
+      if (data.items !== undefined) {
+        setCampaigns(data.items || []);
+      } else if (data.success && data.data) {
         setCampaigns(data.data.items || []);
       } else {
-        toast.error('获取广告失败');
+        toast.error(data.detail || '获取广告失败');
       }
     } catch (error) {
       console.error('获取广告失败:', error);

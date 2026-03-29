@@ -35,6 +35,7 @@ import {
   Ban,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { getAuthHeaders } from '@/lib/hooks/useAuthFetch';
 
 interface ERPOrder {
   id: string;
@@ -100,13 +101,18 @@ export default function ERPOrdersPage() {
       if (platformFilter) params.set('platform', platformFilter);
       if (statusFilter) params.set('status', statusFilter);
       
-      const response = await fetch(`/api/v1/erp/orders?${params.toString()}`);
+      const response = await fetch(`/api/v1/erp/orders?${params.toString()}`, {
+        headers: getAuthHeaders(),
+      });
       const data = await response.json();
       
-      if (data.success) {
+      // 兼容两种返回格式
+      if (data.items !== undefined) {
+        setOrders(data.items || []);
+      } else if (data.success && data.data) {
         setOrders(data.data.items || []);
       } else {
-        toast.error('获取订单失败');
+        toast.error(data.detail || '获取订单失败');
       }
     } catch (error) {
       console.error('获取订单失败:', error);

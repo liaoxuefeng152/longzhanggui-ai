@@ -33,6 +33,7 @@ import {
   Warehouse,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { getAuthHeaders } from '@/lib/hooks/useAuthFetch';
 
 interface InventoryItem {
   id: string;
@@ -87,13 +88,18 @@ export default function ERPInventoryPage() {
       if (keyword) params.set('keyword', keyword);
       if (statusFilter) params.set('status', statusFilter);
       
-      const response = await fetch(`/api/v1/erp/inventory?${params.toString()}`);
+      const response = await fetch(`/api/v1/erp/inventory?${params.toString()}`, {
+        headers: getAuthHeaders(),
+      });
       const data = await response.json();
       
-      if (data.success) {
+      // 兼容两种返回格式
+      if (data.items !== undefined) {
+        setItems(data.items || []);
+      } else if (data.success && data.data) {
         setItems(data.data.items || []);
       } else {
-        toast.error('获取库存失败');
+        toast.error(data.detail || '获取库存失败');
       }
     } catch (error) {
       console.error('获取库存失败:', error);
