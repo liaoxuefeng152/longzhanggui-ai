@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:8000';
+
 /**
- * 批量采集商品
+ * 批量采集1688商品
  * POST /api/v1/1688/collect/batch
+ * 代理到Python后端
  */
 export async function POST(request: NextRequest) {
   try {
@@ -16,40 +19,27 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const results: any[] = [];
-    let successCount = 0;
-
-    for (const url of urls) {
-      if (!url.trim() || !url.includes('1688.com')) {
-        results.push({
-          success: false,
-          source_url: url,
-          error: '无效的1688链接',
-        });
-        continue;
-      }
-
-      // 从URL提取商品ID
-      const offerIdMatch = url.match(/offer\/(\d+)\.html/);
-      const sourceId = offerIdMatch ? offerIdMatch[1] : crypto.randomUUID();
-      const productId = `PROD-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-
-      results.push({
-        success: true,
-        product_id: productId,
-        source_url: url,
-        source_id: sourceId,
-        name: '批量采集商品',
-        price: Math.round((10 + Math.random() * 100) * 100) / 100,
-      });
-      successCount++;
+    // 验证链接
+    const validUrls = urls.filter(url => url.trim() && url.includes('1688.com'));
+    if (validUrls.length === 0) {
+      return NextResponse.json(
+        { success: false, message: '没有有效的1688链接' },
+        { status: 400 }
+      );
     }
 
-    return NextResponse.json({
-      success: true,
-      total: successCount,
-      items: results,
+    // 调用Python后端
+    const response = await fetch(`${BACKEND_URL}/api/v1/1688/collect/batch`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ urls: validUrls }),
     });
+
+    const data = await response.json();
+    
+    return NextResponse.json(data, { status: response.status });
   } catch (error) {
     console.error('批量采集失败:', error);
     return NextResponse.json(

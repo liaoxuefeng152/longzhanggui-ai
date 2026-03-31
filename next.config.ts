@@ -140,6 +140,11 @@ const nextConfig: NextConfig = {
         source: '/api/v1/products/:path*',
         destination: `${backendUrl}/api/v1/products/:path*`,
       },
+      // 1688采集API - 后端处理
+      {
+        source: '/api/v1/1688/:path*',
+        destination: `${backendUrl}/api/v1/1688/:path*`,
+      },
     ];
   },
 };
