@@ -99,7 +99,16 @@ class Collection1688Service:
         except Exception as e:
             logger.warning(f"HTTPX采集失败: {e}")
         
-        # 方案2: 使用API接口获取（跳过Playwright，因为系统chromium需要snap）
+        # 方案2: 尝试Playwright浏览器采集（如果已安装）
+        try:
+            result = await self._collect_with_browser(url, offer_id)
+            if result and result.get("title"):
+                logger.info(f"Playwright采集成功: {offer_id}")
+                return result
+        except Exception as e:
+            logger.warning(f"Playwright采集失败: {e}")
+        
+        # 方案3: 使用API接口获取
         try:
             result = await self._collect_with_api(offer_id)
             if result and result.get("title"):
@@ -320,24 +329,10 @@ class Collection1688Service:
         
         if self._browser is None:
             self._playwright = await async_playwright().start()
-            # 使用系统安装的chromium-browser，或回退到playwright下载的版本
-            import os
-            chromium_path = "/usr/bin/chromium-browser"
-            
-            if os.path.exists(chromium_path):
-                logger.info("使用系统chromium-browser")
-                self._browser = await self._playwright.chromium.launch(
-                    executable_path=chromium_path,
-                    headless=True,
-                    args=['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-gpu']
-                )
-            else:
-                logger.info("使用playwright内置chromium")
-                self._browser = await self._playwright.chromium.launch(
-                    headless=True,
-                    args=['--no-sandbox', '--disable-setuid-sandbox']
-                )
-            
+            self._browser = await self._playwright.chromium.launch(
+                headless=True,
+                args=['--no-sandbox', '--disable-setuid-sandbox']
+            )
             self._context = await self._browser.new_context(
                 user_agent=self.headers["User-Agent"]
             )
@@ -404,137 +399,30 @@ class Collection1688Service:
         """尝试通过API获取商品数据"""
         client = await self._get_client()
         
-        # 尝试多个API端点
-        api_endpoints = [
-            # 移动端API
-            {
-                "url": f"https://m.1688.com/offer/{offer_id}.html",
-                "headers": {**self.headers, "Accept": "text/html,application/xhtml+xml"}
-            },
-            # 商品详情API
-            {
-                "url": f"https://detail.1688.com/offer/{offer_id}.html",
-                "headers": {**self.headers, "Accept": "text/html,application/xhtml+xml"}
-            },
-            # 尝试微信小程序API格式
-            {
-                "url": f"https://m.1688.com/api/offer/detail",
-                "params": {"offerId": offer_id},
-                "headers": {**self.headers, "Accept": "application/json", "Referer": "https://m.1688.com/"}
-            }
-        ]
-        
-        for endpoint in api_endpoints:
-            try:
-                params = endpoint.get("params")
-                response = await client.get(
-                    endpoint["url"],
-                    headers=endpoint["headers"],
-                    params=params
-                )
-                
-                if response.status_code == 200:
-                    content_type = response.headers.get("content-type", "")
-                    
-                    # JSON响应
-                    if "json" in content_type:
-                        try:
-                            data = response.json()
-                            if data:
-                                result = self._parse_api_response(data, offer_id)
-                                if result and result.get("title"):
-                                    return result
-                        except json.JSONDecodeError:
-                            continue
-                    
-                    # HTML响应 - 尝试提取嵌入式JSON数据
-                    else:
-                        result = self._parse_html_for_json(response.text, offer_id)
-                        if result and result.get("title"):
-                            return result
-                            
-            except Exception as e:
-                logger.debug(f"API端点 {endpoint['url']} 失败: {e}")
-                continue
-        
-        return None
-    
-    def _parse_api_response(self, data: Dict, offer_id: str) -> Optional[Dict[str, Any]]:
-        """解析API响应"""
         try:
-            # 不同的API响应格式
-            offer_data = data.get("data", {}).get("offer", {})
-            if not offer_data:
-                offer_data = data.get("offer", data.get("result", {}))
+            # 1688 有一些公开的API端点可以尝试
+            api_url = f"https://m.1688.com/offer/{offer_id}.html"
             
-            if not offer_data:
-                return None
+            response = await client.get(
+                api_url,
+                headers={**self.headers, "Accept": "application/json"}
+            )
             
-            return {
-                "offer_id": offer_id,
-                "title": offer_data.get("subject") or offer_data.get("title"),
-                "price": offer_data.get("price") or offer_data.get("priceRange"),
-                "images": offer_data.get("images", offer_data.get("imageList", [])),
-                "min_order": offer_data.get("minQuantity", 1),
-                "supplier": {
-                    "name": offer_data.get("companyName", ""),
-                    "url": offer_data.get("companyUrl", "")
-                },
-                "collect_method": "api"
-            }
-        except Exception as e:
-            logger.debug(f"解析API响应失败: {e}")
-            return None
-    
-    def _parse_html_for_json(self, html: str, offer_id: str) -> Optional[Dict[str, Any]]:
-        """从HTML中提取嵌入的JSON数据"""
-        try:
-            soup = BeautifulSoup(html, 'html.parser')
+            if response.status_code == 200:
+                try:
+                    data = response.json()
+                    if data:
+                        return {
+                            "offer_id": offer_id,
+                            "title": data.get("subject") or data.get("title"),
+                            "price": data.get("price") or data.get("priceRange"),
+                            "images": data.get("images", []),
+                            "supplier": data.get("sellerInfo", {}),
+                            "collect_method": "api"
+                        }
+                except json.JSONDecodeError:
+                    pass
             
-            # 查找script标签中的数据
-            scripts = soup.find_all('script')
-            for script in scripts:
-                content = script.string
-                if not content:
-                    continue
-                
-                # 尝试提取初始化数据
-                patterns = [
-                    (r'window\.__INITIAL_DATA__\s*=\s*({.*?});\s*</script>', True),
-                    (r'window\.pageData\s*=\s*({.*?});\s*</script>', True),
-                    (r'var\s+globalData\s*=\s*({.*?});\s*</script>', True),
-                    (r'"subject"\s*:\s*"([^"]+)"', False),
-                    (r'"title"\s*:\s*"([^"]+)"', False),
-                ]
-                
-                for pattern, is_json in patterns:
-                    match = re.search(pattern, content, re.DOTALL)
-                    if match:
-                        try:
-                            if is_json:
-                                data = json.loads(match.group(1))
-                                # 尝试从嵌套结构中提取商品信息
-                                offer = data.get("offer", data.get("data", data))
-                                if isinstance(offer, dict):
-                                    return {
-                                        "offer_id": offer_id,
-                                        "title": offer.get("subject") or offer.get("title"),
-                                        "price": offer.get("price") or offer.get("priceRange"),
-                                        "images": offer.get("images", []),
-                                        "collect_method": "html_json"
-                                    }
-                            else:
-                                return {
-                                    "offer_id": offer_id,
-                                    "title": match.group(1),
-                                    "collect_method": "html_json"
-                                }
-                        except json.JSONDecodeError:
-                            continue
-            
-            return None
-        except Exception as e:
-            logger.debug(f"从HTML提取JSON失败: {e}")
             return None
             
         except Exception as e:
