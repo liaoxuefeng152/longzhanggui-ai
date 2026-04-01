@@ -600,18 +600,38 @@ class Collection1688Service:
                 
                 if existing:
                     # 更新
-                    existing.raw_data = json.dumps(product_data, ensure_ascii=False)
+                    existing.title = product_data.get("title", "")
+                    existing.price = float(str(product_data.get("price", "0")).split("-")[0]) if product_data.get("price") else 0
+                    existing.images = json.dumps(product_data.get("images", []), ensure_ascii=False)
+                    existing.skus = json.dumps(product_data.get("skus", []), ensure_ascii=False)
+                    existing.supplier_name = product_data.get("supplier", {}).get("name", "")
+                    existing.status = "success"
                     existing.updated_at = datetime.now()
                     await db.commit()
                     logger.info(f"更新已存在的采集记录: {existing.product_id}")
                     return existing.product_id
                 
-                # 创建采集记录
+                # 创建采集记录 - 使用模型中存在的字段
+                supplier = product_data.get("supplier", {})
+                
+                # 获取默认用户ID（系统管理员）
+                from sqlalchemy import text
+                result = await db.execute(text("SELECT id FROM feishu_users LIMIT 1"))
+                default_user = result.fetchone()
+                user_id = default_user[0] if default_user else "system"
+                
                 collection = Collection1688(
+                    user_id=user_id,
                     source_url=url,
                     source_id=product_data.get("offer_id"),
-                    raw_data=json.dumps(product_data, ensure_ascii=False),
-                    status="collected"
+                    title=product_data.get("title", ""),
+                    price=float(str(product_data.get("price", "0")).split("-")[0]) if product_data.get("price") else 0,
+                    images=json.dumps(product_data.get("images", []), ensure_ascii=False),
+                    skus=json.dumps(product_data.get("skus", []), ensure_ascii=False),
+                    description=product_data.get("details", ""),
+                    supplier_name=supplier.get("name", ""),
+                    supplier_rating=supplier.get("rating", 0),
+                    status="success"
                 )
                 
                 # 创建ERP商品
@@ -629,6 +649,7 @@ class Collection1688Service:
                     price = 0
                 
                 erp_product = ERPProduct(
+                    user_id=user_id,
                     internal_sku=sku,
                     name_zh=product_data.get("title", ""),
                     source_url=url,
@@ -637,8 +658,7 @@ class Collection1688Service:
                     cost_price=price,
                     domestic_shipping=0,
                     first_mile_shipping=0,
-                    total_cost=price,
-                    images=product_data.get("images", []),
+                    images=json.dumps(product_data.get("images", []), ensure_ascii=False),
                     image_status="pending",
                     compliance_status="pending",
                     status="draft"

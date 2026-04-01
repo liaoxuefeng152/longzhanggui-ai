@@ -22,6 +22,12 @@ PUBLIC_PATHS = [
     "/api/v1/auth/register",
     "/api/v1/auth/send-sms",
     "/api/v1/auth/verify-sms",
+    # 1688采集API（临时公开，生产环境需要认证）
+    "/api/v1/1688/collect",
+    "/api/v1/1688/collect/preview",
+    "/api/v1/1688/collect/batch",
+    "/api/v1/1688/history",
+    "/api/v1/1688/search",
 ]
 
 # 正则匹配的公开路径
