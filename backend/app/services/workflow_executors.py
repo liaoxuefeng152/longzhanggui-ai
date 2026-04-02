@@ -221,21 +221,34 @@ async def execute_image_processing(
     # 初始化图片智能体
     agent = ImageDesignAgent()
     
+    # 获取商品名称
+    product_name = ""
+    collected_products = input_data.get("collect_1688", {}).get("collected_products", [])
+    if collected_products and len(collected_products) > 0:
+        product_name = collected_products[0].get("name", "")
+    
     processed_images = []
     processing_report = []
     
     for i, image_url in enumerate(images_to_process[:20]):  # 限制最多20张
         try:
-            # 执行图片处理
-            result = await agent.run({
-                "prompt": f"处理电商商品图片，模式：{mode}，目标语言：{target_language}",
-                "product_name": input_data.get("collect_1688", {}).get("collected_products", [{}])[0].get("name", ""),
-                "reference_images": [image_url],
-                "style": "professional",
-                "size": "1000x1000"
-            })
-            
-            processed_url = result.get("output", {}).get("generated_images", [{}])[0].get("url", image_url)
+            # 根据模式选择处理方式
+            if mode == "translate":
+                # 使用图片文字翻译功能
+                result = await agent.translate_image_text(image_url, target_language)
+                processed_url = image_url  # 翻译模式暂时返回原图URL
+                ocr_result = result
+            else:
+                # 使用图片设计工作流
+                result = await agent.run(
+                    product_name=product_name,
+                    product_description=f"处理电商商品图片，目标语言：{target_language}",
+                    reference_images=[image_url],
+                    style="professional",
+                    size="1000x1000"
+                )
+                # 从结果中提取处理后的图片URL
+                processed_url = result.get("generated_images", [{}])[0].get("url", image_url) if result.get("generated_images") else image_url
             
             processed_images.append({
                 "original_url": image_url,

@@ -23,10 +23,15 @@ router = APIRouter(prefix="/workflow", tags=["工作流编排"])
 
 class WorkflowExecuteRequest(BaseModel):
     """工作流执行请求"""
-    template_name: str
+    template_name: Optional[str] = None
+    template_id: Optional[str] = None  # 兼容前端传递的template_id
     user_id: str
     params: Dict[str, Any] = {}
     notify_webhook: Optional[str] = None  # 进度通知webhook
+    
+    def get_template_name(self) -> str:
+        """获取模板名称（兼容两种参数名）"""
+        return self.template_name or self.template_id or ""
 
 
 class WorkflowTemplateResponse(BaseModel):
@@ -100,13 +105,14 @@ async def execute_workflow(request: WorkflowExecuteRequest, background_tasks: Ba
     启动一个工作流执行任务，立即返回工作流ID，实际执行在后台进行
     
     Args:
-        template_name: 工作流模板名称
+        template_name/template_id: 工作流模板名称（两种参数名都支持）
         user_id: 用户ID
         params: 执行参数
     """
-    template = workflow_orchestrator.get_workflow_template(request.template_name)
+    template_name = request.get_template_name()
+    template = workflow_orchestrator.get_workflow_template(template_name)
     if not template:
-        raise HTTPException(status_code=404, detail=f"模板不存在: {request.template_name}")
+        raise HTTPException(status_code=404, detail=f"模板不存在: {template_name}")
     
     # 进度通知回调
     async def notify_callback(workflow_id: str, event_type: str, data: Dict[str, Any]):
@@ -121,7 +127,7 @@ async def execute_workflow(request: WorkflowExecuteRequest, background_tasks: Ba
     async def run_workflow():
         try:
             result = await workflow_orchestrator.execute_workflow(
-                template_name=request.template_name,
+                template_name=template_name,
                 user_id=request.user_id,
                 params=request.params,
                 notify_callback=notify_callback
@@ -135,7 +141,7 @@ async def execute_workflow(request: WorkflowExecuteRequest, background_tasks: Ba
     return {
         "success": True,
         "message": "工作流已启动",
-        "template": request.template_name,
+        "template": template_name,
         "template_name": template["name"]
     }
 
@@ -147,13 +153,14 @@ async def execute_workflow_sync(request: WorkflowExecuteRequest):
     
     执行工作流并等待完成后返回结果，适用于短时工作流或测试场景
     """
-    template = workflow_orchestrator.get_workflow_template(request.template_name)
+    template_name = request.get_template_name()
+    template = workflow_orchestrator.get_workflow_template(template_name)
     if not template:
-        raise HTTPException(status_code=404, detail=f"模板不存在: {request.template_name}")
+        raise HTTPException(status_code=404, detail=f"模板不存在: {template_name}")
     
     try:
         result = await workflow_orchestrator.execute_workflow(
-            template_name=request.template_name,
+            template_name=template_name,
             user_id=request.user_id,
             params=request.params
         )
