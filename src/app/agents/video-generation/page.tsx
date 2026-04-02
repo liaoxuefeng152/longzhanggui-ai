@@ -50,6 +50,11 @@ import {
 import { toast } from 'sonner';
 import { generateVideo, GenerateVideoRequest } from '@/lib/api/ai-agents';
 
+interface VideoScene {
+  description: string;
+  duration: number;
+}
+
 interface VideoTask {
   id: string;
   productName: string;
@@ -64,6 +69,10 @@ interface VideoTask {
   publishStatus: 'draft' | 'published' | 'scheduled';
   generatedAt?: string;
   videoUrl?: string;
+  scenes?: VideoScene[];
+  resolution?: string;
+  ratio?: string;
+  fps?: number;
 }
 
 const mockVideoTasks: VideoTask[] = [
@@ -140,6 +149,8 @@ export default function VideoAgentPage() {
   
   // 存储生成的脚本内容
   const [taskScripts, setTaskScripts] = useState<Record<string, string>>({});
+  // 存储生成的场景列表
+  const [taskScenes, setTaskScenes] = useState<Record<string, VideoScene[]>>({});
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -182,14 +193,27 @@ export default function VideoAgentPage() {
           publishStatus: 'draft',
           generatedAt: new Date().toLocaleString('zh-CN'),
           videoUrl: result.data.video_url,
+          scenes: result.data.scenes,
+          resolution: result.data.resolution,
+          ratio: result.data.ratio,
+          fps: result.data.fps,
         };
         setVideoTasks([newTask, ...videoTasks]);
         
         // 保存脚本内容
         if (result.data.script) {
-          setTaskScripts(prev => ({
+          setTaskScripts((prev: Record<string, string>) => ({
             ...prev,
             [result.data.task_id]: result.data.script || ''
+          }));
+        }
+        
+        // 保存场景列表
+        if (result.data.scenes && result.data.scenes.length > 0) {
+          const scenes = result.data.scenes;
+          setTaskScenes((prev: Record<string, VideoScene[]>) => ({
+            ...prev,
+            [result.data.task_id]: scenes
           }));
         }
         
@@ -225,11 +249,20 @@ export default function VideoAgentPage() {
           product_name: task.productName,
           video_type: task.type,
         });
-        if (result.success && result.data?.script) {
-          setTaskScripts(prev => ({
-            ...prev,
-            [task.id]: result.data.script || ''
-          }));
+        if (result.success && result.data) {
+          if (result.data.script) {
+            setTaskScripts((prev: Record<string, string>) => ({
+              ...prev,
+              [task.id]: result.data.script || ''
+            }));
+          }
+          if (result.data.scenes && result.data.scenes.length > 0) {
+            const scenes = result.data.scenes;
+            setTaskScenes((prev: Record<string, VideoScene[]>) => ({
+              ...prev,
+              [task.id]: scenes
+            }));
+          }
         }
       } catch (error) {
         console.error('获取脚本失败:', error);
@@ -272,14 +305,26 @@ export default function VideoAgentPage() {
             complianceStatus: 'passed' as const,
             preCheckResult: { passed: true, issues: [] },
             videoUrl: result.data.video_url,
+            scenes: result.data.scenes,
+            resolution: result.data.resolution,
+            ratio: result.data.ratio,
+            fps: result.data.fps,
             generatedAt: new Date().toLocaleString('zh-CN'),
           } : t
         ));
         
         if (result.data.script) {
-          setTaskScripts(prev => ({
+          setTaskScripts((prev: Record<string, string>) => ({
             ...prev,
             [task.id]: result.data.script || ''
+          }));
+        }
+        
+        if (result.data.scenes && result.data.scenes.length > 0) {
+          const scenes = result.data.scenes;
+          setTaskScenes((prev: Record<string, VideoScene[]>) => ({
+            ...prev,
+            [task.id]: scenes
           }));
         }
         
@@ -786,7 +831,7 @@ export default function VideoAgentPage() {
 
         {/* 预览对话框 */}
         <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
-          <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
+          <DialogContent className="sm:max-w-[700px] max-h-[85vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>视频预览 - {previewTask?.productName}</DialogTitle>
               <DialogDescription>
@@ -795,7 +840,7 @@ export default function VideoAgentPage() {
             </DialogHeader>
             <div className="space-y-4 py-4">
               {/* 视频信息 */}
-              <div className="grid grid-cols-3 gap-4 p-4 bg-muted/30 rounded-lg">
+              <div className="grid grid-cols-4 gap-4 p-4 bg-muted/30 rounded-lg">
                 <div>
                   <div className="text-[11px] text-muted-foreground">视频类型</div>
                   <div className="text-[13px] font-medium">{previewTask && getTypeLabel(previewTask.type)}</div>
@@ -805,18 +850,69 @@ export default function VideoAgentPage() {
                   <div className="text-[13px] font-medium">{previewTask?.duration || 30}秒</div>
                 </div>
                 <div>
-                  <div className="text-[11px] text-muted-foreground">状态</div>
-                  <div className="text-[13px] font-medium">{previewTask && getStatusBadge(previewTask.status)}</div>
+                  <div className="text-[11px] text-muted-foreground">分辨率</div>
+                  <div className="text-[13px] font-medium">{previewTask?.resolution || '720p'}</div>
+                </div>
+                <div>
+                  <div className="text-[11px] text-muted-foreground">比例</div>
+                  <div className="text-[13px] font-medium">{previewTask?.ratio || '9:16'}</div>
                 </div>
               </div>
               
               {/* 视频预览区 */}
-              {previewTask?.videoUrl && (
+              {previewTask?.videoUrl ? (
+                <div className="space-y-2">
+                  <div className="text-[13px] font-medium text-foreground">视频播放</div>
+                  <div className="aspect-video bg-black rounded-lg overflow-hidden">
+                    <video 
+                      src={previewTask.videoUrl} 
+                      controls 
+                      className="w-full h-full object-contain"
+                      preload="metadata"
+                    >
+                      您的浏览器不支持视频播放
+                    </video>
+                  </div>
+                  <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                    <span>帧率: {previewTask?.fps || 24} FPS</span>
+                    <span>•</span>
+                    <a 
+                      href={previewTask.videoUrl} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-primary hover:underline"
+                    >
+                      在新窗口打开
+                    </a>
+                  </div>
+                </div>
+              ) : (
                 <div className="aspect-video bg-muted rounded-lg flex items-center justify-center">
                   <div className="text-center text-muted-foreground">
                     <Video className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                    <p className="text-[12px]">视频预览区域</p>
-                    <p className="text-[11px] text-muted-foreground/70">{previewTask.videoUrl}</p>
+                    <p className="text-[12px]">视频生成中或暂无视频</p>
+                  </div>
+                </div>
+              )}
+              
+              {/* 场景列表 */}
+              {(taskScenes[previewTask?.id || ''] || previewTask?.scenes)?.length > 0 && (
+                <div className="space-y-2">
+                  <div className="text-[13px] font-medium text-foreground">场景分镜</div>
+                  <div className="space-y-2">
+                    {(taskScenes[previewTask?.id || ''] || previewTask?.scenes)?.map((scene: VideoScene, index: number) => (
+                      <div key={index} className="flex items-start gap-3 p-3 bg-muted/30 rounded-lg">
+                        <div className="w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center text-[11px] font-medium flex-shrink-0">
+                          {index + 1}
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-[12px] text-foreground">{scene.description}</p>
+                        </div>
+                        <div className="text-[11px] text-muted-foreground bg-muted px-2 py-1 rounded">
+                          {scene.duration}秒
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}
@@ -826,7 +922,7 @@ export default function VideoAgentPage() {
                 <div className="text-[13px] font-medium text-foreground">视频脚本</div>
                 <div className="p-4 bg-muted/30 rounded-lg">
                   <pre className="text-[12px] text-foreground whitespace-pre-wrap font-sans">
-                    {taskScripts[previewTask?.id || ''] || '正在加载脚本内容...'}
+                    {taskScripts[previewTask?.id || ''] || '暂无脚本内容'}
                   </pre>
                 </div>
               </div>
@@ -835,6 +931,18 @@ export default function VideoAgentPage() {
               <Button variant="outline" onClick={() => setIsPreviewOpen(false)}>
                 关闭
               </Button>
+              {previewTask?.videoUrl && (
+                <Button variant="outline" onClick={() => {
+                  const link = document.createElement('a');
+                  link.href = previewTask.videoUrl!;
+                  link.download = `video_${previewTask.id}.mp4`;
+                  link.target = '_blank';
+                  link.click();
+                }}>
+                  <Download className="h-4 w-4 mr-2" />
+                  下载视频
+                </Button>
+              )}
               {previewTask?.publishStatus === 'draft' && (
                 <Button onClick={() => {
                   setIsPreviewOpen(false);
@@ -845,8 +953,8 @@ export default function VideoAgentPage() {
                 </Button>
               )}
               <Button variant="outline" onClick={() => {
-                if (previewTask?.videoUrl) {
-                  navigator.clipboard.writeText(taskScripts[previewTask.id] || '');
+                if (taskScripts[previewTask?.id || '']) {
+                  navigator.clipboard.writeText(taskScripts[previewTask?.id || ''] || '');
                   toast.success('脚本已复制到剪贴板');
                 }
               }}>

@@ -325,11 +325,18 @@ export async function generateActionItems(report: Record<string, unknown>): Prom
 
 export interface GenerateVideoRequest {
   product_name: string;
+  product_description?: string;
   product_images?: string[];
-  video_type?: 'script' | 'voiceover' | 'slideshow' | 'full';
+  video_type?: 'script' | 'voiceover' | 'slideshow' | 'full' | 'product_showcase';
   duration?: number;
+  platform?: string;
   style?: string;
   language?: string;
+}
+
+export interface VideoScene {
+  description: string;
+  duration: number;
 }
 
 export interface VideoGenerationResult {
@@ -337,9 +344,16 @@ export interface VideoGenerationResult {
   status: string;
   video_type: string;
   script?: string;
+  scenes?: VideoScene[];
   video_url?: string;
+  last_frame?: string;
   duration?: number;
+  resolution?: string;
+  ratio?: string;
+  fps?: number;
+  model?: string;
   thumbnail_url?: string;
+  error?: string;
   created_at: string;
 }
 
