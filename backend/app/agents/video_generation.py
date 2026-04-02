@@ -1,15 +1,17 @@
 """
-视频生成智能体 - 使用豆包大模型
+视频生成智能体 - 使用豆包大模型 + VideoGenerationClient
 """
 from typing import TypedDict, Annotated, Sequence
 from langchain_core.messages import BaseMessage, HumanMessage, AIMessage
 from langgraph.graph import StateGraph, END
 import operator
 import json
-import httpx
+import os
 
 from app.agents.base import AgentState
 from app.services.llm_service import get_llm_for_agent
+from coze_coding_dev_sdk import VideoGenerationClient
+from coze_coding_dev_sdk.video.models import TextContent
 
 
 class VideoGenerationState(TypedDict):
@@ -102,13 +104,22 @@ class VideoGenerationAgent:
         video_api_key: str = None,
         video_api_url: str = None
     ):
-        """初始化视频生成智能体，使用豆包Lite模型"""
+        """初始化视频生成智能体，使用豆包Lite模型 + VideoGenerationClient"""
         self.temperature = temperature
-        self.video_api_key = video_api_key
-        self.video_api_url = video_api_url
         
         # 使用豆包大模型 - Lite模型（视频脚本创作）
         self.llm = get_llm_for_agent("video_generation", temperature=temperature)
+        
+        # 初始化视频生成客户端
+        self.video_client = VideoGenerationClient()
+        
+        # 平台规格映射到VideoGenerationClient参数
+        self.RESOLUTION_MAP = {
+            "tiktok": ("720p", "9:16"),     # 竖屏
+            "instagram": ("720p", "4:5"),   # 方形偏竖
+            "youtube": ("720p", "16:9"),    # 横屏
+            "shopee": ("720p", "1:1")       # 方形
+        }
         
         self.workflow = self._build_workflow()
         self.app = self.workflow.compile()
@@ -256,44 +267,73 @@ class VideoGenerationAgent:
         }
     
     async def _generate_video(self, state: VideoGenerationState) -> dict:
-        """生成视频"""
+        """生成视频 - 使用VideoGenerationClient"""
         scenes = state.get('scenes', [])
         duration = state.get('duration', 30)
         platform = state.get('platform', 'tiktok')
-        platform_spec = self.PLATFORM_SPECS.get(platform, self.PLATFORM_SPECS['tiktok'])
+        script = state.get('script', '')
+        
+        # 获取平台规格
+        resolution, ratio = self.RESOLUTION_MAP.get(platform, ("720p", "16:9"))
         
         generated_video = {}
         
-        if self.video_api_key and self.video_api_url:
-            try:
-                async with httpx.AsyncClient(timeout=120.0) as client:
-                    response = await client.post(
-                        f"{self.video_api_url}/generate",
-                        headers={
-                            "Authorization": f"Bearer {self.video_api_key}",
-                            "Content-Type": "application/json"
-                        },
-                        json={
-                            "prompt": state.get('script', ''),
-                            "duration": duration,
-                            "resolution": platform_spec['resolution'],
-                            "scenes": scenes
-                        }
-                    )
-                    
-                    if response.status_code == 200:
-                        generated_video = response.json()
-            except Exception as e:
-                generated_video = {"error": str(e)}
-        else:
+        try:
+            # 构造视频生成内容
+            # 将脚本和场景信息组合成视频提示词
+            video_prompt = f"{script}\n\n场景描述："
+            for i, scene in enumerate(scenes, 1):
+                video_prompt += f"\n{i}. {scene.get('description', '')}"
+            
+            # 创建文本内容项
+            content_items = [TextContent(text=video_prompt)]
+            
+            # 调用视频生成API（同步方法包装为异步）
+            import asyncio
+            
+            def sync_generate():
+                return self.video_client.video_generation(
+                    content_items=content_items,
+                    duration=min(duration, 12),  # API最大支持12秒
+                    resolution=resolution,
+                    ratio=ratio,
+                    generate_audio=True,
+                    watermark=False
+                )
+            
+            # 在线程池中执行同步调用
+            loop = asyncio.get_event_loop()
+            video_url, response_data, last_frame = await loop.run_in_executor(None, sync_generate)
+            
+            if video_url:
+                generated_video = {
+                    "status": "succeeded",
+                    "video_url": video_url,
+                    "last_frame": last_frame,
+                    "duration": response_data.get('duration', 5),
+                    "resolution": response_data.get('resolution', resolution),
+                    "ratio": response_data.get('ratio', ratio),
+                    "fps": response_data.get('framespersecond', 24),
+                    "task_id": response_data.get('id'),
+                    "model": response_data.get('model'),
+                    "scenes": scenes
+                }
+            else:
+                generated_video = {
+                    "status": "failed",
+                    "error": "视频生成失败，未返回视频URL",
+                    "response": response_data
+                }
+                
+        except Exception as e:
             generated_video = {
-                "status": "simulated",
-                "message": "视频生成API未配置",
+                "status": "error",
+                "error": str(e),
+                "message": f"视频生成出错: {type(e).__name__}",
                 "scenes": scenes,
                 "duration": duration,
-                "resolution": platform_spec['resolution'],
-                "preview_url": None,
-                "tips": "请配置视频生成API（如RunwayML、Pika等）以启用真实视频生成功能"
+                "resolution": resolution,
+                "tips": "视频生成服务暂时不可用，请稍后重试"
             }
         
         return {
