@@ -207,6 +207,10 @@ export default function AdvertisingAgentPage() {
     target_acos: 0.2,
   });
 
+  // 详情对话框状态
+  const [selectedCampaign, setSelectedCampaign] = useState<AdCampaign | null>(null);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
+
   useEffect(() => {
     const userData = localStorage.getItem('user');
     if (!userData) {
@@ -278,7 +282,8 @@ export default function AdvertisingAgentPage() {
 
   // 查看详情
   const handleViewDetails = (campaign: AdCampaign) => {
-    toast.info(`查看广告详情: ${campaign.name}`);
+    setSelectedCampaign(campaign);
+    setIsDetailOpen(true);
   };
 
   const getStatusBadge = (status: string) => {
@@ -764,6 +769,124 @@ export default function AdvertisingAgentPage() {
                     创建广告
                   </>
                 )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* 详情对话框 */}
+        <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
+          <DialogContent className="sm:max-w-[600px] max-h-[85vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>广告详情 - {selectedCampaign?.name}</DialogTitle>
+            </DialogHeader>
+            {selectedCampaign && (
+              <div className="space-y-6 py-4">
+                {/* 基本信息 */}
+                <div className="space-y-3">
+                  <div className="text-[13px] font-medium text-foreground">基本信息</div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="p-3 bg-muted/30 rounded-lg">
+                      <div className="text-[11px] text-muted-foreground mb-1">广告计划</div>
+                      <div className="text-[13px] font-medium text-foreground">{selectedCampaign.name}</div>
+                    </div>
+                    <div className="p-3 bg-muted/30 rounded-lg">
+                      <div className="text-[11px] text-muted-foreground mb-1">投放平台</div>
+                      <div className="text-[13px] font-medium text-foreground">{selectedCampaign.platform}</div>
+                    </div>
+                    <div className="p-3 bg-muted/30 rounded-lg">
+                      <div className="text-[11px] text-muted-foreground mb-1">状态</div>
+                      <div className="text-[13px]">{getStatusBadge(selectedCampaign.status)}</div>
+                    </div>
+                    <div className="p-3 bg-muted/30 rounded-lg">
+                      <div className="text-[11px] text-muted-foreground mb-1">风险状态</div>
+                      <div className="text-[13px]">{getRiskBadge(selectedCampaign.riskStatus)}</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 核心指标 */}
+                <div className="space-y-3">
+                  <div className="text-[13px] font-medium text-foreground">核心指标</div>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="p-4 bg-muted/30 rounded-lg">
+                      <div className="text-[11px] text-muted-foreground mb-2">预算使用</div>
+                      <div className="text-[20px] font-semibold text-foreground">
+                        ¥{selectedCampaign.spent.toFixed(2)}
+                      </div>
+                      <div className="text-[11px] text-muted-foreground mt-1">
+                        总预算 ¥{selectedCampaign.budget}
+                      </div>
+                      <Progress value={(selectedCampaign.spent / selectedCampaign.budget) * 100} className="mt-2 h-1" />
+                    </div>
+                    <div className="p-4 bg-muted/30 rounded-lg">
+                      <div className="text-[11px] text-muted-foreground mb-2">点击数</div>
+                      <div className="text-[20px] font-semibold text-foreground">
+                        {selectedCampaign.clicks}
+                      </div>
+                      <div className={`text-[11px] mt-1 ${selectedCampaign.cpc <= 0.5 ? 'text-success' : 'text-warning'}`}>
+                        CPC ¥{selectedCampaign.cpc}
+                      </div>
+                    </div>
+                    <div className="p-4 bg-muted/30 rounded-lg">
+                      <div className="text-[11px] text-muted-foreground mb-2">转化数</div>
+                      <div className="text-[20px] font-semibold text-foreground">
+                        {selectedCampaign.conversions}
+                      </div>
+                      <div className={`text-[11px] mt-1 ${selectedCampaign.roi >= 1 ? 'text-success' : 'text-destructive'}`}>
+                        ROI {selectedCampaign.roi.toFixed(2)}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 风险信息 */}
+                {selectedCampaign.riskReasons.length > 0 && (
+                  <div className="space-y-3">
+                    <div className="text-[13px] font-medium text-foreground flex items-center gap-2">
+                      <AlertTriangle className="h-4 w-4 text-warning" />
+                      风险提示
+                    </div>
+                    <div className="p-3 bg-warning/5 border border-warning/20 rounded-lg">
+                      <ul className="space-y-2">
+                        {selectedCampaign.riskReasons.map((reason, index) => (
+                          <li key={index} className="text-[12px] text-warning flex items-start gap-2">
+                            <AlertOctagon className="h-3 w-3 mt-0.5 flex-shrink-0" />
+                            {reason}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                )}
+
+                {/* 转化数据 */}
+                <div className="space-y-3">
+                  <div className="text-[13px] font-medium text-foreground">转化数据</div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="p-3 bg-muted/30 rounded-lg">
+                      <div className="text-[11px] text-muted-foreground mb-1">转化率</div>
+                      <div className="text-[14px] font-medium text-foreground">
+                        {selectedCampaign.clicks > 0 
+                          ? ((selectedCampaign.conversions / selectedCampaign.clicks) * 100).toFixed(2) + '%'
+                          : '0%'}
+                      </div>
+                    </div>
+                    <div className="p-3 bg-muted/30 rounded-lg">
+                      <div className="text-[11px] text-muted-foreground mb-1">平均转化成本</div>
+                      <div className="text-[14px] font-medium text-foreground">
+                        ¥{selectedCampaign.conversions > 0 
+                          ? (selectedCampaign.spent / selectedCampaign.conversions).toFixed(2)
+                          : '0.00'}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+            <DialogFooter>
+              <Button onClick={() => setIsDetailOpen(false)}>
+                关闭
               </Button>
             </DialogFooter>
           </DialogContent>
