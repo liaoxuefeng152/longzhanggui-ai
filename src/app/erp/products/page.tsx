@@ -145,8 +145,15 @@ export default function ERPProductsPage() {
 
       console.log('[商品中心] 从全局存储读取商品:', allProducts.length);
 
+      // 按创建时间倒序排序，新商品显示在顶部
+      const sortedProducts = allProducts.sort((a, b) => {
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      });
+
+      console.log('[商品中心] 排序后的商品数量:', sortedProducts.length);
+
       // 应用过滤
-      let filteredProducts = allProducts;
+      let filteredProducts = sortedProducts;
 
       if (keyword) {
         filteredProducts = filteredProducts.filter(p =>
@@ -158,6 +165,19 @@ export default function ERPProductsPage() {
 
       if (statusFilter) {
         filteredProducts = filteredProducts.filter(p => p.status === statusFilter);
+      }
+
+      console.log('[商品中心] 过滤后的商品数量:', filteredProducts.length);
+      console.log('[商品中心] 商品状态分布:', filteredProducts.map(p => ({ id: p.id, name: p.name_zh, status: p.status, created_at: p.created_at })));
+
+      // 如果没有筛选条件且存在"已选品"商品，显示提示
+      if (!statusFilter && !keyword) {
+        const selectedCount = filteredProducts.filter(p => p.status === 'selected').length;
+        if (selectedCount > 0) {
+          toast.info(`发现 ${selectedCount} 个已选品商品`, {
+            description: '新选品的商品显示在列表顶部，状态为"已选品"',
+          });
+        }
       }
 
       setProducts(filteredProducts as any);
