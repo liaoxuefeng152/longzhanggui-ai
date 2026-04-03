@@ -466,8 +466,35 @@ export default function ImageDesignPage() {
       toast.warning('暂无可下载的图片');
       return;
     }
-    
-    toast.success('下载已开始', { description: `正在下载 ${task.productName} 的图片` });
+
+    try {
+      toast.loading('正在下载...', { id: `download-${task.id}` });
+      
+      // 使用 fetch + blob 模式下载跨域图片
+      const response = await fetch(task.processedUrl);
+      if (!response.ok) {
+        throw new Error('图片下载失败');
+      }
+      
+      const blob = await response.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      
+      // 创建下载链接
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = `${task.productName}_${task.type}_${Date.now()}.jpg`;
+      document.body.appendChild(link);
+      link.click();
+      
+      // 清理
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(blobUrl);
+      
+      toast.success('下载完成', { id: `download-${task.id}` });
+    } catch (error) {
+      console.error('下载失败:', error);
+      toast.error('下载失败，请稍后重试', { id: `download-${task.id}` });
+    }
   };
 
   // 删除任务
