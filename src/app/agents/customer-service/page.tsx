@@ -377,12 +377,12 @@ export default function CustomerServicePage() {
             <Badge 
               className={`cursor-pointer transition-colors ${
                 agentStatus === 'online' 
-                  ? 'bg-success text-white hover:bg-success/90' 
-                  : 'bg-muted text-muted-foreground hover:bg-muted/90'
+                  ? 'bg-emerald-500 text-white hover:bg-emerald-600' 
+                  : 'bg-gray-400 text-white hover:bg-gray-500'
               }`}
               onClick={toggleAgentStatus}
             >
-              <Bot className={`h-3 w-3 mr-1 ${agentStatus === 'offline' ? 'text-muted-foreground' : ''}`} />
+              <Bot className={`h-3 w-3 mr-1 ${agentStatus === 'offline' ? 'text-gray-300' : ''}`} />
               {agentStatus === 'online' ? 'AI在线' : 'AI离线'}
             </Badge>
           </div>
