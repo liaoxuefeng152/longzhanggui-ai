@@ -231,7 +231,9 @@ export default function SelectionAgentPage() {
         }));
         
         setProducts(newProducts);
-        toast.success(`选品完成！共发现 ${newProducts.length} 个潜力商品`);
+        toast.success(`选品完成！共发现 ${newProducts.length} 个潜力商品`, {
+          description: `商品已自动保存到商品库，可在「ERP中心 → 商品中心」查看`
+        });
       } else {
         toast.error('选品返回数据格式错误');
       }

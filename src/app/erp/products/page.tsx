@@ -121,34 +121,28 @@ export default function ERPProductsPage() {
   const fetchProducts = async () => {
     setLoading(true);
     try {
-      const params = new URLSearchParams();
-      if (keyword) params.set('keyword', keyword);
-      if (statusFilter) params.set('status', statusFilter);
-      
-      // 获取token
-      const token = localStorage.getItem('token');
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-      };
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
+      // 优先从全局存储读取
+      const { default: store } = await import('@/lib/store');
+      const allProducts = store.getProducts();
+
+      console.log('[商品中心] 从全局存储读取商品:', allProducts.length);
+
+      // 应用过滤
+      let filteredProducts = allProducts;
+
+      if (keyword) {
+        filteredProducts = filteredProducts.filter(p =>
+          p.name_zh.toLowerCase().includes(keyword.toLowerCase()) ||
+          p.internal_sku.toLowerCase().includes(keyword.toLowerCase()) ||
+          (p.category && p.category.toLowerCase().includes(keyword.toLowerCase()))
+        );
       }
-      
-      const response = await fetch(`/api/v1/erp/products?${params.toString()}`, { headers });
-      const data = await response.json();
-      
-      // 兼容两种返回格式:
-      // 1. 后端格式: {items: [...], total: 0, ...}
-      // 2. 前端格式: {success: true, data: {items: [...]}}
-      if (data.items !== undefined) {
-        // 后端格式
-        setProducts(data.items || []);
-      } else if (data.success && data.data) {
-        // 前端格式
-        setProducts(data.data.items || []);
-      } else {
-        toast.error(data.detail || data.error || '获取商品列表失败');
+
+      if (statusFilter) {
+        filteredProducts = filteredProducts.filter(p => p.status === statusFilter);
       }
+
+      setProducts(filteredProducts as any);
     } catch (error) {
       console.error('获取商品失败:', error);
       toast.error('获取商品列表失败');
