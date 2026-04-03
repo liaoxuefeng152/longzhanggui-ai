@@ -45,6 +45,9 @@ import {
   Eye,
   MessageCircle,
   Filter,
+  Plus,
+  Trash2,
+  Sparkles,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -65,6 +68,32 @@ interface CustomerTicket {
   order_id?: string;
 }
 
+interface ReplyTemplate {
+  id: string;
+  name: string;
+  category: string;
+  content: string;
+  createdAt: string;
+}
+
+interface Dispute {
+  id: string;
+  ticketId: string;
+  platform: 'TK' | 'Amazon';
+  type: 'return' | 'quality' | 'shipping' | 'payment';
+  status: 'pending' | 'investigating' | 'resolved';
+  customer: string;
+  reason: string;
+  aiSuggestion?: string;
+  createdAt: string;
+}
+
+interface AgentConfig {
+  model: 'doubao-mini' | 'doubao-pro' | 'deepseek-lite';
+  autoTranslate: boolean;
+  defaultLanguage: string;
+}
+
 export default function CustomerServicePage() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
@@ -76,6 +105,51 @@ export default function CustomerServicePage() {
   
   // 智能体在线状态
   const [agentStatus, setAgentStatus] = useState<'online' | 'offline'>('online');
+  
+  // 回复模板
+  const [templates, setTemplates] = useState<ReplyTemplate[]>([
+    {
+      id: 'TPL001',
+      name: '物流查询模板',
+      category: 'shipping',
+      content: '尊敬的客户，您好！关于您询问的物流状态，您的订单正在配送中，预计[X]天内到达。感谢您的耐心等待！',
+      createdAt: '2026-03-20',
+    },
+    {
+      id: 'TPL002',
+      name: '退款申请模板',
+      category: 'refund',
+      content: '尊敬的客户，您好！我们已收到您的退款申请，正在审核中。审核通过后将在[3-5]个工作日内完成退款。',
+      createdAt: '2026-03-20',
+    },
+    {
+      id: 'TPL003',
+      name: '商品质量反馈',
+      category: 'quality',
+      content: '尊敬的客户，非常抱歉给您带来不好的体验。请您提供更多详细信息，我们会尽快为您处理并提供满意的解决方案。',
+      createdAt: '2026-03-20',
+    },
+  ]);
+  const [isTemplateDialogOpen, setIsTemplateDialogOpen] = useState(false);
+  const [editingTemplate, setEditingTemplate] = useState<ReplyTemplate | null>(null);
+  const [templateForm, setTemplateForm] = useState({
+    name: '',
+    category: 'shipping',
+    content: '',
+  });
+  
+  // 纠纷处理
+  const [disputes, setDisputes] = useState<Dispute[]>([]);
+  const [selectedDispute, setSelectedDispute] = useState<Dispute | null>(null);
+  const [isDisputeDialogOpen, setIsDisputeDialogOpen] = useState(false);
+  const [isGeneratingSolution, setIsGeneratingSolution] = useState(false);
+  
+  // 智能体配置
+  const [agentConfig, setAgentConfig] = useState<AgentConfig>({
+    model: 'doubao-mini',
+    autoTranslate: true,
+    defaultLanguage: 'en',
+  });
   
   // 对话框状态
   const [isDetailOpen, setIsDetailOpen] = useState(false);
@@ -103,7 +177,45 @@ export default function CustomerServicePage() {
       setAgentStatus(savedAgentStatus);
     }
     
+    // 加载智能体配置
+    const savedConfig = localStorage.getItem('agentConfig');
+    if (savedConfig) {
+      setAgentConfig(JSON.parse(savedConfig));
+    }
+    
+    // 加载回复模板
+    const savedTemplates = localStorage.getItem('replyTemplates');
+    if (savedTemplates) {
+      setTemplates(JSON.parse(savedTemplates));
+    }
+    
     fetchTickets();
+    
+    // 初始化纠纷数据（如果有dispute类型的工单）
+    const mockDisputes: Dispute[] = [
+      {
+        id: 'DSP001',
+        ticketId: 'TK003',
+        platform: 'TK',
+        type: 'quality',
+        status: 'pending',
+        customer: 'Siti Rahayu',
+        reason: '收到的商品与描述不符，质量有问题',
+        createdAt: '2026-03-21 10:30',
+      },
+      {
+        id: 'DSP002',
+        ticketId: 'AMZ002',
+        platform: 'Amazon',
+        type: 'return',
+        status: 'investigating',
+        customer: 'John Smith',
+        reason: '要求退货，收到商品已损坏',
+        aiSuggestion: '建议解决方案：\n\n1. 立即与客户联系，了解具体情况\n2. 提供退货退款或换货选项\n3. 补偿优惠券或积分作为歉意\n4. 优化产品和服务流程，防止类似问题\n\n预计处理时间：3-5个工作日',
+        createdAt: '2026-03-21 09:15',
+      },
+    ];
+    setDisputes(mockDisputes);
   }, [router]);
 
   const fetchTickets = async () => {
@@ -194,6 +306,111 @@ export default function CustomerServicePage() {
     } else {
       toast.warning('智能体已离线', { description: '新工单将不会自动处理' });
     }
+  };
+
+  // 回复模板管理
+  const handleUseTemplate = (template: ReplyTemplate) => {
+    setReplyForm(prev => ({
+      ...prev,
+      message: template.content,
+    }));
+    setIsReplyOpen(true);
+    toast.success('模板已应用', { description: template.name });
+  };
+
+  const handleAddTemplate = () => {
+    setEditingTemplate(null);
+    setTemplateForm({ name: '', category: 'shipping', content: '' });
+    setIsTemplateDialogOpen(true);
+  };
+
+  const handleEditTemplate = (template: ReplyTemplate) => {
+    setEditingTemplate(template);
+    setTemplateForm({
+      name: template.name,
+      category: template.category,
+      content: template.content,
+    });
+    setIsTemplateDialogOpen(true);
+  };
+
+  const handleDeleteTemplate = (templateId: string) => {
+    if (!confirm('确定要删除此模板吗？')) return;
+    const newTemplates = templates.filter(t => t.id !== templateId);
+    setTemplates(newTemplates);
+    localStorage.setItem('replyTemplates', JSON.stringify(newTemplates));
+    toast.success('模板已删除');
+  };
+
+  const handleSaveTemplate = () => {
+    if (!templateForm.name.trim() || !templateForm.content.trim()) {
+      toast.error('请填写模板名称和内容');
+      return;
+    }
+
+    let newTemplates;
+    if (editingTemplate) {
+      // 编辑现有模板
+      newTemplates = templates.map(t => 
+        t.id === editingTemplate.id 
+          ? { ...t, ...templateForm }
+          : t
+      );
+      toast.success('模板已更新');
+    } else {
+      // 新增模板
+      const newTemplate: ReplyTemplate = {
+        id: `TPL${Date.now()}`,
+        ...templateForm,
+        createdAt: new Date().toISOString().split('T')[0],
+      };
+      newTemplates = [newTemplate, ...templates];
+      toast.success('模板已添加');
+    }
+
+    setTemplates(newTemplates);
+    localStorage.setItem('replyTemplates', JSON.stringify(newTemplates));
+    
+    setIsTemplateDialogOpen(false);
+    setTemplateForm({ name: '', category: 'shipping', content: '' });
+    setEditingTemplate(null);
+  };
+
+  // 纠纷处理
+  const handleGenerateSolution = async (dispute: Dispute) => {
+    setIsGeneratingSolution(true);
+    try {
+      // 模拟AI生成解决方案
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      const solution = `建议解决方案：\n\n1. 立即与客户联系，了解具体情况\n2. 提供退货退款或换货选项\n3. 补偿优惠券或积分作为歉意\n4. 优化产品和服务流程，防止类似问题\n\n预计处理时间：3-5个工作日`;
+      
+      setDisputes(prev => prev.map(d => 
+        d.id === dispute.id 
+          ? { ...d, aiSuggestion: solution, status: 'investigating' as const }
+          : d
+      ));
+      
+      toast.success('AI解决方案已生成');
+    } catch (error) {
+      toast.error('生成失败');
+    } finally {
+      setIsGeneratingSolution(false);
+    }
+  };
+
+  const handleResolveDispute = (disputeId: string) => {
+    if (!confirm('确定要解决此纠纷吗？')) return;
+    setDisputes(prev => prev.map(d => 
+      d.id === disputeId ? { ...d, status: 'resolved' as const } : d
+    ));
+    toast.success('纠纷已解决');
+  };
+
+  // 配置设置
+  const handleSaveConfig = () => {
+    localStorage.setItem('agentConfig', JSON.stringify(agentConfig));
+    toast.success('配置已保存');
   };
 
   // AI自动回复
@@ -616,37 +833,126 @@ export default function CustomerServicePage() {
                 <CardDescription>AI辅助纠纷处理，自动生成解决方案</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="text-center py-8 text-muted-foreground">
-                  <AlertTriangle className="h-12 w-12 mx-auto mb-2 text-warning" />
-                  <div>暂无待处理纠纷</div>
-                </div>
+                {disputes.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <AlertTriangle className="h-12 w-12 mx-auto mb-2 text-warning" />
+                    <div>暂无待处理纠纷</div>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {disputes.map((dispute) => (
+                      <Card key={dispute.id} className="bg-muted/30 border-border">
+                        <CardContent className="p-4">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1 space-y-2">
+                              <div className="flex items-center gap-2">
+                                <span className="text-[14px] font-medium text-foreground">{dispute.customer}</span>
+                                <Badge variant="outline">{dispute.platform}</Badge>
+                                {getStatusBadge(dispute.status)}
+                              </div>
+                              <div className="text-[13px] text-muted-foreground">
+                                纠纷原因: {dispute.reason}
+                              </div>
+                              {dispute.aiSuggestion && (
+                                <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                                  <div className="text-[12px] font-medium text-blue-700 mb-1">AI 解决方案:</div>
+                                  <div className="text-[12px] text-blue-600 whitespace-pre-line">
+                                    {dispute.aiSuggestion}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2">
+                              {!dispute.aiSuggestion && (
+                                <Button
+                                  size="sm"
+                                  onClick={() => handleGenerateSolution(dispute)}
+                                  disabled={isGeneratingSolution}
+                                >
+                                  {isGeneratingSolution ? (
+                                    <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                                  ) : (
+                                    <Sparkles className="h-3 w-3 mr-1" />
+                                  )}
+                                  生成方案
+                                </Button>
+                              )}
+                              {dispute.status !== 'resolved' && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleResolveDispute(dispute.id)}
+                                >
+                                  <CheckCircle className="h-3 w-3 mr-1" />
+                                  解决
+                                </Button>
+                              )}
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
 
           {/* 回复模板 */}
           <TabsContent value="templates" className="space-y-4">
+            <div className="flex items-center justify-between mb-4">
+              <div className="text-[13px] font-medium">常用回复模板</div>
+              <Button size="sm" onClick={handleAddTemplate}>
+                <Plus className="h-4 w-4 mr-1" />
+                新增模板
+              </Button>
+            </div>
             <div className="grid grid-cols-2 gap-4">
-              <Card className="bg-white border-border shadow-sm">
-                <CardHeader>
-                  <CardTitle className="text-[15px]">物流查询模板</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-[13px] text-muted-foreground p-3 bg-muted/30 rounded-lg">
-                    尊敬的客户，您好！关于您询问的物流状态，您的订单正在配送中，预计[X]天内到达。感谢您的耐心等待！
-                  </div>
-                </CardContent>
-              </Card>
-              <Card className="bg-white border-border shadow-sm">
-                <CardHeader>
-                  <CardTitle className="text-[15px]">退款申请模板</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-[13px] text-muted-foreground p-3 bg-muted/30 rounded-lg">
-                    尊敬的客户，您好！我们已收到您的退款申请，正在审核中。审核通过后将在[3-5]个工作日内完成退款。
-                  </div>
-                </CardContent>
-              </Card>
+              {templates.map((template) => (
+                <Card key={template.id} className="bg-white border-border shadow-sm hover:shadow-md transition-shadow">
+                  <CardHeader className="pb-2">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <CardTitle className="text-[15px]">{template.name}</CardTitle>
+                        <CardDescription className="text-[11px]">
+                          分类: {template.category} · 创建于 {template.createdAt}
+                        </CardDescription>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 w-7 p-0"
+                          onClick={() => handleEditTemplate(template)}
+                        >
+                          <Settings className="h-3 w-3" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 w-7 p-0 text-destructive"
+                          onClick={() => handleDeleteTemplate(template.id)}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-[13px] text-muted-foreground p-3 bg-muted/30 rounded-lg mb-3">
+                      {template.content}
+                    </div>
+                    <Button
+                      size="sm"
+                      className="w-full"
+                      onClick={() => handleUseTemplate(template)}
+                    >
+                      <Send className="h-3 w-3 mr-2" />
+                      使用此模板
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
             </div>
           </TabsContent>
 
@@ -664,9 +970,14 @@ export default function CustomerServicePage() {
                       <div className="text-[13px] font-medium text-foreground">调用模型</div>
                       <div className="text-[11px] text-muted-foreground">当前使用豆包-Mini进行客服回复</div>
                     </div>
-                    <select className="px-4 py-2 border border-border rounded-md text-[14px]">
+                    <select 
+                      className="px-4 py-2 border border-border rounded-md text-[14px] focus:outline-none focus:ring-2 focus:ring-primary/50"
+                      value={agentConfig.model}
+                      onChange={(e) => setAgentConfig({ ...agentConfig, model: e.target.value as any })}
+                    >
                       <option value="doubao-mini">豆包-Mini</option>
                       <option value="doubao-pro">豆包-Pro</option>
+                      <option value="deepseek-lite">DeepSeek-Lite</option>
                     </select>
                   </div>
                   <div className="flex items-center justify-between p-4 border border-border rounded-lg">
@@ -674,8 +985,39 @@ export default function CustomerServicePage() {
                       <div className="text-[13px] font-medium text-foreground">自动翻译</div>
                       <div className="text-[11px] text-muted-foreground">自动将客户消息翻译为目标语言</div>
                     </div>
-                    <Badge className="bg-success text-white">已开启</Badge>
+                    <button
+                      className={`w-12 h-6 rounded-full transition-colors ${
+                        agentConfig.autoTranslate ? 'bg-primary' : 'bg-muted'
+                      }`}
+                      onClick={() => setAgentConfig({ ...agentConfig, autoTranslate: !agentConfig.autoTranslate })}
+                    >
+                      <div
+                        className={`w-5 h-5 bg-white rounded-full shadow transition-transform ${
+                          agentConfig.autoTranslate ? 'translate-x-6' : 'translate-x-0.5'
+                        }`}
+                      />
+                    </button>
                   </div>
+                  <div className="flex items-center justify-between p-4 border border-border rounded-lg">
+                    <div>
+                      <div className="text-[13px] font-medium text-foreground">默认语言</div>
+                      <div className="text-[11px] text-muted-foreground">自动回复使用的默认语言</div>
+                    </div>
+                    <select 
+                      className="px-4 py-2 border border-border rounded-md text-[14px] focus:outline-none focus:ring-2 focus:ring-primary/50"
+                      value={agentConfig.defaultLanguage}
+                      onChange={(e) => setAgentConfig({ ...agentConfig, defaultLanguage: e.target.value })}
+                    >
+                      <option value="en">English (英语)</option>
+                      <option value="id">Indonesian (印尼语)</option>
+                      <option value="th">Thai (泰语)</option>
+                      <option value="vi">Vietnamese (越南语)</option>
+                      <option value="zh">Chinese (中文)</option>
+                    </select>
+                  </div>
+                  <Button onClick={handleSaveConfig} className="w-full">
+                    保存配置
+                  </Button>
                 </div>
               </CardContent>
             </Card>
@@ -789,6 +1131,60 @@ export default function CustomerServicePage() {
                 {isProcessing === selectedTicket?.id && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                 发送回复
               </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* 模板编辑对话框 */}
+        <Dialog open={isTemplateDialogOpen} onOpenChange={setIsTemplateDialogOpen}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle>{editingTemplate ? '编辑模板' : '新增模板'}</DialogTitle>
+              <DialogDescription>
+                {editingTemplate ? '修改回复模板内容' : '创建新的回复模板'}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <label className="text-[13px] font-medium">模板名称 *</label>
+                <input
+                  type="text"
+                  placeholder="例如：物流查询模板"
+                  value={templateForm.name}
+                  onChange={(e) => setTemplateForm({ ...templateForm, name: e.target.value })}
+                  className="w-full px-3 py-2 border border-border rounded-md text-[14px]"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[13px] font-medium">分类</label>
+                <select 
+                  className="w-full px-3 py-2 border border-border rounded-md text-[14px]"
+                  value={templateForm.category}
+                  onChange={(e) => setTemplateForm({ ...templateForm, category: e.target.value })}
+                >
+                  <option value="shipping">物流</option>
+                  <option value="refund">退款</option>
+                  <option value="quality">商品质量</option>
+                  <option value="payment">支付</option>
+                  <option value="general">通用</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-[13px] font-medium">模板内容 *</label>
+                <textarea
+                  className="w-full h-32 p-3 border border-border rounded-md text-[14px] resize-none"
+                  placeholder="请输入模板内容，可使用 [X] 作为占位符"
+                  value={templateForm.content}
+                  onChange={(e) => setTemplateForm({ ...templateForm, content: e.target.value })}
+                />
+                <div className="text-[11px] text-muted-foreground">
+                  提示：使用 [X] 作为可替换内容的占位符
+                </div>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsTemplateDialogOpen(false)}>取消</Button>
+              <Button onClick={handleSaveTemplate}>保存</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
