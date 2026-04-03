@@ -17,6 +17,13 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
   Image,
   Search,
   Shield,
@@ -38,14 +45,18 @@ import {
   Loader2,
   Trash2,
   Copy,
+  Globe,
 } from 'lucide-react';
 import { toast } from 'sonner';
+
+// 图片处理模式类型
+type ImageProcessMode = 'translate' | 'optimize' | 'remove_watermark' | 'white_background';
 
 interface ImageTask {
   id: string;
   product_id?: string;
   productName: string;
-  type: 'main' | 'background' | 'a-plus' | 'cover';
+  type: 'main' | 'background' | 'a-plus' | 'cover' | 'translate';
   platform: 'TK' | 'Amazon';
   status: 'pending' | 'processing' | 'completed' | 'failed';
   complianceStatus: 'passed' | 'failed' | 'checking';
@@ -54,6 +65,99 @@ interface ImageTask {
   imageUrl?: string;
   processedUrl?: string;
   prompt?: string;
+  originalUrl?: string;
+  targetLanguage?: string;
+  translations?: Array<{ original: string; translated: string; position: string }>;
+  analysis?: Record<string, unknown>;
+  productDescription?: string;
+}
+
+// 调用图片处理API
+async function processImage(
+  imageUrl: string,
+  mode: ImageProcessMode,
+  targetLanguage?: string,
+  productDescription?: string
+) {
+  const response = await fetch('/api/ai/process-image', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      image_url: imageUrl,
+      mode,
+      target_language: targetLanguage || 'en',
+      product_description: productDescription,
+    }),
+  });
+  
+  const result = await response.json();
+  if (!result.success) {
+    throw new Error(result.error || '图片处理失败');
+  }
+  return result.data;
+}
+
+// 调用图片生成API
+// 图片处理结果类型
+interface ImageProcessResult {
+  processed_url: string;
+  original_url?: string;
+  translations?: Array<{ original: string; translated: string; position: string }>;
+  target_language_name?: string;
+  analysis?: Record<string, unknown>;
+}
+
+// 调用图片生成API
+interface ImageGenerateResult {
+  imageUrl: string;
+  size: string;
+  model: string;
+}
+
+// 调用图片生成API
+async function generateImage(
+  productName: string,
+  productDescription?: string,
+  style?: string,
+  type?: string
+): Promise<ImageGenerateResult> {
+  // 构建生成提示词
+  const prompt = `Professional e-commerce product photography for: ${productName}
+${productDescription ? `Product description: ${productDescription}` : ''}
+Style: ${style || 'clean, professional, high-end commercial photography'}
+Requirements:
+- Clean white or neutral background
+- Professional studio lighting
+- High resolution, sharp details
+- Suitable for online marketplace (TikTok Shop / Amazon)
+- Eye-catching product presentation`;
+
+  const modeMap: Record<string, string> = {
+    main: 'main',
+    background: 'background',
+    'a-plus': 'a-plus',
+    cover: 'cover',
+  };
+
+  const response = await fetch('/api/ai/process-image', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      prompt,
+      type: modeMap[type || 'main'] || 'main',
+      resolution: '1K',
+    }),
+  });
+  
+  const result = await response.json();
+  if (!result.success) {
+    throw new Error(result.error || '图片生成失败');
+  }
+  return {
+    imageUrl: result.data.processed_url,
+    size: result.data.generated_size || '1K',
+    model: result.data.model_used,
+  };
 }
 
 export default function ImageDesignPage() {
@@ -74,10 +178,25 @@ export default function ImageDesignPage() {
   // 创建任务表单
   const [createForm, setCreateForm] = useState({
     product_name: '',
-    type: 'main',
-    platform: 'TK',
+    type: 'main' as 'main' | 'background' | 'a-plus' | 'cover' | 'translate',
+    platform: 'TK' as 'TK' | 'Amazon',
     prompt: '',
+    image_url: '',
+    target_language: 'en',
+    product_description: '',
   });
+  
+  // 支持的语言列表
+  const supportedLanguages = [
+    { code: 'en', name: 'English (英语)' },
+    { code: 'id', name: 'Indonesian (印尼语)' },
+    { code: 'th', name: 'Thai (泰语)' },
+    { code: 'vi', name: 'Vietnamese (越南语)' },
+    { code: 'ms', name: 'Malay (马来语)' },
+    { code: 'zh', name: 'Chinese (中文)' },
+    { code: 'ja', name: 'Japanese (日语)' },
+    { code: 'ko', name: 'Korean (韩语)' },
+  ];
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -151,38 +270,128 @@ export default function ImageDesignPage() {
 
   // 创建图片任务
   const handleCreateTask = async () => {
-    if (!createForm.product_name) {
-      toast.error('请输入商品名称');
+    if (!createForm.product_name && !createForm.image_url) {
+      toast.error('请输入商品名称或提供图片URL');
       return;
     }
 
     setIsProcessing('create');
+    const taskId = `IMG${Date.now()}`;
+    
     try {
       const newTask: ImageTask = {
-        id: `IMG${Date.now()}`,
-        productName: createForm.product_name,
-        type: createForm.type as any,
-        platform: createForm.platform as any,
+        id: taskId,
+        productName: createForm.product_name || '图片翻译任务',
+        type: createForm.type,
+        platform: createForm.platform,
         status: 'processing',
         complianceStatus: 'checking',
         complianceIssues: [],
         prompt: createForm.prompt,
+        imageUrl: createForm.image_url,
+        targetLanguage: createForm.target_language,
+        productDescription: createForm.product_description,
       };
       
       setTasks([newTask, ...tasks]);
-      toast.success('图片生成任务已创建');
+      toast.loading('正在处理...', { id: taskId });
       setIsCreateOpen(false);
-      setCreateForm({ product_name: '', type: 'main', platform: 'TK', prompt: '' });
       
-      // 模拟处理完成
-      setTimeout(() => {
+      // 根据任务类型调用不同的API
+      let result: ImageProcessResult | ImageGenerateResult;
+      if (createForm.type === 'translate' && createForm.image_url) {
+        // 图片翻译
+        const processResult = await processImage(
+          createForm.image_url,
+          'translate',
+          createForm.target_language,
+          createForm.product_description
+        );
+        result = processResult;
+        
         setTasks(prev => prev.map(t => 
-          t.id === newTask.id ? { ...t, status: 'completed', complianceStatus: 'passed', generatedAt: new Date().toLocaleString() } : t
+          t.id === taskId ? { 
+            ...t, 
+            status: 'completed', 
+            complianceStatus: 'passed',
+            generatedAt: new Date().toLocaleString(),
+            processedUrl: (result as ImageProcessResult).processed_url,
+            originalUrl: (result as ImageProcessResult).original_url,
+            translations: (result as ImageProcessResult).translations,
+            prompt: `翻译成 ${(result as ImageProcessResult).target_language_name}`,
+          } : t
         ));
-        toast.success('图片生成完成');
-      }, 3000);
-    } catch (error) {
-      toast.error('创建失败');
+        toast.success('图片翻译完成！', { id: taskId });
+        
+      } else if (createForm.image_url && createForm.type !== 'main') {
+        // 图片处理（优化/去水印/白底图）
+        const modeMap: Record<string, ImageProcessMode> = {
+          background: 'white_background',
+          'a-plus': 'optimize',
+          cover: 'optimize',
+        };
+        const processResult = await processImage(
+          createForm.image_url,
+          modeMap[createForm.type] || 'optimize',
+          createForm.target_language
+        );
+        result = processResult;
+        
+        setTasks(prev => prev.map(t => 
+          t.id === taskId ? { 
+            ...t, 
+            status: 'completed', 
+            complianceStatus: 'passed',
+            generatedAt: new Date().toLocaleString(),
+            processedUrl: (result as ImageProcessResult).processed_url,
+            originalUrl: (result as ImageProcessResult).original_url,
+            analysis: (result as ImageProcessResult).analysis,
+          } : t
+        ));
+        toast.success('图片处理完成！', { id: taskId });
+        
+      } else {
+        // AI生成图片
+        const genResult = await generateImage(
+          createForm.product_name,
+          createForm.product_description,
+          createForm.prompt
+        );
+        result = genResult;
+        
+        setTasks(prev => prev.map(t => 
+          t.id === taskId ? { 
+            ...t, 
+            status: 'completed', 
+            complianceStatus: 'passed',
+            generatedAt: new Date().toLocaleString(),
+            processedUrl: (result as ImageGenerateResult).imageUrl,
+            prompt: createForm.prompt || 'AI生成',
+          } : t
+        ));
+        toast.success('图片生成完成！', { id: taskId });
+      }
+      
+      setCreateForm({ 
+        product_name: '', 
+        type: 'main', 
+        platform: 'TK', 
+        prompt: '',
+        image_url: '',
+        target_language: 'en',
+        product_description: '',
+      });
+    } catch (error: any) {
+      console.error('创建任务失败:', error);
+      setTasks(prev => prev.map(t => 
+        t.id === taskId ? { 
+          ...t, 
+          status: 'failed', 
+          complianceStatus: 'failed',
+          complianceIssues: [error.message || '处理失败'],
+        } : t
+      ));
+      toast.error(error.message || '任务创建失败', { id: taskId });
     } finally {
       setIsProcessing(null);
     }
@@ -305,13 +514,15 @@ export default function ImageDesignPage() {
   };
 
   const getTypeBadge = (type: string) => {
-    const config: Record<string, string> = {
-      main: '主图',
-      background: '背景图',
-      'a-plus': 'A+页面',
-      cover: '封面图',
+    const config: Record<string, { label: string; className?: string }> = {
+      main: { label: 'AI主图' },
+      background: { label: '白底图' },
+      'a-plus': { label: 'A+页面' },
+      cover: { label: '封面图' },
+      translate: { label: '图片翻译', className: 'bg-blue-100 text-blue-800' },
     };
-    return <Badge variant="secondary">{config[type] || type}</Badge>;
+    const item = config[type] || { label: type };
+    return <Badge variant="secondary" className={item.className}>{item.label}</Badge>;
   };
 
   // 统计数据
@@ -665,60 +876,148 @@ export default function ImageDesignPage() {
 
         {/* 创建任务对话框 */}
         <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-w-lg">
             <DialogHeader>
               <DialogTitle>新建图片任务</DialogTitle>
-              <DialogDescription>创建AI图片生成任务</DialogDescription>
+              <DialogDescription>
+                {createForm.type === 'translate' ? '上传图片进行多语言翻译' : '使用AI生成或处理商品图片'}
+              </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
               <div className="space-y-2">
-                <label className="text-[13px] font-medium">商品名称 *</label>
-                <Input
-                  placeholder="请输入商品名称"
-                  value={createForm.product_name}
-                  onChange={(e) => setCreateForm({ ...createForm, product_name: e.target.value })}
-                />
+                <label className="text-[13px] font-medium">任务类型</label>
+                <select 
+                  className="w-full px-3 py-2 border border-border rounded-md text-[14px]"
+                  value={createForm.type}
+                  onChange={(e) => setCreateForm({ ...createForm, type: e.target.value as any })}
+                >
+                  <option value="main">AI生成主图</option>
+                  <option value="background">白底背景图</option>
+                  <option value="a-plus">图片优化</option>
+                  <option value="cover">封面图</option>
+                  <option value="translate">图片翻译</option>
+                </select>
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-[13px] font-medium">图片类型</label>
-                  <select 
-                    className="w-full px-3 py-2 border border-border rounded-md text-[14px]"
-                    value={createForm.type}
-                    onChange={(e) => setCreateForm({ ...createForm, type: e.target.value })}
-                  >
-                    <option value="main">主图</option>
-                    <option value="background">背景图</option>
-                    <option value="a-plus">A+页面</option>
-                    <option value="cover">封面图</option>
-                  </select>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[13px] font-medium">目标平台</label>
-                  <select 
-                    className="w-full px-3 py-2 border border-border rounded-md text-[14px]"
-                    value={createForm.platform}
-                    onChange={(e) => setCreateForm({ ...createForm, platform: e.target.value })}
-                  >
-                    <option value="TK">TikTok</option>
-                    <option value="Amazon">Amazon</option>
-                  </select>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <label className="text-[13px] font-medium">生成提示词</label>
-                <Input
-                  placeholder="描述你想要的图片风格..."
-                  value={createForm.prompt}
-                  onChange={(e) => setCreateForm({ ...createForm, prompt: e.target.value })}
-                />
-              </div>
+              
+              {createForm.type === 'translate' ? (
+                <>
+                  <div className="space-y-2">
+                    <label className="text-[13px] font-medium">图片URL *</label>
+                    <Input
+                      placeholder="请输入要翻译的图片URL"
+                      value={createForm.image_url}
+                      onChange={(e) => setCreateForm({ ...createForm, image_url: e.target.value })}
+                    />
+                    <p className="text-[11px] text-muted-foreground">
+                      请输入可公开访问的图片链接
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-[13px] font-medium">目标语言</label>
+                      <select 
+                        className="w-full px-3 py-2 border border-border rounded-md text-[14px]"
+                        value={createForm.target_language}
+                        onChange={(e) => setCreateForm({ ...createForm, target_language: e.target.value })}
+                      >
+                        {supportedLanguages.map(lang => (
+                          <option key={lang.code} value={lang.code}>{lang.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[13px] font-medium">目标平台</label>
+                      <select 
+                        className="w-full px-3 py-2 border border-border rounded-md text-[14px]"
+                        value={createForm.platform}
+                        onChange={(e) => setCreateForm({ ...createForm, platform: e.target.value as any })}
+                      >
+                        <option value="TK">TikTok</option>
+                        <option value="Amazon">Amazon</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[13px] font-medium">图片描述（可选）</label>
+                    <Input
+                      placeholder="描述图片内容或产品信息"
+                      value={createForm.product_description}
+                      onChange={(e) => setCreateForm({ ...createForm, product_description: e.target.value })}
+                    />
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="space-y-2">
+                    <label className="text-[13px] font-medium">商品名称 *</label>
+                    <Input
+                      placeholder="请输入商品名称"
+                      value={createForm.product_name}
+                      onChange={(e) => setCreateForm({ ...createForm, product_name: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[13px] font-medium">图片URL（可选）</label>
+                    <Input
+                      placeholder="如已有图片，可输入URL进行处理"
+                      value={createForm.image_url}
+                      onChange={(e) => setCreateForm({ ...createForm, image_url: e.target.value })}
+                    />
+                    <p className="text-[11px] text-muted-foreground">
+                      不填则由AI根据商品名称生成图片
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-[13px] font-medium">图片类型</label>
+                      <select 
+                        className="w-full px-3 py-2 border border-border rounded-md text-[14px]"
+                        value={createForm.type}
+                        onChange={(e) => setCreateForm({ ...createForm, type: e.target.value as any })}
+                      >
+                        <option value="main">主图</option>
+                        <option value="background">背景图</option>
+                        <option value="a-plus">A+页面</option>
+                        <option value="cover">封面图</option>
+                      </select>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[13px] font-medium">目标平台</label>
+                      <select 
+                        className="w-full px-3 py-2 border border-border rounded-md text-[14px]"
+                        value={createForm.platform}
+                        onChange={(e) => setCreateForm({ ...createForm, platform: e.target.value as any })}
+                      >
+                        <option value="TK">TikTok</option>
+                        <option value="Amazon">Amazon</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[13px] font-medium">生成提示词</label>
+                    <Input
+                      placeholder="描述你想要的图片风格..."
+                      value={createForm.prompt}
+                      onChange={(e) => setCreateForm({ ...createForm, prompt: e.target.value })}
+                    />
+                  </div>
+                </>
+              )}
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setIsCreateOpen(false)}>取消</Button>
               <Button onClick={handleCreateTask} disabled={isProcessing === 'create'}>
-                {isProcessing === 'create' && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                创建任务
+                {isProcessing === 'create' ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    处理中...
+                  </>
+                ) : (
+                  <>
+                    <Wand2 className="h-4 w-4 mr-2" />
+                    开始处理
+                  </>
+                )}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -726,27 +1025,92 @@ export default function ImageDesignPage() {
 
         {/* 详情对话框 */}
         <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
-          <DialogContent className="max-w-lg">
+          <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>任务详情</DialogTitle>
+              <DialogTitle>任务详情 - {selectedTask?.productName}</DialogTitle>
             </DialogHeader>
             {selectedTask && (
               <div className="space-y-4">
-                <div className="w-full h-48 bg-muted rounded-lg flex items-center justify-center">
-                  {selectedTask.status === 'completed' ? (
-                    <Image className="h-16 w-16 text-success" />
+                {/* 图片展示 */}
+                <div className="space-y-2">
+                  <div className="text-[13px] font-medium">处理结果</div>
+                  {selectedTask.processedUrl ? (
+                    <div className="border border-border rounded-lg overflow-hidden">
+                      {selectedTask.originalUrl && selectedTask.originalUrl !== selectedTask.processedUrl && (
+                        <div className="grid grid-cols-2 gap-2 p-2 bg-muted/50">
+                          <div>
+                            <div className="text-[11px] text-muted-foreground mb-1">原图</div>
+                            <img 
+                              src={selectedTask.originalUrl} 
+                              alt="原图" 
+                              className="w-full h-32 object-contain rounded bg-white"
+                            />
+                          </div>
+                          <div>
+                            <div className="text-[11px] text-muted-foreground mb-1">处理后</div>
+                            <img 
+                              src={selectedTask.processedUrl} 
+                              alt="处理后" 
+                              className="w-full h-32 object-contain rounded bg-white"
+                            />
+                          </div>
+                        </div>
+                      )}
+                      {!selectedTask.originalUrl || selectedTask.originalUrl === selectedTask.processedUrl ? (
+                        <img 
+                          src={selectedTask.processedUrl} 
+                          alt="生成的图片" 
+                          className="w-full h-64 object-contain bg-white"
+                        />
+                      ) : null}
+                    </div>
+                  ) : selectedTask.status === 'processing' ? (
+                    <div className="w-full h-48 bg-muted rounded-lg flex items-center justify-center">
+                      <Loader2 className="h-12 w-12 text-primary animate-spin" />
+                    </div>
                   ) : (
-                    <FileImage className="h-16 w-16 text-muted-foreground" />
+                    <div className="w-full h-48 bg-muted rounded-lg flex items-center justify-center">
+                      <FileImage className="h-12 w-12 text-muted-foreground" />
+                    </div>
                   )}
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <div className="text-[12px] text-muted-foreground">商品名称</div>
-                    <div className="text-[14px] font-medium">{selectedTask.productName}</div>
+                
+                {/* 翻译结果 */}
+                {selectedTask.translations && selectedTask.translations.length > 0 && (
+                  <div className="space-y-2">
+                    <div className="text-[13px] font-medium flex items-center gap-2">
+                      <Globe className="h-4 w-4" />
+                      翻译结果
+                      <Badge variant="outline" className="text-[10px]">
+                        {selectedTask.targetLanguage?.toUpperCase()}
+                      </Badge>
+                    </div>
+                    <div className="bg-muted/30 rounded-lg p-3 space-y-2">
+                      {selectedTask.translations.map((t, index) => (
+                        <div key={index} className="flex items-start gap-3 text-[12px]">
+                          <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-medium flex-shrink-0">
+                            {index + 1}
+                          </div>
+                          <div className="flex-1">
+                            <div className="text-muted-foreground">{t.original}</div>
+                            <div className="text-foreground font-medium">→ {t.translated}</div>
+                            <div className="text-[10px] text-muted-foreground/70">位置: {t.position}</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
+                )}
+                
+                {/* 基本信息 */}
+                <div className="grid grid-cols-2 gap-4">
                   <div>
                     <div className="text-[12px] text-muted-foreground">状态</div>
                     <div>{getStatusBadge(selectedTask.status)}</div>
+                  </div>
+                  <div>
+                    <div className="text-[12px] text-muted-foreground">合规</div>
+                    <div>{getComplianceBadge(selectedTask.complianceStatus)}</div>
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
@@ -761,8 +1125,8 @@ export default function ImageDesignPage() {
                 </div>
                 {selectedTask.prompt && (
                   <div>
-                    <div className="text-[12px] text-muted-foreground">生成提示词</div>
-                    <div className="text-[14px]">{selectedTask.prompt}</div>
+                    <div className="text-[12px] text-muted-foreground">提示词</div>
+                    <div className="text-[14px] bg-muted/30 rounded p-2">{selectedTask.prompt}</div>
                   </div>
                 )}
                 {selectedTask.generatedAt && (
@@ -775,11 +1139,24 @@ export default function ImageDesignPage() {
             )}
             <DialogFooter>
               <Button variant="outline" onClick={() => setIsDetailOpen(false)}>关闭</Button>
-              {selectedTask?.status === 'completed' && (
-                <Button onClick={() => handleDownload(selectedTask)}>
-                  <Download className="h-4 w-4 mr-2" />
-                  下载图片
-                </Button>
+              {selectedTask?.status === 'completed' && selectedTask?.processedUrl && (
+                <>
+                  <Button 
+                    variant="outline"
+                    onClick={() => {
+                      if (selectedTask?.processedUrl) {
+                        const link = document.createElement('a');
+                        link.href = selectedTask.processedUrl;
+                        link.download = `image_${selectedTask.id}.jpg`;
+                        link.target = '_blank';
+                        link.click();
+                      }
+                    }}
+                  >
+                    <Download className="h-4 w-4 mr-2" />
+                    下载
+                  </Button>
+                </>
               )}
             </DialogFooter>
           </DialogContent>

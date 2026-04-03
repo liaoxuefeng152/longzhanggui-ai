@@ -245,6 +245,13 @@ npx tsc --noEmit
 **原因**: API路由未正确实现POST/PUT方法  
 **解决**: 检查对应的 `route.ts` 文件是否实现了正确的HTTP方法
 
+### 5. 图片生成API无法调用
+**原因**: coze-coding-dev-sdk 在客户端被打包导致 Node.js 模块错误  
+**解决**: 
+- 在 `next.config.ts` 中配置 `serverExternalPackages` 包含 `coze-coding-dev-sdk`
+- 使用动态导入 `import('coze-coding-dev-sdk')` 在 API routes 中
+- 或通过 API 路由代理调用，不要在客户端直接使用 SDK
+
 ## 关键文件索引
 
 ### 核心页面
@@ -253,6 +260,7 @@ npx tsc --noEmit
 - Prompt中心: `src/app/prompts/page.tsx`
 - 工作流编排: `src/app/workflows/page.tsx`
 - 选品分析: `src/app/agents/product-selection/page.tsx`
+- 图片设计: `src/app/agents/image-design/page.tsx`
 
 ### API客户端
 - 配置: `src/lib/api/config.ts`

@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { LLMClient, Config, HeaderUtils } from 'coze-coding-dev-sdk';
-import { ImageGenerationClient } from 'coze-coding-dev-sdk';
+import { LLMClient, Config, HeaderUtils, ImageGenerationClient } from 'coze-coding-dev-sdk';
 
 // 支持的目标语言
 const SUPPORTED_LANGUAGES: Record<string, string> = {
@@ -14,73 +13,157 @@ const SUPPORTED_LANGUAGES: Record<string, string> = {
   ja: 'Japanese (日语)',
   ko: 'Korean (韩语)',
   ar: 'Arabic (阿拉伯语)',
+  zh: 'Chinese (中文)',
 };
 
 // 不同处理模式的提示词
 const MODE_PROMPTS: Record<string, string> = {
-  translate: `You are an image text translation expert. Analyze this image:
-1. Identify ALL text content in the image
-2. Describe the exact position of each text (top-left, top-center, center, bottom-right, etc.)
+  translate: `You are an expert at analyzing and translating text in images. 
+Please analyze this image carefully:
+1. Identify ALL text content visible in the image
+2. Describe the exact position of each text element (top-left, top-center, center, bottom-right, etc.)
 3. Describe the text style (color, font size, bold/regular, background)
-4. Return JSON format: {"texts": [{"original": "原文", "position": "位置描述", "style": "样式描述"}], "background": "背景描述", "layout": "整体布局描述"}`,
+4. Return JSON format with this exact structure:
+{
+  "texts": [
+    {"original": "the exact text found", "position": "position description", "style": "style description"}
+  ],
+  "background": "background description",
+  "layout": "overall layout description"
+}
 
-  optimize: `你是一个专业的电商图片优化专家。请分析这张图片：
-1. 评估图片质量和清晰度
-2. 识别产品主体和背景
-3. 给出优化建议（光线、构图、色彩等）
-4. 返回JSON格式：{"quality_score": 8, "issues": ["问题1"], "suggestions": ["建议1"], "product_detected": "产品名称"}`,
+If no text is found, return: {"texts": [], "background": "...", "layout": "..."}`,
 
-  remove_watermark: `你是一个图片处理专家。请分析这张图片：
-1. 检测图片中是否存在水印
-2. 如果有水印，描述水印的位置和特征
-3. 给出去除水印的建议方法
-4. 返回JSON格式：{"has_watermark": true, "watermark_position": "右下角", "watermark_type": "文字水印", "removal_difficulty": "简单/中等/困难", "suggestions": ["建议"]}`,
+  optimize: `You are a professional e-commerce image optimization expert. Please analyze this image:
+1. Evaluate image quality and clarity
+2. Identify the main subject and background
+3. Provide optimization suggestions (lighting, composition, colors, etc.)
+4. Return JSON format: {"quality_score": 8, "issues": ["issue1"], "suggestions": ["suggestion1"], "product_detected": "product name"}`,
 
-  white_background: `你是一个电商图片处理专家。请分析这张图片：
-1. 识别图片主体
-2. 分析当前背景
-3. 评估抠图难度
-4. 返回JSON格式：{"subject": "产品名称", "current_background": "描述", "cutout_difficulty": "简单/中等/困难", "edge_quality": "边缘质量评估", "suggestions": ["建议"]}`,
+  remove_watermark: `You are an image processing expert. Please analyze this image:
+1. Detect if there are watermarks in the image
+2. If there are watermarks, describe their position and characteristics
+3. Provide suggestions for watermark removal
+4. Return JSON format: {"has_watermark": true/false, "watermark_position": "position", "watermark_type": "type", "removal_difficulty": "easy/medium/difficult", "suggestions": ["suggestions"]}`,
+
+  white_background: `You are an e-commerce image processing expert. Please analyze this image:
+1. Identify the main subject
+2. Analyze the current background
+3. Evaluate background removal difficulty
+4. Return JSON format: {"subject": "product name", "current_background": "description", "cutout_difficulty": "easy/medium/difficult", "edge_quality": "evaluation", "suggestions": ["suggestions"]}`,
 };
 
-// 全局模型存储声明
-declare global {
-  var modelsStore: any[] | undefined;
-}
+// 图片翻译专用提示词 - 用于生成翻译后的图片
+const TRANSLATION_IMAGE_PROMPT = `You are a professional image editor. Create a new image based on the original image but with translated text.
+
+Original image background: {background}
+Original layout: {layout}
+
+Text replacements (MUST keep exact position and style):
+{text_replacements}
+
+IMPORTANT REQUIREMENTS:
+- Keep the EXACT same visual style, colors, lighting, and composition as the original image
+- Only replace the text content with the translated versions
+- Maintain the same text positioning, sizing, and styling
+- The result should look professional and natural, as if the text was always in that language
+- Do NOT add any new elements or change anything except the text
+- The image quality should be the same as the original`;
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     
     const imageUrl = body.image_url;
-    const mode = body.mode || 'translate';
+    const mode = body.mode || 'optimize';
     const targetLanguage = body.target_language || 'en';
+    const productDescription = body.product_description || '';
+    const prompt = body.prompt;
+    const aspectRatio = body.aspect_ratio || '1:1';
+    const resolution = body.resolution || '1K';
     
+    const customHeaders = HeaderUtils.extractForwardHeaders(request.headers);
+    const config = new Config();
+
+    // 生成任务ID
+    const taskId = `img_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+    const modeLabels: Record<string, string> = {
+      translate: '图片翻译',
+      optimize: '图片优化分析',
+      remove_watermark: '水印检测',
+      white_background: '白底图分析',
+      main: 'AI主图生成',
+      background: '白底图生成',
+      'a-plus': 'A+页面图',
+      cover: '封面图生成',
+    };
+
+    // 如果没有提供图片URL且有prompt，则执行纯图片生成
+    if (!imageUrl && prompt) {
+      console.log(`[图片生成] 提示词: ${prompt.substring(0, 50)}...`);
+      
+      try {
+        const imageClient = new ImageGenerationClient(config, customHeaders);
+        
+        // 将分辨率转换为图片生成API支持的尺寸
+        let size = '1K';
+        if (resolution === '2K') size = '2K';
+        else if (resolution === '4K') size = '4K';
+        
+        const imageResponse = await imageClient.generate({
+          prompt,
+          size,
+        });
+
+        console.log(`[图片生成] 响应: ${JSON.stringify(imageResponse).substring(0, 200)}...`);
+
+        // 解析图片生成结果
+        let processedUrl = '';
+        let generatedSize = '';
+        
+        if (imageResponse && imageResponse.data && imageResponse.data.length > 0) {
+          processedUrl = imageResponse.data[0].url || '';
+          generatedSize = imageResponse.data[0].size || size;
+          console.log(`[图片生成] 生成成功: ${processedUrl.substring(0, 50)}...`);
+        }
+
+        return NextResponse.json({
+          success: true,
+          data: {
+            task_id: taskId,
+            status: 'completed',
+            original_url: null,
+            processed_url: processedUrl,
+            generated_size: generatedSize,
+            mode: mode || 'main',
+            mode_label: modeLabels[mode] || 'AI主图生成',
+            prompt,
+            aspect_ratio: aspectRatio,
+            model_used: 'doubao-seedream',
+          },
+        });
+      } catch (apiError: any) {
+        console.error('图片生成失败:', apiError);
+        throw apiError;
+      }
+    }
+
+    // 需要图片URL的处理流程
     if (!imageUrl) {
       return NextResponse.json({
         success: false,
-        error: '请提供图片URL',
-      }, { status: 400 });
-    }
-
-    // 验证图片URL格式
-    try {
-      new URL(imageUrl);
-    } catch {
-      return NextResponse.json({
-        success: false,
-        error: '图片URL格式无效',
+        error: '请提供图片URL或图片生成提示词',
       }, { status: 400 });
     }
 
     // 获取对应模式的提示词
-    const modePrompt = MODE_PROMPTS[mode] || MODE_PROMPTS.translate;
+    const modePrompt = MODE_PROMPTS[mode] || MODE_PROMPTS.optimize;
     
     // 使用 Vision 模型分析图片
-    const customHeaders = HeaderUtils.extractForwardHeaders(request.headers);
-    const config = new Config();
     const llmClient = new LLMClient(config, customHeaders);
 
+    // 构建消息 - 豆包Vision模型支持直接通过URL处理图片
     const visionMessages = [
       {
         role: 'user' as const,
@@ -98,7 +181,7 @@ export async function POST(request: NextRequest) {
     ];
 
     try {
-      console.log(`[图片处理] 使用模型: doubao-seed-1-6-vision-250815, 模式: ${mode}, 目标语言: ${targetLanguage}`);
+      console.log(`[图片处理] 模式: ${mode}, 目标语言: ${targetLanguage}`);
       
       // 调用 Vision 模型分析图片
       const visionResponse = await llmClient.invoke(visionMessages, {
@@ -106,7 +189,7 @@ export async function POST(request: NextRequest) {
         temperature: 0.3,
       });
 
-      console.log(`[图片处理] Vision响应: ${visionResponse.content.substring(0, 300)}...`);
+      console.log(`[图片处理] Vision响应: ${visionResponse.content.substring(0, 200)}...`);
 
       // 解析 AI 返回的结果
       let analysisResult;
@@ -121,30 +204,26 @@ export async function POST(request: NextRequest) {
         analysisResult = { raw_response: visionResponse.content };
       }
 
-      // 生成任务ID
-      const taskId = `img_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-
-      const modeLabels: Record<string, string> = {
-        translate: '图片翻译',
-        optimize: '图片优化',
-        remove_watermark: '去水印',
-        white_background: '白底图',
-      };
-
-      // 如果是翻译模式，生成翻译后的图片
+      // 如果是翻译模式且有文字，生成翻译后的图片
       if (mode === 'translate' && analysisResult.texts && analysisResult.texts.length > 0) {
+        console.log(`[图片翻译] 检测到 ${analysisResult.texts.length} 个文字元素`);
+        
         // 翻译文字
-        const translatePrompt = `Translate the following Chinese texts to ${SUPPORTED_LANGUAGES[targetLanguage] || 'English'}.
-Keep the translation natural and suitable for e-commerce/marketing context.
-Return ONLY a JSON array of translations in the same order: ["translation1", "translation2", ...]
+        const targetLangName = SUPPORTED_LANGUAGES[targetLanguage] || 'English';
+        const translatePrompt = `Translate the following texts to ${targetLangName}.
+Keep translations natural and suitable for e-commerce/marketing context.
+Return ONLY a valid JSON array of translations in the exact same order as the input.
+If a translation is not needed (already in target language or is a number/symbol), keep it unchanged.
 
-Texts to translate:
-${analysisResult.texts.map((t: any) => t.original).join('\n')}`;
+Input texts:
+${analysisResult.texts.map((t: any, i: number) => `${i + 1}. "${t.original}"`).join('\n')}
+
+Output format: ["translation1", "translation2", ...]`;
 
         const translateResponse = await llmClient.invoke([
           { role: 'user' as const, content: translatePrompt }
         ], {
-          model: 'doubao-seed-1-6-vision-250815',
+          model: 'doubao-seed-1-6-251015',
           temperature: 0.3,
         });
 
@@ -158,56 +237,59 @@ ${analysisResult.texts.map((t: any) => t.original).join('\n')}`;
           translatedTexts = analysisResult.texts.map((t: any) => t.original);
         }
 
-        // 构建图片生成提示词
-        const imageGenPrompt = `Create an image that looks exactly like the original image, but replace ALL Chinese text with the translated text.
-Original image background and layout: ${analysisResult.background || 'clean background'}
-Layout: ${analysisResult.layout || 'simple layout'}
+        console.log(`[图片翻译] 翻译完成: ${translatedTexts.join(', ')}`);
 
-Text replacements (position: original -> translated):
-${analysisResult.texts.map((t: any, i: number) => 
-  `- ${t.position}: "${t.original}" -> "${translatedTexts[i] || t.original}" (style: ${t.style || 'standard text'})`
-).join('\n')}
+        // 构建图片生成提示词 - 基于原图生成带翻译的新图
+        const textReplacements = analysisResult.texts.map((t: any, i: number) => 
+          `Position "${t.position}": "${t.original}" → "${translatedTexts[i] || t.original}" (Style: ${t.style || 'standard'})`
+        ).join('\n');
 
-IMPORTANT: 
-- Keep the EXACT same visual style, colors, and layout as the original
-- Only replace the text content with translated versions
-- Maintain the same text positioning and styling
-- The image should look professional and natural`;
+        const imageGenPrompt = TRANSLATION_IMAGE_PROMPT
+          .replace('{background}', analysisResult.background || 'professional product photography')
+          .replace('{layout}', analysisResult.layout || 'centered composition')
+          .replace('{text_replacements}', textReplacements);
 
-        // 使用图像生成模型生成新图片
+        // 使用图像生成模型生成翻译后的图片
         const imageClient = new ImageGenerationClient(config, customHeaders);
         
         console.log(`[图片翻译] 生成翻译后图片...`);
         
         const imageResponse = await imageClient.generate({
           prompt: imageGenPrompt,
-          image: imageUrl, // 使用原图作为参考
           size: '2K',
         });
 
-        const helper = imageClient.getResponseHelper(imageResponse);
+        // 解析图片生成结果
+        let processedUrl = imageUrl;
+        let generatedSize = '';
         
-        if (helper.success && helper.imageUrls.length > 0) {
-          return NextResponse.json({
-            success: true,
-            data: {
-              task_id: taskId,
-              status: 'completed',
-              original_url: imageUrl,
-              processed_url: helper.imageUrls[0],
-              mode,
-              mode_label: modeLabels[mode] || '图片处理',
-              target_language: targetLanguage,
-              target_language_name: SUPPORTED_LANGUAGES[targetLanguage] || 'English',
-              translations: analysisResult.texts.map((t: any, i: number) => ({
-                original: t.original,
-                translated: translatedTexts[i] || t.original,
-                position: t.position,
-              })),
-              model_used: 'doubao-seed-1-6-vision-250815 + image-generation',
-            },
-          });
+        if (imageResponse && imageResponse.data && imageResponse.data.length > 0) {
+          processedUrl = imageResponse.data[0].url;
+          generatedSize = imageResponse.data[0].size || '2K';
+          console.log(`[图片翻译] 生成成功: ${processedUrl.substring(0, 50)}...`);
         }
+
+        return NextResponse.json({
+          success: true,
+          data: {
+            task_id: taskId,
+            status: 'completed',
+            original_url: imageUrl,
+            processed_url: processedUrl,
+            generated_size: generatedSize,
+            mode,
+            mode_label: modeLabels[mode] || '图片处理',
+            target_language: targetLanguage,
+            target_language_name: targetLangName,
+            translations: analysisResult.texts.map((t: any, i: number) => ({
+              original: t.original,
+              translated: translatedTexts[i] || t.original,
+              position: t.position,
+              style: t.style,
+            })),
+            model_used: 'doubao-vision + doubao-seedream',
+          },
+        });
       }
 
       // 非翻译模式或没有文字，返回分析结果
@@ -223,7 +305,7 @@ IMPORTANT:
           analysis: analysisResult,
           ai_response: visionResponse.content,
           target_language: targetLanguage,
-          model_used: 'doubao-seed-1-6-vision-250815',
+          model_used: 'doubao-vision',
         },
       });
     } catch (apiError: any) {
@@ -232,7 +314,7 @@ IMPORTANT:
       if (apiError.message?.includes('downloading') || apiError.code === 'InvalidParameter') {
         return NextResponse.json({
           success: false,
-          error: '无法访问图片URL，请确保图片链接可公开访问',
+          error: '无法访问图片URL，请确保图片链接可公开访问（不支持需要签名的临时链接）',
         }, { status: 400 });
       }
       

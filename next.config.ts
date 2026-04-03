@@ -36,6 +36,16 @@ const nextConfig: NextConfig = {
 
   // 生产环境优化 - swcMinify 已在 Next.js 16 中移除
 
+  // 服务端外部包 - 防止客户端打包包含 Node.js 模块的包
+  serverExternalPackages: [
+    'coze-coding-dev-sdk',
+    'pg',
+    'pg-connection-string',
+    'dotenv',
+    '@langchain/openai',
+    '@langchain/core',
+  ],
+
   // TypeScript 配置
   typescript: {
     // 开发时忽略类型错误以加快构建
