@@ -196,6 +196,7 @@ export default function AdvertisingAgentPage() {
   const [activeTab, setActiveTab] = useState('campaigns');
   const [agentStatus, setAgentStatus] = useState<'online' | 'offline' | 'processing'>('online');
   const [campaigns, setCampaigns] = useState<AdCampaign[]>(mockCampaigns);
+  const [riskAlerts, setRiskAlerts] = useState<RiskAlert[]>(mockRiskAlerts);
   
   // 新建广告对话框状态
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -210,6 +211,9 @@ export default function AdvertisingAgentPage() {
   // 详情对话框状态
   const [selectedCampaign, setSelectedCampaign] = useState<AdCampaign | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
+
+  // API配置对话框状态
+  const [isConfigDialogOpen, setIsConfigDialogOpen] = useState(false);
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -284,6 +288,32 @@ export default function AdvertisingAgentPage() {
   const handleViewDetails = (campaign: AdCampaign) => {
     setSelectedCampaign(campaign);
     setIsDetailOpen(true);
+  };
+
+  // 确认执行告警
+  const handleConfirmAlert = (alert: RiskAlert) => {
+    setRiskAlerts(prev => prev.filter(a => a.id !== alert.id));
+    toast.success(`已确认执行: ${alert.message}`);
+    
+    // 根据告警类型执行相应操作
+    if (alert.type === 'budget') {
+      // 预算告警：暂停对应广告
+      const campaign = campaigns.find(c => c.name === alert.campaign);
+      if (campaign) {
+        handlePauseAd(campaign);
+      }
+    }
+  };
+
+  // 拒绝告警
+  const handleRejectAlert = (alert: RiskAlert) => {
+    setRiskAlerts(prev => prev.filter(a => a.id !== alert.id));
+    toast.success(`已拒绝告警: ${alert.message}`);
+  };
+
+  // 打开API配置
+  const handleOpenConfig = () => {
+    setIsConfigDialogOpen(true);
   };
 
   const getStatusBadge = (status: string) => {
@@ -607,7 +637,7 @@ export default function AdvertisingAgentPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {mockRiskAlerts.map((alert) => (
+                  {riskAlerts.map((alert) => (
                     <div key={alert.id} className={`p-4 border rounded-lg ${alert.severity === 'danger' ? 'border-destructive/50 bg-destructive/5' : 'border-warning/50 bg-warning/5'}`}>
                       <div className="flex items-start gap-3">
                         <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${alert.severity === 'danger' ? 'bg-destructive/10' : 'bg-warning/10'}`}>
@@ -636,8 +666,19 @@ export default function AdvertisingAgentPage() {
                         </div>
                         {alert.action === 'pending_confirm' && (
                           <div className="flex items-center gap-2">
-                            <Button size="sm" variant="outline">拒绝</Button>
-                            <Button size="sm">确认执行</Button>
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              onClick={() => handleRejectAlert(alert)}
+                            >
+                              拒绝
+                            </Button>
+                            <Button 
+                              size="sm"
+                              onClick={() => handleConfirmAlert(alert)}
+                            >
+                              确认执行
+                            </Button>
                           </div>
                         )}
                       </div>
@@ -686,7 +727,11 @@ export default function AdvertisingAgentPage() {
                       <div className="text-[13px] font-medium text-foreground">API对接</div>
                       <div className="text-[11px] text-muted-foreground">TK Ads / 亚马逊PPC API</div>
                     </div>
-                    <Button variant="outline" size="sm">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={handleOpenConfig}
+                    >
                       <Settings className="h-4 w-4 mr-2" />
                       配置
                     </Button>
@@ -887,6 +932,100 @@ export default function AdvertisingAgentPage() {
             <DialogFooter>
               <Button onClick={() => setIsDetailOpen(false)}>
                 关闭
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* API配置对话框 */}
+        <Dialog open={isConfigDialogOpen} onOpenChange={setIsConfigDialogOpen}>
+          <DialogContent className="sm:max-w-[500px]">
+            <DialogHeader>
+              <DialogTitle>API 配置</DialogTitle>
+              <DialogDescription>
+                配置广告平台的 API 连接信息
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              {/* TikTok Ads API 配置 */}
+              <div className="space-y-3">
+                <div className="text-[13px] font-medium text-foreground flex items-center gap-2">
+                  <Megaphone className="h-4 w-4 text-primary" />
+                  TikTok Ads API
+                </div>
+                <div className="space-y-2">
+                  <div>
+                    <label className="text-[12px] text-muted-foreground mb-1 block">Access Token</label>
+                    <input
+                      type="password"
+                      placeholder="输入 Access Token"
+                      className="w-full px-3 py-2 border border-border rounded-md text-[13px]"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[12px] text-muted-foreground mb-1 block">Advertiser ID</label>
+                    <input
+                      type="text"
+                      placeholder="输入 Advertiser ID"
+                      className="w-full px-3 py-2 border border-border rounded-md text-[13px]"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="border-t border-border my-4" />
+
+              {/* Amazon PPC API 配置 */}
+              <div className="space-y-3">
+                <div className="text-[13px] font-medium text-foreground flex items-center gap-2">
+                  <BarChart3 className="h-4 w-4 text-success" />
+                  Amazon PPC API
+                </div>
+                <div className="space-y-2">
+                  <div>
+                    <label className="text-[12px] text-muted-foreground mb-1 block">Seller ID</label>
+                    <input
+                      type="text"
+                      placeholder="输入 Seller ID"
+                      className="w-full px-3 py-2 border border-border rounded-md text-[13px]"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[12px] text-muted-foreground mb-1 block">Marketplace ID</label>
+                    <select className="w-full px-3 py-2 border border-border rounded-md text-[13px]">
+                      <option value="ATVPDKIKX0DER">美国 (US)</option>
+                      <option value="A1PA6795UKMFR9">欧洲 (EU)</option>
+                      <option value="A2Q3Y263D00KWC">日本 (JP)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-[12px] text-muted-foreground mb-1 block">AWS Access Key ID</label>
+                    <input
+                      type="text"
+                      placeholder="输入 Access Key ID"
+                      className="w-full px-3 py-2 border border-border rounded-md text-[13px]"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[12px] text-muted-foreground mb-1 block">AWS Secret Key</label>
+                    <input
+                      type="password"
+                      placeholder="输入 Secret Key"
+                      className="w-full px-3 py-2 border border-border rounded-md text-[13px]"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsConfigDialogOpen(false)}>
+                取消
+              </Button>
+              <Button onClick={() => {
+                setIsConfigDialogOpen(false);
+                toast.success('API 配置已保存');
+              }}>
+                保存配置
               </Button>
             </DialogFooter>
           </DialogContent>
