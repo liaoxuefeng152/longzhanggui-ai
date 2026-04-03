@@ -74,6 +74,9 @@ export default function CustomerServicePage() {
   const [keyword, setKeyword] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   
+  // 智能体在线状态
+  const [agentStatus, setAgentStatus] = useState<'online' | 'offline'>('online');
+  
   // 对话框状态
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [isReplyOpen, setIsReplyOpen] = useState(false);
@@ -93,6 +96,13 @@ export default function CustomerServicePage() {
       return;
     }
     setUser(JSON.parse(userData));
+    
+    // 加载智能体状态
+    const savedAgentStatus = localStorage.getItem('agentStatus') as 'online' | 'offline' | null;
+    if (savedAgentStatus) {
+      setAgentStatus(savedAgentStatus);
+    }
+    
     fetchTickets();
   }, [router]);
 
@@ -165,8 +175,34 @@ export default function CustomerServicePage() {
     }
   };
 
+  // 切换智能体状态
+  const toggleAgentStatus = () => {
+    const newStatus = agentStatus === 'online' ? 'offline' : 'online';
+    
+    if (newStatus === 'offline') {
+      // 切换到离线需要确认
+      if (!confirm('确定要切换到离线状态吗？离线后AI将不会自动处理新工单。')) {
+        return;
+      }
+    }
+    
+    setAgentStatus(newStatus);
+    localStorage.setItem('agentStatus', newStatus);
+    
+    if (newStatus === 'online') {
+      toast.success('智能体已上线', { description: 'AI将自动处理新工单' });
+    } else {
+      toast.warning('智能体已离线', { description: '新工单将不会自动处理' });
+    }
+  };
+
   // AI自动回复
   const handleAIReply = async (ticket: CustomerTicket) => {
+    if (agentStatus === 'offline') {
+      toast.error('智能体离线中', { description: '请先切换到在线状态' });
+      return;
+    }
+
     setIsProcessing(ticket.id);
     try {
       // 模拟AI生成回复
@@ -338,9 +374,16 @@ export default function CustomerServicePage() {
               <RefreshCw className="h-4 w-4 mr-2" />
               刷新
             </Button>
-            <Badge className="bg-success text-white">
-              <Bot className="h-3 w-3 mr-1" />
-              AI在线
+            <Badge 
+              className={`cursor-pointer transition-colors ${
+                agentStatus === 'online' 
+                  ? 'bg-success text-white hover:bg-success/90' 
+                  : 'bg-muted text-muted-foreground hover:bg-muted/90'
+              }`}
+              onClick={toggleAgentStatus}
+            >
+              <Bot className={`h-3 w-3 mr-1 ${agentStatus === 'offline' ? 'text-muted-foreground' : ''}`} />
+              {agentStatus === 'online' ? 'AI在线' : 'AI离线'}
             </Badge>
           </div>
         </div>
@@ -508,12 +551,13 @@ export default function CustomerServicePage() {
                                 <Button 
                                   size="sm" 
                                   onClick={() => handleAIReply(ticket)}
-                                  disabled={isProcessing === ticket.id}
+                                  disabled={isProcessing === ticket.id || agentStatus === 'offline'}
+                                  title={agentStatus === 'offline' ? '智能体离线中，无法自动回复' : 'AI自动回复'}
                                 >
                                   {isProcessing === ticket.id ? (
                                     <Loader2 className="h-3 w-3 mr-1 animate-spin" />
                                   ) : (
-                                    <Bot className="h-3 w-3 mr-1" />
+                                    <Bot className={`h-3 w-3 mr-1 ${agentStatus === 'offline' ? 'text-muted-foreground' : ''}`} />
                                   )}
                                   AI回复
                                 </Button>
