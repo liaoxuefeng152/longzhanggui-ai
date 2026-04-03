@@ -290,6 +290,10 @@ export default function SelectionAgentPage() {
               <RefreshCw className="h-4 w-4 mr-2" />
               刷新
             </Button>
+            <Button variant="outline" onClick={() => router.push('/erp/products')}>
+              <Package className="h-4 w-4 mr-2" />
+              查看商品中心
+            </Button>
             <Button 
               onClick={handleStartSelection}
               disabled={isStarting || agentStatus === 'processing'}
@@ -301,7 +305,7 @@ export default function SelectionAgentPage() {
                 </>
               ) : agentStatus === 'processing' ? (
                 <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  <Loader2 className="h-4 w-2 mr-2 animate-spin" />
                   选品中...
                 </>
               ) : (

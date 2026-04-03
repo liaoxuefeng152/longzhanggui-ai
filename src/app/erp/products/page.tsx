@@ -116,7 +116,25 @@ export default function ERPProductsPage() {
     }
     setUser(JSON.parse(userData));
     fetchProducts();
-  }, [router]);
+
+    // 监听页面可见性变化（从其他标签页切换回来时刷新）
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        fetchProducts();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [router, keyword, statusFilter]);
+
+  // 当筛选条件改变时自动刷新
+  useEffect(() => {
+    fetchProducts();
+  }, [keyword, statusFilter]);
 
   const fetchProducts = async () => {
     setLoading(true);
@@ -434,6 +452,13 @@ export default function ERPProductsPage() {
               <Button variant="outline" onClick={fetchProducts}>
                 <Filter className="h-4 w-4 mr-2" />
                 筛选
+              </Button>
+              <Button variant="outline" onClick={() => {
+                fetchProducts();
+                toast.success('已刷新商品列表');
+              }}>
+                <RefreshCw className="h-4 w-4 mr-2" />
+                刷新
               </Button>
             </div>
           </CardContent>
