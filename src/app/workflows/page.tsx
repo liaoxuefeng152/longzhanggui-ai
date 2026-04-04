@@ -157,9 +157,15 @@ export default function WorkflowsPage() {
 
   const loadWorkflowExecutions = async () => {
     try {
-      const { default: store } = await import('@/lib/store');
-      const executions = store.getWorkflows();
-      setWorkflowExecutions(executions);
+      const response = await fetch('/api/workflow-executions');
+      if (response.ok) {
+        const data = await response.json();
+        console.log('[工作流页面] 加载执行历史:', data.data.length, '个');
+        console.log('[工作流页面] 执行历史数据:', data.data);
+        setWorkflowExecutions(data.data || []);
+      } else {
+        console.error('[工作流页面] 获取工作流失败:', response.status);
+      }
     } catch (error) {
       console.error('Failed to load workflow executions:', error);
     }
@@ -377,21 +383,29 @@ export default function WorkflowsPage() {
       )}
 
       {/* 执行历史 */}
-      {workflowExecutions.length > 0 && (
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="text-lg">执行历史</CardTitle>
-                <CardDescription>最近执行的工作流实例</CardDescription>
-              </div>
-              <Button variant="outline" size="sm" onClick={loadWorkflowExecutions}>
-                <RefreshCw className="h-4 w-4 mr-2" />
-                刷新
-              </Button>
+      <Card className="border-blue-200">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-lg text-blue-700">执行历史</CardTitle>
+              <CardDescription>
+                最近执行的工作流实例（共 {workflowExecutions.length} 个）
+              </CardDescription>
             </div>
-          </CardHeader>
-          <CardContent>
+            <Button variant="outline" size="sm" onClick={loadWorkflowExecutions}>
+              <RefreshCw className="h-4 w-4 mr-2" />
+              刷新
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {workflowExecutions.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <Clock className="h-12 w-12 mx-auto mb-2 opacity-50" />
+              <p className="font-medium">暂无工作流执行记录</p>
+              <p className="text-sm mt-2">在选品智能体页面点击"触发生成"按钮后，执行记录会显示在这里</p>
+            </div>
+          ) : (
             <div className="space-y-3">
               {workflowExecutions.map((workflow) => (
                 <div key={workflow.id} className="p-4 border rounded-lg hover:bg-muted/30 transition-colors">
@@ -449,9 +463,9 @@ export default function WorkflowsPage() {
                 </div>
               ))}
             </div>
-          </CardContent>
-        </Card>
-      )}
+          )}
+        </CardContent>
+      </Card>
 
       {/* 工作流模板列表 */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
