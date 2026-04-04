@@ -143,11 +143,27 @@ export default function WorkflowsPage() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [templates, setTemplates] = useState<WorkflowTemplate[]>([]);
+  const [workflowExecutions, setWorkflowExecutions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [executingWorkflow, setExecutingWorkflow] = useState<string | null>(null);
   const [executionProgress, setExecutionProgress] = useState(0);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<WorkflowTemplate | null>(null);
+
+  // 加载工作流执行列表
+  useEffect(() => {
+    loadWorkflowExecutions();
+  }, []);
+
+  const loadWorkflowExecutions = async () => {
+    try {
+      const { default: store } = await import('@/lib/store');
+      const executions = store.getWorkflows();
+      setWorkflowExecutions(executions);
+    } catch (error) {
+      console.error('Failed to load workflow executions:', error);
+    }
+  };
 
   // 打开详情对话框
   const openDetailDialog = (template: WorkflowTemplate) => {
@@ -355,6 +371,83 @@ export default function WorkflowsPage() {
             <div className="flex justify-between mt-4 text-sm text-muted-foreground">
               <span>选品 → 采集 → 图片 → 定价 → Listing → 上架</span>
               <span>{Math.round(executionProgress)}%</span>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* 执行历史 */}
+      {workflowExecutions.length > 0 && (
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-lg">执行历史</CardTitle>
+                <CardDescription>最近执行的工作流实例</CardDescription>
+              </div>
+              <Button variant="outline" size="sm" onClick={loadWorkflowExecutions}>
+                <RefreshCw className="h-4 w-4 mr-2" />
+                刷新
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {workflowExecutions.map((workflow) => (
+                <div key={workflow.id} className="p-4 border rounded-lg hover:bg-muted/30 transition-colors">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-sm font-medium">{workflow.template_name}</span>
+                        <Badge className={
+                          workflow.status === 'completed' ? 'bg-success/10 text-success border-success/20' :
+                          workflow.status === 'running' ? 'bg-warning/10 text-warning border-warning/20' :
+                          workflow.status === 'failed' ? 'bg-destructive/10 text-destructive border-destructive/20' :
+                          'bg-muted'
+                        }>
+                          {workflow.status === 'completed' ? '已完成' :
+                           workflow.status === 'running' ? '运行中' :
+                           workflow.status === 'failed' ? '失败' :
+                           '待执行'}
+                        </Badge>
+                      </div>
+                      {workflow.product_name && (
+                        <div className="text-sm text-muted-foreground mb-2">
+                          商品: {workflow.product_name}
+                        </div>
+                      )}
+                      <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                        <span>进度: {workflow.current_step}/{workflow.total_steps}</span>
+                        <span>开始: {workflow.started_at || '-'}</span>
+                        {workflow.completed_at && (
+                          <span>完成: {workflow.completed_at}</span>
+                        )}
+                      </div>
+                      <div className="mt-2">
+                        <Progress value={(workflow.current_step / workflow.total_steps) * 100} className="h-1" />
+                      </div>
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      {workflow.steps.slice(0, 3).map((step: any, index: number) => (
+                        <div key={step.id} className="flex items-center gap-2 text-xs">
+                          {step.status === 'completed' && <CheckCircle2 className="h-3 w-3 text-success" />}
+                          {step.status === 'running' && <Loader2 className="h-3 w-3 text-warning animate-spin" />}
+                          {step.status === 'failed' && <X className="h-3 w-3 text-destructive" />}
+                          {step.status === 'pending' && <Clock className="h-3 w-3 text-muted-foreground" />}
+                          <span className={step.status === 'completed' ? 'text-foreground' : 'text-muted-foreground'}>
+                            {step.name}
+                          </span>
+                        </div>
+                      ))}
+                      {workflow.steps.length > 3 && (
+                        <div className="text-xs text-muted-foreground">
+                          +{workflow.steps.length - 3} 个步骤
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           </CardContent>
         </Card>
