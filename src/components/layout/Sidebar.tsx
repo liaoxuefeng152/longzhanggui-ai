@@ -134,7 +134,11 @@ export default function Sidebar() {
   };
 
   return (
-    <aside className="w-[220px] bg-sidebar fixed left-0 top-[60px] bottom-0 overflow-y-auto">
+    <aside className={cn(
+      "w-[220px] sidebar-gradient fixed left-0 top-[60px] bottom-0 overflow-y-auto",
+      "border-r border-white/5",
+      "transition-all duration-300 ease-out"
+    )}>
       <div className="p-4">
         <nav className="space-y-1">
           {menuItems.map((item) => {
@@ -146,37 +150,48 @@ export default function Sidebar() {
                 <Link
                   href={item.href}
                   className={cn(
-                    'flex items-center gap-3 px-3 py-2.5 rounded-md transition-all duration-200',
+                    'sidebar-item flex items-center gap-3 px-3 py-2.5 rounded-md transition-all duration-200',
+                    'group relative',
                     active
-                      ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium'
-                      : 'text-sidebar-foreground/80 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'
+                      ? 'bg-gradient-to-r from-primary/20 to-primary/10 text-white shadow-lg shadow-primary/20'
+                      : 'text-sidebar-foreground hover:bg-white/5 hover:text-white hover:translate-x-1'
                   )}
                 >
-                  <Icon className="h-4 w-4 flex-shrink-0" />
-                  <span className="text-[14px]">{item.title}</span>
+                  <Icon className={cn(
+                    "h-4 w-4 shrink-0 transition-transform duration-200",
+                    active ? "scale-110" : "group-hover:scale-105"
+                  )} />
+                  <span className="text-sm font-medium">{item.title}</span>
+                  {active && (
+                    <div className="absolute left-0 top-0 bottom-0 w-[2px] bg-gradient-to-b from-primary to-blue-400 rounded-r-full animate-pulse" />
+                  )}
                   {item.submenu && (
-                    <ChevronRight
-                      className={cn(
-                        'h-4 w-4 ml-auto transition-transform',
-                        active && 'rotate-90'
-                      )}
-                    />
+                    <ChevronRight className={cn(
+                      "h-3.5 w-3.5 ml-auto transition-transform duration-200",
+                      active ? "rotate-90" : "group-hover:translate-x-0.5"
+                    )} />
                   )}
                 </Link>
 
-                {item.submenu && active && (
-                  <div className="ml-6 mt-1 space-y-1 border-l border-sidebar-border/30 pl-3">
+                {/* 子菜单 */}
+                {item.submenu && (
+                  <div className={cn(
+                    "ml-4 mt-1 space-y-1 overflow-hidden transition-all duration-300 ease-in-out",
+                    active ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
+                  )}>
                     {item.submenu.map((subItem) => (
                       <Link
                         key={subItem.href}
                         href={subItem.href}
                         className={cn(
-                          'block px-3 py-2 text-[13px] rounded-md transition-all duration-200',
+                          "flex items-center gap-2 px-3 py-1.5 rounded-md text-xs transition-all duration-200",
+                          "hover:bg-white/5 hover:text-white",
                           pathname === subItem.href
-                            ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium'
-                            : 'text-sidebar-foreground/70 hover:bg-sidebar-accent/30 hover:text-sidebar-foreground'
+                            ? "bg-white/10 text-white font-medium"
+                            : "text-sidebar-foreground/70"
                         )}
                       >
+                        <div className="w-1 h-1 rounded-full bg-primary/50" />
                         {subItem.title}
                       </Link>
                     ))}

@@ -143,15 +143,15 @@ const AGENTS_CONFIG = [
   },
 ];
 
-// 颜色映射
-const colorMap: Record<string, { bg: string; text: string; border: string }> = {
-  blue: { bg: 'bg-blue-500/10', text: 'text-blue-500', border: 'border-blue-500/20' },
-  purple: { bg: 'bg-purple-500/10', text: 'text-purple-500', border: 'border-purple-500/20' },
-  green: { bg: 'bg-green-500/10', text: 'text-green-500', border: 'border-green-500/20' },
-  orange: { bg: 'bg-orange-500/10', text: 'text-orange-500', border: 'border-orange-500/20' },
-  cyan: { bg: 'bg-cyan-500/10', text: 'text-cyan-500', border: 'border-cyan-500/20' },
-  indigo: { bg: 'bg-indigo-500/10', text: 'text-indigo-500', border: 'border-indigo-500/20' },
-  pink: { bg: 'bg-pink-500/10', text: 'text-pink-500', border: 'border-pink-500/20' },
+// 颜色映射 - 优化渐变
+const colorMap: Record<string, { bg: string; text: string; border: string; gradient: string }> = {
+  blue: { bg: 'bg-blue-500/15', text: 'text-blue-600', border: 'border-blue-500/25', gradient: 'from-blue-500/20 to-blue-500/5' },
+  purple: { bg: 'bg-purple-500/15', text: 'text-purple-600', border: 'border-purple-500/25', gradient: 'from-purple-500/20 to-purple-500/5' },
+  green: { bg: 'bg-green-500/15', text: 'text-green-600', border: 'border-green-500/25', gradient: 'from-green-500/20 to-green-500/5' },
+  orange: { bg: 'bg-orange-500/15', text: 'text-orange-600', border: 'border-orange-500/25', gradient: 'from-orange-500/20 to-orange-500/5' },
+  cyan: { bg: 'bg-cyan-500/15', text: 'text-cyan-600', border: 'border-cyan-500/25', gradient: 'from-cyan-500/20 to-cyan-500/5' },
+  indigo: { bg: 'bg-indigo-500/15', text: 'text-indigo-600', border: 'border-indigo-500/25', gradient: 'from-indigo-500/20 to-indigo-500/5' },
+  pink: { bg: 'bg-pink-500/15', text: 'text-pink-600', border: 'border-pink-500/25', gradient: 'from-pink-500/20 to-pink-500/5' },
 };
 
 export default function AIAgentsCenterPage() {
@@ -285,30 +285,44 @@ export default function AIAgentsCenterPage() {
                 const Icon = agent.icon;
                 const colors = colorMap[agent.color];
                 return (
-                  <Card key={agent.id} className="bg-white border-border shadow-sm hover:shadow-md transition-all group">
+                  <Card key={agent.id} className={cn(
+                    `bg-gradient-to-br ${colors.gradient} ${colors.border} shadow-sm`,
+                    'hover:shadow-lg hover:shadow-primary/10',
+                    'transition-all duration-300 ease-out group animate-fade-in',
+                    'hover:-translate-y-1 hover:border-primary/30'
+                  )}>
                     <CardHeader className="pb-3">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                          <div className={`w-12 h-12 rounded-lg ${colors.bg} flex items-center justify-center`}>
-                            <Icon className={`h-6 w-6 ${colors.text}`} />
+                          <div className={cn(
+                            `w-12 h-12 rounded-xl ${colors.bg} flex items-center justify-center`,
+                            'shadow-sm group-hover:shadow-md transition-shadow duration-300'
+                          )}>
+                            <Icon className={cn(`h-6 w-6 ${colors.text}`, 'group-hover:scale-110 transition-transform duration-300')} />
                           </div>
                           <div>
-                            <CardTitle className="text-base">{agent.name}</CardTitle>
-                            <div className="flex items-center gap-2 mt-1">
-                              <Badge className={agent.priority === 'P0' ? 'bg-red-500/10 text-red-500 border-red-500/20' : 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20'}>
+                            <CardTitle className="text-base group-hover:text-primary transition-colors">{agent.name}</CardTitle>
+                            <div className="flex items-center gap-2 mt-1 flex-wrap">
+                              <Badge className={cn(
+                                agent.priority === 'P0'
+                                  ? 'bg-gradient-to-r from-red-500/10 to-red-500/5 text-red-600 border-red-500/30 shadow-sm'
+                                  : 'bg-gradient-to-r from-yellow-500/10 to-yellow-500/5 text-yellow-600 border-yellow-500/30 shadow-sm',
+                                'text-xs font-medium'
+                              )}>
                                 {agent.priority}
                               </Badge>
-                              <Badge variant="outline" className="bg-success/10 text-success border-success/20 text-xs">
+                              <Badge className="bg-gradient-to-r from-green-500/10 to-green-500/5 text-green-600 border-green-500/30 text-xs font-medium shadow-sm animate-pulse-glow">
+                                <CheckCircle className="h-3 w-3 mr-1" />
                                 在线
                               </Badge>
                               {agent.compliance && (
-                                <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-500/20 text-xs">
+                                <Badge variant="outline" className="bg-gradient-to-r from-green-500/10 to-green-500/5 text-green-600 border-green-500/30 text-xs font-medium">
                                   <Shield className="h-3 w-3 mr-1" />
                                   合规
                                 </Badge>
                               )}
                               {agent.riskControl && (
-                                <Badge variant="outline" className="bg-orange-500/10 text-orange-600 border-orange-500/20 text-xs">
+                                <Badge variant="outline" className="bg-gradient-to-r from-orange-500/10 to-orange-500/5 text-orange-600 border-orange-500/30 text-xs font-medium">
                                   <AlertTriangle className="h-3 w-3 mr-1" />
                                   风控
                                 </Badge>
@@ -319,32 +333,38 @@ export default function AIAgentsCenterPage() {
                       </div>
                     </CardHeader>
                     <CardContent className="space-y-3">
-                      <p className="text-sm text-muted-foreground">{agent.description}</p>
+                      <p className="text-sm text-muted-foreground leading-relaxed">{agent.description}</p>
                       
                       {/* 功能标签 */}
-                      <div className="flex flex-wrap gap-1">
+                      <div className="flex flex-wrap gap-1.5">
                         {agent.features.slice(0, 4).map((feature, idx) => (
-                          <Badge key={idx} variant="secondary" className="text-xs">
+                          <Badge key={idx} variant="secondary" className="text-xs bg-white/60 border-border/50">
                             {feature}
                           </Badge>
                         ))}
                       </div>
 
                       {/* 数据来源和输出 */}
-                      <div className="flex items-center justify-between text-xs text-muted-foreground pt-2 border-t">
-                        <span>来源: {agent.dataSource}</span>
-                        <span>输出: {agent.output}</span>
+                      <div className="flex items-center justify-between text-xs text-muted-foreground pt-2 border-t border-border/50">
+                        <div className="flex items-center gap-1">
+                          <Search className="h-3 w-3" />
+                          <span>{agent.dataSource}</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <ArrowRight className="h-3 w-3" />
+                          <span>{agent.output}</span>
+                        </div>
                       </div>
 
                       {/* 操作按钮 */}
                       <div className="flex items-center gap-2 pt-2">
-                        <Button size="sm" className="flex-1" asChild>
+                        <Button size="sm" className="flex-1 shadow-sm hover:shadow-md" asChild>
                           <Link href={`/agents/${agent.id}`}>
                             <Play className="h-3 w-3 mr-1" />
                             执行
                           </Link>
                         </Button>
-                        <Button size="sm" variant="outline" asChild>
+                        <Button size="sm" variant="outline" className="shadow-sm hover:shadow-md" asChild>
                           <Link href={`/agents/${agent.id}`}>
                             <Settings className="h-3 w-3 mr-1" />
                             配置

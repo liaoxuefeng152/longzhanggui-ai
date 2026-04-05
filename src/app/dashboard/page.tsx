@@ -153,29 +153,37 @@ export default function DashboardPage() {
       title: '今日调用次数',
       value: stats?.todayCalls?.toLocaleString() || '0',
       icon: ClipboardList,
-      color: 'text-warning',
-      bgColor: 'bg-warning/10',
+      color: 'text-orange-500',
+      bgColor: 'bg-gradient-to-br from-orange-500/20 to-orange-500/10',
+      borderColor: 'border-orange-500/20',
+      gradient: 'from-orange-500 to-orange-600',
     },
     {
       title: '在线用户数',
       value: stats?.onlineUsers?.toLocaleString() || '0',
       icon: Users,
-      color: 'text-primary',
-      bgColor: 'bg-primary/10',
+      color: 'text-blue-600',
+      bgColor: 'bg-gradient-to-br from-blue-500/20 to-blue-500/10',
+      borderColor: 'border-blue-500/20',
+      gradient: 'from-blue-500 to-blue-600',
     },
     {
       title: '今日订单数',
       value: stats?.todayOrders?.toLocaleString() || '0',
       icon: CheckCircle,
-      color: 'text-success',
-      bgColor: 'bg-success/10',
+      color: 'text-green-600',
+      bgColor: 'bg-gradient-to-br from-green-500/20 to-green-500/10',
+      borderColor: 'border-green-500/20',
+      gradient: 'from-green-500 to-green-600',
     },
     {
       title: '推荐用户数',
       value: stats?.referralUsers?.toLocaleString() || '0',
       icon: Activity,
-      color: 'text-primary',
-      bgColor: 'bg-primary/10',
+      color: 'text-purple-600',
+      bgColor: 'bg-gradient-to-br from-purple-500/20 to-purple-500/10',
+      borderColor: 'border-purple-500/20',
+      gradient: 'from-purple-500 to-purple-600',
     },
   ];
 
@@ -260,15 +268,29 @@ export default function DashboardPage() {
           {coreStats.map((stat, index) => {
             const Icon = stat.icon;
             return (
-              <Card key={index} className="bg-white border-border shadow-sm hover:shadow-md transition-shadow cursor-pointer">
-                <CardContent className="p-4">
+              <Card key={index} className={cn(
+                `bg-gradient-to-br from-white to-gray-50 ${stat.borderColor} shadow-sm`,
+                'hover:shadow-lg hover:shadow-primary/10',
+                'transition-all duration-300 ease-out group animate-fade-in',
+                'hover:-translate-y-1 cursor-pointer border'
+              )}>
+                <CardContent className="p-5">
                   <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-[13px] text-muted-foreground mb-2">{stat.title}</p>
-                      <p className="text-[28px] font-semibold text-foreground">{stat.value}</p>
+                    <div className="flex-1">
+                      <p className="text-sm text-muted-foreground mb-2 group-hover:text-foreground/80 transition-colors">
+                        {stat.title}
+                      </p>
+                      <div className="flex items-baseline gap-2">
+                        <p className="text-3xl font-bold text-foreground">{stat.value}</p>
+                        <span className="text-xs text-muted-foreground">次</span>
+                      </div>
                     </div>
-                    <div className={`w-12 h-12 rounded-lg ${stat.bgColor} flex items-center justify-center`}>
-                      <Icon className={`h-6 w-6 ${stat.color}`} />
+                    <div className={cn(
+                      `w-14 h-14 rounded-2xl ${stat.bgColor} flex items-center justify-center`,
+                      'shadow-sm group-hover:shadow-md transition-shadow duration-300',
+                      'group-hover:scale-110 transition-transform duration-300'
+                    )}>
+                      <Icon className={cn(`h-7 w-7 ${stat.color}`)} />
                     </div>
                   </div>
                 </CardContent>
