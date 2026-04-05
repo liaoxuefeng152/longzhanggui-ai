@@ -118,7 +118,13 @@ export async function POST(request: NextRequest) {
         domestic_shipping: domesticShipping,
         first_mile_shipping: firstMileShipping,
         total_cost: totalCost,
-        suggested_price: suggestedPrice,
+        pricing: {
+          total_cost: totalCost,
+          suggested_price: suggestedPrice,
+          target_price: suggestedPrice,
+          profit_margin: profitMargin,
+          pricing_basis: 'AI Calculation',
+        },
         selection_score: item.sales_trend,
         sales_trend: item.sales_trend,
         profit_margin: profitMargin,
@@ -189,7 +195,7 @@ function buildSelectionPrompt(params: {
   };
 
   const siteName = siteNames[site] || site;
-  const platformNames = {
+  const platformNames: Record<string, string> = {
     tiktok: 'TikTok Shop',
     amazon: 'Amazon',
     shopee: 'Shopee',
