@@ -7,19 +7,20 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getFeishuUserById } from '@/lib/data/feishu-users-store';
 
 /**
- * GET /api/v1/erp/feishu-users/[id]/usage
+ * GET /api/feishu-users/[id]/usage
  * 获取用户使用情况
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const user = getFeishuUserById(params.id);
+    const { id } = await params;
+    const user = getFeishuUserById(id);
 
     if (!user) {
       return NextResponse.json(
-        { error: '用户不存在', message: `用户 ${params.id} 不存在` },
+        { error: '用户不存在', message: `用户 ${id} 不存在` },
         { status: 404 }
       );
     }

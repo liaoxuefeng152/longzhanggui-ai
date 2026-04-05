@@ -7,14 +7,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import { updateFeishuUser } from '@/lib/data/feishu-users-store';
 
 /**
- * PUT /api/v1/erp/feishu-users/[id]/quota
+ * PUT /api/feishu-users/[id]/quota
  * 更新用户配额
  */
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const body = await request.json();
     const { quota } = body;
 
@@ -25,7 +26,7 @@ export async function PUT(
       );
     }
 
-    const user = updateFeishuUser(params.id, { call_quota: quota });
+    const user = updateFeishuUser(id, { call_quota: quota });
 
     return NextResponse.json({ success: true, message: '配额更新成功', data: user });
   } catch (error) {

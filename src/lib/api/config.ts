@@ -57,12 +57,13 @@ export const API_ENDPOINTS = {
     stats: '/dashboard/stats',
   },
   
-  // 飞书用户
+  // 飞书用户 - 使用前端API路由（不依赖后端）
   feishuUsers: {
-    list: '/feishu-users',
-    detail: (id: string) => `/feishu-users/${id}`,
-    quota: (id: string) => `/feishu-users/${id}/quota`,
-    usage: (id: string) => `/feishu-users/${id}/usage`,
+    list: '/api/feishu-users',
+    detail: (id: string) => `/api/feishu-users/${id}`,
+    quota: (id: string) => `/api/feishu-users/${id}/quota`,
+    usage: (id: string) => `/api/feishu-users/${id}/usage`,
+    batch: '/api/feishu-users/batch',
   },
   
   // 套餐管理

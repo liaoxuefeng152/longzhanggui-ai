@@ -14,19 +14,20 @@ import {
 } from '@/lib/data/feishu-users-store';
 
 /**
- * GET /api/v1/erp/feishu-users/[id]
+ * GET /api/feishu-users/[id]
  * 获取用户详情
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const user = getFeishuUserById(params.id);
+    const { id } = await params;
+    const user = getFeishuUserById(id);
 
     if (!user) {
       return NextResponse.json(
-        { error: '用户不存在', message: `用户 ${params.id} 不存在` },
+        { error: '用户不存在', message: `用户 ${id} 不存在` },
         { status: 404 }
       );
     }
@@ -42,17 +43,18 @@ export async function GET(
 }
 
 /**
- * PUT /api/v1/erp/feishu-users/[id]
+ * PUT /api/feishu-users/[id]
  * 更新用户
  */
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const body = await request.json();
 
-    const user = updateUser(params.id, body);
+    const user = updateUser(id, body);
 
     return NextResponse.json(user);
   } catch (error) {
@@ -65,19 +67,20 @@ export async function PUT(
 }
 
 /**
- * DELETE /api/v1/erp/feishu-users/[id]
+ * DELETE /api/feishu-users/[id]
  * 删除用户
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const success = deleteUser(params.id);
+    const { id } = await params;
+    const success = deleteUser(id);
 
     if (!success) {
       return NextResponse.json(
-        { error: '用户不存在', message: `用户 ${params.id} 不存在` },
+        { error: '用户不存在', message: `用户 ${id} 不存在` },
         { status: 404 }
       );
     }
