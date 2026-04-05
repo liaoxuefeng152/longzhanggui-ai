@@ -82,9 +82,9 @@ export const API_ENDPOINTS = {
   
   // 平台绑定
   platformBindings: {
-    list: '/platform-bindings',
-    detail: (id: string) => `/platform-bindings/${id}`,
-    sync: (id: string) => `/platform-bindings/${id}/sync`,
+    list: '/api/platform-bindings',
+    detail: (id: string) => `/api/platform-bindings/${id}`,
+    sync: (id: string) => `/api/platform-bindings/${id}/sync`,
   },
   
   // 商品库
