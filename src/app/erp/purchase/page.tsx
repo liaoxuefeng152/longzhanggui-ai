@@ -112,22 +112,62 @@ export default function ERPPurchasePage() {
       const params = new URLSearchParams();
       if (keyword) params.set('keyword', keyword);
       if (statusFilter) params.set('status', statusFilter);
-      
+
       const response = await fetch(`/api/v1/erp/purchases?${params.toString()}`, {
         headers: getAuthHeaders(),
       });
       const data = await response.json();
-      
-      // 兼容两种返回格式
-      if (data.items !== undefined) {
-        setOrders(data.items || []);
+
+      // 兼容多种返回格式
+      let rawOrders: any[] = [];
+
+      if (data.purchases !== undefined) {
+        // 新格式：{ purchases: [...], total: N }
+        rawOrders = data.purchases || [];
+      } else if (data.items !== undefined) {
+        // 旧格式：{ items: [...], suppliers: [...] }
+        rawOrders = data.items || [];
         setSuppliers(data.suppliers || []);
       } else if (data.success && data.data) {
-        setOrders(data.data.items || []);
+        // 另一种格式：{ success: true, data: { items: [...], suppliers: [...] } }
+        rawOrders = data.data.items || [];
         setSuppliers(data.data.suppliers || []);
-      } else {
-        toast.error(data.detail || '获取采购单失败');
+      } else if (Array.isArray(data)) {
+        // 直接是数组格式
+        rawOrders = data;
       }
+
+      // 转换数据格式：将后端的嵌套结构转换为前端的扁平结构
+      const formattedOrders: PurchaseOrder[] = rawOrders.map((order: any) => {
+        // 如果已经有扁平结构（兼容旧数据），直接返回
+        if (order.po_number || order.product_name) {
+          return order as PurchaseOrder;
+        }
+
+        // 否则从 products 数组中提取第一个商品的信息
+        const firstProduct = order.products && order.products.length > 0 ? order.products[0] : {};
+        return {
+          id: order.id,
+          po_number: order.order_no || order.id,
+          product_id: firstProduct.product_id,
+          product_name: firstProduct.product_name || (order.products?.length > 0 ? `${order.products.length}个商品` : '未知商品'),
+          sku: firstProduct.sku,
+          supplier_name: order.supplier_name,
+          supplier_url: order.supplier_url,
+          supplier_contact: order.supplier_contact,
+          qty: firstProduct.quantity || 0,
+          received_qty: firstProduct.received_qty,
+          unit_price: firstProduct.unit_price || 0,
+          total_amount: order.total_amount || 0,
+          status: order.status,
+          expected_arrival: order.expected_delivery || order.expected_arrival,
+          created_at: order.created_at,
+          notes: order.notes,
+        };
+      });
+
+      setOrders(formattedOrders);
+
     } catch (error) {
       console.error('获取采购单失败:', error);
       toast.error('获取采购单失败');
