@@ -136,6 +136,51 @@ export default function TaskLogsPage() {
     }
   };
 
+  // 导出日志
+  const handleExportLogs = () => {
+    try {
+      if (filteredLogs.length === 0) {
+        toast.error('暂无日志数据可导出');
+        return;
+      }
+
+      const csvContent = [
+        ['任务ID', '智能体ID', '操作', '状态', '耗时(秒)', 'Tokens使用', '创建时间', '错误信息'].join(','),
+        ...filteredLogs.map((log) =>
+          [
+            log.task_id,
+            log.agent_id,
+            log.action,
+            log.status,
+            log.duration || 0,
+            log.tokens_used || 0,
+            log.created_at,
+            log.error || '',
+          ].map((field) => {
+            // 处理包含逗号和换行符的字段
+            const strField = String(field || '');
+            if (strField.includes(',') || strField.includes('\n') || strField.includes('"')) {
+              return `"${strField.replace(/"/g, '""')}"`;
+            }
+            return strField;
+          }).join(',')
+        ),
+      ].join('\n');
+
+      const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `task_logs_${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success('导出成功');
+    } catch (error) {
+      console.error('导出失败:', error);
+      toast.error('导出失败');
+    }
+  };
+
   const handleLogout = async () => {
     try {
       await logout();
@@ -159,7 +204,7 @@ export default function TaskLogsPage() {
             </p>
           </div>
           <div className="flex items-center gap-3">
-            <Button variant="outline">
+            <Button variant="outline" onClick={handleExportLogs} disabled={filteredLogs.length === 0}>
               <Download className="h-4 w-4 mr-2" />
               导出日志
             </Button>
