@@ -129,6 +129,60 @@ export default function ReportsPage() {
     router.push('/login');
   };
 
+  // 导出报表
+  const handleExportReport = () => {
+    try {
+      if (!overview || !usage || !agents) {
+        toast.error('暂无报表数据可导出');
+        return;
+      }
+
+      // 创建CSV内容
+      const csvContent = [
+        ['数据报表导出', '', '', ''],
+        [`导出时间: ${new Date().toLocaleString('zh-CN')}`, '', '', ''],
+        [`时间范围: ${timeRange}`, '', '', ''],
+        ['', '', '', ''],
+        ['核心指标', '', '', ''],
+        ['总销售额', overview.total_sales || 0, '美元', ''],
+        ['总订单数', overview.total_orders || 0, '单', ''],
+        ['活跃用户', overview.active_users || 0, '人', ''],
+        ['平均转化率', `${(overview.conversion_rate || 0).toFixed(1)}%`, '', ''],
+        ['', '', '', ''],
+        ['使用情况', '', '', ''],
+        ['总调用次数', usage.total_calls || 0, '次', ''],
+        ['总Tokens消耗', usage.total_tokens || 0, 'tokens', ''],
+        ['智能体数量', agents.agents?.length || 0, '个', ''],
+        ['', '', '', ''],
+        ['销售趋势', '', '', ''],
+        ['日期', '销售额', '订单数', ''],
+        ...(overview.sales_trend || []).map(t => [t.date, t.sales || 0, t.orders || 0]),
+        ['', '', '', ''],
+        ['平台分布', '', '', ''],
+        ['平台', '占比', '', ''],
+        ...(overview.platform_distribution || []).map(p => [p.name, `${p.value}%`, '', '']),
+        ['', '', '', ''],
+        ['智能体效能', '', '', ''],
+        ['智能体名称', '任务数', '成功率', ''],
+        ...(agents.agents || []).map(a => [a.name, a.total_tasks || 0, `${(a.success_rate || 0).toFixed(1)}%`]),
+      ]
+        .map(row => row.join(','))
+        .join('\n');
+
+      const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `report_${timeRange}_${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success('导出成功');
+    } catch (error) {
+      console.error('导出失败:', error);
+      toast.error('导出失败');
+    }
+  };
+
   // 转换智能体效能数据
   const agentPerformanceData = agents?.agents?.map(a => ({
     name: a.name,
@@ -168,7 +222,7 @@ export default function ReportsPage() {
               )}
               刷新
             </Button>
-            <Button variant="outline">
+            <Button variant="outline" onClick={handleExportReport}>
               <Download className="h-4 w-4 mr-2" />
               导出报表
             </Button>
