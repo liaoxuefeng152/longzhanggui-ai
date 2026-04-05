@@ -138,28 +138,38 @@ export default function ERPPurchasePage() {
 
   // 创建采购单
   const handleCreateOrder = async () => {
-    if (!createForm.product_name || !createForm.qty || !createForm.unit_price) {
-      toast.error('请填写完整的采购信息');
+    // 前端验证：检查必填字段
+    if (!createForm.product_name || !createForm.qty || !createForm.unit_price || !createForm.supplier_name) {
+      toast.error('请填写完整的采购信息（商品名称、数量、单价、供应商）');
       return;
     }
 
     setIsProcessing('create');
     try {
+      // 构建符合后端API格式的数据
       const response = await fetch('/api/v1/erp/purchases', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          ...createForm,
-          qty: parseInt(createForm.qty),
-          unit_price: parseFloat(createForm.unit_price),
-          total_amount: parseInt(createForm.qty) * parseFloat(createForm.unit_price),
-          status: 'pending',
+          supplier_id: 'SUP-001', // 临时使用默认供应商ID，实际应该从供应商选择
+          supplier_name: createForm.supplier_name,
+          products: [{
+            product_id: createForm.sku || `PROD-${Date.now()}`,
+            product_name: createForm.product_name,
+            sku: createForm.sku || '',
+            quantity: parseInt(createForm.qty),
+            unit_price: parseFloat(createForm.unit_price),
+            total_price: parseInt(createForm.qty) * parseFloat(createForm.unit_price),
+          }],
+          currency: 'CNY',
+          notes: createForm.notes,
+          expected_delivery: createForm.expected_arrival || null,
         }),
       });
 
       const data = await response.json();
       if (data.success) {
-        toast.success('采购单创建成功', { description: `采购单号: ${data.data.po_number || data.data.id}` });
+        toast.success('采购单创建成功', { description: `采购单号: ${data.data.id}` });
         setIsCreateOpen(false);
         setCreateForm({
           product_name: '',
