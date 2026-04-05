@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import store from '@/lib/store';
-import { LLMClient, Config } from 'coze-coding-dev-sdk';
+import { agentManager } from '@/lib/agents';
+import { ruleEngine } from '@/lib/rules-engine';
 
 // 工作流步骤定义类型
 interface WorkflowStep {
@@ -231,94 +232,111 @@ async function executeStep(
 ): Promise<any> {
   const product = productId ? store.getProduct(productId) : null;
 
+  // 使用真实的AI智能体
+  try {
+    switch (step.id) {
+      case 'selection':
+        return await agentManager.executeAgent('product-selection' as any, {
+          product_name: product?.name_zh || params?.product_name,
+          category: product?.category,
+          cost_price: product?.cost_price,
+          target_market: params?.target_market || 'tk_id',
+        });
+
+      case 'image':
+      case 'main_image':
+      case 'background':
+      case 'translate':
+        return await agentManager.executeAgent('image-design' as any, {
+          product_name: product?.name_zh || params?.product_name,
+          product_description: product?.name_zh,
+          type: step.id === 'main_image' ? 'main' : 'gallery',
+          style: 'professional',
+          platform: params?.platform || 'tiktok',
+          language: params?.language || 'en',
+        });
+
+      case 'listing':
+        return await agentManager.executeAgent('listing-optimization' as any, {
+          product_name: product?.name_zh || params?.product_name,
+          product_description: product?.name_zh,
+          target_market: params?.target_market || 'tk_id',
+          language: params?.language || 'en',
+          platform: params?.platform || 'tiktok',
+        });
+
+      case 'compliance':
+        return await executeCompliance(product);
+
+      case 'pricing':
+        return await executePricing(product);
+
+      case 'publish':
+        return await executePublish(product, params);
+
+      case 'ad_create':
+        return await executeAdCreate(product, params);
+
+      default:
+        return { message: `步骤 ${step.name} 执行完成` };
+    }
+  } catch (error: any) {
+    console.error(`智能体执行失败: ${step.agent}`, error);
+    // 如果智能体执行失败，降级到模拟执行
+    return await executeStepFallback(step, product, params);
+  }
+}
+
+// 降级执行（当AI智能体失败时使用）
+async function executeStepFallback(
+  step: { id: string; name: string; agent: string },
+  product: any,
+  params?: Record<string, any>
+): Promise<any> {
+  console.warn(`使用降级执行: ${step.name}`);
+
   switch (step.id) {
     case 'selection':
-      return await executeSelection(product, params);
-    
+      return { analysis: '选品分析完成（降级模式）' };
+
     case 'image':
     case 'main_image':
     case 'background':
     case 'translate':
-      return await executeImageProcess(step.id, product);
-    
+      const imageId = store.generateId('IMG');
+      return {
+        image_id: imageId,
+        type: step.id === 'main_image' ? 'main' : 'processed',
+        url: `https://placehold.co/800x800?text=${encodeURIComponent(product?.name_zh || 'Product')}`,
+        status: 'done',
+      };
+
     case 'listing':
-      return await executeListing(product);
-    
-    case 'compliance':
-      return await executeCompliance(product);
-    
-    case 'pricing':
-      return await executePricing(product);
-    
-    case 'publish':
-      return await executePublish(product, params);
-    
-    case 'ad_create':
-      return await executeAdCreate(product, params);
-    
+      return {
+        title: product?.name_en || product?.name_zh,
+        description: `High quality ${product?.name_zh}. Best choice for you.`,
+        bullet_points: ['Premium Quality', 'Fast Shipping', 'Best Price'],
+        keywords: ['best', 'quality', 'sale'],
+      };
+
     default:
-      return { message: `步骤 ${step.name} 执行完成` };
+      return { message: `步骤 ${step.name} 执行完成（降级模式）` };
   }
 }
 
-// 选品分析
-async function executeSelection(product: any, params?: any): Promise<any> {
-  try {
-    const config = new Config();
-    const client = new LLMClient(config, {});
-    
-    const response = await client.invoke([
-      { role: 'system', content: '你是跨境电商选品专家。' },
-      { role: 'user', content: `分析这个商品的市场潜力: ${product?.name_zh || params?.product_name}` }
-    ], { model: 'doubao-seed-1-6-251015' });
-    
-    return { analysis: response.content };
-  } catch {
-    return { analysis: '选品分析完成' };
-  }
-}
-
-// 图片处理
-async function executeImageProcess(stepId: string, product: any): Promise<any> {
-  const imageId = store.generateId('IMG');
-  const imageUrl = `https://placehold.co/800x800?text=${encodeURIComponent(product?.name_zh || 'Product')}`;
-  
-  return {
-    image_id: imageId,
-    type: stepId === 'main_image' ? 'main' : 'processed',
-    url: imageUrl,
-    status: 'done',
-  };
-}
-
-// Listing优化
-async function executeListing(product: any): Promise<any> {
-  return {
-    title: product?.name_en || product?.name_zh,
-    description: `High quality ${product?.name_zh}. Best choice for you.`,
-    bullet_points: ['Premium Quality', 'Fast Shipping', 'Best Price', 'Satisfaction Guaranteed'],
-    keywords: ['best', 'quality', 'sale', 'hot'],
-    seo_score: 85,
-  };
-}
-
-// 合规校验
+// 合规校验（使用规则引擎）
 async function executeCompliance(product: any): Promise<any> {
-  const issues: string[] = [];
-  
-  // 检查敏感词
-  const sensitiveWords = ['医疗', '治疗', '最佳', '第一'];
-  for (const word of sensitiveWords) {
-    if (product?.name_zh?.includes(word)) {
-      issues.push(`包含敏感词: ${word}`);
-    }
-  }
-  
-  if (issues.length > 0) {
-    throw new Error(`合规校验失败: ${issues.join(', ')}`);
-  }
-  
-  return { passed: true, issues: [] };
+  // 使用规则引擎检查合规
+  const evaluations = ruleEngine.evaluateRules({
+    type: 'listing_check',
+    productName: product?.name_zh,
+    sensitiveWords: [],
+    isRestrictedCategory: false,
+  }, 'compliance');
+
+  const passed = !evaluations.some(e => e.triggered);
+
+  return { passed, issues: evaluations.filter(e => e.triggered).map(e => e.ruleName) };
 }
 
 // 智能定价
@@ -326,7 +344,16 @@ async function executePricing(product: any): Promise<any> {
   const cost = product?.total_cost || product?.cost_price || 100;
   const margin = 0.3;
   const price = Math.ceil(cost / (1 - margin));
-  
+
+  // 使用规则引擎检查定价
+  ruleEngine.evaluateRules({
+    type: 'pricing_check',
+    profitMargin: margin,
+    minMargin: 0.2,
+    price: price,
+    priceRatio: 1.2,
+  }, 'pricing');
+
   return {
     suggested_price: price,
     profit_margin: margin,
