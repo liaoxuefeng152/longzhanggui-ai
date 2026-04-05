@@ -25,6 +25,7 @@ import {
   getSystemInfo,
   getRiskSettings,
   getNotificationSettings,
+  getComplianceSettings,
   updateSettings,
   type SystemInfo,
   type RiskSettings,
@@ -67,17 +68,35 @@ export default function SettingsPage() {
     weekly_report: true,
   });
 
+  // 安全设置
+  const [securitySettings, setSecuritySettings] = useState({
+    operation_log_enabled: true,
+    encryption_enabled: true,
+    ip_whitelist_enabled: false,
+    login_lockout_enabled: true,
+  });
+
+  // 合规规则
+  const [complianceSettings, setComplianceSettings] = useState({
+    tk_banned_products_enabled: true,
+    tk_banned_keywords_enabled: true,
+    amazon_banned_products_enabled: true,
+    amazon_banned_keywords_enabled: true,
+  });
+
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
-      const [systemInfoRes, riskSettingsRes, notificationSettingsRes] = await Promise.all([
+      const [systemInfoRes, riskSettingsRes, notificationSettingsRes, complianceSettingsRes] = await Promise.all([
         getSystemInfo(),
         getRiskSettings(),
         getNotificationSettings(),
+        getComplianceSettings(),
       ]);
       setSystemInfo(systemInfoRes);
       setRiskSettings(riskSettingsRes);
       setNotificationSettings(notificationSettingsRes);
+      setComplianceSettings(complianceSettingsRes);
     } catch (error) {
       console.error('Failed to fetch settings:', error);
       toast.error('获取设置失败');
@@ -107,10 +126,14 @@ export default function SettingsPage() {
           description: systemInfo.description,
           contact_email: systemInfo.contact_email,
         };
+      } else if (category === 'compliance') {
+        settingsToSave = complianceSettings;
       } else if (category === 'risk') {
         settingsToSave = riskSettings;
       } else if (category === 'notification') {
         settingsToSave = notificationSettings;
+      } else if (category === 'security') {
+        settingsToSave = securitySettings;
       }
 
       await updateSettings(settingsToSave);
@@ -249,16 +272,16 @@ export default function SettingsPage() {
                     <Shield className="h-4 w-4 inline mr-2" />
                     合规规则配置
                   </CardTitle>
-                  <CardDescription>配置平台禁售词、禁售品类、合规规则（v1.0为固化值，不可配置）</CardDescription>
+                  <CardDescription>配置平台禁售词、禁售品类、合规规则</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="p-4 bg-warning/5 border border-warning/20 rounded-lg">
                     <div className="flex items-center gap-2 text-warning mb-2">
                       <AlertTriangle className="h-4 w-4" />
-                      <span className="text-[13px] font-medium">v1.0版本说明</span>
+                      <span className="text-[13px] font-medium">重要提示</span>
                     </div>
                     <p className="text-[12px] text-muted-foreground">
-                      合规规则为固化值，暂不支持自定义配置。后续版本将开放规则自定义功能。
+                      禁用合规规则可能导致商品违规下架，请谨慎操作。建议保持所有规则启用状态。
                     </p>
                   </div>
 
@@ -266,7 +289,12 @@ export default function SettingsPage() {
                     <div className="p-4 border border-border rounded-lg">
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-[13px] font-medium">TK东南亚禁售品类</span>
-                        <Badge variant="outline">已启用</Badge>
+                        <Switch
+                          checked={complianceSettings.tk_banned_products_enabled}
+                          onCheckedChange={(checked) =>
+                            setComplianceSettings({ ...complianceSettings, tk_banned_products_enabled: checked })
+                          }
+                        />
                       </div>
                       <p className="text-[12px] text-muted-foreground">
                         宗教敏感商品、政治敏感商品、仿品、处方药、武器类等
@@ -275,7 +303,12 @@ export default function SettingsPage() {
                     <div className="p-4 border border-border rounded-lg">
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-[13px] font-medium">TK禁用词库</span>
-                        <Badge variant="outline">已启用</Badge>
+                        <Switch
+                          checked={complianceSettings.tk_banned_keywords_enabled}
+                          onCheckedChange={(checked) =>
+                            setComplianceSettings({ ...complianceSettings, tk_banned_keywords_enabled: checked })
+                          }
+                        />
                       </div>
                       <p className="text-[12px] text-muted-foreground">
                         "最好"、"100%有效"、"第一"等夸大宣传词
@@ -284,7 +317,12 @@ export default function SettingsPage() {
                     <div className="p-4 border border-border rounded-lg">
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-[13px] font-medium">亚马逊禁售品类</span>
-                        <Badge variant="outline">已启用</Badge>
+                        <Switch
+                          checked={complianceSettings.amazon_banned_products_enabled}
+                          onCheckedChange={(checked) =>
+                            setComplianceSettings({ ...complianceSettings, amazon_banned_products_enabled: checked })
+                          }
+                        />
                       </div>
                       <p className="text-[12px] text-muted-foreground">
                         需类目审核未开放商品、仿品、处方药、武器类等
@@ -293,7 +331,12 @@ export default function SettingsPage() {
                     <div className="p-4 border border-border rounded-lg">
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-[13px] font-medium">亚马逊禁用词库</span>
-                        <Badge variant="outline">已启用</Badge>
+                        <Switch
+                          checked={complianceSettings.amazon_banned_keywords_enabled}
+                          onCheckedChange={(checked) =>
+                            setComplianceSettings({ ...complianceSettings, amazon_banned_keywords_enabled: checked })
+                          }
+                        />
                       </div>
                       <p className="text-[12px] text-muted-foreground">
                         "留评返现"、"好评有礼"、医疗功效词等诱导词
@@ -302,6 +345,12 @@ export default function SettingsPage() {
                   </div>
                 </CardContent>
               </Card>
+
+              <Button onClick={() => handleSave('compliance')} disabled={saving}>
+                {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                <Save className="h-4 w-4 mr-2" />
+                保存设置
+              </Button>
             </TabsContent>
 
             {/* 风控配置 */}
@@ -333,7 +382,6 @@ export default function SettingsPage() {
                           type="number"
                           value={riskSettings.ad_daily_limit}
                           onChange={(e) => setRiskSettings({ ...riskSettings, ad_daily_limit: Number(e.target.value) })}
-                          disabled
                         />
                         <span className="text-[13px] text-muted-foreground">元/天</span>
                       </div>
@@ -347,7 +395,6 @@ export default function SettingsPage() {
                           step="0.1"
                           value={riskSettings.ad_min_roi}
                           onChange={(e) => setRiskSettings({ ...riskSettings, ad_min_roi: Number(e.target.value) })}
-                          disabled
                         />
                         <span className="text-[13px] text-muted-foreground">:1</span>
                       </div>
@@ -361,7 +408,6 @@ export default function SettingsPage() {
                           step="0.1"
                           value={riskSettings.ad_click_cost_tk}
                           onChange={(e) => setRiskSettings({ ...riskSettings, ad_click_cost_tk: Number(e.target.value) })}
-                          disabled
                         />
                         <span className="text-[13px] text-muted-foreground">美元</span>
                       </div>
@@ -375,7 +421,6 @@ export default function SettingsPage() {
                           step="0.1"
                           value={riskSettings.ad_click_cost_amazon}
                           onChange={(e) => setRiskSettings({ ...riskSettings, ad_click_cost_amazon: Number(e.target.value) })}
-                          disabled
                         />
                         <span className="text-[13px] text-muted-foreground">美元</span>
                       </div>
@@ -402,7 +447,6 @@ export default function SettingsPage() {
                           type="number"
                           value={riskSettings.ad_spend_alert}
                           onChange={(e) => setRiskSettings({ ...riskSettings, ad_spend_alert: Number(e.target.value) })}
-                          disabled
                         />
                         <span className="text-[13px] text-muted-foreground">元</span>
                       </div>
@@ -414,7 +458,6 @@ export default function SettingsPage() {
                           type="number"
                           value={riskSettings.refund_alert}
                           onChange={(e) => setRiskSettings({ ...riskSettings, refund_alert: Number(e.target.value) })}
-                          disabled
                         />
                         <span className="text-[13px] text-muted-foreground">美元</span>
                       </div>
@@ -532,31 +575,57 @@ export default function SettingsPage() {
                       <p className="text-[13px] font-medium">操作日志记录</p>
                       <p className="text-[12px] text-muted-foreground">记录所有操作，保留30天</p>
                     </div>
-                    <Switch defaultChecked disabled />
+                    <Switch
+                      checked={securitySettings.operation_log_enabled}
+                      onCheckedChange={(checked) =>
+                        setSecuritySettings({ ...securitySettings, operation_log_enabled: checked })
+                      }
+                    />
                   </div>
                   <div className="flex items-center justify-between py-2 border-b border-border">
                     <div>
                       <p className="text-[13px] font-medium">敏感数据加密存储</p>
                       <p className="text-[12px] text-muted-foreground">API密钥、用户信息加密存储</p>
                     </div>
-                    <Switch defaultChecked disabled />
+                    <Switch
+                      checked={securitySettings.encryption_enabled}
+                      onCheckedChange={(checked) =>
+                        setSecuritySettings({ ...securitySettings, encryption_enabled: checked })
+                      }
+                    />
                   </div>
                   <div className="flex items-center justify-between py-2 border-b border-border">
                     <div>
                       <p className="text-[13px] font-medium">IP白名单</p>
                       <p className="text-[12px] text-muted-foreground">仅允许白名单IP访问管理后台</p>
                     </div>
-                    <Switch />
+                    <Switch
+                      checked={securitySettings.ip_whitelist_enabled}
+                      onCheckedChange={(checked) =>
+                        setSecuritySettings({ ...securitySettings, ip_whitelist_enabled: checked })
+                      }
+                    />
                   </div>
                   <div className="flex items-center justify-between py-2">
                     <div>
                       <p className="text-[13px] font-medium">登录失败锁定</p>
                       <p className="text-[12px] text-muted-foreground">连续5次失败锁定10分钟</p>
                     </div>
-                    <Switch defaultChecked />
+                    <Switch
+                      checked={securitySettings.login_lockout_enabled}
+                      onCheckedChange={(checked) =>
+                        setSecuritySettings({ ...securitySettings, login_lockout_enabled: checked })
+                      }
+                    />
                   </div>
                 </CardContent>
               </Card>
+
+              <Button onClick={() => handleSave('security')} disabled={saving}>
+                {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                <Save className="h-4 w-4 mr-2" />
+                保存设置
+              </Button>
 
               <Card className="bg-white border-border shadow-sm">
                 <CardHeader>

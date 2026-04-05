@@ -192,6 +192,44 @@ export async function updateRiskSettings(
 }
 
 /**
+ * 获取合规规则设置
+ */
+export async function getComplianceSettings(): Promise<{
+  tk_banned_products_enabled: boolean;
+  tk_banned_keywords_enabled: boolean;
+  amazon_banned_products_enabled: boolean;
+  amazon_banned_keywords_enabled: boolean;
+}> {
+  const response = await getSettings();
+  const settings: Record<string, boolean> = {};
+  response.settings.forEach((s) => {
+    if (['tk_banned_products_enabled', 'tk_banned_keywords_enabled', 'amazon_banned_products_enabled', 'amazon_banned_keywords_enabled'].includes(s.key)) {
+      settings[s.key] = Boolean(s.value);
+    }
+  });
+  return {
+    tk_banned_products_enabled: settings.tk_banned_products_enabled ?? true,
+    tk_banned_keywords_enabled: settings.tk_banned_keywords_enabled ?? true,
+    amazon_banned_products_enabled: settings.amazon_banned_products_enabled ?? true,
+    amazon_banned_keywords_enabled: settings.amazon_banned_keywords_enabled ?? true,
+  };
+}
+
+/**
+ * 更新合规规则设置
+ */
+export async function updateComplianceSettings(
+  settings: Partial<{
+    tk_banned_products_enabled: boolean;
+    tk_banned_keywords_enabled: boolean;
+    amazon_banned_products_enabled: boolean;
+    amazon_banned_keywords_enabled: boolean;
+  }>
+): Promise<{ success: boolean; message: string }> {
+  return updateSettings(settings as Record<string, boolean>);
+}
+
+/**
  * 获取系统信息
  */
 export async function getSystemInfo(): Promise<SystemInfo> {
