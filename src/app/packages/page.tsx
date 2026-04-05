@@ -25,6 +25,8 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Plus,
   Edit,
@@ -36,6 +38,7 @@ import {
   Gift,
   RefreshCw,
   Loader2,
+  Info,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -61,6 +64,7 @@ export default function PackagesPage() {
   // 表单状态
   const [formData, setFormData] = useState<PackageCreate>({
     name: '',
+    description: '',
     price: 0,
     call_quota: 1000000,
     call_limit: 1000,
@@ -130,6 +134,7 @@ export default function PackagesPage() {
     setEditingPackage(pkg);
     setFormData({
       name: pkg.name,
+      description: pkg.description || '',
       price: pkg.price,
       call_quota: pkg.call_quota || 1000000,
       call_limit: pkg.call_limit,
@@ -146,6 +151,7 @@ export default function PackagesPage() {
     setEditingPackage(null);
     setFormData({
       name: '',
+      description: '',
       price: 0,
       call_quota: 1000000,
       call_limit: 1000,
@@ -169,6 +175,7 @@ export default function PackagesPage() {
         // 更新
         const updateData: PackageUpdate = {
           name: formData.name,
+          description: formData.description,
           price: formData.price,
           call_quota: formData.call_quota,
           call_limit: formData.call_limit,
@@ -233,14 +240,21 @@ export default function PackagesPage() {
                 <DialogDescription>配置套餐信息和功能权限</DialogDescription>
               </DialogHeader>
               <div className="grid gap-4 py-4">
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label className="text-right">套餐名称 <span className="text-destructive">*</span></Label>
-                  <Input
-                    className="col-span-3"
-                    placeholder="请输入套餐名称"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  />
+                <div className="grid grid-cols-4 items-start gap-4">
+                  <Label className="text-right mt-2">套餐名称 <span className="text-destructive">*</span></Label>
+                  <div className="col-span-3 space-y-3">
+                    <Input
+                      placeholder="请输入套餐名称"
+                      value={formData.name}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    />
+                    <Textarea
+                      placeholder="请输入套餐描述，说明该套餐的适用场景和主要特点"
+                      value={formData.description}
+                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                      rows={2}
+                    />
+                  </div>
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label className="text-right">价格(元/月)</Label>
@@ -271,6 +285,39 @@ export default function PackagesPage() {
                     value={formData.call_limit}
                     onChange={(e) => setFormData({ ...formData, call_limit: parseInt(e.target.value) || 1000 })}
                   />
+                </div>
+                <div className="grid grid-cols-4 items-start gap-4">
+                  <Label className="text-right mt-2">功能权益</Label>
+                  <div className="col-span-3 space-y-2">
+                    {[
+                      '无限AI调用',
+                      '全部AI智能体',
+                      '专属客户经理',
+                      '定制化开发',
+                      '私有化部署支持',
+                      'SLA保障',
+                      '视频生成智能体',
+                      '广告投放智能体',
+                      'API接口调用',
+                      '优先技术支持',
+                    ].map((feature) => (
+                      <div key={feature} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`feature-${feature}`}
+                          checked={formData.features?.includes(feature)}
+                          onCheckedChange={(checked) => {
+                            const newFeatures = checked
+                              ? [...(formData.features || []), feature]
+                              : (formData.features || []).filter((f) => f !== feature);
+                            setFormData({ ...formData, features: newFeatures });
+                          }}
+                        />
+                        <Label htmlFor={`feature-${feature}`} className="text-[13px] font-normal">
+                          {feature}
+                        </Label>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
               <DialogFooter>
@@ -336,6 +383,12 @@ export default function PackagesPage() {
                       <div className="text-center text-[12px] text-muted-foreground">
                         {pkg.user_count || 0} 位用户订阅
                       </div>
+                      {pkg.description && (
+                        <div className="flex items-start gap-2 text-[12px] text-muted-foreground bg-muted/30 p-2 rounded">
+                          <Info className="h-3 w-3 flex-shrink-0 mt-0.5" />
+                          <span className="line-clamp-2">{pkg.description}</span>
+                        </div>
+                      )}
                       <div className="space-y-2">
                         {pkg.features?.map((feature, idx) => (
                           <div key={idx} className="flex items-center gap-2 text-[13px]">

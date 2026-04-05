@@ -37,6 +37,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const {
       name,
+      description,
       price,
       call_quota,
       call_limit,
@@ -56,6 +57,7 @@ export async function POST(request: NextRequest) {
     const newPackage: Package = {
       id: `PKG-${Date.now()}`,
       name,
+      description,
       price: parseFloat(price) || 0,
       call_quota: parseInt(call_quota) || 100000,
       call_limit: parseInt(call_limit) || 1000,

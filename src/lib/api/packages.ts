@@ -8,6 +8,7 @@ import { API_ENDPOINTS } from './config';
 export interface Package {
   id: string;
   name: string;
+  description?: string;
   price: number;
   call_quota: number;
   call_limit: number;
@@ -24,6 +25,7 @@ export interface Package {
 // 套餐创建请求
 export interface PackageCreate {
   name: string;
+  description?: string;
   price: number;
   call_quota: number;
   call_limit: number;
@@ -36,6 +38,7 @@ export interface PackageCreate {
 // 套餐更新请求
 export interface PackageUpdate {
   name?: string;
+  description?: string;
   price?: number;
   call_quota?: number;
   call_limit?: number;

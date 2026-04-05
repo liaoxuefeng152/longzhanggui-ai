@@ -6,6 +6,7 @@
 export interface Package {
   id: string;
   name: string;
+  description?: string;
   price: number;
   call_quota: number;
   call_limit: number;
@@ -24,6 +25,7 @@ const initialPackages: Package[] = [
   {
     id: 'PKG-001',
     name: '免费试用',
+    description: '适合初次体验AI智能体功能的用户，包含基础的选品和图片处理功能',
     price: 0,
     call_quota: 10000,
     call_limit: 100,
@@ -39,6 +41,7 @@ const initialPackages: Package[] = [
   {
     id: 'PKG-002',
     name: '基础版',
+    description: '适合中小型跨境电商卖家，提供核心AI智能体功能，满足日常运营需求',
     price: 299,
     call_quota: 100000,
     call_limit: 500,
@@ -54,6 +57,7 @@ const initialPackages: Package[] = [
   {
     id: 'PKG-003',
     name: '专业版',
+    description: '适合规模化运营的专业卖家，提供完整AI智能体工具链，支持视频和广告投放',
     price: 699,
     call_quota: 500000,
     call_limit: 2000,
@@ -69,6 +73,7 @@ const initialPackages: Package[] = [
   {
     id: 'PKG-004',
     name: '企业版',
+    description: '面向大型企业和团队，提供专属服务和定制化解决方案，保障业务稳定运行',
     price: 2999,
     call_quota: 999999,
     call_limit: 999999,
