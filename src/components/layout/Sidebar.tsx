@@ -24,6 +24,7 @@ import {
   Truck,
   Sparkles,
   Zap,
+  MessageSquare,
 } from 'lucide-react';
 
 interface MenuItem {
