@@ -152,7 +152,7 @@ export default function PlatformBindingsPage() {
   };
 
   const handleSubmit = async () => {
-    if (!formData.platform || !formData.account_name || !formData.shop_id) {
+    if (!formData.platform || !formData.account_name || !formData.shop_id || !formData.api_key) {
       toast.error('请填写必填项');
       return;
     }
@@ -252,12 +252,13 @@ export default function PlatformBindingsPage() {
                   />
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
-                  <Label className="text-right">API密钥</Label>
+                  <Label className="text-right">API密钥 <span className="text-destructive">*</span></Label>
                   <Input
                     className="col-span-3"
                     placeholder="输入API Key"
                     value={formData.api_key}
                     onChange={(e) => setFormData({ ...formData, api_key: e.target.value })}
+                    type="password"
                   />
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
