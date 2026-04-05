@@ -8,6 +8,14 @@ import { handleWorkflow } from '@/lib/feishu/workflow';
  * 接收飞书机器人推送的消息
  */
 export async function POST(request: NextRequest) {
+  // 设置 CORS 头
+  const headers = {
+    'Content-Type': 'application/json',
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  };
+
   try {
     const body = await request.json();
     const { token, type, challenge, event } = body;
@@ -21,11 +29,18 @@ export async function POST(request: NextRequest) {
       // 验证 token
       if (!verifyWebhookToken(token)) {
         console.error('Token 验证失败');
-        return NextResponse.json({ code: 1, msg: 'Invalid token' }, { status: 403 });
+        return new Response(JSON.stringify({ code: 1, msg: 'Invalid token' }), {
+          status: 403,
+          headers,
+        });
       }
 
       console.log('Token 验证成功，返回 challenge');
-      return NextResponse.json({ challenge });
+      // 飞书要求返回标准 JSON 格式，只包含 challenge 字段
+      return new Response(JSON.stringify({ challenge }), {
+        status: 200,
+        headers,
+      });
     }
 
     // 消息接收
@@ -56,7 +71,10 @@ export async function POST(request: NextRequest) {
 
         // 忽略空消息或机器人自己的消息
         if (!messageText || messageText.trim() === '') {
-          return NextResponse.json({ code: 0, msg: 'ok' });
+          return new Response(JSON.stringify({ code: 0, msg: 'ok' }), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+          });
         }
 
         // 识别意图
@@ -71,16 +89,25 @@ export async function POST(request: NextRequest) {
           messageText
         );
 
-        return NextResponse.json({ code: 0, msg: 'ok' });
+        return new Response(JSON.stringify({ code: 0, msg: 'ok' }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        });
       }
     }
 
-    return NextResponse.json({ code: 0, msg: 'ok' });
+    return new Response(JSON.stringify({ code: 0, msg: 'ok' }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    });
   } catch (error) {
     console.error('处理飞书 Webhook 失败:', error);
-    return NextResponse.json(
-      { code: 1, msg: error instanceof Error ? error.message : 'Internal error' },
-      { status: 500 }
+    return new Response(
+      JSON.stringify({ code: 1, msg: error instanceof Error ? error.message : 'Internal error' }),
+      {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' },
+      }
     );
   }
 }
