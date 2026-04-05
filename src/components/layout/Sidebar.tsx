@@ -117,6 +117,11 @@ const menuItems: MenuItem[] = [
     icon: BarChart3,
   },
   {
+    title: '飞书机器人',
+    href: '/feishu',
+    icon: MessageSquare,
+  },
+  {
     title: '系统设置',
     href: '/settings',
     icon: Settings,
