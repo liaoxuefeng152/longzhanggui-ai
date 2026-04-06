@@ -21,9 +21,12 @@ export async function POST(request: NextRequest) {
     console.log('=== 飞书 Webhook 收到请求 ===');
     console.log('完整的请求体:', JSON.stringify(body, null, 2));
 
-    const { token, type, challenge, event } = body;
+    const { token, type, challenge, event, header } = body;
 
-    console.log('解析后的字段:', { type, token: !!token, event: !!event });
+    console.log('解析后的字段:', { type, token: !!token, event: !!event, header: !!header });
+    if (header) {
+      console.log('Header 信息:', { event_type: header.event_type, event_id: header.event_id });
+    }
 
     // URL 验证（首次配置时）
     if (type === 'url_verification') {
@@ -46,9 +49,10 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // 消息接收 - 兼容 type 为 undefined 的情况（飞书有时不发送 type 字段）
-    if (event && event.type === 'im.message.receive_v1') {
-      console.log('收到事件回调:', event.type);
+    // 消息接收 - 检查 header.event_type 或直接检查 event 内容
+    const eventType = header?.event_type;
+    if (eventType === 'im.message.receive_v1' || (event && event.message)) {
+      console.log('收到事件回调:', eventType || 'im.message.receive_v1');
       console.log('事件详情:', JSON.stringify(event, null, 2));
 
       const message = event.message;
@@ -66,7 +70,7 @@ export async function POST(request: NextRequest) {
       }
 
       console.log('用户消息:', {
-        userId: sender.sender_id.user_id,
+        userId: sender.sender_id.user_id || sender.sender_id.open_id,
         text: messageText,
         messageId: message.message_id,
       });
@@ -80,14 +84,17 @@ export async function POST(request: NextRequest) {
         });
       }
 
+      // 获取用户 open_id（优先使用 open_id，如果没有则使用 user_id）
+      const userOpenId = sender.sender_id.open_id || sender.sender_id.user_id;
+
       // 识别意图
       const intentResult = recognizeIntent(messageText);
       console.log('意图识别结果:', intentResult);
 
-      // 调用工作流处理 - 使用 user_id 作为接收者 ID
+      // 调用工作流处理
       console.log('开始调用工作流...');
       await handleWorkflow(
-        sender.sender_id.user_id, // 使用用户 open_id 而不是 message_id
+        userOpenId,
         intentResult.intent,
         intentResult.params,
         messageText
@@ -101,6 +108,8 @@ export async function POST(request: NextRequest) {
     }
 
     console.log('未知的事件类型或没有事件数据');
+    console.log('Event Type:', eventType);
+    console.log('Has Event:', !!event);
     return new Response(JSON.stringify({ code: 0, msg: 'ok' }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
