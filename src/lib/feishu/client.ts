@@ -64,6 +64,24 @@ export async function sendMessage(
   const token = await getTenantAccessToken();
 
   try {
+    // 构建请求体
+    const requestBody = {
+      msg_type: msgType,
+      receive_id_type: 'open_id', // 明确指定接收者类型为 open_id
+      receive_id: receiveId,
+      content: typeof content === 'string' ? content : JSON.stringify(content),
+    };
+
+    console.log('发送消息到飞书:', {
+      receiveId,
+      msgType,
+      contentLength: requestBody.content.length,
+      requestBodyPreview: {
+        ...requestBody,
+        content: requestBody.content.substring(0, 100) + '...',
+      },
+    });
+
     const response = await fetch(
       `${FEISHU_CONFIG.apiBaseUrl}${FEISHU_API_PATHS.SEND_MESSAGE}`,
       {
@@ -72,16 +90,18 @@ export async function sendMessage(
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          msg_type: msgType,
-          receive_id: receiveId,
-          receive_id_type: 'open_id', // 明确指定接收者类型为 open_id
-          content: typeof content === 'string' ? content : JSON.stringify(content),
-        }),
+        body: JSON.stringify(requestBody),
       }
     );
 
     const data = await response.json();
+
+    console.log('飞书 API 响应:', {
+      status: response.status,
+      code: data.code,
+      msg: data.msg,
+      data: data.data,
+    });
 
     if (data.code !== 0) {
       throw new Error(`发送消息失败: ${data.msg} (code: ${data.code})`);
