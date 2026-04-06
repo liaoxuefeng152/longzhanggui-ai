@@ -8,7 +8,7 @@
 - **Verification Token**: `4johe0bj1fCG9V2bAhvTne8Fmz7RCo07`
 
 ### Webhook 配置
-- **请求地址**: `https://abc123.dev.coze.site/api/v1/feishu/webhook`
+- **请求地址**: `https://c3471164-d4a8-459c-a047-271336351e54.dev.coze.site/api/v1/feishu/webhook`
 - **Content-Type**: `application/json`
 
 ## 配置步骤
@@ -25,7 +25,7 @@
 2. 选择"将事件发送至开发者服务器"
 3. 配置请求地址：
    ```
-   https://abc123.dev.coze.site/api/v1/feishu/webhook
+   https://c3471164-d4a8-459c-a047-271336351e54.dev.coze.site/api/v1/feishu/webhook
    ```
 4. 配置 Verification Token：
    ```

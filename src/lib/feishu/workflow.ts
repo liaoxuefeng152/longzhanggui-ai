@@ -44,13 +44,13 @@ async function callWorkflow(
  * 处理选品意图
  */
 async function handleSelectProducts(
-  messageId: string,
+  receiveId: string,
   params: Record<string, any>
 ): Promise<WorkflowResult> {
   try {
     // 先发送处理中消息
     await sendCardMessage(
-      messageId,
+      receiveId,
       createProcessingCard('选品分析', '正在分析市场潜力，请稍候...')
     );
 
@@ -62,7 +62,7 @@ async function handleSelectProducts(
 
     // 发送成功消息
     await sendCardMessage(
-      messageId,
+      receiveId,
       createSuccessCard(
         '选品完成',
         [
@@ -87,7 +87,7 @@ async function handleSelectProducts(
     };
   } catch (error) {
     await sendCardMessage(
-      messageId,
+      receiveId,
       createErrorCard('选品失败', error instanceof Error ? error.message : '未知错误')
     );
 
@@ -102,19 +102,19 @@ async function handleSelectProducts(
  * 处理上架意图
  */
 async function handlePublishProducts(
-  messageId: string,
+  receiveId: string,
   params: Record<string, any>
 ): Promise<WorkflowResult> {
   try {
     await sendCardMessage(
-      messageId,
+      receiveId,
       createProcessingCard('上架推广', '正在上架并创建广告，请稍候...')
     );
 
     const result = await callWorkflow('select_and_publish_products', params);
 
     await sendCardMessage(
-      messageId,
+      receiveId,
       createSuccessCard(
         '上架完成',
         [
@@ -140,7 +140,7 @@ async function handlePublishProducts(
     };
   } catch (error) {
     await sendCardMessage(
-      messageId,
+      receiveId,
       createErrorCard('上架失败', error instanceof Error ? error.message : '未知错误')
     );
 
@@ -154,11 +154,11 @@ async function handlePublishProducts(
 /**
  * 处理查询销量
  */
-async function handleQuerySales(messageId: string): Promise<WorkflowResult> {
+async function handleQuerySales(receiveId: string): Promise<WorkflowResult> {
   try {
     // 模拟查询销量数据
     await sendCardMessage(
-      messageId,
+      receiveId,
       createSuccessCard(
         '今日销量',
         [
@@ -192,10 +192,10 @@ async function handleQuerySales(messageId: string): Promise<WorkflowResult> {
 /**
  * 处理查询库存
  */
-async function handleQueryInventory(messageId: string): Promise<WorkflowResult> {
+async function handleQueryInventory(receiveId: string): Promise<WorkflowResult> {
   try {
     await sendCardMessage(
-      messageId,
+      receiveId,
       createSuccessCard(
         '库存预警',
         [
@@ -228,10 +228,10 @@ async function handleQueryInventory(messageId: string): Promise<WorkflowResult> 
 /**
  * 处理查询状态
  */
-async function handleQueryStatus(messageId: string): Promise<WorkflowResult> {
+async function handleQueryStatus(receiveId: string): Promise<WorkflowResult> {
   try {
     await sendCardMessage(
-      messageId,
+      receiveId,
       createSuccessCard(
         '系统状态',
         [
@@ -266,11 +266,11 @@ async function handleQueryStatus(messageId: string): Promise<WorkflowResult> {
 /**
  * 处理帮助意图
  */
-async function handleHelp(messageId: string): Promise<WorkflowResult> {
+async function handleHelp(receiveId: string): Promise<WorkflowResult> {
   const { generateHelpMessage } = await import('./intent');
 
   await sendCardMessage(
-    messageId,
+    receiveId,
     createSuccessCard(
       '使用帮助',
       [generateHelpMessage()],
@@ -292,9 +292,9 @@ async function handleHelp(messageId: string): Promise<WorkflowResult> {
 /**
  * 处理未知意图
  */
-async function handleUnknownIntent(messageId: string, text: string): Promise<WorkflowResult> {
+async function handleUnknownIntent(receiveId: string, text: string): Promise<WorkflowResult> {
   await sendCardMessage(
-    messageId,
+    receiveId,
     createSuccessCard(
       '未识别的意图',
       [
@@ -325,40 +325,40 @@ async function handleUnknownIntent(messageId: string, text: string): Promise<Wor
  * 主处理器：根据意图调用相应的工作流
  */
 export async function handleWorkflow(
-  messageId: string,
+  receiveId: string,
   intent: string,
   params: Record<string, any>,
   originalText: string
 ): Promise<WorkflowResult> {
   switch (intent) {
     case INTENT_TYPES.SELECT_PRODUCTS:
-      return handleSelectProducts(messageId, params);
+      return handleSelectProducts(receiveId, params);
 
     case INTENT_TYPES.PUBLISH_PRODUCTS:
-      return handlePublishProducts(messageId, params);
+      return handlePublishProducts(receiveId, params);
 
     case INTENT_TYPES.CREATE_AD:
       // 创建广告和上架类似
-      return handlePublishProducts(messageId, params);
+      return handlePublishProducts(receiveId, params);
 
     case INTENT_TYPES.QUERY_SALES:
-      return handleQuerySales(messageId);
+      return handleQuerySales(receiveId);
 
     case INTENT_TYPES.QUERY_INVENTORY:
-      return handleQueryInventory(messageId);
+      return handleQueryInventory(receiveId);
 
     case INTENT_TYPES.QUERY_ORDERS:
       // 订单查询和销量查询类似
-      return handleQuerySales(messageId);
+      return handleQuerySales(receiveId);
 
     case INTENT_TYPES.QUERY_STATUS:
-      return handleQueryStatus(messageId);
+      return handleQueryStatus(receiveId);
 
     case INTENT_TYPES.HELP:
-      return handleHelp(messageId);
+      return handleHelp(receiveId);
 
     default:
-      return handleUnknownIntent(messageId, originalText);
+      return handleUnknownIntent(receiveId, originalText);
   }
 }
 

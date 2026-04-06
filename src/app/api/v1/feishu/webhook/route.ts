@@ -81,9 +81,9 @@ export async function POST(request: NextRequest) {
         const intentResult = recognizeIntent(messageText);
         console.log('意图识别结果:', intentResult);
 
-        // 调用工作流处理
+        // 调用工作流处理 - 使用 user_id 作为接收者 ID
         await handleWorkflow(
-          message.message_id,
+          sender.sender_id.user_id, // 使用用户 open_id 而不是 message_id
           intentResult.intent,
           intentResult.params,
           messageText

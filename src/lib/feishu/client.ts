@@ -52,12 +52,12 @@ export async function getTenantAccessToken(): Promise<string> {
 
 /**
  * 发送消息到飞书
- * @param messageId 消息 ID
+ * @param receiveId 接收者 ID（用户 open_id 或群 chat_id）
  * @param msgType 消息类型
  * @param content 消息内容
  */
 export async function sendMessage(
-  messageId: string,
+  receiveId: string,
   msgType: 'text' | 'interactive' | 'post' | 'card',
   content: any
 ): Promise<any> {
@@ -74,7 +74,8 @@ export async function sendMessage(
         },
         body: JSON.stringify({
           msg_type: msgType,
-          receive_id: messageId,
+          receive_id: receiveId,
+          receive_id_type: 'open_id', // 明确指定接收者类型为 open_id
           content: typeof content === 'string' ? content : JSON.stringify(content),
         }),
       }
@@ -83,7 +84,7 @@ export async function sendMessage(
     const data = await response.json();
 
     if (data.code !== 0) {
-      throw new Error(`发送消息失败: ${data.msg}`);
+      throw new Error(`发送消息失败: ${data.msg} (code: ${data.code})`);
     }
 
     return data;
@@ -95,22 +96,22 @@ export async function sendMessage(
 
 /**
  * 发送文本消息
- * @param messageId 消息 ID
+ * @param receiveId 接收者 ID（用户 open_id 或群 chat_id）
  * @param text 文本内容
  */
-export async function sendTextMessage(messageId: string, text: string): Promise<any> {
-  return sendMessage(messageId, 'text', {
+export async function sendTextMessage(receiveId: string, text: string): Promise<any> {
+  return sendMessage(receiveId, 'text', {
     text: text,
   });
 }
 
 /**
  * 发送交互式卡片消息
- * @param messageId 消息 ID
+ * @param receiveId 接收者 ID（用户 open_id 或群 chat_id）
  * @param card 卡片内容
  */
-export async function sendCardMessage(messageId: string, card: any): Promise<any> {
-  return sendMessage(messageId, 'interactive', {
+export async function sendCardMessage(receiveId: string, card: any): Promise<any> {
+  return sendMessage(receiveId, 'interactive', {
     config: {
       wide_screen_mode: true,
     },
