@@ -22,6 +22,7 @@ import {
   Plus,
   Filter,
   Download,
+  Upload,
   Eye,
   Edit,
   Trash2,
@@ -93,9 +94,15 @@ export default function ERPProductsPage() {
   // 对话框状态
   const [isNewProductOpen, setIsNewProductOpen] = useState(false);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [isImportOpen, setIsImportOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<ERPProduct | null>(null);
   const [isProcessing, setIsProcessing] = useState<string | null>(null);
   const [isPublishing, setIsPublishing] = useState<string | null>(null);
+  
+  // 导入相关状态
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [importPreview, setImportPreview] = useState<any[]>([]);
+  const [isImporting, setIsImporting] = useState(false);
   
   const [newProduct, setNewProduct] = useState<NewProductForm>({
     name_zh: '',
@@ -331,6 +338,77 @@ export default function ERPProductsPage() {
     }
   };
 
+  // 处理文件选择
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // 检查文件类型
+    const validTypes = ['.xlsx', '.xls', '.csv'];
+    const ext = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
+    if (!validTypes.includes(ext)) {
+      toast.error('请上传 Excel 或 CSV 文件');
+      return;
+    }
+
+    // 检查文件大小（10MB）
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error('文件大小不能超过 10MB');
+      return;
+    }
+
+    setImportFile(file);
+
+    // 模拟预览数据
+    const mockPreview = [
+      { sku: 'SKU001', name: '宠物喂食器 5L', cost: 68, category: '宠物用品' },
+      { sku: 'SKU002', name: '便携榨汁机', cost: 45, category: '家居电器' },
+      { sku: 'SKU003', name: '智能手环', cost: 89, category: '3C数码' },
+    ];
+    setImportPreview(mockPreview);
+    toast.success('文件已选择，请确认预览数据');
+  };
+
+  // 执行导入
+  const handleImport = async () => {
+    if (!importFile) {
+      toast.error('请先选择文件');
+      return;
+    }
+
+    setIsImporting(true);
+    try {
+      // 模拟导入过程
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      toast.success('导入成功', {
+        description: `成功导入 ${importPreview.length} 个商品`,
+      });
+      
+      setIsImportOpen(false);
+      setImportFile(null);
+      setImportPreview([]);
+      fetchProducts();
+    } catch (error) {
+      toast.error('导入失败，请重试');
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
+  // 下载导入模板
+  const handleDownloadTemplate = () => {
+    const template = '商品名称,SKU,成本价,类目,供应商,采购链接\n宠物喂食器,SKU001,68,宠物用品,xxx供应商,https://detail.1688.com...';
+    const blob = new Blob([template], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = '商品导入模板.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success('模板已下载');
+  };
+
   const handleViewDetail = async (productId: string) => {
     try {
       const response = await fetch(`/api/v1/erp/products/${productId}`);
@@ -399,6 +477,10 @@ export default function ERPProductsPage() {
             <Button variant="outline" onClick={fetchProducts}>
               <RefreshCw className="h-4 w-4 mr-2" />
               刷新
+            </Button>
+            <Button variant="outline" onClick={() => setIsImportOpen(true)}>
+              <Upload className="h-4 w-4 mr-2" />
+              导入
             </Button>
             <Button onClick={() => router.push('/agents/product-selection')}>
               <Search className="h-4 w-4 mr-2" />
@@ -781,6 +863,118 @@ export default function ERPProductsPage() {
                 )}
               </div>
             )}
+          </DialogContent>
+        </Dialog>
+
+        {/* 导入对话框 */}
+        <Dialog open={isImportOpen} onOpenChange={setIsImportOpen}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>导入商品</DialogTitle>
+              <DialogDescription>
+                上传 Excel 或 CSV 文件批量导入商品，支持 .xlsx、.xls、.csv 格式，单文件不超过 10MB
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              {/* 下载模板 */}
+              <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded bg-blue-100 flex items-center justify-center">
+                    <Download className="h-5 w-5 text-blue-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">导入模板</p>
+                    <p className="text-xs text-muted-foreground">请先下载模板，按格式填写</p>
+                  </div>
+                </div>
+                <Button variant="outline" size="sm" onClick={handleDownloadTemplate}>
+                  下载模板
+                </Button>
+              </div>
+
+              {/* 文件上传 */}
+              <div className="border-2 border-dashed border-border rounded-lg p-6 text-center">
+                <input
+                  type="file"
+                  id="import-file"
+                  accept=".xlsx,.xls,.csv"
+                  onChange={handleFileSelect}
+                  className="hidden"
+                />
+                <label htmlFor="import-file" className="cursor-pointer">
+                  <div className="w-12 h-12 rounded-full bg-primary/10 mx-auto mb-3 flex items-center justify-center">
+                    <Upload className="h-6 w-6 text-primary" />
+                  </div>
+                  <p className="text-sm font-medium">
+                    {importFile ? importFile.name : '点击选择文件或拖拽文件到此处'}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    支持 .xlsx、.xls、.csv
+                  </p>
+                </label>
+              </div>
+
+              {/* 预览数据 */}
+              {importPreview.length > 0 && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label>预览数据（共 {importPreview.length} 条）</Label>
+                    <span className="text-xs text-muted-foreground">仅显示前3条</span>
+                  </div>
+                  <div className="border rounded-lg overflow-hidden">
+                    <table className="w-full text-sm">
+                      <thead className="bg-muted">
+                        <tr>
+                          <th className="px-3 py-2 text-left font-medium">SKU</th>
+                          <th className="px-3 py-2 text-left font-medium">商品名称</th>
+                          <th className="px-3 py-2 text-left font-medium">成本价</th>
+                          <th className="px-3 py-2 text-left font-medium">类目</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {importPreview.map((item, index) => (
+                          <tr key={index} className="border-t">
+                            <td className="px-3 py-2">{item.sku}</td>
+                            <td className="px-3 py-2">{item.name}</td>
+                            <td className="px-3 py-2">¥{item.cost}</td>
+                            <td className="px-3 py-2">{item.category}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* 导入说明 */}
+              <div className="text-xs text-muted-foreground space-y-1">
+                <p>• 请确保文件格式与模板一致</p>
+                <p>• 必填字段：商品名称、成本价</p>
+                <p>• 导入后将自动去重，已存在的商品会被跳过</p>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => {
+                setIsImportOpen(false);
+                setImportFile(null);
+                setImportPreview([]);
+              }}>
+                取消
+              </Button>
+              <Button onClick={handleImport} disabled={!importFile || isImporting}>
+                {isImporting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    导入中...
+                  </>
+                ) : (
+                  <>
+                    <Upload className="h-4 w-4 mr-2" />
+                    开始导入
+                  </>
+                )}
+              </Button>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
       </div>

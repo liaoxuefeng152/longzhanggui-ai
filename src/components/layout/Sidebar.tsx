@@ -86,6 +86,7 @@ const menuItems: MenuItem[] = [
       { title: '订单管理', href: '/erp/orders' },
       { title: '物流管理', href: '/erp/logistics' },
       { title: '财务管理', href: '/erp/finance' },
+      { title: '导入管理', href: '/erp/products' }, // 复用商品管理页面的导入功能
     ],
   },
   {
@@ -128,11 +129,6 @@ const menuItems: MenuItem[] = [
       { title: '推送日志', href: '/feishu/logs' },
       { title: 'Webhook测试', href: '/feishu/test' },
     ],
-  },
-  {
-    title: '数据导入',
-    href: '/feishu/import',
-    icon: Upload,
   },
   {
     title: '系统设置',
