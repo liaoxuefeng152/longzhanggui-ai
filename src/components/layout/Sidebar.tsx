@@ -26,7 +26,6 @@ import {
   Zap,
   MessageSquare,
   Upload,
-  Store,
   Clock,
   Shield,
 } from 'lucide-react';
@@ -89,12 +88,8 @@ const menuItems: MenuItem[] = [
       { title: '订单管理', href: '/erp/orders' },
       { title: '物流管理', href: '/erp/logistics' },
       { title: '财务管理', href: '/erp/finance' },
+      { title: '店铺管理', href: '/shops' },
     ],
-  },
-  {
-    title: '店铺管理',
-    href: '/shops',
-    icon: Store,
   },
   {
     title: '定时任务',
@@ -119,11 +114,6 @@ const menuItems: MenuItem[] = [
     title: '任务日志',
     href: '/task-logs',
     icon: ClipboardList,
-  },
-  {
-    title: '平台绑定',
-    href: '/platform-bindings',
-    icon: Link2,
   },
   {
     title: '客服工单',
