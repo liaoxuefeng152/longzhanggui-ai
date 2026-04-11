@@ -17,7 +17,7 @@ const defaultSettings: Setting[] = [
   // 通用设置
   {
     key: 'name',
-    value: '龙虾AI跨境无人店系统',
+    value: '龙掌柜智能运营系统',
     description: '系统名称',
     category: 'general',
     created_at: new Date().toISOString(),

@@ -21,7 +21,7 @@ const nextConfig: NextConfig = {
 
   // 环境变量
   env: {
-    NEXT_PUBLIC_APP_NAME: '龙虾AI跨境无人店系统',
+    NEXT_PUBLIC_APP_NAME: '龙掌柜智能运营系统',
     NEXT_PUBLIC_APP_VERSION: '3.0.0',
   },
 

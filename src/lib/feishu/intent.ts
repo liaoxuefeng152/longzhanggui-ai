@@ -146,7 +146,7 @@ export function getIntentDescription(intent: string): string {
  * 生成帮助消息
  */
 export function generateHelpMessage(): string {
-  return `🤖 **龙虾AI运营助理使用指南**
+  return `🤖 **龙掌柜运营助理使用指南**
 
 **📊 数据查询类**
 - "今天运营情况怎么样？"

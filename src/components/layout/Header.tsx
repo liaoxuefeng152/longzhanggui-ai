@@ -32,7 +32,7 @@ export default function Header({ user, onLogout }: HeaderProps) {
           </div>
           <div className="flex flex-col">
             <span className="text-[16px] font-semibold text-foreground">
-              龙虾AI跨境无人店
+              龙掌柜
             </span>
             <span className="text-[11px] text-muted-foreground">
               v1.0 · 飞书AI中台驱动版

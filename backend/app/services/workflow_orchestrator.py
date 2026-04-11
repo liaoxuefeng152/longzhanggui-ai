@@ -1,5 +1,5 @@
 """
-工作流编排引擎 - 龙虾调度中枢
+工作流编排引擎 - 龙掌柜调度中枢
 实现全链路自动化编排，协调各智能体和服务执行
 """
 import asyncio
@@ -93,7 +93,7 @@ class WorkflowStepResult:
 
 
 class WorkflowOrchestrator:
-    """工作流编排引擎 - 龙虾调度中枢"""
+    """工作流编排引擎 - 龙掌柜调度中枢"""
     
     # 预定义工作流模板
     WORKFLOW_TEMPLATES = {

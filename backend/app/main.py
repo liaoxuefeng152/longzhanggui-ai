@@ -1,5 +1,5 @@
 """
-龙虾AI跨境无人店系统 - FastAPI后端
+龙掌柜智能运营系统 - FastAPI后端
 """
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -46,7 +46,7 @@ app = FastAPI(
     title=settings.APP_NAME,
     version=settings.APP_VERSION,
     description="""
-## 龙虾AI跨境无人店系统
+## 龙掌柜智能运营系统
 
 跨境电商AI智能体运营平台，提供以下功能：
 

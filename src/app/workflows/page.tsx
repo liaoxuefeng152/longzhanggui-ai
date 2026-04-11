@@ -341,7 +341,7 @@ export default function WorkflowsPage() {
             </div>
             <div>
               <h1 className="text-[18px] font-semibold text-foreground">工作流编排引擎</h1>
-              <p className="text-[14px] text-muted-foreground">龙虾调度中枢 - 一键触发全链路自动化</p>
+              <p className="text-[14px] text-muted-foreground">龙掌柜调度中枢 - 一键触发全链路自动化</p>
             </div>
           </div>
           <Button 

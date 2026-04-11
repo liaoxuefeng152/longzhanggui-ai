@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       message: '飞书连接测试成功',
-      bot_name: '龙虾AI助手',
+      bot_name: '龙掌柜助手',
     });
   } catch (error) {
     console.error('测试飞书连接失败:', error);

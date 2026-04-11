@@ -81,7 +81,7 @@ export default function FeishuSettingsPage() {
   const [feishuConfig, setFeishuConfig] = useState<FeishuConfig>({
     appId: 'cli_a925102a8179dbd6',
     appSecret: '',
-    botName: '龙虾AI',
+    botName: '龙掌柜',
     enabled: true,
   });
   
@@ -287,7 +287,7 @@ export default function FeishuSettingsPage() {
                     id="botName"
                     value={feishuConfig.botName}
                     onChange={(e) => setFeishuConfig({ ...feishuConfig, botName: e.target.value })}
-                    placeholder="龙虾AI"
+                    placeholder="龙掌柜"
                     className="h-10"
                   />
                 </div>

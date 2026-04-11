@@ -93,7 +93,7 @@ export default function FeishuPage() {
             <div>
               <h1 className="text-xl font-semibold text-foreground">飞书机器人管理</h1>
               <p className="text-sm text-muted-foreground">
-                配置和测试龙虾AI飞书机器人
+                配置和测试龙掌柜飞书机器人
               </p>
             </div>
           </div>

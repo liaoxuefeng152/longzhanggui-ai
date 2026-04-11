@@ -17,7 +17,7 @@ router = APIRouter(prefix="/settings", tags=["系统设置"])
 
 # 默认系统设置
 DEFAULT_SETTINGS = {
-    "site_name": "龙虾AI跨境无人店系统",
+    "site_name": "龙掌柜智能运营系统",
     "site_logo": "",
     "contact_email": "support@example.com",
     "contact_phone": "400-888-8888",
@@ -109,8 +109,8 @@ async def get_feishu_config(
         "app_secret": "",
         "encrypt_key": "",
         "verification_token": "",
-        "bot_name": "龙虾AI助手",
-        "welcome_message": "欢迎使用龙虾AI跨境无人店系统！"
+        "bot_name": "龙掌柜助手",
+        "welcome_message": "欢迎使用龙掌柜智能运营系统！"
     }
     
     for config in configs:

@@ -83,7 +83,7 @@ export default function LoginPage() {
             <span className="text-3xl">🦞</span>
           </div>
           <h1 className="text-[20px] font-semibold text-foreground mb-2">
-            龙虾AI跨境无人店系统
+            龙掌柜智能运营系统
           </h1>
           <p className="text-[14px] text-muted-foreground">
             飞书AI中台驱动版 · v1.0
@@ -182,7 +182,7 @@ export default function LoginPage() {
         {/* 底部信息 */}
         <div className="text-center mt-6 space-y-2">
           <p className="text-[12px] text-muted-foreground">
-            © 2024 龙虾AI跨境无人店系统 · 版权所有
+            © 2024 龙掌柜智能运营系统 · 版权所有
           </p>
           <div className="flex items-center justify-center gap-4 text-[12px]">
             <a href="#" className="text-muted-foreground hover:text-primary transition-colors">

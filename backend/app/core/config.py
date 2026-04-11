@@ -10,7 +10,7 @@ class Settings(BaseSettings):
     """应用配置"""
     
     # 应用配置
-    APP_NAME: str = "龙虾AI跨境无人店系统"
+    APP_NAME: str = "龙掌柜智能运营系统"
     APP_VERSION: str = "2.0.0"
     DEBUG: bool = True
     API_PREFIX: str = "/api/v1"
