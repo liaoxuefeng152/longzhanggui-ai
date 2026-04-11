@@ -20,6 +20,7 @@ import {
   Search,
   Filter,
   Download,
+  Upload,
   Eye,
   Truck,
   DollarSign,
@@ -33,6 +34,7 @@ import {
   X,
   PackageCheck,
   Ban,
+  FileSpreadsheet,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { getAuthHeaders } from '@/lib/hooks/useAuthFetch';
@@ -74,6 +76,7 @@ export default function ERPOrdersPage() {
   // 对话框状态
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [isShipOpen, setIsShipOpen] = useState(false);
+  const [isImportOpen, setIsImportOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<ERPOrder | null>(null);
   const [isProcessing, setIsProcessing] = useState<string | null>(null);
   
@@ -82,6 +85,11 @@ export default function ERPOrdersPage() {
     carrier: '',
     tracking_number: '',
   });
+  
+  // 导入相关状态
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [importPreview, setImportPreview] = useState<any[]>([]);
+  const [isImporting, setIsImporting] = useState(false);
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -267,6 +275,141 @@ export default function ERPOrdersPage() {
     }
   };
 
+  // 处理文件选择
+  const handleFileSelect = async (file: File) => {
+    setImportFile(file);
+    
+    // 读取文件进行预览
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const text = e.target?.result as string;
+        const lines = text.split('\n').filter(line => line.trim());
+        
+        if (lines.length < 2) {
+          toast.warning('文件数据为空或格式不正确');
+          return;
+        }
+        
+        // 解析CSV/表格数据
+        const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+        const previewData: any[] = [];
+        
+        for (let i = 1; i < Math.min(lines.length, 6); i++) {
+          const values = lines[i].split(',').map(v => v.trim());
+          const row: any = {};
+          headers.forEach((h, idx) => {
+            // 智能匹配列名
+            if (h.includes('订单') || h.includes('order')) {
+              row.platform_order_id = values[idx] || values[idx - 1] || `ORD${Date.now()}${i}`;
+              row.order_id = values[idx];
+            } else if (h.includes('商品') || h.includes('product') || h.includes('name')) {
+              row.product_name = values[idx];
+            } else if (h.includes('数量') || h.includes('quantity') || h.includes('qty')) {
+              row.quantity = parseInt(values[idx]) || 1;
+            } else if (h.includes('金额') || h.includes('amount') || h.includes('price') || h.includes('total')) {
+              row.total_amount = parseFloat(values[idx]) || 0;
+            } else if (h.includes('状态') || h.includes('status')) {
+              row.status = values[idx];
+            }
+          });
+          
+          // 如果没有识别到订单号，生成一个
+          if (!row.platform_order_id) {
+            row.platform_order_id = `IMP${Date.now()}${i}`;
+          }
+          
+          previewData.push(row);
+        }
+        
+        setImportPreview(previewData);
+        toast.success(`已读取 ${lines.length - 1} 条订单数据`);
+      } catch (error) {
+        toast.error('文件解析失败');
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  // 执行导入
+  const handleImport = async () => {
+    if (!importFile) return;
+    
+    setIsImporting(true);
+    try {
+      // 读取完整文件
+      const text = await importFile.text();
+      const lines = text.split('\n').filter(line => line.trim());
+      
+      if (lines.length < 2) {
+        toast.error('文件数据为空');
+        return;
+      }
+      
+      // 解析所有数据
+      const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+      const ordersData: any[] = [];
+      
+      for (let i = 1; i < lines.length; i++) {
+        const values = lines[i].split(',').map(v => v.trim());
+        const row: any = {};
+        
+        headers.forEach((h, idx) => {
+          if (h.includes('订单') || h.includes('order')) {
+            row.platform_order_id = values[idx];
+          } else if (h.includes('商品') || h.includes('product') || h.includes('name')) {
+            row.product_name = values[idx];
+          } else if (h.includes('数量') || h.includes('quantity') || h.includes('qty')) {
+            row.quantity = parseInt(values[idx]) || 1;
+          } else if (h.includes('金额') || h.includes('amount') || h.includes('price') || h.includes('total')) {
+            row.total_amount = parseFloat(values[idx]) || 0;
+          } else if (h.includes('成本') || h.includes('cost')) {
+            row.cost_price = parseFloat(values[idx]) || 0;
+          } else if (h.includes('平台') || h.includes('platform')) {
+            row.platform = values[idx].toLowerCase();
+          }
+        });
+        
+        if (row.platform_order_id || row.product_name) {
+          if (!row.platform_order_id) {
+            row.platform_order_id = `IMP${Date.now()}${i}`;
+          }
+          if (!row.quantity) row.quantity = 1;
+          if (!row.total_amount) row.total_amount = 0;
+          if (!row.cost_price) row.cost_price = 0;
+          if (!row.platform) row.platform = 'tiktok';
+          if (!row.status) row.status = 'paid';
+          
+          ordersData.push(row);
+        }
+      }
+      
+      // 逐条导入
+      let successCount = 0;
+      for (const orderData of ordersData) {
+        const response = await fetch('/api/v1/erp/orders', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(orderData),
+        });
+        
+        if (response.ok) {
+          successCount++;
+        }
+      }
+      
+      toast.success(`成功导入 ${successCount} 条订单`);
+      setIsImportOpen(false);
+      setImportFile(null);
+      setImportPreview([]);
+      fetchOrders();
+    } catch (error) {
+      toast.error('导入失败，请检查文件格式');
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     const config: Record<string, { label: string; className: string }> = {
       pending: { label: '待付款', className: 'bg-warning/10 text-warning' },
@@ -331,6 +474,10 @@ export default function ERPOrdersPage() {
                 <Download className="h-4 w-4 mr-2" />
               )}
               导出
+            </Button>
+            <Button variant="outline" onClick={() => setIsImportOpen(true)}>
+              <Upload className="h-4 w-4 mr-2" />
+              导入订单
             </Button>
           </div>
         </div>
@@ -652,6 +799,146 @@ export default function ERPOrdersPage() {
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                 ) : null}
                 确认发货
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* 导入订单对话框 */}
+        <Dialog open={isImportOpen} onOpenChange={setIsImportOpen}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>导入订单</DialogTitle>
+              <DialogDescription>
+                支持导入历史订单数据，支持 Excel (.xlsx, .xls) 和 CSV 格式
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              {/* 文件上传区域 */}
+              <div
+                className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
+                  importFile ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'
+                }`}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  const file = e.dataTransfer.files[0];
+                  if (file && (file.name.endsWith('.xlsx') || file.name.endsWith('.xls') || file.name.endsWith('.csv'))) {
+                    handleFileSelect(file);
+                  }
+                }}
+              >
+                <input
+                  type="file"
+                  id="order-file-upload"
+                  className="hidden"
+                  accept=".xlsx,.xls,.csv"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleFileSelect(file);
+                  }}
+                />
+                <label htmlFor="order-file-upload" className="cursor-pointer">
+                  {importFile ? (
+                    <div className="space-y-2">
+                      <FileSpreadsheet className="h-12 w-12 mx-auto text-primary" />
+                      <div className="text-[14px] font-medium">{importFile.name}</div>
+                      <div className="text-[12px] text-muted-foreground">
+                        {(importFile.size / 1024).toFixed(1)} KB
+                      </div>
+                      <Button variant="outline" size="sm" className="mt-2" onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setImportFile(null);
+                        setImportPreview([]);
+                      }}>
+                        重新选择
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <Upload className="h-12 w-12 mx-auto text-muted-foreground" />
+                      <div className="text-[14px] text-muted-foreground">
+                        拖拽文件到此处，或<span className="text-primary">点击选择文件</span>
+                      </div>
+                      <div className="text-[12px] text-muted-foreground">
+                        支持 .xlsx, .xls, .csv 格式，单文件不超过 10MB
+                      </div>
+                    </div>
+                  )}
+                </label>
+              </div>
+
+              {/* 导入预览 */}
+              {importPreview.length > 0 && (
+                <div className="space-y-2">
+                  <div className="text-[13px] font-medium">数据预览（前5条）</div>
+                  <div className="border border-border rounded-lg overflow-hidden">
+                    <table className="w-full text-[12px]">
+                      <thead className="bg-muted/50">
+                        <tr>
+                          <th className="px-3 py-2 text-left font-medium">订单号</th>
+                          <th className="px-3 py-2 text-left font-medium">商品</th>
+                          <th className="px-3 py-2 text-left font-medium">数量</th>
+                          <th className="px-3 py-2 text-left font-medium">金额</th>
+                          <th className="px-3 py-2 text-left font-medium">状态</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border">
+                        {importPreview.slice(0, 5).map((row, idx) => (
+                          <tr key={idx}>
+                            <td className="px-3 py-2 font-mono">{row.platform_order_id || row.order_id || '-'}</td>
+                            <td className="px-3 py-2">{row.product_name || '-'}</td>
+                            <td className="px-3 py-2">{row.quantity || '-'}</td>
+                            <td className="px-3 py-2">${(row.total_amount || row.amount || 0).toFixed(2)}</td>
+                            <td className="px-3 py-2">
+                              <Badge variant="outline" className="text-[10px]">
+                                {row.status || '待处理'}
+                              </Badge>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  <div className="text-[12px] text-muted-foreground">
+                    共 {importPreview.length} 条订单待导入
+                  </div>
+                </div>
+              )}
+
+              {/* 导入说明 */}
+              <div className="bg-muted/30 rounded-lg p-3 space-y-1">
+                <div className="text-[12px] font-medium text-muted-foreground mb-2">导入说明</div>
+                <div className="text-[12px] text-muted-foreground">• 支持的列：订单号、商品名称、数量、单价、运费、买家信息等</div>
+                <div className="text-[12px] text-muted-foreground">• 系统会自动识别列名，无需手动匹配</div>
+                <div className="text-[12px] text-muted-foreground">• 重复订单号会自动覆盖更新</div>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => {
+                setIsImportOpen(false);
+                setImportFile(null);
+                setImportPreview([]);
+              }}>
+                取消
+              </Button>
+              <Button onClick={handleImport} disabled={!importFile || isImporting}>
+                {isImporting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    导入中...
+                  </>
+                ) : (
+                  <>
+                    <Upload className="h-4 w-4 mr-2" />
+                    开始导入
+                  </>
+                )}
               </Button>
             </DialogFooter>
           </DialogContent>

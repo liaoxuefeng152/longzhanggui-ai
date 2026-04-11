@@ -20,6 +20,7 @@ import {
   Search,
   Filter,
   Download,
+  Upload,
   Eye,
   TrendingUp,
   TrendingDown,
@@ -36,6 +37,7 @@ import {
   Receipt,
   Banknote,
   Truck,
+  FileSpreadsheet,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { getAuthHeaders } from '@/lib/hooks/useAuthFetch';
@@ -81,6 +83,12 @@ export default function ERPFinancePage() {
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState<FinancialRecord | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  
+  // 导入相关状态
+  const [isImportOpen, setIsImportOpen] = useState(false);
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [importPreview, setImportPreview] = useState<any[]>([]);
+  const [isImporting, setIsImporting] = useState(false);
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -167,6 +175,160 @@ export default function ERPFinancePage() {
     setIsDetailOpen(true);
   };
 
+  // 处理文件选择
+  const handleFileSelect = async (file: File) => {
+    setImportFile(file);
+    
+    // 读取文件进行预览
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const text = e.target?.result as string;
+        const lines = text.split('\n').filter(line => line.trim());
+        
+        if (lines.length < 2) {
+          toast.warning('文件数据为空或格式不正确');
+          return;
+        }
+        
+        // 解析CSV/表格数据
+        const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+        const previewData: any[] = [];
+        
+        for (let i = 1; i < Math.min(lines.length, 6); i++) {
+          const values = lines[i].split(',').map(v => v.trim());
+          const row: any = {};
+          
+          headers.forEach((h, idx) => {
+            // 智能匹配列名
+            if (h.includes('日期') || h.includes('date') || h.includes('time')) {
+              row.record_date = values[idx];
+            } else if (h.includes('类型') || h.includes('type')) {
+              const typeVal = values[idx].toLowerCase();
+              if (typeVal.includes('收入') || typeVal.includes('income') || typeVal.includes('收入') || typeVal.includes('+')) {
+                row.record_type = 'income';
+              } else if (typeVal.includes('支出') || typeVal.includes('expense') || typeVal.includes('成本')) {
+                row.record_type = 'expense';
+              } else if (typeVal.includes('退款') || typeVal.includes('refund')) {
+                row.record_type = 'refund';
+              } else {
+                row.record_type = 'fee';
+              }
+            } else if (h.includes('类别') || h.includes('category') || h.includes('项目')) {
+              row.category = values[idx];
+            } else if (h.includes('金额') || h.includes('amount') || h.includes('money') || h.includes('金额')) {
+              row.amount = parseFloat(values[idx].replace(/[^0-9.-]/g, '')) || 0;
+            } else if (h.includes('描述') || h.includes('description') || h.includes('备注')) {
+              row.description = values[idx];
+            } else if (h.includes('平台') || h.includes('platform')) {
+              row.platform = values[idx];
+            }
+          });
+          
+          // 默认值
+          if (!row.record_date) row.record_date = new Date().toISOString().split('T')[0];
+          if (!row.category) row.category = '其他';
+          if (!row.amount) row.amount = 0;
+          if (!row.record_type) row.record_type = 'income';
+          
+          previewData.push(row);
+        }
+        
+        setImportPreview(previewData);
+        toast.success(`已读取 ${lines.length - 1} 条记录`);
+      } catch (error) {
+        toast.error('文件解析失败');
+      }
+    };
+    reader.readAsText(file);
+  };
+
+  // 执行导入
+  const handleImport = async () => {
+    if (!importFile) return;
+    
+    setIsImporting(true);
+    try {
+      // 读取完整文件
+      const text = await importFile.text();
+      const lines = text.split('\n').filter(line => line.trim());
+      
+      if (lines.length < 2) {
+        toast.error('文件数据为空');
+        return;
+      }
+      
+      // 解析所有数据
+      const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+      const recordsData: any[] = [];
+      
+      for (let i = 1; i < lines.length; i++) {
+        const values = lines[i].split(',').map(v => v.trim());
+        const row: any = {};
+        
+        headers.forEach((h, idx) => {
+          if (h.includes('日期') || h.includes('date') || h.includes('time')) {
+            row.record_date = values[idx];
+          } else if (h.includes('类型') || h.includes('type')) {
+            const typeVal = values[idx].toLowerCase();
+            if (typeVal.includes('收入') || typeVal.includes('income') || typeVal.includes('+')) {
+              row.record_type = 'income';
+            } else if (typeVal.includes('支出') || typeVal.includes('expense') || typeVal.includes('成本')) {
+              row.record_type = 'expense';
+            } else if (typeVal.includes('退款') || typeVal.includes('refund')) {
+              row.record_type = 'refund';
+            } else {
+              row.record_type = 'fee';
+            }
+          } else if (h.includes('类别') || h.includes('category') || h.includes('项目')) {
+            row.category = values[idx];
+          } else if (h.includes('金额') || h.includes('amount') || h.includes('money')) {
+            row.amount = parseFloat(values[idx].replace(/[^0-9.-]/g, '')) || 0;
+          } else if (h.includes('描述') || h.includes('description') || h.includes('备注')) {
+            row.description = values[idx];
+          } else if (h.includes('平台') || h.includes('platform')) {
+            row.platform = values[idx];
+          } else if (h.includes('来源') || h.includes('source')) {
+            row.source = values[idx];
+          }
+        });
+        
+        if (row.amount !== undefined) {
+          if (!row.record_date) row.record_date = new Date().toISOString().split('T')[0];
+          if (!row.category) row.category = '其他';
+          if (!row.record_type) row.record_type = 'income';
+          if (!row.currency) row.currency = 'USD';
+          
+          recordsData.push(row);
+        }
+      }
+      
+      // 逐条导入
+      let successCount = 0;
+      for (const recordData of recordsData) {
+        const response = await fetch('/api/v1/erp/finance/records', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(recordData),
+        });
+        
+        if (response.ok) {
+          successCount++;
+        }
+      }
+      
+      toast.success(`成功导入 ${successCount} 条记录`);
+      setIsImportOpen(false);
+      setImportFile(null);
+      setImportPreview([]);
+      fetchData();
+    } catch (error) {
+      toast.error('导入失败，请检查文件格式');
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
   // 计算汇总数据
   const totalSales = summaries.reduce((sum, s) => sum + s.total_sales, 0);
   const totalCost = summaries.reduce((sum, s) => sum + s.total_cost, 0);
@@ -217,6 +379,10 @@ export default function ERPFinancePage() {
                 <Download className="h-4 w-4 mr-2" />
               )}
               导出报表
+            </Button>
+            <Button variant="outline" onClick={() => setIsImportOpen(true)}>
+              <Upload className="h-4 w-4 mr-2" />
+              导入财务数据
             </Button>
           </div>
         </div>
@@ -565,6 +731,146 @@ export default function ERPFinancePage() {
             )}
             <DialogFooter>
               <Button variant="outline" onClick={() => setIsDetailOpen(false)}>关闭</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* 导入财务数据对话框 */}
+        <Dialog open={isImportOpen} onOpenChange={setIsImportOpen}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>导入财务数据</DialogTitle>
+              <DialogDescription>
+                支持导入第三方财务数据，支持 Excel (.xlsx, .xls) 和 CSV 格式
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              {/* 文件上传区域 */}
+              <div
+                className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
+                  importFile ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'
+                }`}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  const file = e.dataTransfer.files[0];
+                  if (file && (file.name.endsWith('.xlsx') || file.name.endsWith('.xls') || file.name.endsWith('.csv'))) {
+                    handleFileSelect(file);
+                  }
+                }}
+              >
+                <input
+                  type="file"
+                  id="finance-file-upload"
+                  className="hidden"
+                  accept=".xlsx,.xls,.csv"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleFileSelect(file);
+                  }}
+                />
+                <label htmlFor="finance-file-upload" className="cursor-pointer">
+                  {importFile ? (
+                    <div className="space-y-2">
+                      <FileSpreadsheet className="h-12 w-12 mx-auto text-primary" />
+                      <div className="text-[14px] font-medium">{importFile.name}</div>
+                      <div className="text-[12px] text-muted-foreground">
+                        {(importFile.size / 1024).toFixed(1)} KB
+                      </div>
+                      <Button variant="outline" size="sm" className="mt-2" onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setImportFile(null);
+                        setImportPreview([]);
+                      }}>
+                        重新选择
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <Upload className="h-12 w-12 mx-auto text-muted-foreground" />
+                      <div className="text-[14px] text-muted-foreground">
+                        拖拽文件到此处，或<span className="text-primary">点击选择文件</span>
+                      </div>
+                      <div className="text-[12px] text-muted-foreground">
+                        支持 .xlsx, .xls, .csv 格式，单文件不超过 10MB
+                      </div>
+                    </div>
+                  )}
+                </label>
+              </div>
+
+              {/* 导入预览 */}
+              {importPreview.length > 0 && (
+                <div className="space-y-2">
+                  <div className="text-[13px] font-medium">数据预览（前5条）</div>
+                  <div className="border border-border rounded-lg overflow-hidden">
+                    <table className="w-full text-[12px]">
+                      <thead className="bg-muted/50">
+                        <tr>
+                          <th className="px-3 py-2 text-left font-medium">日期</th>
+                          <th className="px-3 py-2 text-left font-medium">类型</th>
+                          <th className="px-3 py-2 text-left font-medium">类别</th>
+                          <th className="px-3 py-2 text-left font-medium">金额</th>
+                          <th className="px-3 py-2 text-left font-medium">描述</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border">
+                        {importPreview.slice(0, 5).map((row, idx) => (
+                          <tr key={idx}>
+                            <td className="px-3 py-2">{row.record_date || '-'}</td>
+                            <td className="px-3 py-2">
+                              <Badge variant="outline" className="text-[10px]">
+                                {row.record_type === 'income' ? '收入' : row.record_type === 'expense' ? '支出' : row.record_type || '未知'}
+                              </Badge>
+                            </td>
+                            <td className="px-3 py-2">{row.category || '-'}</td>
+                            <td className="px-3 py-2">${(row.amount || 0).toFixed(2)}</td>
+                            <td className="px-3 py-2 truncate max-w-[150px]">{row.description || '-'}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  <div className="text-[12px] text-muted-foreground">
+                    共 {importPreview.length} 条记录待导入
+                  </div>
+                </div>
+              )}
+
+              {/* 导入说明 */}
+              <div className="bg-muted/30 rounded-lg p-3 space-y-1">
+                <div className="text-[12px] font-medium text-muted-foreground mb-2">导入说明</div>
+                <div className="text-[12px] text-muted-foreground">• 支持的列：日期、类型（收入/支出）、类别、金额、描述、平台等</div>
+                <div className="text-[12px] text-muted-foreground">• 系统会自动识别列名，无需手动匹配</div>
+                <div className="text-[12px] text-muted-foreground">• 类型列支持：收入、支出、退款、费用</div>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => {
+                setIsImportOpen(false);
+                setImportFile(null);
+                setImportPreview([]);
+              }}>
+                取消
+              </Button>
+              <Button onClick={handleImport} disabled={!importFile || isImporting}>
+                {isImporting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    导入中...
+                  </>
+                ) : (
+                  <>
+                    <Upload className="h-4 w-4 mr-2" />
+                    开始导入
+                  </>
+                )}
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>

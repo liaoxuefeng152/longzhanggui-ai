@@ -86,7 +86,6 @@ const menuItems: MenuItem[] = [
       { title: '订单管理', href: '/erp/orders' },
       { title: '物流管理', href: '/erp/logistics' },
       { title: '财务管理', href: '/erp/finance' },
-      { title: '导入管理', href: '/erp/products' }, // 复用商品管理页面的导入功能
     ],
   },
   {
