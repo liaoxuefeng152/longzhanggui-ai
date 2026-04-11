@@ -89,6 +89,7 @@ const menuItems: MenuItem[] = [
       { title: '物流管理', href: '/erp/logistics' },
       { title: '财务管理', href: '/erp/finance' },
       { title: '店铺管理', href: '/shops' },
+      { title: '平台配置', href: '/shops/platforms' },
     ],
   },
   {

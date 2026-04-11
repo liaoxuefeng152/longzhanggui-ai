@@ -8,7 +8,6 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import {
   Dialog,
@@ -25,9 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
 import {
   Store,
   Plus,
@@ -43,9 +40,10 @@ import {
   Package,
   DollarSign,
   Link2,
-  Copy,
-  Eye,
-  EyeOff,
+  Key,
+  Shield,
+  AlertCircle,
+  User as UserIcon,
 } from 'lucide-react';
 
 interface Shop {
@@ -55,11 +53,11 @@ interface Shop {
   region: string;
   currency: string;
   status: 'active' | 'inactive' | 'suspended' | 'pending';
-  credentials: Record<string, string>;
+  authorization_status: 'authorized' | 'unauthorized' | 'expired';
+  store_id?: string;
   config: {
     auto_sync: boolean;
     sync_interval: number;
-    notify_email?: string;
   };
   stats: {
     total_orders: number;
@@ -67,27 +65,31 @@ interface Shop {
     total_products: number;
     last_sync?: string;
   };
-  platform_info?: {
-    name: string;
-    icon: string;
-    color: string;
-    regions: string[];
-    currencies: string[];
-  };
   created_at: string;
   updated_at: string;
 }
 
 interface PlatformConfig {
+  id: string;
   name: string;
   icon: string;
   color: string;
   regions: string[];
   currencies: string[];
+  has_credentials: boolean;
 }
 
-const PLATFORMS: Record<string, PlatformConfig> = {
+interface User {
+  nickname: string;
+  avatar?: string;
+  role: 'user' | 'admin';
+  id?: string;
+  name?: string;
+}
+
+const PLATFORMS: Record<string, Omit<PlatformConfig, 'has_credentials'>> = {
   tiktok: {
+    id: 'tiktok',
     name: 'TikTok Shop',
     icon: '🎵',
     color: '#FF0050',
@@ -95,6 +97,7 @@ const PLATFORMS: Record<string, PlatformConfig> = {
     currencies: ['USD', 'GBP', 'SGD'],
   },
   amazon: {
+    id: 'amazon',
     name: 'Amazon',
     icon: '📦',
     color: '#FF9900',
@@ -102,6 +105,7 @@ const PLATFORMS: Record<string, PlatformConfig> = {
     currencies: ['USD', 'GBP', 'EUR', 'JPY', 'AUD'],
   },
   shopee: {
+    id: 'shopee',
     name: 'Shopee',
     icon: '🛒',
     color: '#EE4D2D',
@@ -109,6 +113,7 @@ const PLATFORMS: Record<string, PlatformConfig> = {
     currencies: ['SGD', 'MYR', 'THB', 'IDR', 'VND', 'PHP'],
   },
   lazada: {
+    id: 'lazada',
     name: 'Lazada',
     icon: '🏪',
     color: '#0F1472',
@@ -116,6 +121,7 @@ const PLATFORMS: Record<string, PlatformConfig> = {
     currencies: ['SGD', 'MYR', 'THB', 'IDR', 'VND', 'PHP'],
   },
   tokopedia: {
+    id: 'tokopedia',
     name: 'Tokopedia',
     icon: '🏬',
     color: '#42D06D',
@@ -126,26 +132,24 @@ const PLATFORMS: Record<string, PlatformConfig> = {
 
 export default function ShopsPage() {
   const router = useRouter();
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [shops, setShops] = useState<Shop[]>([]);
+  const [platformConfigs, setPlatformConfigs] = useState<PlatformConfig[]>([]);
   const [loading, setLoading] = useState(true);
   const [syncingShop, setSyncingShop] = useState<string | null>(null);
 
   // 对话框状态
   const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [isConfigOpen, setIsConfigOpen] = useState(false);
+  const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [isSyncOpen, setIsSyncOpen] = useState(false);
   const [selectedShop, setSelectedShop] = useState<Shop | null>(null);
-  const [showCredentials, setShowCredentials] = useState(false);
 
-  // 创建表单
+  // 创建表单（简化版：不需要填写API凭证）
   const [createForm, setCreateForm] = useState({
     name: '',
-    platform: 'tiktok' as string,
+    platform: 'tiktok',
     region: '美国',
     currency: 'USD',
-    api_key: '',
-    api_secret: '',
     store_id: '',
     auto_sync: true,
     sync_interval: 5,
@@ -157,22 +161,50 @@ export default function ShopsPage() {
       router.push('/login');
       return;
     }
-    setUser(JSON.parse(userData));
-    fetchShops();
+    const parsedUser = JSON.parse(userData);
+    // 确保用户有 nickname 字段
+    const userWithNickname: User = {
+      nickname: parsedUser.nickname || parsedUser.name || '用户',
+      avatar: parsedUser.avatar,
+      role: parsedUser.role || 'user',
+      id: parsedUser.id,
+      name: parsedUser.name,
+    };
+    setUser(userWithNickname);
+    fetchData();
   }, [router]);
 
-  const fetchShops = async () => {
+  const fetchData = async () => {
     try {
-      const response = await fetch('/api/v1/shops');
-      const data = await response.json();
-      if (data.success) {
-        setShops(data.data.shops);
+      // 并行获取店铺列表和平台配置
+      const [shopsRes, platformsRes] = await Promise.all([
+        fetch('/api/v1/shops'),
+        fetch('/api/v1/platforms'),
+      ]);
+      
+      const [shopsData, platformsData] = await Promise.all([
+        shopsRes.json(),
+        platformsRes.json(),
+      ]);
+      
+      if (shopsData.success) {
+        setShops(shopsData.data.shops);
+      }
+      
+      if (platformsData.success) {
+        setPlatformConfigs(platformsData.data.platforms);
       }
     } catch (error) {
-      console.error('获取店铺失败:', error);
+      console.error('获取数据失败:', error);
     } finally {
       setLoading(false);
     }
+  };
+
+  // 检查平台是否已配置凭证
+  const isPlatformConfigured = (platformId: string) => {
+    const config = platformConfigs.find(p => p.id === platformId);
+    return config?.has_credentials;
   };
 
   // 创建店铺
@@ -191,11 +223,7 @@ export default function ShopsPage() {
           platform: createForm.platform,
           region: createForm.region,
           currency: createForm.currency,
-          credentials: {
-            api_key: createForm.api_key,
-            api_secret: createForm.api_secret,
-            store_id: createForm.store_id,
-          },
+          store_id: createForm.store_id,
           config: {
             auto_sync: createForm.auto_sync,
             sync_interval: createForm.sync_interval,
@@ -208,7 +236,16 @@ export default function ShopsPage() {
         toast.success('店铺创建成功');
         setIsCreateOpen(false);
         resetForm();
-        fetchShops();
+        fetchData();
+        
+        // 如果平台未配置凭证，提示用户
+        if (!isPlatformConfigured(createForm.platform)) {
+          toast.warning('该平台尚未配置 API 凭证，请联系管理员');
+        } else {
+          // 打开授权对话框
+          setSelectedShop(data.data.shop);
+          setIsAuthOpen(true);
+        }
       } else {
         toast.error(data.error);
       }
@@ -229,7 +266,7 @@ export default function ShopsPage() {
       const data = await response.json();
       if (data.success) {
         toast.success('店铺已删除');
-        fetchShops();
+        fetchData();
       }
     } catch (error) {
       toast.error('删除失败');
@@ -238,6 +275,13 @@ export default function ShopsPage() {
 
   // 同步店铺
   const handleSync = async (shop: Shop) => {
+    if (shop.authorization_status !== 'authorized') {
+      toast.error('请先完成店铺授权');
+      setSelectedShop(shop);
+      setIsAuthOpen(true);
+      return;
+    }
+    
     setSyncingShop(shop.id);
     setSelectedShop(shop);
 
@@ -252,8 +296,7 @@ export default function ShopsPage() {
       if (data.success) {
         toast.success('同步任务已启动');
         setIsSyncOpen(true);
-        // 等待3秒后刷新
-        setTimeout(fetchShops, 5000);
+        setTimeout(fetchData, 5000);
       }
     } catch (error) {
       toast.error('同步启动失败');
@@ -262,11 +305,44 @@ export default function ShopsPage() {
     }
   };
 
+  // 授权店铺
+  const handleAuthorize = async (shop: Shop) => {
+    setSelectedShop(shop);
+    setIsAuthOpen(true);
+  };
+
+  // 执行授权
+  const executeAuthorization = async () => {
+    if (!selectedShop) return;
+
+    try {
+      // 模拟OAuth授权流程
+      const response = await fetch(`/api/v1/shops/${selectedShop.id}/authorize`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          store_id: createForm.store_id,
+        }),
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        toast.success('店铺授权成功');
+        setIsAuthOpen(false);
+        fetchData();
+      } else {
+        toast.error(data.error || '授权失败');
+      }
+    } catch (error) {
+      toast.error('授权失败');
+    }
+  };
+
   // 更新店铺状态
   const handleToggleStatus = async (shop: Shop) => {
     try {
       const newStatus = shop.status === 'active' ? 'inactive' : 'active';
-      const response = await fetch(`/api/v1/shops`, {
+      const response = await fetch('/api/v1/shops', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: shop.id, status: newStatus }),
@@ -275,7 +351,7 @@ export default function ShopsPage() {
       const data = await response.json();
       if (data.success) {
         toast.success(`店铺已${newStatus === 'active' ? '启用' : '停用'}`);
-        fetchShops();
+        fetchData();
       }
     } catch (error) {
       toast.error('操作失败');
@@ -288,8 +364,6 @@ export default function ShopsPage() {
       platform: 'tiktok',
       region: '美国',
       currency: 'USD',
-      api_key: '',
-      api_secret: '',
       store_id: '',
       auto_sync: true,
       sync_interval: 5,
@@ -307,6 +381,32 @@ export default function ShopsPage() {
     return <Badge variant="outline" className={className}>{label}</Badge>;
   };
 
+  const getAuthBadge = (status: string) => {
+    const config: Record<string, { label: string; className: string; icon: React.ReactNode }> = {
+      authorized: { 
+        label: '已授权', 
+        className: 'bg-green-500/10 text-green-500',
+        icon: <CheckCircle className="h-3 w-3" />
+      },
+      unauthorized: { 
+        label: '未授权', 
+        className: 'bg-yellow-500/10 text-yellow-500',
+        icon: <AlertCircle className="h-3 w-3" />
+      },
+      expired: { 
+        label: '授权过期', 
+        className: 'bg-red-500/10 text-red-500',
+        icon: <XCircle className="h-3 w-3" />
+      },
+    };
+    const { label, className, icon } = config[status] || config.unauthorized;
+    return (
+      <Badge variant="outline" className={className}>
+        {icon} {label}
+      </Badge>
+    );
+  };
+
   // 按平台分组
   const groupedShops = shops.reduce((acc, shop) => {
     if (!acc[shop.platform]) {
@@ -320,6 +420,7 @@ export default function ShopsPage() {
   const totalOrders = shops.reduce((sum, s) => sum + s.stats.total_orders, 0);
   const totalSales = shops.reduce((sum, s) => sum + s.stats.total_sales, 0);
   const activeShops = shops.filter(s => s.status === 'active').length;
+  const authorizedShops = shops.filter(s => s.authorization_status === 'authorized').length;
 
   if (!user) return null;
 
@@ -334,17 +435,39 @@ export default function ShopsPage() {
             </div>
             <div>
               <h1 className="text-[18px] font-semibold text-foreground">店铺管理</h1>
-              <p className="text-[14px] text-muted-foreground">多平台店铺绑定 · 数据同步 · 运营监控</p>
+              <p className="text-[14px] text-muted-foreground">多平台店铺绑定 · 授权管理 · 数据同步</p>
             </div>
           </div>
-          <Button onClick={() => setIsCreateOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            添加店铺
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={() => router.push('/shops/platforms')}>
+              <Shield className="h-4 w-4 mr-2" />
+              平台配置
+            </Button>
+            <Button onClick={() => setIsCreateOpen(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              添加店铺
+            </Button>
+          </div>
         </div>
 
+        {/* 说明卡片 */}
+        <Card className="bg-blue-500/5 border-blue-500/20">
+          <CardContent className="p-4">
+            <div className="flex items-start gap-3">
+              <UserIcon className="h-5 w-5 text-blue-500 mt-0.5" />
+              <div className="text-[13px]">
+                <p className="font-medium text-foreground mb-1">简化授权流程</p>
+                <p className="text-muted-foreground">
+                  添加店铺时无需填写 API 凭证。API 凭证由管理员在「平台配置」中统一管理，
+                  您只需点击「授权」按钮完成店铺绑定即可。
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* 统计概览 */}
-        <div className="grid grid-cols-4 gap-4">
+        <div className="grid grid-cols-5 gap-4">
           <Card className="bg-white border-border shadow-sm">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
@@ -362,8 +485,8 @@ export default function ShopsPage() {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="text-[12px] text-muted-foreground">启用店铺</div>
-                  <div className="text-[24px] font-semibold text-green-500">{activeShops}</div>
+                  <div className="text-[12px] text-muted-foreground">已授权</div>
+                  <div className="text-[24px] font-semibold text-green-500">{authorizedShops}</div>
                 </div>
                 <div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center">
                   <CheckCircle className="h-5 w-5 text-green-500" />
@@ -375,11 +498,24 @@ export default function ShopsPage() {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
+                  <div className="text-[12px] text-muted-foreground">启用店铺</div>
+                  <div className="text-[24px] font-semibold text-blue-500">{activeShops}</div>
+                </div>
+                <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
+                  <Link2 className="h-5 w-5 text-blue-500" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="bg-white border-border shadow-sm">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
                   <div className="text-[12px] text-muted-foreground">累计订单</div>
                   <div className="text-[24px] font-semibold">{totalOrders}</div>
                 </div>
-                <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
-                  <ShoppingCart className="h-5 w-5 text-blue-500" />
+                <div className="w-10 h-10 rounded-lg bg-purple-500/10 flex items-center justify-center">
+                  <ShoppingCart className="h-5 w-5 text-purple-500" />
                 </div>
               </div>
             </CardContent>
@@ -391,8 +527,8 @@ export default function ShopsPage() {
                   <div className="text-[12px] text-muted-foreground">累计销售额</div>
                   <div className="text-[24px] font-semibold text-success">${totalSales.toFixed(2)}</div>
                 </div>
-                <div className="w-10 h-10 rounded-lg bg-purple-500/10 flex items-center justify-center">
-                  <DollarSign className="h-5 w-5 text-purple-500" />
+                <div className="w-10 h-10 rounded-lg bg-yellow-500/10 flex items-center justify-center">
+                  <DollarSign className="h-5 w-5 text-yellow-500" />
                 </div>
               </div>
             </CardContent>
@@ -422,14 +558,22 @@ export default function ShopsPage() {
           <div className="space-y-6">
             {Object.entries(groupedShops).map(([platform, platformShops]) => {
               const config = PLATFORMS[platform] || PLATFORMS.tiktok;
+              const platformConfigured = isPlatformConfigured(platform);
+              
               return (
                 <div key={platform}>
                   <div className="flex items-center gap-3 mb-3">
                     <span className="text-2xl">{config.icon}</span>
                     <h2 className="text-[16px] font-semibold">{config.name}</h2>
                     <Badge variant="outline">{platformShops.length} 个店铺</Badge>
+                    {!platformConfigured && (
+                      <Badge variant="outline" className="bg-yellow-500/10 text-yellow-500">
+                        <AlertCircle className="h-3 w-3 mr-1" />
+                        平台未配置
+                      </Badge>
+                    )}
                   </div>
-                  <div className="grid grid-cols-3 gap-4">
+                  <div className="grid grid-cols-2 gap-4">
                     {platformShops.map((shop) => (
                       <Card 
                         key={shop.id} 
@@ -451,7 +595,10 @@ export default function ShopsPage() {
                                 </p>
                               </div>
                             </div>
-                            {getStatusBadge(shop.status)}
+                            <div className="flex items-center gap-2">
+                              {getAuthBadge(shop.authorization_status)}
+                              {getStatusBadge(shop.status)}
+                            </div>
                           </div>
 
                           <div className="grid grid-cols-3 gap-2 mb-3">
@@ -472,31 +619,44 @@ export default function ShopsPage() {
                           <div className="flex items-center justify-between text-[12px] text-muted-foreground mb-3">
                             <span>
                               {shop.stats.last_sync 
-                                ? `最后同步: ${new Date(shop.stats.last_sync).toLocaleString('zh-CN')}`
+                                ? `同步: ${new Date(shop.stats.last_sync).toLocaleString('zh-CN')}`
                                 : '从未同步'}
                             </span>
                           </div>
 
                           <div className="flex items-center gap-2 pt-3 border-t border-border">
-                            <Button 
-                              variant="outline" 
-                              size="sm" 
-                              className="flex-1"
-                              onClick={() => handleSync(shop)}
-                              disabled={syncingShop === shop.id || shop.status !== 'active'}
-                            >
-                              {syncingShop === shop.id ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                              ) : (
-                                <RefreshCw className="h-4 w-4" />
-                              )}
-                            </Button>
+                            {shop.authorization_status !== 'authorized' ? (
+                              <Button 
+                                variant="default"
+                                size="sm" 
+                                className="flex-1 bg-green-500 hover:bg-green-600"
+                                onClick={() => handleAuthorize(shop)}
+                              >
+                                <Key className="h-4 w-4 mr-1" />
+                                去授权
+                              </Button>
+                            ) : (
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                className="flex-1"
+                                onClick={() => handleSync(shop)}
+                                disabled={syncingShop === shop.id || shop.status !== 'active'}
+                              >
+                                {syncingShop === shop.id ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <RefreshCw className="h-4 w-4" />
+                                )}
+                                同步数据
+                              </Button>
+                            )}
                             <Button 
                               variant="outline" 
                               size="sm"
                               onClick={() => {
                                 setSelectedShop(shop);
-                                setIsConfigOpen(true);
+                                setIsAuthOpen(true);
                               }}
                             >
                               <Settings className="h-4 w-4" />
@@ -531,12 +691,14 @@ export default function ShopsPage() {
           </div>
         )}
 
-        {/* 创建店铺对话框 */}
+        {/* 创建店铺对话框（简化版） */}
         <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
           <DialogContent className="max-w-lg">
             <DialogHeader>
               <DialogTitle>添加店铺</DialogTitle>
-              <DialogDescription>配置您的电商平台店铺</DialogDescription>
+              <DialogDescription>
+                填写店铺基本信息，无需填写 API 凭证
+              </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4 max-h-[60vh] overflow-y-auto">
               <div className="space-y-2">
@@ -568,11 +730,21 @@ export default function ShopsPage() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {Object.entries(PLATFORMS).map(([key, config]) => (
-                        <SelectItem key={key} value={key}>
-                          {config.icon} {config.name}
-                        </SelectItem>
-                      ))}
+                      {Object.entries(PLATFORMS).map(([key, config]) => {
+                        const configured = isPlatformConfigured(key);
+                        return (
+                          <SelectItem key={key} value={key}>
+                            <div className="flex items-center gap-2">
+                              <span>{config.icon} {config.name}</span>
+                              {!configured && (
+                                <Badge variant="outline" className="text-[10px] bg-yellow-500/10 text-yellow-500">
+                                  需配置
+                                </Badge>
+                              )}
+                            </div>
+                          </SelectItem>
+                        );
+                      })}
                     </SelectContent>
                   </Select>
                 </div>
@@ -611,40 +783,33 @@ export default function ShopsPage() {
                 </Select>
               </div>
 
-              <div className="border-t border-border pt-4">
-                <h4 className="text-[14px] font-medium mb-3">API 认证配置</h4>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="api_key">API Key</Label>
-                  <Input
-                    id="api_key"
-                    placeholder="输入平台提供的 API Key"
-                    value={createForm.api_key}
-                    onChange={(e) => setCreateForm({ ...createForm, api_key: e.target.value })}
-                  />
+              {/* 平台凭证状态提示 */}
+              {!isPlatformConfigured(createForm.platform) ? (
+                <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-3 text-[12px]">
+                  <div className="flex items-start gap-2">
+                    <AlertCircle className="h-4 w-4 text-yellow-500 mt-0.5" />
+                    <div>
+                      <p className="font-medium text-yellow-600 mb-1">该平台尚未配置 API 凭证</p>
+                      <p className="text-muted-foreground">
+                        请先让管理员在「平台配置」页面配置 {PLATFORMS[createForm.platform]?.name} 的 API 凭证，
+                        否则店铺添加后无法正常同步数据。
+                      </p>
+                    </div>
+                  </div>
                 </div>
-
-                <div className="space-y-2 mt-3">
-                  <Label htmlFor="api_secret">API Secret</Label>
-                  <Input
-                    id="api_secret"
-                    type="password"
-                    placeholder="输入平台提供的 API Secret"
-                    value={createForm.api_secret}
-                    onChange={(e) => setCreateForm({ ...createForm, api_secret: e.target.value })}
-                  />
+              ) : (
+                <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-3 text-[12px]">
+                  <div className="flex items-start gap-2">
+                    <CheckCircle className="h-4 w-4 text-green-500 mt-0.5" />
+                    <div>
+                      <p className="font-medium text-green-600 mb-1">平台已配置 API 凭证</p>
+                      <p className="text-muted-foreground">
+                        添加店铺后，点击「去授权」按钮即可完成店铺绑定。
+                      </p>
+                    </div>
+                  </div>
                 </div>
-
-                <div className="space-y-2 mt-3">
-                  <Label htmlFor="store_id">Store ID / Shop ID</Label>
-                  <Input
-                    id="store_id"
-                    placeholder="输入店铺ID"
-                    value={createForm.store_id}
-                    onChange={(e) => setCreateForm({ ...createForm, store_id: e.target.value })}
-                  />
-                </div>
-              </div>
+              )}
 
               <div className="border-t border-border pt-4">
                 <h4 className="text-[14px] font-medium mb-3">同步设置</h4>
@@ -691,76 +856,117 @@ export default function ShopsPage() {
           </DialogContent>
         </Dialog>
 
-        {/* 店铺配置对话框 */}
-        <Dialog open={isConfigOpen} onOpenChange={setIsConfigOpen}>
+        {/* 授权对话框 */}
+        <Dialog open={isAuthOpen} onOpenChange={setIsAuthOpen}>
           <DialogContent className="max-w-md">
             <DialogHeader>
-              <DialogTitle>店铺配置</DialogTitle>
-              <DialogDescription>{selectedShop?.name}</DialogDescription>
+              <DialogTitle>店铺授权</DialogTitle>
+              <DialogDescription>
+                {selectedShop?.name}
+              </DialogDescription>
             </DialogHeader>
             {selectedShop && (
               <div className="space-y-4 py-4">
-                <div className="grid grid-cols-2 gap-4 text-[14px]">
-                  <div>
-                    <div className="text-[12px] text-muted-foreground">店铺ID</div>
-                    <div className="font-mono">{selectedShop.id}</div>
-                  </div>
-                  <div>
-                    <div className="text-[12px] text-muted-foreground">状态</div>
-                    {getStatusBadge(selectedShop.status)}
-                  </div>
-                  <div>
-                    <div className="text-[12px] text-muted-foreground">平台</div>
-                    <div>{PLATFORMS[selectedShop.platform]?.icon} {PLATFORMS[selectedShop.platform]?.name}</div>
-                  </div>
-                  <div>
-                    <div className="text-[12px] text-muted-foreground">地区</div>
-                    <div>{selectedShop.region} · {selectedShop.currency}</div>
-                  </div>
-                </div>
-
-                <div className="border-t border-border pt-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="text-[14px] font-medium">API 认证</div>
-                    <Button 
-                      variant="ghost" 
-                      size="sm"
-                      onClick={() => setShowCredentials(!showCredentials)}
-                    >
-                      {showCredentials ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </Button>
-                  </div>
-                  {selectedShop.credentials?.api_key && (
-                    <div className="space-y-2 text-[13px]">
-                      <div className="flex justify-between bg-muted/50 rounded-lg p-2">
-                        <span className="text-muted-foreground">API Key</span>
-                        <span className="font-mono">
-                          {showCredentials 
-                            ? selectedShop.credentials.api_key 
-                            : '***' + (selectedShop.credentials.api_key.slice(-4) || '****')}
-                        </span>
+                {selectedShop.authorization_status === 'authorized' ? (
+                  <div className="text-center py-6">
+                    <div className="w-16 h-16 rounded-full bg-green-500/10 flex items-center justify-center mx-auto mb-4">
+                      <CheckCircle className="h-8 w-8 text-green-500" />
+                    </div>
+                    <h3 className="text-[16px] font-medium mb-2">店铺已授权</h3>
+                    <p className="text-[13px] text-muted-foreground">
+                      该店铺已完成授权，可以正常同步数据
+                    </p>
+                    <div className="mt-4 p-3 bg-muted/50 rounded-lg text-[12px] text-left">
+                      <div className="flex justify-between mb-1">
+                        <span className="text-muted-foreground">店铺ID</span>
+                        <span className="font-mono">{selectedShop.store_id || '-'}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">平台</span>
+                        <span>{PLATFORMS[selectedShop.platform]?.icon} {PLATFORMS[selectedShop.platform]?.name}</span>
                       </div>
                     </div>
-                  )}
-                </div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 text-[13px]">
+                      <div className="flex items-start gap-3">
+                        <Key className="h-5 w-5 text-blue-500 mt-0.5" />
+                        <div>
+                          <p className="font-medium text-foreground mb-2">如何完成授权？</p>
+                          <ol className="list-decimal list-inside space-y-1 text-muted-foreground">
+                            <li>点击下方「前往授权」按钮</li>
+                            <li>跳转到 {PLATFORMS[selectedShop.platform]?.name} 授权页面</li>
+                            <li>登录您的店铺账号并确认授权</li>
+                            <li>授权成功后返回本系统</li>
+                          </ol>
+                        </div>
+                      </div>
+                    </div>
 
-                <div className="border-t border-border pt-4">
-                  <div className="text-[14px] font-medium mb-3">同步设置</div>
-                  <div className="flex items-center justify-between text-[13px]">
-                    <span>自动同步</span>
-                    <Badge variant={selectedShop.config.auto_sync ? 'default' : 'outline'}>
-                      {selectedShop.config.auto_sync ? '已启用' : '已禁用'}
-                    </Badge>
-                  </div>
-                  <div className="flex items-center justify-between text-[13px] mt-2">
-                    <span>同步间隔</span>
-                    <span>{selectedShop.config.sync_interval} 分钟</span>
-                  </div>
-                </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="store_id_auth">店铺 ID / Store ID <span className="text-muted-foreground font-normal">(可选)</span></Label>
+                      <Input
+                        id="store_id_auth"
+                        placeholder="输入店铺ID（如已授权可留空）"
+                        value={createForm.store_id}
+                        onChange={(e) => setCreateForm({ ...createForm, store_id: e.target.value })}
+                      />
+                      <p className="text-[11px] text-muted-foreground">
+                        部分平台授权后会自动获取店铺ID
+                      </p>
+                    </div>
+
+                    {/* 平台凭证状态 */}
+                    {!isPlatformConfigured(selectedShop.platform) && (
+                      <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 text-[12px]">
+                        <div className="flex items-start gap-2">
+                          <AlertCircle className="h-4 w-4 text-red-500 mt-0.5" />
+                          <div>
+                            <p className="font-medium text-red-600 mb-1">平台未配置 API 凭证</p>
+                            <p className="text-muted-foreground">
+                              该平台的 API 凭证尚未配置，无法进行授权。
+                              请先让管理员在「平台配置」页面配置 {PLATFORMS[selectedShop.platform]?.name} 的 API 凭证。
+                            </p>
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              className="mt-2"
+                              onClick={() => {
+                                setIsAuthOpen(false);
+                                router.push('/shops/platforms');
+                              }}
+                            >
+                              <Shield className="h-4 w-4 mr-1" />
+                              前往平台配置
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
             )}
             <DialogFooter>
-              <Button variant="outline" onClick={() => setIsConfigOpen(false)}>关闭</Button>
+              {selectedShop?.authorization_status === 'authorized' ? (
+                <Button variant="outline" onClick={() => setIsAuthOpen(false)}>
+                  关闭
+                </Button>
+              ) : (
+                <>
+                  <Button variant="outline" onClick={() => setIsAuthOpen(false)}>
+                    取消
+                  </Button>
+                  <Button 
+                    onClick={executeAuthorization}
+                    disabled={!isPlatformConfigured(selectedShop?.platform || '')}
+                  >
+                    <ExternalLink className="h-4 w-4 mr-2" />
+                    前往授权
+                  </Button>
+                </>
+              )}
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -788,7 +994,7 @@ export default function ShopsPage() {
             <DialogFooter>
               <Button variant="outline" onClick={() => {
                 setIsSyncOpen(false);
-                fetchShops();
+                fetchData();
               }}>后台同步</Button>
             </DialogFooter>
           </DialogContent>

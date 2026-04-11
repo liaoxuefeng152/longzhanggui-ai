@@ -348,6 +348,17 @@ npx tsc --noEmit
 - 飞书配置管理: `src/app/feishu/settings/page.tsx`
 - 数据导入管理: `src/app/feishu/import/page.tsx`
 
+### 店铺管理（统一授权模式）
+- 店铺管理: `src/app/shops/page.tsx` - 用户授权模式，简化添加店铺流程
+- 平台配置: `src/app/shops/platforms/page.tsx` - 管理员统一配置各平台 API 凭证
+- 平台配置API: `src/app/api/v1/platforms/route.ts` - 平台凭证管理
+- 店铺授权API: `src/app/api/v1/shops/[id]/authorize/route.ts` - 店铺授权接口
+
+**授权模式说明**：
+- 管理员在「平台配置」页面统一配置各平台的 API Key/Secret
+- 普通用户添加店铺时只需填写基本信息，无需填写敏感凭证
+- 用户点击「去授权」按钮完成店铺绑定
+
 ### 飞书集成核心文件
 - 飞书配置: `src/lib/feishu/config.ts`
 - 飞书客户端: `src/lib/feishu/client.ts`

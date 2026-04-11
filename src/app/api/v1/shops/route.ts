@@ -14,14 +14,15 @@ interface Shop {
   currency: string;
   status: 'active' | 'inactive' | 'suspended' | 'pending';
   
-  // 认证信息
+  // 授权状态
+  authorization_status: 'authorized' | 'unauthorized' | 'expired';
+  store_id?: string;
+  
+  // 认证信息（不存储敏感凭证，由管理员统一管理）
   credentials: {
-    api_key?: string;
-    api_secret?: string;
     access_token?: string;
     refresh_token?: string;
-    store_id?: string;
-    seller_id?: string;
+    expires_at?: string;
   };
   
   // 配置
@@ -111,7 +112,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { name, platform, region, currency, credentials, config } = body;
+    const { name, platform, region, currency, store_id, config } = body;
 
     if (!name || !platform) {
       return NextResponse.json(
@@ -120,14 +121,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // 检查平台是否已配置凭证
+    const platformCredentials = (globalStore as any).platformCredentials?.[platform];
+    const hasCredentials = platformCredentials && (platformCredentials.api_key || platformCredentials.api_secret);
+    
     const shop: Shop = {
       id: `shop_${Date.now()}`,
       name,
       platform,
       region: region || '美国',
       currency: currency || 'USD',
-      status: credentials?.api_key ? 'active' : 'pending',
-      credentials: credentials || {},
+      status: hasCredentials ? 'active' : 'pending',
+      authorization_status: store_id ? 'authorized' : 'unauthorized',
+      store_id: store_id || '',
+      credentials: {},
       config: {
         auto_sync: config?.auto_sync ?? true,
         sync_interval: config?.sync_interval || 5,
@@ -160,7 +167,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      data: shop,
+      data: { shop },
     });
   } catch (error) {
     return NextResponse.json(
