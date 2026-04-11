@@ -295,6 +295,21 @@ class LobsterStore {
   financeRecords: Map<string, FinanceRecord> = new Map();
   workflows: Map<string, WorkflowExecution> = new Map();
   
+  // 定时任务相关
+  scheduledTasks: any[] = [];
+  taskExecutions: any[] = [];
+  syncTasks: any[] = [];
+  
+  // 店铺管理
+  shops: any[] = [];
+  
+  // 用户和角色
+  users: Map<string, any> = new Map();
+  roles: any[] = [];
+  
+  // 操作日志
+  operationLogs: any[] = [];
+  
   // 索引：product_id -> 相关数据
   productInventory: Map<string, string[]> = new Map(); // product_id -> inventory_ids
   productOrders: Map<string, string[]> = new Map(); // product_id -> order_ids

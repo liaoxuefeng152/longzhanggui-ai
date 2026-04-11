@@ -26,6 +26,9 @@ import {
   Zap,
   MessageSquare,
   Upload,
+  Store,
+  Clock,
+  Shield,
 } from 'lucide-react';
 
 interface MenuItem {
@@ -89,9 +92,23 @@ const menuItems: MenuItem[] = [
     ],
   },
   {
+    title: '店铺管理',
+    href: '/shops',
+    icon: Store,
+  },
+  {
+    title: '定时任务',
+    href: '/scheduler',
+    icon: Clock,
+  },
+  {
     title: '用户管理',
     href: '/users',
     icon: Users,
+    submenu: [
+      { title: '用户列表', href: '/users' },
+      { title: '角色权限', href: '/roles' },
+    ],
   },
   {
     title: '套餐管理',

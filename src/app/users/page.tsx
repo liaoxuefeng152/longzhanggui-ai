@@ -1,28 +1,13 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import MainLayout from '@/components/layout/MainLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Checkbox } from '@/components/ui/checkbox';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   Dialog,
   DialogContent,
@@ -31,99 +16,73 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import {
-  Search,
-  Plus,
-  Download,
-  MoreHorizontal,
-  Edit,
-  Trash2,
-  RefreshCw,
-  Eye,
-  Loader2,
-  ChevronDown,
-  Clock,
-  AlertTriangle,
-} from 'lucide-react';
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 import {
-  getFeishuUsers,
-  getFeishuUserStats,
-  createFeishuUser,
-  updateFeishuUser,
-  deleteFeishuUser,
-  batchUserOperation,
-  type FeishuUser,
-  type FeishuUserStats,
-  type FeishuUserRequest,
-  type PackageType,
-  PACKAGE_CONFIG,
-} from '@/lib/api/feishu-users';
-import { logout } from '@/lib/api/auth';
+  Users,
+  Plus,
+  Search,
+  Lock,
+  Unlock,
+  Trash2,
+  Shield,
+  Mail,
+  Phone,
+  Clock,
+  CheckCircle,
+  XCircle,
+} from 'lucide-react';
 
-// 智能体列表（用于权限配置）
-const AGENTS = [
-  { id: 'product-selection', name: '选品智能体' },
-  { id: 'image-design', name: '图片设计智能体' },
-  { id: 'video-gen', name: '视频生成智能体' },
-  { id: 'listing-opt', name: 'Listing优化智能体' },
-  { id: 'ad-Placement', name: '广告投放智能体' },
-  { id: 'customer-service', name: '客服智能体' },
-  { id: 'data-review', name: '数据复盘智能体' },
-];
+interface User {
+  id: string;
+  username: string;
+  email: string;
+  phone?: string;
+  avatar?: string;
+  role_id: string;
+  role_name: string;
+  role_level: number;
+  status: 'active' | 'inactive' | 'locked';
+  last_login?: string;
+  login_count: number;
+  created_at: string;
+}
+
+interface Role {
+  id: string;
+  name: string;
+  code: string;
+  level: number;
+}
 
 export default function UsersPage() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
-  const [users, setUsers] = useState<FeishuUser[]>([]);
-  const [stats, setStats] = useState<FeishuUserStats>({
-    total: 0,
-    active: 0,
-    inactive: 0,
-    expired: 0,
-    trial: 0,
-    expiring_soon: 0,
-  });
+  const [users, setUsers] = useState<User[]>([]);
+  const [roles, setRoles] = useState<Role[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterStatus, setFilterStatus] = useState<string>('all');
-  const [filterPackage, setFilterPackage] = useState<string>('all');
-  const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingUser, setEditingUser] = useState<FeishuUser | null>(null);
-  const [submitting, setSubmitting] = useState(false);
-  const [formData, setFormData] = useState<FeishuUserRequest>({
-    open_id: '',
-    nickname: '',
-    package_type: 'basic',
-    agent_permissions: [],
-    trial_days: 7,
-    call_quota: 100,
-  });
+  const [searchKeyword, setSearchKeyword] = useState('');
 
-  const fetchData = useCallback(async () => {
-    try {
-      setLoading(true);
-      const [usersRes, statsRes] = await Promise.all([
-        getFeishuUsers({ page_size: 100 }),
-        getFeishuUserStats(),
-      ]);
-      setUsers(usersRes.users);
-      setStats(statsRes);
-    } catch (error) {
-      console.error('获取用户列表失败:', error);
-      toast.error('获取用户列表失败');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  // 对话框状态
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [isConfigOpen, setIsConfigOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+
+  // 创建表单
+  const [createForm, setCreateForm] = useState({
+    username: '',
+    email: '',
+    phone: '',
+    password: '',
+    role_id: '',
+  });
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -132,591 +91,382 @@ export default function UsersPage() {
       return;
     }
     setUser(JSON.parse(userData));
-    fetchData();
-  }, [router, fetchData]);
+    fetchUsers();
+  }, [router]);
 
-  // 过滤用户
-  const filteredUsers = users.filter((u) => {
-    const matchSearch =
-      u.nickname.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      u.open_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (u.mobile && u.mobile.includes(searchTerm));
-    const matchStatus = filterStatus === 'all' || u.status === filterStatus;
-    const matchPackage = filterPackage === 'all' || u.package_type === filterPackage;
-    return matchSearch && matchStatus && matchPackage;
-  });
-
-  // 全选/取消全选
-  const handleSelectAll = (checked: boolean) => {
-    if (checked) {
-      setSelectedIds(filteredUsers.map((u) => u.id));
-    } else {
-      setSelectedIds([]);
-    }
-  };
-
-  // 单个选择
-  const handleSelect = (id: string, checked: boolean) => {
-    if (checked) {
-      setSelectedIds((prev) => [...prev, id]);
-    } else {
-      setSelectedIds((prev) => prev.filter((i) => i !== id));
-    }
-  };
-
-  // 获取状态徽章
-  const getStatusBadge = (status: string, expireTime?: string) => {
-    // 检查是否即将到期
-    if (status === 'active' && expireTime) {
-      const expireDate = new Date(expireTime);
-      const now = new Date();
-      const diffDays = Math.ceil((expireDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-      if (diffDays <= 7 && diffDays > 0) {
-        return (
-          <Badge className="bg-warning text-white">
-            <Clock className="h-3 w-3 mr-1" />
-            即将到期
-          </Badge>
-        );
+  const fetchUsers = async () => {
+    try {
+      const response = await fetch('/api/v1/users');
+      const data = await response.json();
+      if (data.success) {
+        setUsers(data.data.users);
+        setRoles(data.data.roles);
       }
+    } catch (error) {
+      console.error('获取用户失败:', error);
+    } finally {
+      setLoading(false);
     }
-
-    const config: Record<string, { label: string; className: string }> = {
-      active: { label: '正常', className: 'bg-success text-white' },
-      inactive: { label: '禁用', className: 'bg-muted text-muted-foreground' },
-      expired: { label: '已到期', className: 'bg-destructive text-white' },
-      trial: { label: '试用', className: 'bg-primary/10 text-primary' },
-    };
-    const c = config[status] || { label: status, className: 'bg-muted' };
-    return <Badge className={c.className}>{c.label}</Badge>;
   };
 
-  // 获取套餐徽章
-  const getPackageBadge = (packageType?: PackageType) => {
-    if (!packageType) return <Badge variant="outline">未绑定</Badge>;
-    const config = PACKAGE_CONFIG[packageType];
-    return <Badge className={config.color}>{config.name}</Badge>;
-  };
-
-  // 检查是否到期
-  const isExpired = (expireTime?: string) => {
-    if (!expireTime) return false;
-    return new Date(expireTime) < new Date();
-  };
-
-  // 检查是否即将到期
-  const isExpiringSoon = (expireTime?: string) => {
-    if (!expireTime) return false;
-    const expireDate = new Date(expireTime);
-    const now = new Date();
-    const diffDays = Math.ceil((expireDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-    return diffDays > 0 && diffDays <= 7;
-  };
-
-  // 打开新增弹窗
-  const handleAdd = () => {
-    setEditingUser(null);
-    setFormData({
-      open_id: '',
-      nickname: '',
-      package_type: 'basic',
-      agent_permissions: [],
-      trial_days: 7,
-      call_quota: 100,
-    });
-    setIsDialogOpen(true);
-  };
-
-  // 打开编辑弹窗
-  const handleEdit = (u: FeishuUser) => {
-    setEditingUser(u);
-    setFormData({
-      open_id: u.open_id,
-      nickname: u.nickname,
-      package_type: u.package_type || 'basic',
-      agent_permissions: u.agent_permissions || [],
-      call_quota: u.call_quota,
-    });
-    setIsDialogOpen(true);
-  };
-
-  // 提交表单
-  const handleSubmit = async () => {
-    if (!formData.open_id || !formData.nickname) {
-      toast.error('请填写必填项');
+  // 创建用户
+  const handleCreate = async () => {
+    if (!createForm.username || !createForm.email || !createForm.password || !createForm.role_id) {
+      toast.error('请填写完整信息');
       return;
     }
 
     try {
-      setSubmitting(true);
-      if (editingUser) {
-        await updateFeishuUser(editingUser.id, formData);
-        toast.success('用户更新成功');
-      } else {
-        await createFeishuUser(formData);
+      const response = await fetch('/api/v1/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(createForm),
+      });
+
+      const data = await response.json();
+      if (data.success) {
         toast.success('用户创建成功');
+        setIsCreateOpen(false);
+        resetForm();
+        fetchUsers();
+      } else {
+        toast.error(data.error);
       }
-      setIsDialogOpen(false);
-      fetchData();
     } catch (error) {
-      console.error('操作失败:', error);
-      toast.error(editingUser ? '更新用户失败' : '创建用户失败');
-    } finally {
-      setSubmitting(false);
+      toast.error('创建失败');
+    }
+  };
+
+  // 切换用户状态
+  const handleToggleStatus = async (user: User) => {
+    try {
+      const response = await fetch('/api/v1/users', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: user.id, action: 'toggle_status' }),
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        toast.success(`用户已${user.status === 'active' ? '停用' : '启用'}`);
+        fetchUsers();
+      }
+    } catch (error) {
+      toast.error('操作失败');
     }
   };
 
   // 删除用户
-  const handleDelete = async (id: string) => {
-    if (!confirm('确定要删除该用户吗？')) return;
-    try {
-      await deleteFeishuUser(id);
-      toast.success('用户删除成功');
-      fetchData();
-    } catch (error) {
-      console.error('删除失败:', error);
-      toast.error('删除用户失败');
-    }
-  };
-
-  // 批量操作
-  const handleBatchAction = async (action: 'activate' | 'deactivate' | 'renew' | 'export') => {
-    if (selectedIds.length === 0) {
-      toast.error('请先选择用户');
-      return;
-    }
+  const handleDelete = async (user: User) => {
+    if (!confirm(`确定删除用户「${user.username}」吗？`)) return;
 
     try {
-      if (action === 'export') {
-        // 导出数据
-        const selectedUsers = users.filter((u) => selectedIds.includes(u.id));
-        const csvContent = [
-          ['用户ID', '用户名', '飞书账号', '套餐', '到期时间', '状态', '调用次数'].join(','),
-          ...selectedUsers.map((u) =>
-            [u.id, u.nickname, u.open_id, u.package_name || '', u.expire_time || '', u.status, u.call_used].join(',')
-          ),
-        ].join('\n');
-        const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `users_${new Date().toISOString().slice(0, 10)}.csv`;
-        a.click();
-        URL.revokeObjectURL(url);
-        toast.success('导出成功');
-        return;
-      }
-
-      const result = await batchUserOperation({
-        user_ids: selectedIds,
-        action,
-        renew_days: action === 'renew' ? 30 : undefined,
+      const response = await fetch(`/api/v1/users?id=${user.id}`, {
+        method: 'DELETE',
       });
-      toast.success(`成功操作 ${result.affected} 个用户`);
-      setSelectedIds([]);
-      fetchData();
+
+      const data = await response.json();
+      if (data.success) {
+        toast.success('用户已删除');
+        fetchUsers();
+      } else {
+        toast.error(data.error);
+      }
     } catch (error) {
-      console.error('批量操作失败:', error);
-      toast.error('批量操作失败');
+      toast.error('删除失败');
     }
   };
 
-  // 跳转用户详情
-  const handleViewDetail = (userId: string) => {
-    router.push(`/users/${userId}`);
-  };
-
-  // 权限切换
-  const handlePermissionChange = (agentId: string, checked: boolean) => {
-    setFormData((prev) => ({
-      ...prev,
-      agent_permissions: checked
-        ? [...prev.agent_permissions, agentId]
-        : prev.agent_permissions.filter((id) => id !== agentId),
-    }));
-  };
-
-  const handleLogout = async () => {
+  // 重置密码
+  const handleResetPassword = async (user: User) => {
     try {
-      await logout();
+      const response = await fetch('/api/v1/users', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: user.id, action: 'reset_password' }),
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        toast.success('密码重置成功，已发送邮件');
+      }
     } catch (error) {
-      // 忽略错误
+      toast.error('操作失败');
     }
-    router.push('/login');
   };
+
+  const resetForm = () => {
+    setCreateForm({
+      username: '',
+      email: '',
+      phone: '',
+      password: '',
+      role_id: '',
+    });
+  };
+
+  const getStatusBadge = (status: string) => {
+    const config: Record<string, { label: string; className: string; icon: React.ElementType }> = {
+      active: { label: '已启用', className: 'bg-green-500/10 text-green-500', icon: CheckCircle },
+      inactive: { label: '已停用', className: 'bg-muted text-muted-foreground', icon: XCircle },
+      locked: { label: '已锁定', className: 'bg-red-500/10 text-red-500', icon: Lock },
+    };
+    const { label, className, icon: Icon } = config[status] || config.inactive;
+    return (
+      <Badge variant="outline" className={cn('gap-1', className)}>
+        <Icon className="h-3 w-3" />
+        {label}
+      </Badge>
+    );
+  };
+
+  const getRoleBadge = (level: number) => {
+    if (level >= 90) return <Badge className="bg-purple-500/10 text-purple-500">管理员</Badge>;
+    if (level >= 50) return <Badge className="bg-blue-500/10 text-blue-500">运营</Badge>;
+    return <Badge variant="outline">普通</Badge>;
+  };
+
+  // 过滤用户
+  const filteredUsers = users.filter(u => 
+    u.username.includes(searchKeyword) || 
+    u.email.includes(searchKeyword) ||
+    u.role_name.includes(searchKeyword)
+  );
+
+  // 统计
+  const activeCount = users.filter(u => u.status === 'active').length;
+  const adminCount = users.filter(u => u.role_level >= 90).length;
 
   if (!user) return null;
 
   return (
-    <MainLayout user={user} onLogout={handleLogout}>
+    <MainLayout user={user} onLogout={() => router.push('/login')}>
       <div className="space-y-6">
-        {/* 页面标题 */}
+        {/* 页面头部 */}
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-[18px] font-semibold text-foreground">用户管理</h1>
-            <p className="text-[14px] text-muted-foreground mt-1">
-              卖家用户管理 · 套餐绑定 · 权限配置 · 状态管控
-            </p>
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-green-500/20 to-green-500/5 flex items-center justify-center">
+              <Users className="h-7 w-7 text-green-500" />
+            </div>
+            <div>
+              <h1 className="text-[18px] font-semibold text-foreground">用户管理</h1>
+              <p className="text-[14px] text-muted-foreground">用户账号 · 角色分配 · 权限控制</p>
+            </div>
           </div>
-          <div className="flex items-center gap-3">
-            {selectedIds.length > 0 && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline">
-                    批量操作 ({selectedIds.length})
-                    <ChevronDown className="h-4 w-4 ml-2" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                  <DropdownMenuItem onClick={() => handleBatchAction('activate')}>
-                    批量启用
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleBatchAction('deactivate')}>
-                    批量禁用
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleBatchAction('renew')}>
-                    批量续费
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleBatchAction('export')}>
-                    <Download className="h-4 w-4 mr-2" />
-                    导出数据
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
-            <Button onClick={handleAdd}>
-              <Plus className="h-4 w-4 mr-2" />
-              新增用户
-            </Button>
-          </div>
+          <Button onClick={() => setIsCreateOpen(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            添加用户
+          </Button>
         </div>
 
         {/* 统计卡片 */}
-        <div className="grid grid-cols-6 gap-4">
+        <div className="grid grid-cols-4 gap-4">
           <Card className="bg-white border-border shadow-sm">
             <CardContent className="p-4">
-              <p className="text-[13px] text-muted-foreground mb-1">总用户数</p>
-              <p className="text-[24px] font-semibold text-foreground">{stats.total}</p>
+              <div className="text-[12px] text-muted-foreground">用户总数</div>
+              <div className="text-[24px] font-semibold">{users.length}</div>
             </CardContent>
           </Card>
           <Card className="bg-white border-border shadow-sm">
             <CardContent className="p-4">
-              <p className="text-[13px] text-muted-foreground mb-1">正常用户</p>
-              <p className="text-[24px] font-semibold text-success">{stats.active}</p>
+              <div className="text-[12px] text-muted-foreground">启用用户</div>
+              <div className="text-[24px] font-semibold text-green-500">{activeCount}</div>
             </CardContent>
           </Card>
           <Card className="bg-white border-border shadow-sm">
             <CardContent className="p-4">
-              <p className="text-[13px] text-muted-foreground mb-1">试用用户</p>
-              <p className="text-[24px] font-semibold text-primary">{stats.trial}</p>
+              <div className="text-[12px] text-muted-foreground">管理员</div>
+              <div className="text-[24px] font-semibold text-purple-500">{adminCount}</div>
             </CardContent>
           </Card>
           <Card className="bg-white border-border shadow-sm">
             <CardContent className="p-4">
-              <p className="text-[13px] text-muted-foreground mb-1">禁用用户</p>
-              <p className="text-[24px] font-semibold text-muted-foreground">{stats.inactive}</p>
-            </CardContent>
-          </Card>
-          <Card className="bg-white border-border shadow-sm">
-            <CardContent className="p-4">
-              <p className="text-[13px] text-muted-foreground mb-1">已到期</p>
-              <p className="text-[24px] font-semibold text-destructive">{stats.expired}</p>
-            </CardContent>
-          </Card>
-          <Card className="bg-white border-border shadow-sm">
-            <CardContent className="p-4">
-              <p className="text-[13px] text-muted-foreground mb-1">即将到期</p>
-              <p className="text-[24px] font-semibold text-warning">{stats.expiring_soon}</p>
+              <div className="text-[12px] text-muted-foreground">角色数量</div>
+              <div className="text-[24px] font-semibold">{roles.length}</div>
             </CardContent>
           </Card>
         </div>
 
-        {/* 筛选区 */}
-        <Card className="bg-white border-border shadow-sm">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-4">
-              <div className="relative flex-1 max-w-[300px]">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="搜索用户名/飞书账号/手机号"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-              <Select value={filterStatus} onValueChange={setFilterStatus}>
-                <SelectTrigger className="w-[130px]">
-                  <SelectValue placeholder="用户状态" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">全部状态</SelectItem>
-                  <SelectItem value="active">正常</SelectItem>
-                  <SelectItem value="trial">试用</SelectItem>
-                  <SelectItem value="expired">已到期</SelectItem>
-                  <SelectItem value="inactive">禁用</SelectItem>
-                </SelectContent>
-              </Select>
-              <Select value={filterPackage} onValueChange={setFilterPackage}>
-                <SelectTrigger className="w-[130px]">
-                  <SelectValue placeholder="套餐类型" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">全部套餐</SelectItem>
-                  <SelectItem value="basic">基础版</SelectItem>
-                  <SelectItem value="advanced">进阶版</SelectItem>
-                  <SelectItem value="flagship">旗舰版</SelectItem>
-                </SelectContent>
-              </Select>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setSearchTerm('');
-                  setFilterStatus('all');
-                  setFilterPackage('all');
-                }}
-              >
-                重置
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+        {/* 搜索和筛选 */}
+        <div className="flex items-center gap-4">
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="搜索用户名、邮箱或角色..."
+              value={searchKeyword}
+              onChange={(e) => setSearchKeyword(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+        </div>
 
         {/* 用户列表 */}
-        <Card className="bg-white border-border shadow-sm">
+        <Card>
           <CardContent className="p-0">
             {loading ? (
-              <div className="flex items-center justify-center py-12">
-                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-              </div>
+              <div className="py-12 text-center text-muted-foreground">加载中...</div>
             ) : filteredUsers.length === 0 ? (
-              <div className="text-center py-12 text-muted-foreground">暂无用户数据</div>
+              <div className="py-12 text-center text-muted-foreground">
+                {searchKeyword ? '没有找到匹配的用户' : '暂无用户'}
+              </div>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow className="border-border bg-muted/30">
-                    <TableHead className="px-4 w-12">
-                      <Checkbox
-                        checked={selectedIds.length === filteredUsers.length && filteredUsers.length > 0}
-                        onCheckedChange={handleSelectAll}
-                      />
-                    </TableHead>
-                    <TableHead className="text-[12px] font-medium text-muted-foreground">用户ID</TableHead>
-                    <TableHead className="text-[12px] font-medium text-muted-foreground">用户名</TableHead>
-                    <TableHead className="text-[12px] font-medium text-muted-foreground">飞书账号</TableHead>
-                    <TableHead className="text-[12px] font-medium text-muted-foreground">套餐类型</TableHead>
-                    <TableHead className="text-[12px] font-medium text-muted-foreground">到期时间</TableHead>
-                    <TableHead className="text-[12px] font-medium text-muted-foreground">智能体权限</TableHead>
-                    <TableHead className="text-[12px] font-medium text-muted-foreground">操作次数</TableHead>
-                    <TableHead className="text-[12px] font-medium text-muted-foreground">状态</TableHead>
-                    <TableHead className="text-[12px] font-medium text-muted-foreground text-right px-4">操作</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredUsers.map((u) => {
-                    const expired = isExpired(u.expire_time);
-                    const expiringSoon = isExpiringSoon(u.expire_time);
-                    return (
-                      <TableRow
-                        key={u.id}
-                        className={`border-border hover:bg-muted/30 ${
-                          expired ? 'bg-destructive/5' : expiringSoon ? 'bg-warning/5' : ''
-                        }`}
-                      >
-                        <TableCell className="px-4">
-                          <Checkbox
-                            checked={selectedIds.includes(u.id)}
-                            onCheckedChange={(checked) => handleSelect(u.id, checked as boolean)}
-                          />
-                        </TableCell>
-                        <TableCell className="text-[12px] text-muted-foreground font-mono">
-                          {u.id.slice(0, 8)}...
-                        </TableCell>
-                        <TableCell>
-                          <button
-                            className="text-[13px] font-medium text-primary hover:underline"
-                            onClick={() => handleViewDetail(u.id)}
-                          >
-                            {u.nickname}
-                          </button>
-                        </TableCell>
-                        <TableCell className="text-[12px] text-muted-foreground">{u.open_id}</TableCell>
-                        <TableCell>{getPackageBadge(u.package_type)}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1">
-                            <span className="text-[12px] text-muted-foreground">
-                              {u.expire_time || '-'}
+              <div className="divide-y divide-border">
+                {filteredUsers.map((u) => (
+                  <div key={u.id} className="flex items-center justify-between p-4 hover:bg-muted/30">
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                        <span className="text-[16px] font-medium text-primary">
+                          {u.username.charAt(0).toUpperCase()}
+                        </span>
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">{u.username}</span>
+                          {getStatusBadge(u.status)}
+                          {getRoleBadge(u.role_level)}
+                        </div>
+                        <div className="flex items-center gap-4 text-[12px] text-muted-foreground mt-1">
+                          <span className="flex items-center gap-1">
+                            <Mail className="h-3 w-3" />
+                            {u.email}
+                          </span>
+                          {u.phone && (
+                            <span className="flex items-center gap-1">
+                              <Phone className="h-3 w-3" />
+                              {u.phone}
                             </span>
-                            {expiringSoon && <AlertTriangle className="h-3 w-3 text-warning" />}
+                          )}
+                          <span className="flex items-center gap-1">
+                            <Shield className="h-3 w-3" />
+                            {u.role_name}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <div className="text-right text-[12px] text-muted-foreground">
+                        <div>登录 {u.login_count} 次</div>
+                        {u.last_login && (
+                          <div className="flex items-center gap-1">
+                            <Clock className="h-3 w-3" />
+                            {new Date(u.last_login).toLocaleDateString('zh-CN')}
                           </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex flex-wrap gap-1">
-                            {u.agent_permissions?.slice(0, 3).map((agentId) => {
-                              const agent = AGENTS.find((a) => a.id === agentId);
-                              return (
-                                <Badge key={agentId} variant="outline" className="text-[10px]">
-                                  {agent?.name || agentId}
-                                </Badge>
-                              );
-                            })}
-                            {(u.agent_permissions?.length || 0) > 3 && (
-                              <Badge variant="outline" className="text-[10px]">
-                                +{(u.agent_permissions?.length || 0) - 3}
-                              </Badge>
-                            )}
-                            {(!u.agent_permissions || u.agent_permissions.length === 0) && (
-                              <span className="text-[12px] text-muted-foreground">无权限</span>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-[13px] text-foreground">
-                          {u.call_used} / {u.call_quota}
-                        </TableCell>
-                        <TableCell>{getStatusBadge(u.status, u.expire_time)}</TableCell>
-                        <TableCell className="text-right px-4">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="sm">
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => handleViewDetail(u.id)}>
-                                <Eye className="h-4 w-4 mr-2" />
-                                查看详情
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleEdit(u)}>
-                                <Edit className="h-4 w-4 mr-2" />
-                                编辑用户
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => fetchData()}>
-                                <RefreshCw className="h-4 w-4 mr-2" />
-                                刷新状态
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                className="text-destructive"
-                                onClick={() => handleDelete(u.id)}
-                              >
-                                <Trash2 className="h-4 w-4 mr-2" />
-                                删除用户
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => handleToggleStatus(u)}
+                          title={u.status === 'active' ? '停用' : '启用'}
+                        >
+                          {u.status === 'active' ? (
+                            <Lock className="h-4 w-4" />
+                          ) : (
+                            <Unlock className="h-4 w-4" />
+                          )}
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => handleResetPassword(u)}
+                          title="重置密码"
+                        >
+                          <Shield className="h-4 w-4" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => handleDelete(u)}
+                          className="text-red-500 hover:text-red-600"
+                          title="删除"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
             )}
           </CardContent>
         </Card>
 
-        {/* 新增/编辑用户弹窗 */}
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogContent className="sm:max-w-[500px]">
+        {/* 创建用户对话框 */}
+        <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+          <DialogContent className="max-w-md">
             <DialogHeader>
-              <DialogTitle>{editingUser ? '编辑用户' : '新增用户'}</DialogTitle>
-              <DialogDescription>
-                {editingUser ? '修改用户信息和权限配置' : '创建新用户并配置权限'}
-              </DialogDescription>
+              <DialogTitle>添加用户</DialogTitle>
+              <DialogDescription>创建新的用户账号并分配角色</DialogDescription>
             </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label className="text-right">飞书账号 *</Label>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="username">用户名</Label>
                 <Input
-                  className="col-span-3"
-                  placeholder="输入飞书 open_id"
-                  value={formData.open_id}
-                  onChange={(e) => setFormData({ ...formData, open_id: e.target.value })}
-                  disabled={!!editingUser}
-                />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label className="text-right">用户名 *</Label>
-                <Input
-                  className="col-span-3"
+                  id="username"
                   placeholder="输入用户名"
-                  value={formData.nickname}
-                  onChange={(e) => setFormData({ ...formData, nickname: e.target.value })}
+                  value={createForm.username}
+                  onChange={(e) => setCreateForm({ ...createForm, username: e.target.value })}
                 />
               </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label className="text-right">套餐选择</Label>
+
+              <div className="space-y-2">
+                <Label htmlFor="email">邮箱</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="user@example.com"
+                  value={createForm.email}
+                  onChange={(e) => setCreateForm({ ...createForm, email: e.target.value })}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="phone">手机号（可选）</Label>
+                <Input
+                  id="phone"
+                  placeholder="+86 138xxxxxxxx"
+                  value={createForm.phone}
+                  onChange={(e) => setCreateForm({ ...createForm, phone: e.target.value })}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="password">初始密码</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="设置初始密码"
+                  value={createForm.password}
+                  onChange={(e) => setCreateForm({ ...createForm, password: e.target.value })}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="role">分配角色</Label>
                 <Select
-                  value={formData.package_type}
-                  onValueChange={(value: PackageType) =>
-                    setFormData({ ...formData, package_type: value })
-                  }
+                  value={createForm.role_id}
+                  onValueChange={(value) => setCreateForm({ ...createForm, role_id: value })}
                 >
-                  <SelectTrigger className="col-span-3">
-                    <SelectValue />
+                  <SelectTrigger>
+                    <SelectValue placeholder="选择角色" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="basic">基础版</SelectItem>
-                    <SelectItem value="advanced">进阶版</SelectItem>
-                    <SelectItem value="flagship">旗舰版</SelectItem>
+                    {roles.map((role) => (
+                      <SelectItem key={role.id} value={role.id}>
+                        {role.name} (Lv.{role.level})
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
-              {!editingUser && (
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label className="text-right">试用时长</Label>
-                  <div className="col-span-3 flex items-center gap-2">
-                    <Input
-                      type="number"
-                      className="w-24"
-                      value={formData.trial_days}
-                      onChange={(e) =>
-                        setFormData({ ...formData, trial_days: Number(e.target.value) })
-                      }
-                    />
-                    <span className="text-[13px] text-muted-foreground">天</span>
-                  </div>
-                </div>
-              )}
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label className="text-right">调用配额</Label>
-                <div className="col-span-3 flex items-center gap-2">
-                  <Input
-                    type="number"
-                    className="w-24"
-                    value={formData.call_quota}
-                    onChange={(e) =>
-                      setFormData({ ...formData, call_quota: Number(e.target.value) })
-                    }
-                  />
-                  <span className="text-[13px] text-muted-foreground">次/月</span>
-                </div>
-              </div>
-              <div className="grid grid-cols-4 items-start gap-4">
-                <Label className="text-right pt-2">智能体权限</Label>
-                <div className="col-span-3 space-y-2">
-                  {AGENTS.map((agent) => (
-                    <div key={agent.id} className="flex items-center space-x-2">
-                      <Checkbox
-                        id={agent.id}
-                        checked={formData.agent_permissions.includes(agent.id)}
-                        onCheckedChange={(checked) =>
-                          handlePermissionChange(agent.id, checked as boolean)
-                        }
-                      />
-                      <Label htmlFor={agent.id} className="text-[13px] font-normal">
-                        {agent.name}
-                      </Label>
-                    </div>
-                  ))}
-                </div>
-              </div>
             </div>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-                取消
-              </Button>
-              <Button onClick={handleSubmit} disabled={submitting}>
-                {submitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                {editingUser ? '保存修改' : '创建用户'}
-              </Button>
+              <Button variant="outline" onClick={() => {
+                setIsCreateOpen(false);
+                resetForm();
+              }}>取消</Button>
+              <Button onClick={handleCreate}>创建用户</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
