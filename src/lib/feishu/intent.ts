@@ -111,6 +111,30 @@ export function getIntentDescription(intent: string): string {
     [INTENT_TYPES.QUERY_INVENTORY]: '查询库存 - 查看库存情况',
     [INTENT_TYPES.QUERY_ORDERS]: '查询订单 - 查看订单状态',
     [INTENT_TYPES.QUERY_STATUS]: '查询状态 - 查看系统状态',
+    
+    // 智能助理 - 日常问询
+    [INTENT_TYPES.DAILY_REPORT]: '运营日报 - 今日运营数据汇总',
+    [INTENT_TYPES.TOP_PRODUCTS]: 'TOP商品 - 热销商品排行',
+    [INTENT_TYPES.AD_SUMMARY]: '广告汇总 - 广告消耗统计',
+    [INTENT_TYPES.SERVICE_QUALITY]: '服务质量 - 好评率统计',
+    [INTENT_TYPES.COMPARISON]: '对比分析 - 数据对比分析',
+    [INTENT_TYPES.TREND]: '环比分析 - 趋势分析',
+    
+    // 智能助理 - 分析建议
+    [INTENT_TYPES.PRICING_ADVICE]: '定价建议 - 智能定价建议',
+    [INTENT_TYPES.COMPETITOR_ANALYSIS]: '竞品分析 - 竞品价格监控',
+    [INTENT_TYPES.ROI_ANALYSIS]: 'ROI分析 - 投入产出分析',
+    [INTENT_TYPES.SLOW_SELLING]: '滞销分析 - 滞销商品诊断',
+    
+    // 智能助理 - 文案生成
+    [INTENT_TYPES.COPYWRITING]: '文案生成 - 生成营销文案',
+    [INTENT_TYPES.REVIEW_REPLY]: '催好评 - 生成催好评消息',
+    [INTENT_TYPES.BAD_REVIEW_REPLY]: '差评回复 - 生成差评回复话术',
+    
+    // 智能助理 - 报表生成
+    [INTENT_TYPES.REPORT_GENERATION]: '报表生成 - 生成数据报表',
+    [INTENT_TYPES.EXPORT_DATA]: '导出数据 - 导出数据文件',
+    
     [INTENT_TYPES.HELP]: '帮助 - 查看帮助信息',
     [INTENT_TYPES.UNKNOWN]: '未知意图 - 请重新描述你的需求',
   };
@@ -122,37 +146,37 @@ export function getIntentDescription(intent: string): string {
  * 生成帮助消息
  */
 export function generateHelpMessage(): string {
-  return `🤖 **龙虾AI助手使用指南**
+  return `🤖 **龙虾AI运营助理使用指南**
 
-**📦 选品相关**
-- "帮我选3款3C手机配件的产品"
-- "推荐一些爆款产品"
-- "选品分析"
+**📊 数据查询类**
+- "今天运营情况怎么样？"
+- "这周卖得最好的产品是什么？"
+- "哪些商品库存低于10件了？"
+- "今天广告花了多少钱？"
+- "今天好评率是多少？"
 
-**🚀 上架推广**
-- "上架产品123"
-- "发布新品"
-- "上架推广"
+**📈 分析建议类**
+- "帮我分析一下这个新品要不要上？"
+- "这个产品应该定什么价格？"
+- "为什么今天订单比昨天少了？"
+- "和上周对比，增长了多少？"
 
-**📢 广告管理**
-- "创建广告"
-- "优化广告"
-- "调整广告预算"
+**✍️ 文案生成类**
+- "帮我写一个催好评的消息"
+- "帮我写一个回复差评的话术"
+- "帮我生成产品描述"
 
-**👥 客服服务**
-- "回复客户消息"
-- "处理退款请求"
+**📋 报表生成类**
+- "生成今日日报"
+- "导出本周数据"
+- "生成运营月报"
 
-**📊 数据查询**
-- "今天的销量"
-- "库存预警"
-- "订单状态"
-- "系统状态"
+**📦 执行任务类**
+- "帮我选3款宠物用品"
+- "上架商品A到TK"
+- "创建广告计划"
 
-**💡 提示**
-- 可以@机器人直接发送指令
-- 支持自然语言描述需求
-- 系统会自动识别你的意图并执行`;
+发送以上指令，我会帮你自动执行或生成对应内容！`;
 }
 
 export default {

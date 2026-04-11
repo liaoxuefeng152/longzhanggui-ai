@@ -112,17 +112,82 @@
 │   │   ├── prompts/           # Prompt中心
 │   │   ├── workflows/         # 工作流编排
 │   │   ├── dashboard/         # 控制台
+│   │   ├── feishu/            # 飞书相关页面
+│   │   │   ├── settings/      # 飞书配置管理
+│   │   │   ├── import/       # 数据导入管理
+│   │   │   ├── logs/         # 推送日志
+│   │   │   └── test/         # Webhook测试
 │   │   └── ...                # 其他业务页面
 │   ├── components/            # React组件
 │   │   ├── ui/               # shadcn/ui组件
-│   │   └── layout/           # 布局组件
+│   │   ├── layout/           # 布局组件
+│   │   └── smart-cards/       # 智能分析卡片组件
 │   └── lib/                   # 工具库
-│       └── api/              # API客户端
+│       ├── api/               # API客户端
+│       └── feishu/           # 飞书集成库
+│           ├── config.ts     # 飞书配置
+│           ├── client.ts     # 飞书API客户端
+│           ├── intent.ts     # 意图识别
+│           └── workflow.ts   # 工作流处理
 ├── backend/                   # Python后端 (可选)
 ├── public/                    # 静态资源
 ├── .coze                      # Coze CLI配置
 └── package.json
 ```
+
+## 智能运营助理功能
+
+### 系统定位
+- **定位**: 老板的"智能运营助理"，而非"无人值守"
+- **AI角色**: AI辅助人工，最终决策权在老板手中
+- **自动化范围**: 可自动的自动，必须人工的人工
+
+### 核心功能
+
+#### 1. 飞书机器人交互升级
+- **自然语言指令接收**: 支持老板的日常问询
+- **数据查询**: 运营日报、TOP商品、库存预警等
+- **分析建议**: 选品建议、定价建议、竞品分析等
+- **主动推送**: 定时日报、异常告警、任务状态
+
+#### 2. 飞书配置管理
+- **基础配置**: AppID、AppSecret、机器人名称、Webhook地址
+- **推送规则**: 定时推送开关、异常告警开关、告警阈值
+- **指令模板**: 支持的指令类型配置
+
+#### 3. 数据导入功能
+- **商品数据导入**: Excel/CSV批量导入
+- **订单数据导入**: 历史订单批量导入
+- **财务数据导入**: 第三方财务数据导入
+- **导入历史**: 查看导入记录和状态
+
+#### 4. 智能分析卡片
+- **运营日报卡片**: 每日数据汇总
+- **异常预警卡片**: 异常情况告警
+- **决策建议卡片**: AI分析建议
+- **数据对比卡片**: 今日vs昨日对比
+- **选品建议卡片**: 选品结果展示
+
+### 飞书指令类型
+
+| 类型 | 示例指令 | 说明 |
+|------|---------|------|
+| 数据查询类 | "今天运营情况怎么样？" | 运营日报卡片 |
+| 分析建议类 | "帮我分析一下这个新品要不要上？" | 选品建议卡片 |
+| 文案生成类 | "帮我写一个催好评的消息" | 文本卡片 |
+| 报表生成类 | "生成今日日报" | 运营日报卡片 |
+| 任务执行类 | "帮我选3款宠物用品" | 选品结果卡片 |
+
+### 主动推送规则
+
+| 推送类型 | 触发方式 | 推送时机 |
+|---------|---------|---------|
+| 早间日报 | 定时 | 每天 09:00 |
+| 周报 | 定时 | 每周一 09:00 |
+| 库存不足 | 阈值触发 | 实时 |
+| 物流异常 | 阈值触发 | 实时 |
+| 差评预警 | 阈值触发 | 实时 |
+| 广告ROI低 | 阈值触发 | 实时 |
 
 ## API路由说明
 
@@ -183,6 +248,25 @@
 | 路由 | 方法 | 功能 |
 |------|------|------|
 | `/api/dashboard/stats` | GET | 控制台统计数据 |
+
+### 飞书集成API路由
+| 路由 | 方法 | 功能 |
+|------|------|------|
+| `/api/feishu/config` | GET/PUT | 飞书配置获取/更新 |
+| `/api/feishu/push-rules` | GET/PUT | 推送规则获取/更新 |
+| `/api/feishu/templates` | GET/PUT | 指令模板获取/更新 |
+| `/api/feishu/webhook` | POST | 接收飞书Webhook事件 |
+| `/api/feishu/test-send` | POST | 测试发送消息 |
+| `/api/feishu/import-history` | GET | 导入历史查询 |
+| `/api/feishu/import-file` | POST | 文件导入 |
+
+### 智能助理API路由
+| 路由 | 方法 | 功能 |
+|------|------|------|
+| `/api/assistant/chat` | POST | 智能助理对话 |
+| `/api/assistant/daily-report` | GET | 获取运营日报 |
+| `/api/assistant/alerts` | GET | 获取异常告警列表 |
+| `/api/assistant/recommendations` | GET | 获取决策建议 |
 
 ### API配置
 所有API端点配置在 `src/lib/api/config.ts`，使用相对路径 `/api/xxx`。
@@ -261,6 +345,23 @@ npx tsc --noEmit
 - 工作流编排: `src/app/workflows/page.tsx`
 - 选品分析: `src/app/agents/product-selection/page.tsx`
 - 图片设计: `src/app/agents/image-design/page.tsx`
+- 飞书配置管理: `src/app/feishu/settings/page.tsx`
+- 数据导入管理: `src/app/feishu/import/page.tsx`
+
+### 飞书集成核心文件
+- 飞书配置: `src/lib/feishu/config.ts`
+- 飞书客户端: `src/lib/feishu/client.ts`
+- 意图识别: `src/lib/feishu/intent.ts`
+- 工作流处理: `src/lib/feishu/workflow.ts`
+- Webhook处理: `src/app/api/feishu/webhook/route.ts`
+- 飞书配置API: `src/app/api/feishu/config/route.ts`
+
+### 智能助理相关
+- 智能分析卡片组件: `src/components/smart-cards/index.tsx`
+- 智能助理对话API: `src/app/api/assistant/chat/route.ts`
+- 运营日报API: `src/app/api/assistant/daily-report/route.ts`
+- 异常告警API: `src/app/api/assistant/alerts/route.ts`
+- 决策建议API: `src/app/api/assistant/recommendations/route.ts`
 
 ### API客户端
 - 配置: `src/lib/api/config.ts`
@@ -268,6 +369,7 @@ npx tsc --noEmit
 - Prompt API: `src/lib/api/prompts.ts`
 - 模型 API: `src/lib/api/models.ts`
 - AI智能体 API: `src/lib/api/ai-agents.ts`
+- Dashboard API: `src/lib/api/dashboard.ts`
 
 ### 布局组件
 - 主布局: `src/components/layout/MainLayout.tsx`
@@ -279,6 +381,9 @@ npx tsc --noEmit
 1. 构建检查: `npx tsc --noEmit`
 2. 接口测试: `curl -s http://localhost:5000/api/xxx`
 3. 页面访问: 浏览器检查UI渲染和交互
+4. 飞书机器人测试: 测试自然语言交互
+5. 数据导入测试: 测试Excel/CSV导入流程
+6. 主动推送测试: 测试日报和异常告警推送
 
 ## 注意事项
 
@@ -287,3 +392,8 @@ npx tsc --noEmit
 3. **API路径**: 使用前端API路由 `/api/xxx`，而非 `/api/v1/xxx`
 4. **热更新**: 代码修改后自动热更新，无需重启服务
 5. **全局状态**: 使用 `global` 对象存储模拟数据，确保跨请求一致性
+6. **飞书集成**: 使用飞书企业自建应用（AppID: cli_a925102a8179dbd6）
+7. **智能助理定位**: AI辅助人工，最终决策权在老板手中
+8. **高风险操作**: 涉及财务、库存等高风险操作需人工确认
+9. **数据导入**: 支持Excel/CSV批量导入，注意文件大小限制（单文件≤10MB）
+10. **主动推送**: 支持定时推送（日报、周报）和阈值触发推送（库存异常、物流异常）

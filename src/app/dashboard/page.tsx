@@ -19,6 +19,8 @@ import {
   TrendingUp,
   TrendingDown,
   ArrowRight,
+  Sparkles,
+  MessageSquare,
 } from 'lucide-react';
 import {
   BarChart,
@@ -65,7 +67,15 @@ export default function DashboardPage() {
     }
   };
 
-  // 模型负载监控 - 跳转到模型管理页面
+  // 查看智能助理日志
+  const handleAssistantLogs = () => {
+    router.push('/feishu/logs');
+  };
+
+  // 推送配置管理
+  const handlePushConfig = () => {
+    router.push('/feishu/settings');
+  };
   const handleModelMonitor = () => {
     router.push('/models');
   };
@@ -186,6 +196,15 @@ export default function DashboardPage() {
       borderColor: 'border-purple-500/20',
       gradient: 'from-purple-500 to-purple-600',
     },
+    {
+      title: '智能助理调用',
+      value: stats?.assistantCalls?.toLocaleString() || '0',
+      icon: Sparkles,
+      color: 'text-violet-600',
+      bgColor: 'bg-gradient-to-br from-violet-500/20 to-violet-500/10',
+      borderColor: 'border-violet-500/20',
+      gradient: 'from-violet-500 to-violet-600',
+    },
   ];
 
   // 智能体活跃度数据（近7日调用次数）- 使用API数据或默认数据
@@ -211,6 +230,8 @@ export default function DashboardPage() {
     error: { label: '异常', color: 'text-destructive', bgColor: 'bg-destructive/10' },
     blocked: { label: '风控拦截', color: 'text-warning', bgColor: 'bg-warning/10' },
     cancelled: { label: '已取消', color: 'text-muted-foreground', bgColor: 'bg-muted' },
+    pending_confirm: { label: '待确认', color: 'text-violet-600', bgColor: 'bg-violet-600/10' },
+    pushed: { label: '已推送', color: 'text-blue-600', bgColor: 'bg-blue-600/10' },
   };
 
   const recentTasks = [
@@ -222,6 +243,8 @@ export default function DashboardPage() {
     { id: 'T202402200006', type: '视频生成', status: 'error', time: '14:20:05', user: '陈强' },
     { id: 'T202402200007', type: '数据复盘', status: 'completed', time: '14:15:42', user: '周敏' },
     { id: 'T202402200008', type: '选品智能体', status: 'pending', time: '14:10:28', user: '吴洋' },
+    { id: 'T202402200009', type: '智能助理-问询', status: 'completed', time: '14:08:15', user: '阿峰' },
+    { id: 'T202402200010', type: '智能助理-日报', status: 'completed', time: '14:05:00', user: '系统' },
   ];
 
   // 用户数据统计
@@ -265,7 +288,7 @@ export default function DashboardPage() {
         </div>
 
         {/* 核心数据概览卡片区 */}
-        <div className="grid grid-cols-4 gap-4">
+        <div className="grid grid-cols-5 gap-4">
           {coreStats.map((stat, index) => {
             const Icon = stat.icon;
             return (
@@ -463,6 +486,22 @@ export default function DashboardPage() {
                   >
                     <FileText className="h-4 w-4 mr-2 text-primary" />
                     {isExporting ? '导出中...' : '导出日报'}
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-start h-10"
+                    onClick={handleAssistantLogs}
+                  >
+                    <Sparkles className="h-4 w-4 mr-2 text-violet-600" />
+                    智能助理日志
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-start h-10"
+                    onClick={handlePushConfig}
+                  >
+                    <MessageSquare className="h-4 w-4 mr-2 text-blue-600" />
+                    推送配置管理
                   </Button>
                 </div>
               </CardContent>

@@ -128,6 +128,20 @@
   --sidebar-border: transparent;
   --sidebar-ring: #1661FF;
   --sidebar-gradient: linear-gradient(180deg, #0A1628 0%, #0F2138 100%);
+
+  /* 智能助理配色 - 紫罗兰主题 */
+  --assistant: #7C3AED;
+  --assistant-foreground: #FFFFFF;
+  --assistant-gradient: linear-gradient(135deg, #7C3AED 0%, #A855F7 50%, #C084FC 100%);
+  --assistant-gradient-hover: linear-gradient(135deg, #6D28D9 0%, #9333EA 50%, #A855F7 100%);
+
+  /* 智能分析卡片配色 */
+  --card-report: #165DFF;
+  --card-alert: #EF4444;
+  --card-warning: #F59E0B;
+  --card-success: #10B981;
+  --card-violet: #8B5CF6;
+  --card-orange: #F97316;
 }
 
 .dark {

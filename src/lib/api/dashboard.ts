@@ -10,6 +10,7 @@ export interface DashboardStats {
   onlineUsers: number;
   todayOrders: number;
   referralUsers: number;
+  assistantCalls: number; // 智能助理调用次数
   callTrend: Array<{
     date: string;
     calls: number;

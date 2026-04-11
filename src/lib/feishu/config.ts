@@ -61,6 +61,29 @@ export const INTENT_TYPES = {
   QUERY_ORDERS: 'query_orders', // 查询订单
   QUERY_STATUS: 'query_status', // 查询状态
 
+  // 智能助理 - 日常问询
+  DAILY_REPORT: 'daily_report', // 运营日报
+  TOP_PRODUCTS: 'top_products', // TOP商品
+  AD_SUMMARY: 'ad_summary', // 广告汇总
+  SERVICE_QUALITY: 'service_quality', // 服务质量
+  COMPARISON: 'comparison', // 对比分析
+  TREND: 'trend', // 环比分析
+
+  // 智能助理 - 分析建议
+  PRICING_ADVICE: 'pricing_advice', // 定价建议
+  COMPETITOR_ANALYSIS: 'competitor_analysis', // 竞品分析
+  ROI_ANALYSIS: 'roi_analysis', // ROI分析
+  SLOW_SELLING: 'slow_selling', // 滞销分析
+
+  // 智能助理 - 文案生成
+  COPYWRITING: 'copywriting', // 文案生成
+  REVIEW_REPLY: 'review_reply', // 好评催评
+  BAD_REVIEW_REPLY: 'bad_review_reply', // 差评回复
+
+  // 智能助理 - 报表生成
+  REPORT_GENERATION: 'report_generation', // 报表生成
+  EXPORT_DATA: 'export_data', // 导出数据
+
   // 系统相关
   HELP: 'help', // 帮助
   UNKNOWN: 'unknown', // 未知意图
@@ -129,6 +152,94 @@ export const INTENT_TEMPLATES = {
     /状态/i,
     /运行情况/i,
     /系统状态/i,
+  ],
+
+  // 智能助理 - 日常问询
+  DAILY_REPORT: [
+    /今日运营/i,
+    /今天运营/i,
+    /运营情况/i,
+    /运营日报/i,
+  ],
+  TOP_PRODUCTS: [
+    /卖得最好/i,
+    /top.*产品/i,
+    /爆款/i,
+    /热销/i,
+  ],
+  AD_SUMMARY: [
+    /广告.*花.*钱/i,
+    /广告.*消耗/i,
+    /广告.*花费/i,
+  ],
+  SERVICE_QUALITY: [
+    /好评率/i,
+    /服务.*质量/i,
+    /客户.*满意度/i,
+  ],
+  COMPARISON: [
+    /.*比.*少了/i,
+    /.*比.*下降/i,
+    /.*下降.*原因/i,
+    /为什么.*下降/i,
+  ],
+  TREND: [
+    /和.*对比/i,
+    /环比/i,
+    /增长.*多少/i,
+    /.*增长/i,
+  ],
+
+  // 智能助理 - 分析建议
+  PRICING_ADVICE: [
+    /定.*价格/i,
+    /定价/i,
+    /售价/i,
+    /应该卖.*钱/i,
+  ],
+  COMPETITOR_ANALYSIS: [
+    /竞品/i,
+    /竞争对手/i,
+    /.*降价/i,
+  ],
+  ROI_ANALYSIS: [
+    /roi/i,
+    /投入产出/i,
+    /广告.*效果/i,
+  ],
+  SLOW_SELLING: [
+    /滞销/i,
+    /不好卖/i,
+    /销量.*差/i,
+  ],
+
+  // 智能助理 - 文案生成
+  COPYWRITING: [
+    /写.*消息/i,
+    /生成.*文案/i,
+    /文案/i,
+  ],
+  REVIEW_REPLY: [
+    /催好评/i,
+    /好评.*消息/i,
+    /请求.*好评/i,
+  ],
+  BAD_REVIEW_REPLY: [
+    /差评.*回复/i,
+    /回复.*差评/i,
+    /差评.*话术/i,
+  ],
+
+  // 智能助理 - 报表生成
+  REPORT_GENERATION: [
+    /生成日报/i,
+    /生成.*报告/i,
+    /报表/i,
+  ],
+  EXPORT_DATA: [
+    /导出/i,
+    /下载.*数据/i,
+    /数据.*导出/i,
   ],
 
   // 帮助

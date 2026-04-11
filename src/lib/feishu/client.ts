@@ -43,7 +43,7 @@ export async function getTenantAccessToken(): Promise<string> {
     // token 有效期为 2 小时，提前 5 分钟过期
     tokenExpireTime = Date.now() + (data.expire - 300) * 1000;
 
-    return tenantAccessToken;
+    return tenantAccessToken as string;
   } catch (error) {
     console.error('获取 Tenant Access Token 失败:', error);
     throw error;
