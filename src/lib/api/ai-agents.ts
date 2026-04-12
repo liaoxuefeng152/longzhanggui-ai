@@ -55,9 +55,7 @@ export async function analyzeCompetition(productName: string, platform?: string)
   success: boolean;
   data: CompetitionAnalysis;
 }> {
-  const params = new URLSearchParams({ product_name: productName });
-  if (platform) params.set('platform', platform);
-  return apiClient.get(`/api/v1/ai/analyze-competition?${params.toString()}`);
+  return apiClient.post('/api/v1/ai/analyze-competition', { product_name: productName, platform });
 }
 
 // ============ 图片智能体 ============
@@ -158,9 +156,7 @@ export async function suggestKeywords(productName: string, platform?: string): P
   success: boolean;
   data: { keywords: Array<{ keyword: string; relevance: number; volume: string }> };
 }> {
-  const params = new URLSearchParams({ product_name: productName });
-  if (platform) params.set('platform', platform);
-  return apiClient.get(`/api/v1/ai/suggest-keywords?${params.toString()}`);
+  return apiClient.post('/api/v1/ai/suggest-keywords', { product_name: productName, platform });
 }
 
 // ============ 智能定价工具 ============

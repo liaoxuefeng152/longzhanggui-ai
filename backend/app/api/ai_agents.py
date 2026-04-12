@@ -159,13 +159,25 @@ async def select_products(request: SelectProductsRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+class AnalyzeCompetitionRequest(BaseModel):
+    """竞品分析请求"""
+    product_name: str
+    platform: str = "tiktok"
+
+
+class SuggestKeywordsRequest(BaseModel):
+    """关键词建议请求"""
+    product_name: str
+    platform: str = "tiktok"
+
+
 @router.post("/analyze-competition")
-async def analyze_competition(product_name: str, platform: str = "tiktok"):
+async def analyze_competition(request: AnalyzeCompetitionRequest):
     """竞品分析"""
     try:
         result = await product_selection_agent.analyze_competition(
-            product_name=product_name,
-            platform=platform
+            product_name=request.product_name,
+            platform=request.platform
         )
         return {"success": True, "data": result}
     except Exception as e:
@@ -359,12 +371,12 @@ async def optimize_listing(request: OptimizeListingRequest):
 
 
 @router.post("/suggest-keywords")
-async def suggest_keywords(product_name: str, platform: str = "tiktok"):
+async def suggest_keywords(request: SuggestKeywordsRequest):
     """关键词建议"""
     try:
         result = await listing_optimization_agent.suggest_keywords(
-            product_name=product_name,
-            platform=platform
+            product_name=request.product_name,
+            platform=request.platform
         )
         return {"success": True, "data": result}
     except Exception as e:
