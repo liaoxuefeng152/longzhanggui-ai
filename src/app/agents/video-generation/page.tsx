@@ -164,7 +164,7 @@ export default function VideoAgentPage() {
   // 新建视频
   const handleGenerateVideo = async () => {
     if (!newVideo.product_name.trim()) {
-      toast.error('请输入产品名称');
+      toast.error('请输入产品名称或视频描述');
       return;
     }
 
@@ -172,11 +172,12 @@ export default function VideoAgentPage() {
     setAgentStatus('processing');
 
     try {
+      // 将产品名称作为视频描述传递给后端
       const request: GenerateVideoRequest = {
-        product_name: newVideo.product_name,
-        video_type: newVideo.video_type,
+        prompt: newVideo.product_name,
         duration: newVideo.duration,
-        style: newVideo.style,
+        resolution: '720p',
+        ratio: '16:9',
       };
 
       const result = await generateVideo(request);
@@ -246,8 +247,10 @@ export default function VideoAgentPage() {
     if (!taskScripts[task.id]) {
       try {
         const result = await generateVideo({
-          product_name: task.productName,
-          video_type: task.type,
+          prompt: task.productName,
+          duration: task.duration || 5,
+          resolution: task.resolution || '720p',
+          ratio: task.ratio || '16:9',
         });
         if (result.success && result.data) {
           if (result.data.script) {
@@ -292,9 +295,10 @@ export default function VideoAgentPage() {
     
     try {
       const result = await generateVideo({
-        product_name: task.productName,
-        video_type: task.type,
-        duration: task.duration,
+        prompt: task.productName,
+        duration: task.duration || 5,
+        resolution: task.resolution || '720p',
+        ratio: task.ratio || '16:9',
       });
       
       if (result.success && result.data) {

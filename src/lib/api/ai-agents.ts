@@ -335,14 +335,13 @@ export async function generateActionItems(report: Record<string, unknown>): Prom
 // ============ 视频生成智能体 ============
 
 export interface GenerateVideoRequest {
-  product_name: string;
-  product_description?: string;
-  product_images?: string[];
-  video_type?: 'script' | 'voiceover' | 'slideshow' | 'full' | 'product_showcase';
-  duration?: number;
-  platform?: string;
-  style?: string;
-  language?: string;
+  prompt: string;  // 视频描述
+  image_url?: string;  // 参考图片URL（图生视频）
+  resolution?: string;  // 分辨率: 480p, 720p
+  ratio?: string;  // 宽高比: 16:9, 9:16
+  duration?: number;  // 时长: 5-12秒
+  watermark?: boolean;
+  generate_audio?: boolean;
 }
 
 export interface VideoScene {
