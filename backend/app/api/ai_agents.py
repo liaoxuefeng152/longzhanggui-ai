@@ -1,6 +1,6 @@
 """
 AI智能体API路由
-包含选品、图片处理、Listing优化、智能定价、广告、客服、数据复盘
+包含选品、图片处理、Listing优化、智能定价、广告、客服、数据复盘、视频生成
 """
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
@@ -16,6 +16,7 @@ from app.services.ai_agents_service import (
     customer_service_agent,
     data_review_agent
 )
+from app.services.video_agent_service import video_generation_agent
 from loguru import logger
 
 
@@ -559,3 +560,79 @@ async def list_agents():
             }
         ]
     }
+
+
+# ============ 视频生成智能体 ============
+
+class GenerateVideoRequest(BaseModel):
+    """视频生成请求"""
+    product_name: Optional[str] = None
+    product_description: Optional[str] = None
+    product_images: Optional[List[str]] = None
+    video_type: str = "product_showcase"  # script, voiceover, slideshow, full, product_showcase
+    duration: int = 5  # 5-12秒
+    style: Optional[str] = None
+    language: str = "en"
+    # 直接生成参数
+    prompt: Optional[str] = None
+    image_url: Optional[str] = None
+    resolution: str = "720p"
+    ratio: str = "9:16"
+    watermark: bool = False
+    generate_audio: bool = True
+
+
+@router.post("/generate-video")
+async def generate_video(request: GenerateVideoRequest):
+    """生成视频"""
+    try:
+        logger.info(f"收到视频生成请求: {request.product_name or request.prompt}")
+        
+        # 如果有prompt直接使用
+        if request.prompt:
+            result = await video_generation_agent.generate_video(
+                prompt=request.prompt,
+                image_url=request.image_url,
+                resolution=request.resolution,
+                ratio=request.ratio,
+                duration=request.duration,
+                watermark=request.watermark,
+                generate_audio=request.generate_audio,
+                style=request.style,
+            )
+        # 如果有product_name使用商品信息生成
+        elif request.product_name:
+            result = await video_generation_agent.generate_from_product(
+                product_name=request.product_name,
+                product_description=request.product_description,
+                product_images=request.product_images,
+                video_type=request.video_type,
+                duration=request.duration,
+                style=request.style,
+                language=request.language,
+            )
+        else:
+            return {"success": False, "error": "请提供product_name或prompt参数"}
+        
+        if result.get("status") == "failed":
+            return {"success": False, "error": result.get("error", "视频生成失败")}
+        
+        return {"success": True, "data": result}
+    except Exception as e:
+        logger.error(f"视频生成失败: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/generate-video/{task_id}")
+async def get_video_status(task_id: str):
+    """获取视频生成状态"""
+    try:
+        result = video_generation_agent.get_task_status(task_id)
+        if not result:
+            raise HTTPException(status_code=404, detail="任务不存在")
+        return {"success": True, "data": result}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"获取视频状态失败: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
