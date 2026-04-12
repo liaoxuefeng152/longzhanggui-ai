@@ -19,6 +19,20 @@ from app.services.ai_agents_service import (
 from loguru import logger
 
 
+# 图片生成客户端（延迟导入，避免循环依赖）
+_image_gen_client = None
+
+def get_image_gen_client():
+    """获取图片生成客户端"""
+    global _image_gen_client
+    if _image_gen_client is None:
+        from coze_coding_dev_sdk import ImageGenerationClient
+        from coze_coding_utils.runtime_ctx.context import new_context
+        ctx = new_context(method="generate")
+        _image_gen_client = ImageGenerationClient(ctx=ctx)
+    return _image_gen_client
+
+
 router = APIRouter(prefix="/ai", tags=["AI智能体"])
 
 
@@ -50,6 +64,37 @@ class BatchProcessImageRequest(BaseModel):
     target_language: str = "en"
 
 
+class GenerateImageRequest(BaseModel):
+    """图片生成请求"""
+    prompt: str
+    size: str = "2K"
+    image: Optional[str] = None  # 参考图片URL（可选，用于图生图）
+    watermark: bool = True
+    style: Optional[str] = None  # 风格描述
+
+
+class GenerateVideoRequest(BaseModel):
+    """视频生成请求"""
+    prompt: str  # 视频描述
+    image_url: Optional[str] = None  # 参考图片URL（图生视频）
+    resolution: str = "720p"  # 分辨率: 480p, 720p, 1080p
+    ratio: str = "16:9"  # 宽高比: 16:9, 9:16, 1:1, 4:3, 3:4, 21:9
+    duration: int = 5  # 时长: 5-12秒
+    watermark: bool = False
+    generate_audio: bool = True
+
+
+class CreateAdRequest(BaseModel):
+    """创建广告请求"""
+    product_id: str
+    product_name: Optional[str] = None  # 新增：商品名称
+    platform: str = "tiktok"
+    daily_budget: float = 100
+    target_acos: float = 0.20
+    keywords: Optional[List[str]] = None
+    category: Optional[str] = None  # 新增：商品类目
+
+
 class OptimizeListingRequest(BaseModel):
     """Listing优化请求"""
     product_info: Dict[str, Any]
@@ -72,10 +117,12 @@ class CalculatePriceRequest(BaseModel):
 class CreateAdRequest(BaseModel):
     """创建广告请求"""
     product_id: str
+    product_name: Optional[str] = None  # 新增：商品名称
     platform: str = "tiktok"
     daily_budget: float = 100
     target_acos: float = 0.20
     keywords: Optional[List[str]] = None
+    category: Optional[str] = None  # 新增：商品类目
 
 
 class CustomerReplyRequest(BaseModel):
@@ -171,6 +218,127 @@ async def get_image_task_status(task_id: str):
     return {"success": True, "data": result}
 
 
+# ============ 图片生成 ============
+
+_video_gen_client = None
+
+def get_video_gen_client():
+    """获取视频生成客户端"""
+    global _video_gen_client
+    if _video_gen_client is None:
+        from coze_coding_dev_sdk.video import VideoGenerationClient
+        from coze_coding_utils.runtime_ctx.context import new_context
+        ctx = new_context(method="video.generate")
+        _video_gen_client = VideoGenerationClient(ctx=ctx)
+    return _video_gen_client
+
+
+@router.post("/generate-video")
+async def generate_video(request: GenerateVideoRequest):
+    """
+    AI生成视频
+    根据文本描述或图片生成商品营销视频
+    """
+    try:
+        logger.info(f"开始AI视频生成: {request.prompt[:50]}...")
+        
+        client = get_video_gen_client()
+        
+        # 构建内容项
+        from coze_coding_dev_sdk.video import TextContent, ImageURLContent, ImageURL
+        
+        content_items = [TextContent(text=request.prompt)]
+        
+        # 如果提供了图片，则添加图生视频
+        if request.image_url:
+            content_items.append(
+                ImageURLContent(
+                    image_url=ImageURL(url=request.image_url),
+                    role="first_frame"
+                )
+            )
+        
+        # 调用视频生成服务
+        video_url, response, last_frame_url = client.video_generation(
+            content_items=content_items,
+            model="doubao-seedance-1-5-pro-251215",
+            resolution=request.resolution,
+            ratio=request.ratio,
+            duration=request.duration,
+            watermark=request.watermark,
+            generate_audio=request.generate_audio,
+        )
+        
+        if video_url:
+            return {
+                "success": True,
+                "data": {
+                    "video_url": video_url,
+                    "task_id": response.get("id", ""),
+                    "status": response.get("status", "succeeded"),
+                    "resolution": request.resolution,
+                    "ratio": request.ratio,
+                    "duration": request.duration,
+                    "model": "doubao-seedance-1-5-pro-251215",
+                    "last_frame_url": last_frame_url,
+                }
+            }
+        else:
+            logger.error(f"视频生成失败: {response}")
+            raise HTTPException(status_code=500, detail="视频生成失败")
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"视频生成失败: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/generate-image")
+async def generate_image(request: GenerateImageRequest):
+    """
+    AI生成图片
+    根据文本描述生成商品主图、背景图等
+    """
+    try:
+        logger.info(f"开始AI图片生成: {request.prompt[:50]}...")
+        
+        client = get_image_gen_client()
+        
+        # 构建生成提示词
+        prompt = request.prompt
+        if request.style:
+            prompt = f"{prompt}, {request.style}"
+        
+        # 调用图片生成服务
+        response = client.generate(
+            prompt=prompt,
+            size=request.size,
+            watermark=request.watermark,
+            image=request.image,  # 如果提供则是图生图模式
+        )
+        
+        if response.success:
+            return {
+                "success": True,
+                "data": {
+                    "image_url": response.image_urls[0] if response.image_urls else None,
+                    "image_urls": response.image_urls,
+                    "size": request.size,
+                    "model": response.model,
+                    "prompt": prompt,
+                }
+            }
+        else:
+            logger.error(f"图片生成失败: {response.error_messages}")
+            raise HTTPException(status_code=500, detail=response.error_messages[0] if response.error_messages else "生成失败")
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"图片生成失败: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # ============ Listing优化智能体 ============
 
 @router.post("/optimize-listing")
@@ -232,10 +400,12 @@ async def create_ad(request: CreateAdRequest):
     try:
         result = await advertising_agent.create_ad_campaign(
             product_id=request.product_id,
+            product_name=request.product_name,
             platform=request.platform,
             daily_budget=request.daily_budget,
             target_acos=request.target_acos,
-            keywords=request.keywords
+            keywords=request.keywords,
+            category=request.category
         )
         return {"success": True, "data": result}
     except Exception as e:
@@ -341,7 +511,14 @@ async def list_agents():
             {
                 "id": "image",
                 "name": "图片智能体",
-                "description": "翻译模式和优化模式处理商品图片",
+                "description": "AI生成商品主图、背景图，支持图生图",
+                "priority": "P0",
+                "status": "active"
+            },
+            {
+                "id": "video",
+                "name": "视频生成智能体",
+                "description": "AI生成商品营销视频，支持文生视频、图生视频",
                 "priority": "P0",
                 "status": "active"
             },

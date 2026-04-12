@@ -132,20 +132,14 @@ Requirements:
 - Suitable for online marketplace (TikTok Shop / Amazon)
 - Eye-catching product presentation`;
 
-  const modeMap: Record<string, string> = {
-    main: 'main',
-    background: 'background',
-    'a-plus': 'a-plus',
-    cover: 'cover',
-  };
-
-  const response = await fetch('/api/ai/process-image', {
+  // 调用图片生成API
+  const response = await fetch('/api/ai/generate-image', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       prompt,
-      type: modeMap[type || 'main'] || 'main',
-      resolution: '1K',
+      size: '2K',
+      watermark: false,
     }),
   });
   
@@ -154,9 +148,9 @@ Requirements:
     throw new Error(result.error || '图片生成失败');
   }
   return {
-    imageUrl: result.data.processed_url,
-    size: result.data.generated_size || '1K',
-    model: result.data.model_used,
+    imageUrl: result.data.image_url || result.data.image_urls?.[0],
+    size: result.data.size || '2K',
+    model: result.data.model || 'unknown',
   };
 }
 

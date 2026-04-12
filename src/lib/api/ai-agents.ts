@@ -48,7 +48,7 @@ export async function selectProducts(request: SelectProductsRequest): Promise<{
   success: boolean;
   data: SelectedProduct[];
 }> {
-  return apiClient.post('/api/ai/select-products', request);
+  return apiClient.post('/api/v1/ai/select-products', request);
 }
 
 export async function analyzeCompetition(productName: string, platform?: string): Promise<{
@@ -57,7 +57,7 @@ export async function analyzeCompetition(productName: string, platform?: string)
 }> {
   const params = new URLSearchParams({ product_name: productName });
   if (platform) params.set('platform', platform);
-  return apiClient.get(`/api/ai/analyze-competition?${params.toString()}`);
+  return apiClient.get(`/api/v1/ai/analyze-competition?${params.toString()}`);
 }
 
 // ============ 图片智能体 ============
@@ -96,21 +96,21 @@ export async function processImage(request: ProcessImageRequest): Promise<{
   success: boolean;
   data: ImageProcessResult;
 }> {
-  return apiClient.post('/api/ai/process-image', request);
+  return apiClient.post('/api/v1/ai/process-image', request);
 }
 
 export async function batchProcessImages(request: BatchProcessImageRequest): Promise<{
   success: boolean;
   data: ImageProcessResult[];
 }> {
-  return apiClient.post('/api/ai/process-image/batch', request);
+  return apiClient.post('/api/v1/ai/process-image/batch', request);
 }
 
 export async function getImageTaskStatus(taskId: string): Promise<{
   success: boolean;
   data: ImageProcessResult;
 }> {
-  return apiClient.get(`/api/ai/process-image/task/${taskId}`);
+  return apiClient.get(`/api/v1/ai/process-image/task/${taskId}`);
 }
 
 // ============ Listing优化智能体 ============
@@ -142,7 +142,7 @@ export async function optimizeListing(request: OptimizeListingRequest): Promise<
   success: boolean;
   data: ListingResult;
 }> {
-  return apiClient.post('/api/ai/optimize-listing', request);
+  return apiClient.post('/api/v1/ai/optimize-listing', request);
 }
 
 export async function suggestKeywords(productName: string, platform?: string): Promise<{
@@ -151,7 +151,7 @@ export async function suggestKeywords(productName: string, platform?: string): P
 }> {
   const params = new URLSearchParams({ product_name: productName });
   if (platform) params.set('platform', platform);
-  return apiClient.get(`/api/ai/suggest-keywords?${params.toString()}`);
+  return apiClient.get(`/api/v1/ai/suggest-keywords?${params.toString()}`);
 }
 
 // ============ 智能定价工具 ============
@@ -179,17 +179,19 @@ export async function calculatePrice(request: CalculatePriceRequest): Promise<{
   success: boolean;
   data: PricingResult;
 }> {
-  return apiClient.post('/api/ai/calculate-price', request);
+  return apiClient.post('/api/v1/ai/calculate-price', request);
 }
 
 // ============ 广告投放智能体 ============
 
 export interface CreateAdRequest {
   product_id: string;
+  product_name?: string;
   platform?: string;
   daily_budget?: number;
   target_acos?: number;
   keywords?: string[];
+  category?: string;
 }
 
 export interface AdCampaign {
@@ -207,7 +209,7 @@ export async function createAdCampaign(request: CreateAdRequest): Promise<{
   success: boolean;
   data: AdCampaign;
 }> {
-  return apiClient.post('/api/ai/create-ad', request);
+  return apiClient.post('/api/v1/ai/create-ad', request);
 }
 
 export async function optimizeAdCampaign(campaignId: string): Promise<{
@@ -223,7 +225,7 @@ export async function optimizeAdCampaign(campaignId: string): Promise<{
     expected_improvement: string;
   };
 }> {
-  return apiClient.post(`/api/ai/optimize-ad/${campaignId}`);
+  return apiClient.post(`/api/v1/ai/optimize-ad/${campaignId}`);
 }
 
 // ============ AI客服智能体 ============
@@ -249,7 +251,7 @@ export async function generateCustomerReply(request: CustomerReplyRequest): Prom
     suggested_actions: string[];
   };
 }> {
-  return apiClient.post('/api/ai/customer-reply', request);
+  return apiClient.post('/api/v1/ai/customer-reply', request);
 }
 
 export async function handleDispute(disputeInfo: DisputeInfo): Promise<{
@@ -261,7 +263,7 @@ export async function handleDispute(disputeInfo: DisputeInfo): Promise<{
     template: string;
   };
 }> {
-  return apiClient.post('/api/ai/handle-dispute', disputeInfo);
+  return apiClient.post('/api/v1/ai/handle-dispute', disputeInfo);
 }
 
 // ============ 数据复盘智能体 ============
@@ -311,14 +313,14 @@ export async function generateDataReport(request: DataReportRequest): Promise<{
   success: boolean;
   data: DataReport;
 }> {
-  return apiClient.post('/api/ai/data-report', request);
+  return apiClient.post('/api/v1/ai/data-report', request);
 }
 
 export async function generateActionItems(report: Record<string, unknown>): Promise<{
   success: boolean;
   data: ActionItem[];
 }> {
-  return apiClient.post('/api/ai/action-items', report);
+  return apiClient.post('/api/v1/ai/action-items', report);
 }
 
 // ============ 视频生成智能体 ============
@@ -361,7 +363,7 @@ export async function generateVideo(request: GenerateVideoRequest): Promise<{
   success: boolean;
   data: VideoGenerationResult;
 }> {
-  return apiClient.post('/api/ai/generate-video', request);
+  return apiClient.post('/api/v1/ai/generate-video', request);
 }
 
 // ============ 智能体列表 ============
@@ -377,5 +379,5 @@ export interface AgentInfo {
 export async function getAIAgents(): Promise<{
   agents: AgentInfo[];
 }> {
-  return apiClient.get('/ai/agents');
+  return apiClient.get('/api/v1/ai/agents');
 }
