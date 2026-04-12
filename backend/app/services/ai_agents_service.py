@@ -10,18 +10,59 @@ from enum import Enum
 
 import httpx
 from loguru import logger
+from langchain_core.messages import HumanMessage, SystemMessage
 
 from app.core.config import settings
+from app.services.llm_service import LLMService
 
 
 # ============ 选品智能体 ============
 
 class ProductSelectionAgent:
-    """选品智能体"""
+    """选品智能体 - 使用豆包大模型"""
+    
+    SYSTEM_PROMPT = """你是一位专业的跨境电商选品专家，精通TikTok Shop、Amazon、Shopee等平台的选品策略。
+
+你的任务是根据用户提供的信息，从多个维度分析并推荐最有潜力的爆款商品。
+
+分析维度包括：
+1. 市场需求分析 - 搜索量、趋势、竞争度
+2. 利润空间分析 - 成本、售价、毛利率
+3. 物流可行性 - 重量、体积、清关难度
+4. 季节性因素 - 销售周期、库存风险
+5. 平台政策 - 合规性、禁售品检查
+
+请用专业、客观的语言进行分析，并给出明确的选品建议。
+
+请以JSON格式输出推荐结果，格式如下：
+{
+  "analysis": "市场分析报告...",
+  "recommendations": [
+    {
+      "name": "商品名称",
+      "source_price": "1688参考价",
+      "suggested_price": "建议售价",
+      "profit_rate": "预估利润率",
+      "monthly_sales": "预估月销量",
+      "trend": "销售趋势",
+      "competition_level": "竞争程度",
+      "selling_points": ["卖点1", "卖点2"],
+      "risks": ["风险1", "风险2"],
+      "1688_links": ["1688链接"],
+      "reason": "推荐理由"
+    }
+  ],
+  "summary": {
+    "avg_profit_rate": "平均利润率",
+    "avg_monthly_sales": "平均月销量",
+    "recommendation": "综合建议"
+  }
+}"""
     
     def __init__(self):
         self.name = "选品智能体"
         self.description = "基于市场数据和竞争分析，挖掘爆款商品"
+        self.llm = LLMService.for_agent("product_selection", temperature=0.7)
     
     async def select_products(
         self,
@@ -33,10 +74,10 @@ class ProductSelectionAgent:
         criteria: Dict[str, Any] = None
     ) -> Dict[str, Any]:
         """
-        选品
+        选品 - 调用豆包大模型进行智能选品分析
         
         Args:
-            platform: 平台（tiktok/amazon）
+            platform: 平台（tiktok/amazon/shopee）
             site: 站点
             category: 品类
             count: 数量
@@ -46,54 +87,85 @@ class ProductSelectionAgent:
         Returns:
             选品结果
         """
-        logger.info(f"开始选品: {platform}/{site}/{category}, 数量{count}")
+        logger.info(f"开始AI选品: {platform}/{site}/{category}, 数量{count}")
         
-        # 模拟选品结果
-        products = []
-        for i in range(count):
-            product = {
-                "rank": i + 1,
-                "product_name": f"{category or '热门'}爆款商品{i+1}",
-                "source_price": 15.0 + i * 2,
-                "suggested_price": 29.99 + i * 5,
-                "profit_rate": 0.35 + i * 0.02,
-                "monthly_sales": 5000 + i * 500,
-                "trend": "rising",
-                "competition_level": "medium",
-                "selling_points": [
-                    "高性价比",
-                    "市场需求大",
-                    "竞争适中",
-                    "利润空间好"
-                ],
-                "risks": [
-                    "季节性产品",
-                    "需要关注库存"
-                ],
-                "1688_links": [
-                    f"https://detail.1688.com/offer/60000000000{i}.html"
-                ],
-                "analysis": {
-                    "market_size": "大",
-                    "growth_rate": f"{15 + i * 2}%",
-                    "competition": "中等",
-                    "entry_barrier": "低"
+        # 构建提示词
+        prompt = f"""请为跨境电商平台分析并推荐{count}款热门商品。
+
+平台: {platform.upper()}
+站点: {site}
+商品类目: {category or '不限'}
+
+筛选条件:
+- 最低利润率要求: {min_profit_rate * 100}%
+
+请从市场需求、竞争程度、利润空间、物流可行性等多维度进行分析，推荐最适合的商品。
+"""
+        
+        try:
+            # 调用豆包大模型
+            messages = [
+                SystemMessage(content=self.SYSTEM_PROMPT),
+                HumanMessage(content=prompt)
+            ]
+            
+            response = await self.llm.chat(messages)
+            logger.info(f"LLM选品响应: {response[:200]}...")
+            
+            # 尝试解析JSON响应
+            try:
+                # 提取JSON（可能在代码块中）
+                if "```json" in response:
+                    json_start = response.find("```json") + 7
+                    json_end = response.find("```", json_start)
+                    result = json.loads(response[json_start:json_end].strip())
+                elif "```" in response:
+                    json_start = response.find("```") + 3
+                    json_end = response.find("```", json_start)
+                    result = json.loads(response[json_start:json_end].strip())
+                else:
+                    result = json.loads(response)
+                
+                # 标准化返回格式
+                return {
+                    "platform": platform,
+                    "site": site,
+                    "category": category,
+                    "total": len(result.get("recommendations", [])),
+                    "analysis": result.get("analysis", ""),
+                    "products": result.get("recommendations", []),
+                    "summary": result.get("summary", {})
+                }
+                
+            except json.JSONDecodeError as e:
+                logger.error(f"JSON解析失败: {e}")
+                # 返回LLM原始响应
+                return {
+                    "platform": platform,
+                    "site": site,
+                    "category": category,
+                    "total": count,
+                    "analysis": response,
+                    "products": [],
+                    "summary": {
+                        "recommendation": "AI分析完成，请查看分析报告"
+                    }
+                }
+                
+        except Exception as e:
+            logger.error(f"选品失败: {e}")
+            # 如果LLM调用失败，返回友好的错误信息
+            return {
+                "platform": platform,
+                "site": site,
+                "category": category,
+                "total": 0,
+                "analysis": f"选品分析遇到问题: {str(e)}",
+                "products": [],
+                "summary": {
+                    "recommendation": "请检查AI服务配置"
                 }
             }
-            products.append(product)
-        
-        return {
-            "platform": platform,
-            "site": site,
-            "category": category,
-            "total": count,
-            "products": products,
-            "summary": {
-                "avg_profit_rate": sum(p["profit_rate"] for p in products) / len(products),
-                "avg_monthly_sales": sum(p["monthly_sales"] for p in products) / len(products),
-                "recommendation": f"建议优先考虑第1-{min(3, count)}款商品，利润率和销量表现较好"
-            }
-        }
     
     async def analyze_competition(
         self,

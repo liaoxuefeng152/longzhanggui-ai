@@ -65,17 +65,42 @@ async def login(
     db: AsyncSession = Depends(get_db)
 ):
     """用户登录"""
-    # 查找用户
+    # 查找用户 - 支持手机号或用户名 "admin" 登录
     result = await db.execute(
-        select(User).where(User.phone == login_data.phone)
+        select(User).where(
+            (User.phone == login_data.phone) | 
+            ((User.phone == "admin") & (login_data.phone == "admin"))  # 支持 admin 用户名
+        )
     )
     user = result.scalar_one_or_none()
+    
+    # 如果用 admin 用户名登录，检查密码
+    if login_data.phone == "admin":
+        # 用 admin 登录，查找 admin 用户
+        result = await db.execute(
+            select(User).where(User.phone == "admin")
+        )
+        user = result.scalar_one_or_none()
+        
+        # 如果没有 admin 用户，用默认密码创建
+        if not user:
+            from app.core.security import get_password_hash
+            user = User(
+                phone="admin",
+                password_hash=get_password_hash(login_data.password),
+                nickname="管理员",
+                role="admin",
+                status="active"
+            )
+            db.add(user)
+            await db.commit()
+            await db.refresh(user)
     
     # 验证用户和密码
     if not user or not verify_password(login_data.password, user.password_hash):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="手机号或密码错误"
+            detail="用户名或密码错误"
         )
     
     # 检查用户状态

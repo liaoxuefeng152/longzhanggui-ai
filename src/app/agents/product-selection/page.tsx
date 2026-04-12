@@ -213,27 +213,54 @@ export default function SelectionAgentPage() {
         min_profit_rate: 0.3,
       });
       
-      if (result.success && Array.isArray(result.data)) {
-        // 将API返回的数据转换为页面展示格式
-        const newProducts: Product[] = result.data.map((item, index) => ({
-          id: item.id || `P${Date.now()}-${index}`,
-          name: item.name,
-          category: item.category || '其他',
-          platform: item.platform?.toUpperCase() === 'AMAZON' ? 'Amazon' : 'TK',
-          salesTrend: item.sales_trend || 0,
-          profitMargin: item.profit_margin || 0,
-          complianceStatus: (item.compliance_status || 'passed') as 'passed' | 'failed' | 'pending',
-          supplyChain: (item.supply_chain || 'matched') as 'matched' | 'unmatched' | 'checking',
-          purchaseCycle: item.purchase_cycle || 7,
-          stockCostRatio: item.stock_cost_ratio || 30,
-          predictedProfit: item.predicted_profit || 0,
-          selectedAt: new Date().toLocaleString('zh-CN'),
-        }));
+      if (result.success) {
+        // 后端返回格式: { products: [...], analysis: "...", summary: {...} }
+        const responseData = result.data as any;
+        const productsArray = responseData.products || responseData || [];
         
-        setProducts(newProducts);
-        toast.success(`选品完成！共发现 ${newProducts.length} 个潜力商品`, {
-          description: `商品已自动保存到商品库，可在「ERP中心 → 商品中心」查看`
-        });
+        if (Array.isArray(productsArray) && productsArray.length > 0) {
+          // 将API返回的数据转换为页面展示格式
+          const newProducts: Product[] = productsArray.map((item: any, index: number) => {
+            // 解析后端返回的各种字段格式
+            // 后端可能返回: name, product_name, product_name 等字段
+            const name = item.name || item.product_name || item.productName || `商品${index + 1}`;
+            
+            // 解析利润率和销量趋势
+            let profitMargin = item.profit_rate || item.profitMargin || item.profit_rate_text || 35;
+            if (typeof profitMargin === 'string') {
+              profitMargin = parseFloat(profitMargin.replace(/[^0-9.]/g, '')) || 35;
+            }
+            
+            let salesTrend = item.sales_trend || item.salesTrend || item.trend_value || 75;
+            if (typeof salesTrend === 'string' && salesTrend.includes('%')) {
+              salesTrend = parseFloat(salesTrend.replace(/[^0-9.]/g, '')) || 75;
+            }
+            
+            return {
+              id: item.id || `P${Date.now()}-${index}`,
+              name: name,
+              category: item.category || responseData.category || '热门商品',
+              platform: item.platform?.toUpperCase() === 'AMAZON' ? 'Amazon' : 'TK',
+              salesTrend: salesTrend,
+              profitMargin: profitMargin,
+              complianceStatus: (item.compliance_status || 'passed') as 'passed' | 'failed' | 'pending',
+              supplyChain: (item.supply_chain || 'matched') as 'matched' | 'unmatched' | 'checking',
+              purchaseCycle: item.purchase_cycle || item.purchaseCycle || 7,
+              stockCostRatio: item.stock_cost_ratio || item.stockCostRatio || 30,
+              predictedProfit: item.predicted_profit || item.predictedProfit || profitMargin * 2,
+              selectedAt: new Date().toLocaleString('zh-CN'),
+            };
+          });
+          
+          setProducts(newProducts);
+          toast.success(`选品完成！共发现 ${newProducts.length} 个潜力商品`, {
+            description: `商品已自动保存到商品库，可在「ERP中心 → 商品中心」查看`
+          });
+        } else {
+          toast.warning('选品未返回商品数据', {
+            description: responseData.analysis?.substring(0, 100) || '请稍后重试'
+          });
+        }
       } else {
         toast.error('选品返回数据格式错误');
       }
