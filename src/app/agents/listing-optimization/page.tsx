@@ -68,6 +68,16 @@ interface ListingTask {
   result?: ListingResult;
 }
 
+// 辅助函数：从后端返回数据中获取 bullet_points（可能是 highlights）
+function getBulletPoints(result?: ListingResult): string[] {
+  return result?.bullet_points || result?.highlights || [];
+}
+
+// 辅助函数：从后端返回数据中获取 keywords（可能是 tags）
+function getKeywords(result?: ListingResult): string[] {
+  return result?.keywords || result?.tags || [];
+}
+
 const mockListingTasks: ListingTask[] = [
   {
     id: 'LST001',
@@ -163,12 +173,18 @@ export default function ListingAgentPage() {
     setIsProcessing(true);
     setAgentStatus('processing');
 
+    // 创建超时控制器
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 120000); // 2分钟超时
+
     try {
       const result = await optimizeListing({
         product_info: { name: newListing.product_name },
         platform: newListing.platform.toLowerCase(),
         language: newListing.language,
       });
+
+      clearTimeout(timeoutId);
 
       if (result.success && result.data) {
         const newTask: ListingTask = {
@@ -196,10 +212,17 @@ export default function ListingAgentPage() {
           platform: 'TK',
           language: 'id',
         });
+      } else {
+        toast.error('优化失败，请重试');
       }
     } catch (error: any) {
+      clearTimeout(timeoutId);
       console.error('优化失败:', error);
-      toast.error(error.message || '优化失败');
+      if (error.name === 'AbortError' || error.message?.includes('abort')) {
+        toast.error('请求超时，请稍后重试');
+      } else {
+        toast.error(error.message || '优化失败，请重试');
+      }
     } finally {
       setIsProcessing(false);
       setAgentStatus('online');
@@ -426,10 +449,10 @@ export default function ListingAgentPage() {
                                 `描述:`,
                                 task.result.description,
                                 '',
-                                `五点描述:`,
-                                ...(task.result.bullet_points || []).map((b, i) => `${i + 1}. ${b}`),
+                                `产品亮点:`,
+                                ...getBulletPoints(task.result).map((b, i) => `${i + 1}. ${b}`),
                                 '',
-                                `关键词: ${task.result.keywords?.join(', ')}`,
+                                `标签: ${getKeywords(task.result).join(', ')}`,
                               ].join('\n');
                               handleCopy(fullContent);
                             }
@@ -788,6 +811,26 @@ export default function ListingAgentPage() {
                     <div className="p-3 bg-muted/30 rounded-lg text-[13px] font-medium">
                       {previewTask.result.title}
                     </div>
+                    {/* 多语言标题 */}
+                    {previewTask.result.title_localized && (
+                      <div className="mt-2 space-y-1">
+                        {previewTask.result.title_localized.id && (
+                          <div className="text-[11px] text-muted-foreground">
+                            🇮🇩 印尼语: {previewTask.result.title_localized.id}
+                          </div>
+                        )}
+                        {previewTask.result.title_localized.th && (
+                          <div className="text-[11px] text-muted-foreground">
+                            🇹🇭 泰语: {previewTask.result.title_localized.th}
+                          </div>
+                        )}
+                        {previewTask.result.title_localized.vi && (
+                          <div className="text-[11px] text-muted-foreground">
+                            🇻🇳 越南语: {previewTask.result.title_localized.vi}
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   {/* 描述 */}
@@ -811,21 +854,21 @@ export default function ListingAgentPage() {
                   )}
 
                   {/* 五点描述 */}
-                  {previewTask.result.bullet_points && previewTask.result.bullet_points.length > 0 && (
+                  {getBulletPoints(previewTask.result).length > 0 && (
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
-                        <label className="text-[13px] font-medium text-foreground">📋 五点描述</label>
+                        <label className="text-[13px] font-medium text-foreground">📋 产品亮点</label>
                         <Button 
                           variant="ghost" 
                           size="sm" 
-                          onClick={() => handleCopy(previewTask.result?.bullet_points?.join('\n') || '')}
+                          onClick={() => handleCopy(getBulletPoints(previewTask.result).join('\n') || '')}
                         >
                           <Copy className="h-3 w-3 mr-1" />
                           复制
                         </Button>
                       </div>
                       <div className="p-3 bg-muted/30 rounded-lg text-[13px] space-y-2">
-                        {previewTask.result.bullet_points.map((bullet, idx) => (
+                        {getBulletPoints(previewTask.result).map((bullet, idx) => (
                           <div key={idx} className="flex items-start gap-2">
                             <span className="text-primary font-medium">{idx + 1}.</span>
                             <span>{bullet}</span>
@@ -835,25 +878,27 @@ export default function ListingAgentPage() {
                     </div>
                   )}
 
-                  {/* 关键词 */}
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <label className="text-[13px] font-medium text-foreground">🏷️ 关键词</label>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        onClick={() => handleCopy(previewTask.result?.keywords?.join(', ') || '')}
-                      >
-                        <Copy className="h-3 w-3 mr-1" />
-                        复制
-                      </Button>
+                  {/* 关键词/Tags */}
+                  {getKeywords(previewTask.result).length > 0 && (
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <label className="text-[13px] font-medium text-foreground">🏷️ 标签</label>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => handleCopy(getKeywords(previewTask.result).join(', ') || '')}
+                        >
+                          <Copy className="h-3 w-3 mr-1" />
+                          复制
+                        </Button>
+                      </div>
+                      <div className="flex flex-wrap gap-2 p-3 bg-muted/30 rounded-lg">
+                        {getKeywords(previewTask.result).map((keyword, idx) => (
+                          <Badge key={idx} variant="outline" className="bg-primary/5">{keyword}</Badge>
+                        ))}
+                      </div>
                     </div>
-                    <div className="flex flex-wrap gap-2 p-3 bg-muted/30 rounded-lg">
-                      {previewTask.result.keywords.map((keyword, idx) => (
-                        <Badge key={idx} variant="outline" className="bg-primary/5">{keyword}</Badge>
-                      ))}
-                    </div>
-                  </div>
+                  )}
 
                   {/* SEO评分 */}
                   <div className="p-4 bg-gradient-to-r from-primary/5 to-success/5 rounded-lg border border-primary/10">
@@ -877,6 +922,12 @@ export default function ListingAgentPage() {
                         </div>
                       </div>
                     )}
+                    {previewTask.result.seo_tips && (
+                      <div className="mt-3 p-3 bg-white/50 rounded-lg text-[12px]">
+                        <div className="font-medium text-foreground mb-1">💡 SEO优化建议</div>
+                        <div className="text-muted-foreground whitespace-pre-wrap">{previewTask.result.seo_tips}</div>
+                      </div>
+                    )}
                   </div>
 
                   {/* 操作按钮 */}
@@ -891,10 +942,10 @@ export default function ListingAgentPage() {
                           `描述:`,
                           previewTask.result?.description,
                           '',
-                          `五点描述:`,
-                          ...(previewTask.result?.bullet_points || []).map((b, i) => `${i + 1}. ${b}`),
+                          `产品亮点:`,
+                          ...getBulletPoints(previewTask.result).map((b, i) => `${i + 1}. ${b}`),
                           '',
-                          `关键词: ${previewTask.result?.keywords?.join(', ')}`,
+                          `标签: ${getKeywords(previewTask.result).join(', ')}`,
                         ].join('\n');
                         handleCopy(fullContent);
                       }}

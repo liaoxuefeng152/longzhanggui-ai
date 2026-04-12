@@ -124,15 +124,24 @@ export interface OptimizeListingRequest {
 
 export interface ListingResult {
   title: string;
+  title_localized?: {
+    en?: string;
+    id?: string;
+    th?: string;
+    vi?: string;
+  };
   description: string;
-  bullet_points: string[];
-  keywords: string[];
+  bullet_points?: string[];  // 后端可能返回 highlights
+  keywords?: string[];       // 后端可能返回 tags
+  highlights?: string[];      // 后端返回的字段名
+  tags?: string[];            // 后端返回的字段名
   seo_score: number;
   seo_details?: {
     title_score: number;
     description_score: number;
     keywords_score: number;
   };
+  seo_tips?: string;
   platform?: string;
   language?: string;
   generated_at?: string;
