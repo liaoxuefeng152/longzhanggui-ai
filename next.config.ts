@@ -155,6 +155,71 @@ const nextConfig: NextConfig = {
         source: '/api/v1/1688/:path*',
         destination: `${backendUrl}/api/v1/1688/:path*`,
       },
+      // 店铺管理API - 后端处理
+      {
+        source: '/api/v1/shops/:path*',
+        destination: `${backendUrl}/api/v1/shops/:path*`,
+      },
+      // 平台配置API - 后端处理
+      {
+        source: '/api/v1/platforms/:path*',
+        destination: `${backendUrl}/api/v1/platforms/:path*`,
+      },
+      // 定时任务API - 后端处理
+      {
+        source: '/api/v1/scheduler/:path*',
+        destination: `${backendUrl}/api/v1/scheduler/:path*`,
+      },
+      // 角色权限API - 后端处理
+      {
+        source: '/api/v1/roles/:path*',
+        destination: `${backendUrl}/api/v1/roles/:path*`,
+      },
+      // 任务日志API - 后端处理
+      {
+        source: '/api/v1/task-logs/:path*',
+        destination: `${backendUrl}/api/v1/task-logs/:path*`,
+      },
+      // 套餐管理API - 后端处理
+      {
+        source: '/api/v1/packages/:path*',
+        destination: `${backendUrl}/api/v1/packages/:path*`,
+      },
+      // 客服工单API - 后端处理
+      {
+        source: '/api/v1/customer-tickets/:path*',
+        destination: `${backendUrl}/api/v1/customer-tickets/:path*`,
+      },
+      // 系统初始化API - 后端处理
+      {
+        source: '/api/v1/system/:path*',
+        destination: `${backendUrl}/api/v1/system/:path*`,
+      },
+      // 认证API（无v1前缀）- 后端处理
+      {
+        source: '/api/auth/:path*',
+        destination: `${backendUrl}/api/v1/auth/:path*`,
+      },
+      // 模型管理API（无v1前缀）- 后端处理
+      {
+        source: '/api/models/:path*',
+        destination: `${backendUrl}/api/v1/models/:path*`,
+      },
+      // Prompt管理API（无v1前缀）- 后端处理
+      {
+        source: '/api/prompts/:path*',
+        destination: `${backendUrl}/api/v1/prompts/:path*`,
+      },
+      // 控制台API（无v1前缀）- 后端处理
+      {
+        source: '/api/dashboard/:path*',
+        destination: `${backendUrl}/api/v1/dashboard/:path*`,
+      },
+      // 飞书用户API（无v1前缀）- 后端处理
+      {
+        source: '/api/feishu-users/:path*',
+        destination: `${backendUrl}/api/v1/feishu-users/:path*`,
+      },
     ];
   },
 };

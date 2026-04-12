@@ -1,11 +1,17 @@
 /**
  * API配置
+ * 
+ * 架构说明：
+ * - 前端：Next.js (端口5000)
+ * - 后端：Python FastAPI (端口8000)
+ * - API调用通过 Next.js rewrites 代理到后端
  */
 
-// API基础URL
-// 使用相对路径，通过 Next.js rewrites 代理到后端
-// 这样浏览器端和服务端都能正常工作
+// API基础URL - 使用相对路径，通过 rewrites 代理
 export const API_BASE_URL = '/api/v1';
+
+// Python后端地址（用于直接调用）
+export const PYTHON_API_URL = process.env.NEXT_PUBLIC_PYTHON_API_URL || 'http://localhost:8000';
 
 // API端点配置
 export const API_ENDPOINTS = {

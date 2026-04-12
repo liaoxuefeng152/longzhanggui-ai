@@ -82,6 +82,23 @@
 - **前后端分离**: Next.js 做前端页面渲染，Python FastAPI 做业务API和AI大脑
 - **API代理**: Next.js rewrites 将业务API请求代理到Python后端
 - **认证流程**: 前端登录获取JWT token，后续请求携带token到后端
+- **迁移说明**: 
+  - 前端 API Routes 已删除，统一使用 Python 后端
+  - API 调用通过 `next.config.ts` 的 rewrites 代理到 `http://localhost:8000`
+  - 后端部署在端口 8000，前端在端口 5000
+
+### 启动方式
+
+```bash
+# 1. 启动 Python 后端 (端口 8000)
+cd backend
+pip install -r requirements.txt
+uvicorn app.main:app --host 0.0.0.0 --port 8000
+
+# 2. 启动 Next.js 前端 (端口 5000)
+cd ..
+coze dev
+```
 
 ### AI能力
 - **模型提供商**: 豆包大模型 (通过 coze-coding-dev-sdk)
