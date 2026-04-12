@@ -57,7 +57,7 @@ const nextConfig: NextConfig = {
   // 前端自己处理的API：customer-tickets, task-logs, packages, 1688
   // 后端处理的API：erp, workflow, ai, tiktok, feishu, agents, auth, models, prompts等
   async rewrites() {
-    const backendUrl = process.env.BACKEND_URL || 'http://localhost:8001';
+    const backendUrl = process.env.BACKEND_URL || 'http://localhost:8000';
     
     return [
       // ERP模块API - 后端处理
