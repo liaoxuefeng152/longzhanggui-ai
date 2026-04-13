@@ -85,6 +85,9 @@ interface SelectedProduct {
   monthlySales?: string;
   competitionLevel?: string;
   sellingPoints?: string[];
+  // 1688链接推荐
+  sourceLink?: string;
+  keywords?: string[];
 }
 
 interface CollectedProduct {
@@ -248,6 +251,9 @@ function WorkflowWizard({
             monthlySales: p.monthly_sales || '100-500',
             competitionLevel: p.competition_level || '中等',
             sellingPoints: p.selling_points || [],
+            // 添加1688链接推荐
+            sourceLink: p.source_link || `https://search.1688.com/jerry/search.htm?keywords=${encodeURIComponent(p.name)}`,
+            keywords: p.keywords || [p.name],
           }));
           setSelectedProducts(products);
           toast.success('AI选品完成！请添加货源链接');
@@ -682,6 +688,75 @@ function WorkflowWizard({
                               </span>
                             </div>
                           )}
+                          
+                          {/* 1688链接推荐 - 选品完成后显示 */}
+                          <div className="mt-3 p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                            <div className="flex items-center gap-2 mb-2">
+                              <span className="text-orange-500 font-bold text-sm">1688</span>
+                              <span className="text-sm text-orange-800 font-medium">同款货源推荐</span>
+                            </div>
+                            <div className="space-y-2">
+                              <div className="flex items-center gap-2">
+                                <a 
+                                  href={product.sourceLink || '#'} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  className="text-sm text-blue-600 hover:text-blue-800 hover:underline truncate flex-1"
+                                >
+                                  {product.sourceLink || '点击搜索1688同款'}
+                                </a>
+                                <Button 
+                                  size="sm" 
+                                  variant="outline"
+                                  className="h-7 text-xs border-orange-300 text-orange-700 hover:bg-orange-100"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    const link = product.sourceLink || `https://search.1688.com/jerry/search.htm?keywords=${encodeURIComponent(product.name)}`;
+                                    // 复制链接到剪贴板
+                                    navigator.clipboard.writeText(link);
+                                    toast.success('1688链接已复制到剪贴板');
+                                  }}
+                                >
+                                  <Copy className="h-3 w-3 mr-1" /> 复制链接
+                                </Button>
+                                <Button 
+                                  size="sm" 
+                                  className="h-7 text-xs bg-orange-500 hover:bg-orange-600"
+                                  onClick={() => {
+                                    // 使用推荐链接跳转到1688
+                                    const link = product.sourceLink || `https://search.1688.com/jerry/search.htm?keywords=${encodeURIComponent(product.name)}`;
+                                    window.open(link, '_blank');
+                                    // 同时添加到采集列表
+                                    addCollectionLink(link);
+                                    toast.success('已添加1688链接到采集列表');
+                                  }}
+                                >
+                                  <Truck className="h-3 w-3 mr-1" /> 去采购
+                                </Button>
+                              </div>
+                              {product.keywords && product.keywords.length > 0 && (
+                                <div className="flex items-center gap-2">
+                                  <span className="text-xs text-orange-600">搜索关键词:</span>
+                                  <div className="flex flex-wrap gap-1">
+                                    {product.keywords.slice(0, 3).map((kw, i) => (
+                                      <Badge 
+                                        key={i} 
+                                        variant="secondary" 
+                                        className="text-xs cursor-pointer hover:bg-orange-200"
+                                        onClick={() => {
+                                          const link = `https://search.1688.com/jerry/search.htm?keywords=${encodeURIComponent(kw)}`;
+                                          navigator.clipboard.writeText(link);
+                                          toast.success(`关键词"${kw}"已复制到剪贴板`);
+                                        }}
+                                      >
+                                        {kw} <Copy className="h-2 w-2 ml-1" />
+                                      </Badge>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
                         </div>
                         <Button 
                           size="sm" 

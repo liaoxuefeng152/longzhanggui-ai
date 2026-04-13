@@ -134,6 +134,8 @@ class ProductSelectionAgent:
 - price_range: 建议售价区间
 - profit_margin: 预估利润率
 - risks: 可能的风险列表
+- source_link: 1688同款链接（格式：https://search.1688.com/jerry/search.htm?keywords=商品关键词）
+- keywords: 用于搜索1688商品的关键词列表（3-5个关键词，方便用户复制到1688搜索）
 
 请直接输出JSON，不要有其他内容。"""
         
@@ -193,11 +195,35 @@ class ProductSelectionAgent:
         
         result = await self.app.ainvoke(initial_state)
         
-        # 格式化输出
+        # 格式化输出，确保每个推荐都有1688链接
+        recommendations = result.get("recommendations", [])
+        formatted_recommendations = []
+        
+        for rec in recommendations:
+            # 确保每个推荐都有source_link字段
+            keywords = rec.get("keywords", [])
+            if isinstance(keywords, list) and len(keywords) > 0:
+                keyword = keywords[0] if isinstance(keywords[0], str) else str(keywords[0])
+            else:
+                keyword = rec.get("name", "")
+            
+            source_link = rec.get("source_link", f"https://search.1688.com/jerry/search.htm?keywords={keyword}")
+            
+            formatted_rec = {
+                "name": rec.get("name", ""),
+                "reason": rec.get("reason", ""),
+                "price_range": rec.get("price_range", ""),
+                "profit_margin": rec.get("profit_margin", ""),
+                "risks": rec.get("risks", []),
+                "source_link": source_link,
+                "keywords": keywords
+            }
+            formatted_recommendations.append(formatted_rec)
+        
         return {
             "output": {
                 "analysis": result.get("analysis", ""),
-                "recommendations": result.get("recommendations", [])
+                "recommendations": formatted_recommendations
             },
             "messages": result.get("messages", [])
         }
