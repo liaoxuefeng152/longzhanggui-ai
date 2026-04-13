@@ -107,6 +107,7 @@ interface CollectionLink {
   source: '1688' | 'taobao' | 'pinduoduo';
   status: 'pending' | 'collecting' | 'completed' | 'failed';
   product?: CollectedProduct;
+  batchProducts?: CollectedProduct[]; // 搜索页批量采集的商品列表
 }
 
 interface ProcessedImage {
@@ -598,9 +599,95 @@ function WorkflowWizard({
       
       // 创建AbortController用于超时控制
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30秒超时
+      const timeoutId = setTimeout(() => controller.abort(), 60000); // 60秒超时
       
-      // 调用1688采集API
+      let data;
+      
+      // 判断是否为搜索页URL
+      const isSearchPage = link.url.includes('search.1688.com') || 
+                           link.url.includes('s.1688.com') ||
+                           link.url.includes('youyuan.1688.com');
+      
+      if (isSearchPage) {
+        // 调用搜索页批量采集API
+        toast.info('正在从搜索页提取商品...');
+        const res = await fetch('/api/v1/1688/collect/search-page', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify({ url: link.url, max_items: 10 }),
+          signal: controller.signal,
+        });
+        
+        data = await res.json();
+        
+        if (data.success && data.links && data.links.length > 0) {
+          toast.success(`找到 ${data.links.length} 个商品，开始采集...`);
+          
+          // 逐个采集搜索结果中的商品
+          const collectedProducts: CollectedProduct[] = [];
+          
+          for (let i = 0; i < data.links.length; i++) {
+            const itemUrl = data.links[i];
+            
+            try {
+              const collectRes = await fetch('/api/v1/1688/collect', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+                },
+                body: JSON.stringify({ url: itemUrl }),
+              });
+              
+              const collectData = await collectRes.json();
+              
+              if (collectData.success && collectData.product_id) {
+                // 获取商品详情
+                const detailRes = await fetch(`/api/v1/workflow/products/${collectData.product_id}`);
+                const detailData = await detailRes.json();
+                
+                const productData = detailData.success ? detailData.data : {};
+                const collectionData = productData.collection || {};
+                
+                collectedProducts.push({
+                  id: collectData.product_id,
+                  sourceUrl: itemUrl,
+                  source: '1688',
+                  name: collectionData.title || productData.name_zh || `商品${i + 1}`,
+                  price: parseFloat(collectionData.price || productData.cost_price || '50'),
+                  images: collectionData.images || productData.images || [],
+                  description: collectionData.description || productData.description || '',
+                  weight: collectionData.weight || productData.weight || 0,
+                });
+              }
+            } catch (e) {
+              console.error(`采集第${i + 1}个商品失败:`, e);
+            }
+          }
+          
+          // 更新链接状态为已完成
+          setCollectionLinks(prev => prev.map(l => 
+            l.id === id ? { 
+              ...l, 
+              status: 'completed', 
+              product: collectedProducts[0],
+              batchProducts: collectedProducts // 保存所有采集的商品
+            } : l
+          ));
+          
+          toast.success(`采集完成！共采集 ${collectedProducts.length} 个商品`);
+          clearTimeout(timeoutId);
+          return;
+        } else {
+          // 搜索页解析失败，尝试单个商品采集
+          toast.warning('无法从搜索页提取商品，尝试按商品详情页处理...');
+        }
+      }
+      
+      // 单个商品详情页采集
       const res = await fetch('/api/v1/1688/collect', {
         method: 'POST',
         headers: {
@@ -612,7 +699,7 @@ function WorkflowWizard({
       });
       
       clearTimeout(timeoutId);
-      const data = await res.json();
+      data = await res.json();
       
       if (data.success && data.product_id) {
         // 获取采集后的商品详情

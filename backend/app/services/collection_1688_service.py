@@ -747,3 +747,97 @@ class Collection1688Service:
 
 # 全局实例
 collection_1688_service = Collection1688Service()
+
+
+# 搜索页采集相关方法
+async def collect_from_search_page(url: str, max_items: int = 10) -> Dict[str, Any]:
+    """
+    从1688搜索页批量采集商品
+    
+    Args:
+        url: 搜索页URL
+        max_items: 最大采集数量
+        
+    Returns:
+        包含商品链接列表的结果
+    """
+    from bs4 import BeautifulSoup
+    import httpx
+    
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
+    }
+    
+    try:
+        async with httpx.AsyncClient(headers=headers, timeout=30.0, follow_redirects=True) as client:
+            response = await client.get(url)
+            response.raise_for_status()
+            
+            soup = BeautifulSoup(response.text, 'html.parser')
+            
+            # 提取商品链接
+            product_links = []
+            
+            # 方式1: 查找商品列表中的链接
+            # 1688搜索结果页使用多种选择器
+            selectors = [
+                '.item-content .title a',
+                '.offer-item .title a', 
+                '[class*="offer"] a[href*="detail.1688.com"]',
+                'a[href*="offer/"][href*=".html"]',
+                '.product-item .title a',
+                '.search-product-item a',
+                '[class*="product"] a[href*="1688"]',
+            ]
+            
+            for selector in selectors:
+                links = soup.select(selector)
+                for link in links:
+                    href = link.get('href') or link.get('data-url')
+                    if href:
+                        # 确保是完整的1688详情页链接
+                        if 'detail.1688.com' in href or 'offer/' in href:
+                            if href.startswith('//'):
+                                href = 'https:' + href
+                            if href not in product_links:
+                                product_links.append(href)
+                
+                if product_links:
+                    break
+            
+            # 方式2: 从script/json数据中提取
+            if not product_links:
+                scripts = soup.find_all('script')
+                for script in scripts:
+                    content = script.string
+                    if content and ('offerList' in content or 'offer_list' in content):
+                        # 尝试提取JSON数据中的链接
+                        import json
+                        import re
+                        # 匹配offer/数字.html格式
+                        offers = re.findall(r'["\']?(https?://[^"\']*offer/\d+\.html[^"\']*)["\']?', content)
+                        for offer_url in offers:
+                            if offer_url not in product_links:
+                                product_links.append(offer_url)
+            
+            # 去重并限制数量
+            product_links = list(dict.fromkeys(product_links))[:max_items]
+            
+            logger.info(f"从搜索页提取到 {len(product_links)} 个商品链接")
+            
+            return {
+                "success": True,
+                "total": len(product_links),
+                "links": product_links,
+                "source_url": url
+            }
+            
+    except Exception as e:
+        logger.error(f"搜索页采集失败: {e}")
+        return {
+            "success": False,
+            "error": str(e),
+            "links": []
+        }
