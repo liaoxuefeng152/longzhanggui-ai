@@ -148,7 +148,10 @@ export default function PlatformConfigPage() {
 
   const fetchPlatformConfigs = async () => {
     try {
-      const response = await fetch('/api/v1/platforms');
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/v1/platforms', {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+      });
       const data = await response.json();
       if (data.success) {
         setPlatformConfigs(data.data.platforms);
@@ -178,9 +181,13 @@ export default function PlatformConfigPage() {
     
     setSavingPlatform(configForm.platform);
     try {
+      const token = localStorage.getItem('token');
       const response = await fetch('/api/v1/platforms', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify({
           platform: configForm.platform,
           credentials: {
@@ -197,9 +204,10 @@ export default function PlatformConfigPage() {
         setIsConfigOpen(false);
         fetchPlatformConfigs();
       } else {
-        toast.error(data.error || '保存失败');
+        toast.error(data.error || data.detail || '保存失败');
       }
     } catch (error) {
+      console.error('保存配置失败:', error);
       toast.error('保存失败');
     } finally {
       setSavingPlatform(null);
@@ -209,17 +217,20 @@ export default function PlatformConfigPage() {
   const handleTestConnection = async (platformId: string) => {
     setTestingPlatform(platformId);
     try {
+      const token = localStorage.getItem('token');
       const response = await fetch(`/api/v1/platforms/${platformId}/test`, {
         method: 'POST',
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {},
       });
 
       const data = await response.json();
       if (data.success) {
         toast.success(`${PLATFORMS[platformId].name} 连接测试成功`);
       } else {
-        toast.error(data.error || '连接测试失败');
+        toast.error(data.error || data.detail || '连接测试失败');
       }
     } catch (error) {
+      console.error('连接测试失败:', error);
       toast.error('连接测试失败');
     } finally {
       setTestingPlatform(null);

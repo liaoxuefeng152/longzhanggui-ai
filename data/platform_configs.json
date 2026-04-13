@@ -1,1 +1,10 @@
-{}
+{
+  "tiktok": {
+    "credentials": {
+      "api_key": "6jlirmraabt34",
+      "api_secret": "1d8eed27c8162c3fcd37e3fce90684e073fa4034",
+      "webhook_secret": ""
+    },
+    "last_updated": "2026-04-13T13:15:59.468174"
+  }
+}

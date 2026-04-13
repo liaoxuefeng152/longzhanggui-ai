@@ -75,6 +75,11 @@ const nextConfig: NextConfig = {
         source: '/api/v1/ai/:path*',
         destination: `${backendUrl}/api/v1/ai/:path*`,
       },
+      // AI智能体扩展API - 后端处理（选品、Listing、定价等）
+      {
+        source: '/api/v1/ai-agents/:path*',
+        destination: `${backendUrl}/api/v1/ai-agents/:path*`,
+      },
       // AI智能体API（无v1前缀）- 后端处理
       {
         source: '/api/ai/:path*',
