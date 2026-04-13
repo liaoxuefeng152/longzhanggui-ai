@@ -340,10 +340,12 @@ function WorkflowWizard({
         
         if (data.success && data.data) {
           const result = data.data;
-          const title = result.optimized_title || result.title || '';
-          const description = result.optimized_description || result.description || '';
-          const keyFeatures = result.optimized_bullets || result.key_features || result.bullets || [];
-          const keywords = result.keywords || result.search_keywords || [];
+          // 兼容不同的API返回格式
+          const title = result.title || result.optimized_title || '';
+          const description = result.description || result.optimized_description || '';
+          // API返回highlights/tags，需要映射到前端期望的字段
+          const keyFeatures = result.highlights || result.bullets || result.key_features || result.optimized_bullets || [];
+          const keywords = result.tags || result.keywords || result.search_keywords || [];
           
           setListing({
             title,
