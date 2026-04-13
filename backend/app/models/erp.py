@@ -24,19 +24,30 @@ class ERPProduct(Base):
     id = Column(String(36), primary_key=True, default=generate_uuid)
     user_id = Column(String(36), ForeignKey("feishu_users.id"), nullable=False)
     
+    # 内部SKU
+    internal_sku = Column(String(100), unique=True, nullable=False)
+    
     # 基础信息
-    internal_sku = Column(String(100), unique=True, nullable=False)  # 内部SKU
     name_zh = Column(String(500), nullable=False)  # 中文商品名
     name_en = Column(String(500), nullable=True)  # 英文商品名
+    description = Column(Text, nullable=True)  # 商品描述（采集后填充）
+    
+    # 分类信息
+    category_id = Column(String(36), nullable=True)
+    category_name = Column(String(100), nullable=True)
     
     # 来源信息
     source_url = Column(String(500), nullable=True)  # 1688来源链接
+    source_id = Column(String(100), nullable=True)  # 1688商品ID
     supplier_name = Column(String(200), nullable=True)  # 供应商名称
     supplier_url = Column(String(500), nullable=True)  # 供应商链接
     
-    # 成本价格
+    # 采购成本
     cost_price = Column(Numeric(10, 2), default=0)  # 采购成本价
     domestic_shipping = Column(Numeric(10, 2), default=0)  # 国内运费
+    
+    # 物流信息
+    weight = Column(Numeric(10, 3), default=0)  # 商品重量(kg)
     first_mile_shipping = Column(Numeric(10, 2), default=0)  # 头程运费
     
     # 图片信息
@@ -44,16 +55,26 @@ class ERPProduct(Base):
     processed_images = Column(Text, nullable=True)  # 处理后图片JSON数组
     image_status = Column(String(20), default="pending")  # pending, processing, done, failed
     
+    # 销售信息
+    sale_title = Column(String(500), nullable=True)  # Listing标题
+    sale_description = Column(Text, nullable=True)  # Listing描述
+    sale_keywords = Column(Text, nullable=True)  # 销售关键词JSON数组
+    listing_status = Column(String(20), default="pending")  # pending, done
+    
+    # 定价信息
+    suggested_price = Column(Numeric(10, 2), default=0)  # 建议售价
+    target_profit_rate = Column(Numeric(5, 2), default=0.30)  # 目标利润率
+    
     # 合规信息
     compliance_status = Column(String(20), default="pending")  # pending, passed, failed
     compliance_check_result = Column(Text, nullable=True)  # 合规检查结果JSON
     
-    # 分类信息
-    category_id = Column(String(36), nullable=True)
-    category_name = Column(String(100), nullable=True)
-    
-    # 状态
+    # 状态（工作流状态）
+    workflow_status = Column(String(20), default="draft")  # draft, selected, collecting, processing, listing, pricing, ready, published
     status = Column(String(20), default="draft")  # draft, active, inactive, archived
+    
+    # 关联的选品ID
+    selection_id = Column(String(36), nullable=True)  # 关联的选品推荐ID
     
     # 时间戳
     created_at = Column(DateTime, server_default=func.now())
@@ -63,11 +84,45 @@ class ERPProduct(Base):
     platform_skus = relationship("PlatformSKU", back_populates="product", cascade="all, delete-orphan")
     inventory = relationship("Inventory", back_populates="product", uselist=False, cascade="all, delete-orphan")
     purchase_orders = relationship("PurchaseOrder", back_populates="product")
+    collection = relationship("Collection1688", back_populates="product", uselist=False)
     
     @property
     def total_cost(self):
         """总成本"""
         return float(self.cost_price or 0) + float(self.domestic_shipping or 0) + float(self.first_mile_shipping or 0)
+    
+    @property
+    def images_list(self):
+        """图片列表"""
+        if not self.images:
+            return []
+        try:
+            import json
+            return json.loads(self.images)
+        except:
+            return []
+    
+    @property
+    def processed_images_list(self):
+        """处理后图片列表"""
+        if not self.processed_images:
+            return []
+        try:
+            import json
+            return json.loads(self.processed_images)
+        except:
+            return []
+    
+    @property
+    def keywords_list(self):
+        """关键词列表"""
+        if not self.sale_keywords:
+            return []
+        try:
+            import json
+            return json.loads(self.sale_keywords)
+        except:
+            return []
 
 
 class PlatformSKU(Base):

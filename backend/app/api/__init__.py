@@ -25,6 +25,7 @@ from app.api.collection import router as collection_router
 from app.api.ai_agents import router as ai_agents_router
 from app.api.ai_agents_ex import router as ai_agents_ex_router
 from app.api.workflow import router as workflow_router
+from app.api.workflow_products import router as workflow_products_router
 from app.api.tiktok import router as tiktok_router
 
 api_router = APIRouter()
@@ -53,4 +54,5 @@ api_router.include_router(collection_router)
 api_router.include_router(ai_agents_router)
 api_router.include_router(ai_agents_ex_router)
 api_router.include_router(workflow_router)
+api_router.include_router(workflow_products_router)
 api_router.include_router(tiktok_router)

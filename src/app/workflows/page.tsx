@@ -98,7 +98,7 @@ interface CollectedProduct {
   price: number;
   images: string[];
   description: string;
-  specs: Record<string, string>;
+  weight?: number;
 }
 
 interface CollectionLink {
@@ -142,6 +142,9 @@ function WorkflowWizard({
 }) {
   const [currentStep, setCurrentStep] = useState(0);
   const [isExecuting, setIsExecuting] = useState(false);
+  
+  // 关联的商品库商品ID
+  const [productId, setProductId] = useState<string | null>(null);
   
   // 步骤1：选品参数
   const [productParams, setProductParams] = useState({
@@ -223,7 +226,7 @@ function WorkflowWizard({
     };
     
     try {
-      // 步骤0：选品 - 调用AI选品智能体
+      // 步骤0：选品 - 调用AI选品智能体，创建商品草稿
       if (currentStep === 0) {
         const res = await fetch('/api/v1/ai/select-products', {
           method: 'POST',
@@ -256,16 +259,56 @@ function WorkflowWizard({
             keywords: p.keywords || [p.name],
           }));
           setSelectedProducts(products);
+          
+          // 为选中的第一个商品创建商品草稿
+          const firstProduct = products[0];
+          try {
+            const draftRes = await fetch('/api/v1/workflow/products/draft', {
+              method: 'POST',
+              headers,
+              body: JSON.stringify({
+                name: firstProduct.name,
+                category: productParams.category,
+                platform: productParams.platform,
+                region: productParams.region,
+                source_link: firstProduct.sourceLink || '',
+                selection_id: firstProduct.id,
+              }),
+            });
+            const draftData = await draftRes.json();
+            if (draftData.success) {
+              setProductId(draftData.data.product_id);
+              toast.success('商品草稿创建成功！');
+            }
+          } catch (e) {
+            console.error('创建商品草稿失败:', e);
+          }
+          
           toast.success('AI选品完成！请添加货源链接');
         } else {
           toast.error(data.error || data.detail || '选品失败');
         }
       }
-      // 步骤1：采集链接 - 采集1688货源
+      // 步骤1：采集链接 - 采集1688货源，保存到商品库
       else if (currentStep === 1) {
         // 如果有采集链接，调用采集API
         const validLinks = collectionLinks.filter(l => l.status === 'completed' && l.product);
         if (validLinks.length > 0) {
+          // 更新商品库中的商品状态
+          if (productId) {
+            try {
+              await fetch('/api/v1/workflow/products/workflow-status', {
+                method: 'PUT',
+                headers,
+                body: JSON.stringify({
+                  product_id: productId,
+                  workflow_status: 'processing',
+                }),
+              });
+            } catch (e) {
+              console.error('更新商品状态失败:', e);
+            }
+          }
           toast.success(`已采集 ${validLinks.length} 个货源链接`);
         }
         // 如果没有采集链接，给出提示但允许跳过
@@ -273,7 +316,7 @@ function WorkflowWizard({
           toast.info('可跳过此步骤，后续可手动填写商品信息');
         }
       }
-      // 步骤2：优化Listing - 调用Listing优化智能体
+      // 步骤2：优化Listing - 调用Listing优化智能体，保存到商品库
       else if (currentStep === 2) {
         const selectedProduct = selectedProducts[0];
         // 获取采集的商品信息或使用选品结果
@@ -308,15 +351,35 @@ function WorkflowWizard({
             keyFeatures: Array.isArray(keyFeatures) ? keyFeatures : [],
             keywords: Array.isArray(keywords) ? keywords : [],
           });
+          
+          // 保存到商品库
+          if (productId) {
+            try {
+              await fetch('/api/v1/workflow/products/listing', {
+                method: 'PUT',
+                headers,
+                body: JSON.stringify({
+                  product_id: productId,
+                  sale_title: title,
+                  sale_description: description,
+                  sale_keywords: keywords,
+                }),
+              });
+            } catch (e) {
+              console.error('保存Listing失败:', e);
+            }
+          }
+          
           toast.success('Listing优化完成！');
         } else {
           toast.error(data.error || data.detail || 'Listing优化失败');
         }
       }
-      // 步骤3：翻译图片 - 调用图片处理智能体
+      // 步骤3：翻译图片 - 调用图片处理智能体，保存到商品库
       else if (currentStep === 3) {
         const collectedProduct = collectionLinks.find(l => l.status === 'completed')?.product;
         const selectedProduct = selectedProducts[0];
+        let finalImages: ProcessedImage[] = [];
         
         // 如果有采集的商品图片，调用图片处理API
         if (collectedProduct?.images && collectedProduct.images.length > 0) {
@@ -332,36 +395,92 @@ function WorkflowWizard({
           const data = await res.json();
           
           if (data.success && data.data) {
-            setProcessedImages([{
+            finalImages = [{
               id: '1',
               type: 'translated',
               url: data.data.processed_url || data.data.url || 'https://picsum.photos/400/400?random=1',
               status: 'completed',
-            }]);
+            }];
             toast.success('图片处理完成！');
           } else {
             // 图片处理失败，使用占位图
-            setProcessedImages([
+            finalImages = [
               { id: '1', type: 'original', url: collectedProduct.images[0], status: 'completed' },
               { id: '2', type: 'translated', url: 'https://picsum.photos/400/400?random=2', status: 'completed' },
-            ]);
+            ];
             toast.warning('图片处理稍有延迟，已使用原图');
           }
         } else {
           // 没有采集图片，使用示例图片
-          setProcessedImages([
+          finalImages = [
             { id: '1', type: 'original', url: 'https://picsum.photos/400/400?random=1', status: 'completed' },
             { id: '2', type: 'translated', url: 'https://picsum.photos/400/400?random=2', status: 'completed' },
             { id: '3', type: 'white_bg', url: 'https://picsum.photos/400/400?random=3', status: 'completed' },
-          ]);
+          ];
           toast.info('已使用示例图片，可后续替换');
         }
+        
+        setProcessedImages(finalImages);
+        
+        // 保存图片到商品库
+        if (productId && finalImages.length > 0) {
+          try {
+            await fetch('/api/v1/workflow/products/images', {
+              method: 'PUT',
+              headers,
+              body: JSON.stringify({
+                product_id: productId,
+                processed_images: finalImages.map(img => img.url),
+                image_status: 'done',
+              }),
+            });
+          } catch (e) {
+            console.error('保存图片失败:', e);
+          }
+        }
       }
-      // 步骤4：智能定价 - 调用定价计算
+      // 步骤4：智能定价 - 调用定价计算，保存到商品库
       else if (currentStep === 4) {
         const selectedProduct = selectedProducts[0];
         const collectedProduct = collectionLinks.find(l => l.status === 'completed')?.product;
-        const costPrice = collectedProduct?.price || selectedProduct?.cost || 68;
+        
+        // 从商品库获取成本信息
+        let costPrice = collectedProduct?.price || selectedProduct?.cost || 68;
+        let weight = collectedProduct?.weight || 0.5;
+        
+        if (productId) {
+          try {
+            const productRes = await fetch(`/api/v1/workflow/products/${productId}`);
+            const productData = await productRes.json();
+            if (productData.success && productData.data) {
+              const p = productData.data;
+              if (p.cost_price) costPrice = p.cost_price;
+              if (p.collection?.weight) weight = p.collection.weight;
+              if (p.weight) weight = p.weight;
+              // 如果商品库有采集数据，更新采集商品
+              if (p.collection && !collectedProduct) {
+                setCollectionLinks([{
+                  id: '1',
+                  url: p.source_url,
+                  source: '1688' as const,
+                  status: 'completed' as const,
+                  product: {
+                    id: p.id,
+                    sourceUrl: p.source_url,
+                    source: '1688',
+                    name: p.name_zh,
+                    price: p.cost_price,
+                    images: p.images || [],
+                    description: p.description || '',
+                    weight: p.weight,
+                  },
+                }]);
+              }
+            }
+          } catch (e) {
+            console.error('获取商品详情失败:', e);
+          }
+        }
         
         const res = await fetch('/api/v1/ai/calculate-price', {
           method: 'POST',
@@ -390,13 +509,46 @@ function WorkflowWizard({
             suggestedPrice: result.suggested_price || result.target_price || 0,
             profitRate: profitAnalysis.profit_rate || 0,
           });
+          
+          // 保存定价到商品库
+          if (productId && result.suggested_price) {
+            try {
+              await fetch('/api/v1/workflow/products/pricing', {
+                method: 'PUT',
+                headers,
+                body: JSON.stringify({
+                  product_id: productId,
+                  suggested_price: result.suggested_price || result.target_price || 0,
+                  target_profit_rate: 0.30,
+                }),
+              });
+            } catch (e) {
+              console.error('保存定价失败:', e);
+            }
+          }
+          
           toast.success('定价计算完成！');
         } else {
           toast.error(data.error || data.detail || '定价计算失败');
         }
       }
-      // 步骤5：确认上架
+      // 步骤5：确认上架 - 更新商品状态为ready
       else if (currentStep === 5) {
+        // 更新商品状态为ready
+        if (productId) {
+          try {
+            await fetch('/api/v1/workflow/products/workflow-status', {
+              method: 'PUT',
+              headers,
+              body: JSON.stringify({
+                product_id: productId,
+                workflow_status: 'ready',
+              }),
+            });
+          } catch (e) {
+            console.error('更新商品状态失败:', e);
+          }
+        }
         setPublishReady(true);
         toast.success('所有步骤完成，请确认上架信息！');
       }
