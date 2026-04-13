@@ -271,6 +271,14 @@ coze dev
 |------|------|------|
 | `/api/dashboard/stats` | GET | 控制台统计数据 |
 
+### 平台配置API
+| 路由 | 方法 | 功能 |
+|------|------|------|
+| `/api/v1/platforms` | GET | 获取所有平台配置 |
+| `/api/v1/platforms` | POST | 保存平台配置 |
+| `/api/v1/platforms/[platform_id]/test` | POST | 测试平台连接 |
+| `/api/v1/platforms/[platform_id]` | DELETE | 删除平台配置 |
+
 ### 飞书集成API路由
 | 路由 | 方法 | 功能 |
 |------|------|------|

@@ -201,3 +201,39 @@ class FeishuConfigUpdate(BaseModel):
     app_secret: str = Field(..., description="飞书App Secret")
     encrypt_key: Optional[str] = Field(None, description="加密Key")
     verification_token: Optional[str] = Field(None, description="验证Token")
+
+
+# ===========================================
+# 平台配置相关
+# ===========================================
+class PlatformCredentials(BaseModel):
+    """平台凭据"""
+    api_key: Optional[str] = Field(None, description="API Key")
+    api_secret: Optional[str] = Field(None, description="API Secret")
+    webhook_secret: Optional[str] = Field(None, description="Webhook Secret")
+
+
+class PlatformConfigUpdate(BaseModel):
+    """平台配置更新"""
+    platform: str = Field(..., description="平台ID")
+    credentials: PlatformCredentials = Field(..., description="平台凭据")
+
+
+class PlatformConfigResponse(BaseModel):
+    """平台配置响应"""
+    id: str
+    name: str
+    icon: str
+    color: str
+    api_doc_url: Optional[str] = None
+    regions: list[str] = []
+    currencies: list[str] = []
+    has_credentials: bool = False
+    credentials: Optional[PlatformCredentials] = None
+    status: str = "unconfigured"
+    last_updated: Optional[str] = None
+
+
+class PlatformConfigListResponse(BaseModel):
+    """平台配置列表响应"""
+    platforms: dict[str, PlatformConfigResponse]

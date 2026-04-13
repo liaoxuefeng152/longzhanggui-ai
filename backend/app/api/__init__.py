@@ -13,6 +13,7 @@ from app.api.feishu_users import router as feishu_users_router
 from app.api.packages import router as packages_router
 from app.api.task_logs import router as task_logs_router
 from app.api.platform_bindings import router as platform_bindings_router
+from app.api.platforms import router as platforms_router
 from app.api.products import router as products_router
 from app.api.orders import router as orders_router
 from app.api.tickets import router as tickets_router
@@ -39,6 +40,7 @@ api_router.include_router(feishu_users_router)
 api_router.include_router(packages_router)
 api_router.include_router(task_logs_router)
 api_router.include_router(platform_bindings_router)
+api_router.include_router(platforms_router)
 api_router.include_router(products_router)
 api_router.include_router(orders_router)
 api_router.include_router(tickets_router)
