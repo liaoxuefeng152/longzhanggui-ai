@@ -478,42 +478,48 @@ function WorkflowWizard({
           <div>
             <p className="font-medium text-blue-800">
               {currentStep === 0 && '选品智能体分析中...'}
-              {currentStep === 1 && '选品智能体分析中...'}
-              {currentStep === 2 && 'Listing优化智能体 + 图片处理中...'}
-              {currentStep === 3 && '智能定价计算中...'}
+              {currentStep === 1 && '采集货源链接中...'}
+              {currentStep === 2 && 'Listing优化智能体分析中...'}
+              {currentStep === 3 && '图片处理智能体处理中...'}
+              {currentStep === 4 && '智能定价计算中...'}
+              {currentStep === 5 && '准备上架...'}
             </p>
             <p className="text-sm text-blue-600">请稍候，AI正在处理...</p>
           </div>
         </div>
       )}
       
-      {/* 步骤指示器 */}
-      <div className="flex items-center justify-between">
-        {steps.map((step, index) => (
-          <div key={step.id} className="flex items-center">
-            <div className={`
-              flex items-center justify-center w-10 h-10 rounded-full border-2
-              ${index < currentStep ? 'bg-green-500 border-green-500 text-white' : ''}
-              ${index === currentStep ? 'bg-primary border-primary text-white' : ''}
-              ${index > currentStep ? 'bg-muted border-muted-foreground text-muted-foreground' : ''}
-            `}>
-              {index < currentStep ? (
-                <Check className="h-5 w-5" />
-              ) : (
-                step.icon
+      {/* 步骤指示器 - 横向滚动 */}
+      <div className="overflow-x-auto pb-2">
+        <div className="flex items-center min-w-max">
+          {steps.map((step, index) => (
+            <div key={step.id} className="flex items-center">
+              <div className={`
+                flex items-center justify-center w-10 h-10 rounded-full border-2 shrink-0
+                ${index < currentStep ? 'bg-green-500 border-green-500 text-white' : ''}
+                ${index === currentStep ? 'bg-primary border-primary text-white' : ''}
+                ${index > currentStep ? 'bg-muted border-muted-foreground text-muted-foreground' : ''}
+              `}>
+                {index < currentStep ? (
+                  <Check className="h-5 w-5" />
+                ) : (
+                  step.icon
+                )}
+              </div>
+              <span className={`
+                ml-2 text-sm font-medium shrink-0
+                ${index === currentStep ? 'text-primary' : 'text-muted-foreground'}
+              `}>
+                {step.name}
+              </span>
+              {index < steps.length - 1 && (
+                <div className={`h-0.5 w-8 mx-2 shrink-0 ${
+                  index < currentStep ? 'bg-green-500' : 'bg-muted-foreground/30'
+                }`} />
               )}
             </div>
-            <span className={`
-              ml-2 text-sm font-medium
-              ${index === currentStep ? 'text-primary' : 'text-muted-foreground'}
-            `}>
-              {step.name}
-            </span>
-            {index < steps.length - 1 && (
-              <ArrowRight className="h-4 w-4 mx-4 text-muted-foreground" />
-            )}
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
 
       {/* 步骤内容 */}
@@ -521,19 +527,19 @@ function WorkflowWizard({
         <CardHeader>
           <CardTitle className="text-lg flex items-center gap-2">
             {currentStep === 0 && '步骤1：设置选品参数'}
-            {currentStep === 1 && '步骤2：选品智能体分析'}
-            {currentStep === 2 && '步骤3：图片处理 + Listing优化'}
-            {currentStep === 3 && '步骤4：智能定价'}
-            {currentStep === 4 && '步骤5：确认上架'}
-            {currentStep === 5 && '步骤6：完成'}
+            {currentStep === 1 && '步骤2：采集货源链接'}
+            {currentStep === 2 && '步骤3：优化Listing'}
+            {currentStep === 3 && '步骤4：翻译图片'}
+            {currentStep === 4 && '步骤5：智能定价'}
+            {currentStep === 5 && '步骤6：确认上架'}
           </CardTitle>
           <CardDescription>
-            {currentStep === 0 && '设置要分析的品类和平台'}
-            {currentStep === 1 && '选品智能体正在分析市场需求、竞争程度、利润空间...'}
-            {currentStep === 2 && '图片处理智能体处理图片 + Listing优化智能体生成内容'}
-            {currentStep === 3 && '智能定价工具计算最优售价'}
-            {currentStep === 4 && '确认所有信息后提交上架'}
-            {currentStep === 5 && '商品上架成功！'}
+            {currentStep === 0 && '设置要分析的品类和平台，AI将推荐最适合的商品'}
+            {currentStep === 1 && '粘贴1688/淘宝/拼多多货源链接，采集商品信息'}
+            {currentStep === 2 && 'AI智能生成标题、描述、关键词等Listing内容'}
+            {currentStep === 3 && 'AI处理商品图片：翻译文字、去除水印、生成白底图'}
+            {currentStep === 4 && '根据成本、物流、佣金计算最优售价'}
+            {currentStep === 5 && '确认所有信息后提交上架'}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -677,40 +683,114 @@ function WorkflowWizard({
             </div>
           )}
 
-          {/* 步骤3：图片处理 */}
-          {currentStep === 2 && (
+          {/* 步骤2：采集链接 */}
+          {currentStep === 1 && (
             <div className="space-y-4">
-              {processedImages.length === 0 ? (
-                <div className="text-center py-8">
-                  <Loader2 className="h-8 w-8 mx-auto animate-spin text-primary" />
-                  <p className="mt-2 text-muted-foreground">正在处理图片：翻译、去水印、白底...</p>
+              {/* 采集链接输入 */}
+              <div className="flex gap-2">
+                <Input 
+                  placeholder="粘贴1688/淘宝/拼多多商品链接，如: https://detail.1688.com/offer/xxx.html"
+                  id="collect-url"
+                  className="flex-1"
+                />
+                <Button 
+                  onClick={() => {
+                    const input = document.getElementById('collect-url') as HTMLInputElement;
+                    if (input?.value) {
+                      addCollectionLink(input.value);
+                      input.value = '';
+                    }
+                  }}
+                >
+                  <Plus className="h-4 w-4 mr-1" /> 添加
+                </Button>
+              </div>
+              
+              {/* 采集链接列表 */}
+              {collectionLinks.length === 0 ? (
+                <div className="text-center py-8 border-2 border-dashed rounded-lg">
+                  <Truck className="h-12 w-12 mx-auto text-muted-foreground/50 mb-3" />
+                  <p className="text-muted-foreground">暂无采集链接</p>
+                  <p className="text-sm text-muted-foreground/70 mt-1">
+                    添加1688等货源链接，采集商品信息
+                  </p>
+                  <p className="text-xs text-muted-foreground/50 mt-2">
+                    支持1688、淘宝、拼多多平台
+                  </p>
                 </div>
               ) : (
-                <div className="grid grid-cols-3 gap-4">
-                  {processedImages.map((img) => (
-                    <div key={img.id} className="space-y-2">
-                      <div className="aspect-square bg-muted rounded-lg overflow-hidden">
-                        <img src={img.url} alt={img.type} className="w-full h-full object-cover" />
+                <div className="space-y-3">
+                  {collectionLinks.map((link) => (
+                    <div key={link.id} className="flex items-center gap-3 p-3 border rounded-lg">
+                      <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                        {link.source === '1688' && <span className="text-orange-500 font-bold text-sm">1688</span>}
+                        {link.source === 'taobao' && <span className="text-orange-400 font-bold text-sm">淘</span>}
+                        {link.source === 'pinduoduo' && <span className="text-pink-500 font-bold text-sm">拼</span>}
                       </div>
-                      <div className="text-center">
-                        <Badge variant="outline" className="text-xs">
-                          {img.type === 'original' && '原图'}
-                          {img.type === 'translated' && '翻译后'}
-                          {img.type === 'white_bg' && '白底图'}
-                        </Badge>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{link.url}</p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <Badge 
+                            variant={
+                              link.status === 'completed' ? 'default' : 
+                              link.status === 'collecting' ? 'secondary' :
+                              link.status === 'failed' ? 'destructive' : 'outline'
+                            }
+                            className="text-xs"
+                          >
+                            {link.status === 'pending' && '待采集'}
+                            {link.status === 'collecting' && '采集中...'}
+                            {link.status === 'completed' && '已采集'}
+                            {link.status === 'failed' && '失败'}
+                          </Badge>
+                          {link.product && (
+                            <span className="text-xs text-muted-foreground">
+                              {link.product.name} - ¥{link.product.price}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {link.status === 'pending' && (
+                          <Button size="sm" variant="outline" onClick={() => collectLink(link.id)}>
+                            <Truck className="h-3 w-3 mr-1" /> 采集
+                          </Button>
+                        )}
+                        {link.status === 'collecting' && (
+                          <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                        )}
+                        <Button size="sm" variant="ghost" onClick={() => removeCollectionLink(link.id)}>
+                          <X className="h-4 w-4" />
+                        </Button>
                       </div>
                     </div>
                   ))}
                 </div>
               )}
+              
+              {/* 采集提示 */}
+              {collectionLinks.length > 0 && collectionLinks.every(l => l.status !== 'completed') && (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                  <p className="text-sm text-yellow-800">
+                    <AlertTriangle className="h-4 w-4 inline mr-1" />
+                    请至少采集一个货源链接，或跳过此步骤
+                  </p>
+                </div>
+              )}
             </div>
           )}
 
-          {/* 步骤4：Listing生成 */}
-          {currentStep === 3 && (
+          {/* 步骤3：优化Listing */}
+          {currentStep === 2 && (
             <div className="space-y-4">
               {listing.title ? (
                 <>
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                    <p className="text-sm text-green-800">
+                      <CheckCircle className="h-4 w-4 inline mr-1" />
+                      Listing优化完成！AI已生成标题、描述和关键词
+                    </p>
+                  </div>
                   <div className="space-y-2">
                     <Label>商品标题</Label>
                     <Input value={listing.title} onChange={(e) => setListing({ ...listing, title: e.target.value })} />
@@ -741,7 +821,44 @@ function WorkflowWizard({
             </div>
           )}
 
-          {/* 步骤5：定价 */}
+          {/* 步骤4：翻译图片 */}
+          {currentStep === 3 && (
+            <div className="space-y-4">
+              {processedImages.length === 0 ? (
+                <div className="text-center py-8">
+                  <Loader2 className="h-8 w-8 mx-auto animate-spin text-primary" />
+                  <p className="mt-2 text-muted-foreground">正在处理图片：翻译、去水印、白底...</p>
+                </div>
+              ) : (
+                <>
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                    <p className="text-sm text-green-800">
+                      <CheckCircle className="h-4 w-4 inline mr-1" />
+                      图片处理完成！
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-3 gap-4">
+                    {processedImages.map((img) => (
+                      <div key={img.id} className="space-y-2">
+                        <div className="aspect-square bg-muted rounded-lg overflow-hidden">
+                          <img src={img.url} alt={img.type} className="w-full h-full object-cover" />
+                        </div>
+                        <div className="text-center">
+                          <Badge variant="outline" className="text-xs">
+                            {img.type === 'original' && '原图'}
+                            {img.type === 'translated' && '翻译后'}
+                            {img.type === 'white_bg' && '白底图'}
+                          </Badge>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
+          {/* 步骤5：智能定价 */}
           {currentStep === 4 && (
             <div className="space-y-4">
               {priceSuggestion ? (
