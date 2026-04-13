@@ -752,7 +752,7 @@ collection_1688_service = Collection1688Service()
 # 搜索页采集相关方法
 async def collect_from_search_page(url: str, max_items: int = 10) -> Dict[str, Any]:
     """
-    从1688搜索页批量采集商品
+    从1688搜索页批量采集商品（使用Playwright浏览器自动化）
     
     Args:
         url: 搜索页URL
@@ -761,66 +761,181 @@ async def collect_from_search_page(url: str, max_items: int = 10) -> Dict[str, A
     Returns:
         包含商品链接列表的结果
     """
-    from bs4 import BeautifulSoup
-    import httpx
+    import re
     
-    headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-        "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
-    }
+    logger.info(f"使用Playwright采集搜索页: {url}")
     
     try:
-        async with httpx.AsyncClient(headers=headers, timeout=30.0, follow_redirects=True) as client:
-            response = await client.get(url)
-            response.raise_for_status()
+        # 使用异步方式运行Playwright
+        from playwright.async_api import async_playwright
+        
+        async with async_playwright() as p:
+            # 启动Chromium浏览器，禁用webdriver属性
+            browser = await p.chromium.launch(
+                headless=True,
+                executable_path="/root/.cache/ms-playwright/chromium-1208/chrome-linux64/chrome",
+                args=[
+                    '--disable-blink-features=AutomationControlled',
+                    '--disable-web-security',
+                    '--no-sandbox',
+                    '--disable-setuid-sandbox',
+                    '--disable-dev-shm-using',
+                    '--disable-accelerated-2d-canvas',
+                    '--no-first-run',
+                    '--no-zygote',
+                    '--disable-gpu',
+                    '--window-size=1920,1080',
+                ]
+            )
             
-            soup = BeautifulSoup(response.text, 'html.parser')
+            context = await browser.new_context(
+                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                viewport={"width": 1920, "height": 1080},
+                locale="zh-CN",
+                timezone_id="Asia/Shanghai",
+                # 添加更多浏览器属性以绕过检测
+                extra_http_headers={
+                    "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
+                    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+                }
+            )
+            
+            # 阻止检测脚本
+            await context.add_init_script("""
+                Object.defineProperty(navigator, 'webdriver', {
+                    get: () => undefined
+                });
+                window.navigator.chrome = {
+                    runtime: {}
+                };
+                Object.defineProperty(navigator, 'plugins', {
+                    get: () => [1, 2, 3, 4, 5]
+                });
+                Object.defineProperty(navigator, 'languages', {
+                    get: () => ['zh-CN', 'zh', 'en']
+                });
+            """)
+            
+            page = await context.new_page()
+            
+            # 设置超时
+            page.set_default_timeout(60000)
+            
+            # 访问搜索页
+            logger.info(f"正在访问搜索页...")
+            await page.goto(url, wait_until="domcontentloaded", timeout=30000)
+            
+            # 等待更长时间让内容加载
+            await page.wait_for_timeout(5000)
+            
+            # 模拟人类滚动
+            await page.evaluate("window.scrollBy(0, 300)")
+            await page.wait_for_timeout(500)
+            
+            # 获取页面内容检查
+            page_title = await page.title()
+            logger.info(f"页面标题: {page_title}")
+            
+            # 检查是否被拦截
+            if "captcha" in page_title.lower() or "验证" in page_title:
+                logger.warning("页面被验证码拦截，尝试其他方法")
+                # 尝试从页面数据中提取
+                page_content = await page.content()
+                
+                # 尝试从script标签提取商品数据
+                scripts = await page.query_selector_all("script")
+                for script in scripts:
+                    content = await script.inner_text()
+                    if content and ('window.__INITIAL_STATE__' in content or 'offerList' in content or 'offer_list' in content):
+                        # 提取offer ID
+                        offer_ids = re.findall(r'"offerId"\s*:\s*"?(\d{8,})"?', content)
+                        if offer_ids:
+                            product_links = [f'https://detail.1688.com/offer/{oid}.html' for oid in offer_ids[:max_items]]
+                            logger.info(f"从脚本中找到 {len(product_links)} 个商品")
+                            await browser.close()
+                            return {
+                                "success": True,
+                                "total": len(product_links),
+                                "links": product_links,
+                                "source_url": url
+                            }
+                
+                # 尝试从JSON数据提取
+                json_data = await page.evaluate("""
+                    () => {
+                        const scripts = document.querySelectorAll('script');
+                        for (const script of scripts) {
+                            const content = script.textContent;
+                            if (content && content.includes('offerId')) {
+                                const match = content.match(/"offerId"\\s*:\\s*"(\\d+)"/g);
+                                if (match) {
+                                    return match.map(m => {
+                                        const id = m.match(/\\d+/)[0];
+                                        return 'https://detail.1688.com/offer/' + id + '.html';
+                                    });
+                                }
+                            }
+                        }
+                        return [];
+                    }
+                """)
+                
+                if json_data:
+                    await browser.close()
+                    return {
+                        "success": True,
+                        "total": len(json_data),
+                        "links": json_data[:max_items],
+                        "source_url": url
+                    }
             
             # 提取商品链接
             product_links = []
             
-            # 方式1: 查找商品列表中的链接
-            # 1688搜索结果页使用多种选择器
-            selectors = [
-                '.item-content .title a',
-                '.offer-item .title a', 
-                '[class*="offer"] a[href*="detail.1688.com"]',
-                'a[href*="offer/"][href*=".html"]',
-                '.product-item .title a',
-                '.search-product-item a',
-                '[class*="product"] a[href*="1688"]',
+            # 1688搜索结果页的多种链接模式
+            link_patterns = [
+                '.offer-item .title a',
+                '.offer-item a.title',
+                '[class*="offer-item"] a',
+                '.search-product a[href*="1688"]',
+                'a[href*="detail.1688.com/offer"]',
+                '[data-offer-id]',
             ]
             
-            for selector in selectors:
-                links = soup.select(selector)
+            for selector in link_patterns:
+                links = await page.query_selector_all(selector)
                 for link in links:
-                    href = link.get('href') or link.get('data-url')
+                    href = await link.get_attribute('href')
                     if href:
-                        # 确保是完整的1688详情页链接
                         if 'detail.1688.com' in href or 'offer/' in href:
                             if href.startswith('//'):
                                 href = 'https:' + href
+                            href = re.sub(r'\?.*$', '', href)
                             if href not in product_links:
                                 product_links.append(href)
                 
                 if product_links:
+                    logger.info(f"使用选择器 {selector} 找到 {len(product_links)} 个链接")
                     break
             
-            # 方式2: 从script/json数据中提取
+            # 尝试从data属性提取
             if not product_links:
-                scripts = soup.find_all('script')
-                for script in scripts:
-                    content = script.string
-                    if content and ('offerList' in content or 'offer_list' in content):
-                        # 尝试提取JSON数据中的链接
-                        import json
-                        import re
-                        # 匹配offer/数字.html格式
-                        offers = re.findall(r'["\']?(https?://[^"\']*offer/\d+\.html[^"\']*)["\']?', content)
-                        for offer_url in offers:
-                            if offer_url not in product_links:
-                                product_links.append(offer_url)
+                offer_ids = await page.evaluate("""
+                    () => {
+                        const ids = [];
+                        document.querySelectorAll('[data-offer-id]').forEach(el => {
+                            const id = el.getAttribute('data-offer-id');
+                            if (id && id.length > 6) ids.push(id);
+                        });
+                        return ids;
+                    }
+                """)
+                
+                if offer_ids:
+                    product_links = [f'https://detail.1688.com/offer/{oid}.html' for oid in offer_ids[:max_items]]
+                    logger.info(f"从data属性找到 {len(product_links)} 个商品")
+            
+            await browser.close()
             
             # 去重并限制数量
             product_links = list(dict.fromkeys(product_links))[:max_items]
@@ -835,7 +950,7 @@ async def collect_from_search_page(url: str, max_items: int = 10) -> Dict[str, A
             }
             
     except Exception as e:
-        logger.error(f"搜索页采集失败: {e}")
+        logger.error(f"Playwright搜索页采集失败: {e}")
         return {
             "success": False,
             "error": str(e),
