@@ -7,9 +7,10 @@ export default function Home() {
   const router = useRouter();
 
   useEffect(() => {
-    // 检查用户是否已登录
+    // 检查用户是否已登录（同时检查 user 和 token）
     const user = localStorage.getItem('user');
-    if (user) {
+    const token = localStorage.getItem('token');
+    if (user && token) {
       router.push('/dashboard');
     } else {
       router.push('/login');

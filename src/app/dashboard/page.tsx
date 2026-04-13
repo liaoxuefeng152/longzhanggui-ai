@@ -122,10 +122,22 @@ export default function DashboardPage() {
   const fetchStats = async () => {
     setIsLoading(true);
     try {
+      // 检查是否有 token
+      const token = localStorage.getItem('token');
+      if (!token) {
+        console.error('未登录或登录已过期');
+        router.push('/login');
+        return;
+      }
+      
       const data = await getDashboardStats();
       setStats(data);
-    } catch (error) {
+    } catch (error: any) {
       console.error('获取统计数据失败:', error);
+      // 如果是认证错误，重定向到登录页
+      if (error.message?.includes('401') || error.message?.includes('403') || error.message?.includes('Not authenticated')) {
+        router.push('/login');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -133,7 +145,8 @@ export default function DashboardPage() {
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
-    if (!userData) {
+    const token = localStorage.getItem('token');
+    if (!userData || !token) {
       router.push('/login');
       return;
     }

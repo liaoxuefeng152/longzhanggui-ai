@@ -27,6 +27,10 @@ export interface DashboardStats {
  * 获取控制台统计数据
  */
 export async function getDashboardStats(): Promise<DashboardStats> {
-  const response = await apiClient.get<{ success: boolean; data: DashboardStats }>(API_ENDPOINTS.dashboard.stats);
-  return response.data;
+  const response = await apiClient.get<{ success?: boolean; data?: DashboardStats } | DashboardStats>(API_ENDPOINTS.dashboard.stats);
+  // 兼容两种响应格式：{ success, data } 或直接返回 data
+  if ('data' in response && response.data) {
+    return response.data;
+  }
+  return response as DashboardStats;
 }

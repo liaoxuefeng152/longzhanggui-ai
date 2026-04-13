@@ -95,9 +95,14 @@ const nextConfig: NextConfig = {
         source: '/api/v1/agents/:path*',
         destination: `${backendUrl}/api/v1/agents/:path*`,
       },
-      // 认证API - 后端处理
+      // 认证API - 后端处理（添加无v1前缀的映射）
       {
         source: '/api/v1/auth/:path*',
+        destination: `${backendUrl}/api/v1/auth/:path*`,
+      },
+      // 认证API（无v1前缀） - 映射到后端v1版本
+      {
+        source: '/api/auth/:path*',
         destination: `${backendUrl}/api/v1/auth/:path*`,
       },
       // 模型管理API - 前端处理（本地存储，开发模式）
