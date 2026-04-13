@@ -435,6 +435,7 @@ class Collection1688(Base):
     description = Column(Text, nullable=True)
     supplier_name = Column(String(200), nullable=True)
     supplier_rating = Column(Numeric(3, 2), default=0)
+    weight = Column(Numeric(10, 3), default=0)  # 商品重量(kg)
     
     # 状态
     status = Column(String(20), default="pending")  # pending, success, failed
