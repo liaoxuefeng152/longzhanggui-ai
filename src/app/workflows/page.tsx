@@ -14,6 +14,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { toast } from 'sonner';
 import {
   Dialog,
@@ -621,6 +628,8 @@ export default function WorkflowsPage() {
   const [user, setUser] = useState<any>(null);
   const [showWizard, setShowWizard] = useState(false);
   const [executionResult, setExecutionResult] = useState<any>(null);
+  const [showBatchProcess, setShowBatchProcess] = useState(false);
+  const [showBatchPricing, setShowBatchPricing] = useState(false);
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -692,7 +701,7 @@ export default function WorkflowsPage() {
             </CardContent>
           </Card>
           
-          <Card className="hover:shadow-md transition-shadow cursor-pointer">
+          <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => setShowBatchProcess(true)}>
             <CardContent className="pt-6">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
@@ -706,7 +715,7 @@ export default function WorkflowsPage() {
             </CardContent>
           </Card>
           
-          <Card className="hover:shadow-md transition-shadow cursor-pointer">
+          <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => setShowBatchPricing(true)}>
             <CardContent className="pt-6">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
@@ -775,7 +784,556 @@ export default function WorkflowsPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* 批量处理对话框 */}
+      <BatchProcessDialog 
+        open={showBatchProcess} 
+        onClose={() => setShowBatchProcess(false)} 
+      />
+
+      {/* 批量定价对话框 */}
+      <BatchPricingDialog 
+        open={showBatchPricing} 
+        onClose={() => setShowBatchPricing(false)} 
+      />
     </MainLayout>
+  );
+}
+
+// 批量处理对话框组件
+function BatchProcessDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const [mode, setMode] = useState<'collect' | 'image'>('collect');
+  const [urls, setUrls] = useState('');
+  const [imageUrls, setImageUrls] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [results, setResults] = useState<any[]>([]);
+  const [processMode, setProcessMode] = useState<'translate' | 'white_bg' | 'optimize'>('translate');
+  const [targetLang, setTargetLang] = useState('th');
+
+  const handleCollect = async () => {
+    const urlList = urls.split('\n').filter(u => u.trim());
+    if (urlList.length === 0) {
+      toast.error('请输入至少一个1688商品链接');
+      return;
+    }
+
+    setIsProcessing(true);
+    try {
+      const response = await fetch('/api/v1/1688/collect/batch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ urls: urlList }),
+      });
+      const data = await response.json();
+      if (data.success) {
+        setResults(data.items || []);
+        toast.success(`成功采集 ${data.items?.length || 0} 个商品`);
+      } else {
+        toast.error(data.detail || '采集失败');
+      }
+    } catch (error) {
+      console.error('采集失败:', error);
+      toast.error('采集失败，请检查链接格式');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleProcessImages = async () => {
+    const imageList = imageUrls.split('\n').filter(u => u.trim());
+    if (imageList.length === 0) {
+      toast.error('请输入至少一个图片URL');
+      return;
+    }
+
+    setIsProcessing(true);
+    try {
+      const response = await fetch('/api/v1/ai/process-image/batch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          image_urls: imageList,
+          mode: processMode,
+          source_language: 'zh',
+          target_language: targetLang,
+        }),
+      });
+      const data = await response.json();
+      if (data.success) {
+        setResults(data.data?.results || []);
+        toast.success(`成功处理 ${data.data?.results?.length || 0} 张图片`);
+      } else {
+        toast.error(data.detail || '处理失败');
+      }
+    } catch (error) {
+      console.error('图片处理失败:', error);
+      toast.error('图片处理失败');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleReset = () => {
+    setUrls('');
+    setImageUrls('');
+    setResults([]);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>批量处理</DialogTitle>
+          <DialogDescription>
+            批量采集1688商品或批量处理商品图片
+          </DialogDescription>
+        </DialogHeader>
+
+        <Tabs value={mode} onValueChange={(v) => setMode(v as 'collect' | 'image')}>
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="collect">批量采集</TabsTrigger>
+            <TabsTrigger value="image">图片处理</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="collect" className="space-y-4">
+            <div>
+              <Label htmlFor="urls">1688商品链接（每行一个）</Label>
+              <Textarea
+                id="urls"
+                placeholder={`https://detail.1688.com/offer/123456789.html\nhttps://detail.1688.com/offer/987654321.html`}
+                value={urls}
+                onChange={(e) => setUrls(e.target.value)}
+                rows={6}
+                className="mt-2 font-mono text-sm"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                支持多个1688商品链接，每行一个
+              </p>
+            </div>
+            <Button onClick={handleCollect} disabled={isProcessing} className="w-full">
+              {isProcessing ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  采集中...
+                </>
+              ) : (
+                <>
+                  <Package className="h-4 w-4 mr-2" />
+                  开始采集
+                </>
+              )}
+            </Button>
+          </TabsContent>
+
+          <TabsContent value="image" className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>处理模式</Label>
+                <Select value={processMode} onValueChange={(v) => setProcessMode(v as any)}>
+                  <SelectTrigger className="mt-2">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="translate">翻译优化</SelectItem>
+                    <SelectItem value="white_bg">白底图</SelectItem>
+                    <SelectItem value="optimize">AI优化</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>目标语言</Label>
+                <Select value={targetLang} onValueChange={setTargetLang}>
+                  <SelectTrigger className="mt-2">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="th">泰语</SelectItem>
+                    <SelectItem value="id">印尼语</SelectItem>
+                    <SelectItem value="vi">越南语</SelectItem>
+                    <SelectItem value="en">英语</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div>
+              <Label htmlFor="imageUrls">图片URL（每行一个）</Label>
+              <Textarea
+                id="imageUrls"
+                placeholder={`https://cbu01.alicdn.com/img/ibank/xxx.jpg\nhttps://cbu01.alicdn.com/img/ibank/yyy.jpg`}
+                value={imageUrls}
+                onChange={(e) => setImageUrls(e.target.value)}
+                rows={6}
+                className="mt-2 font-mono text-sm"
+              />
+            </div>
+            <Button onClick={handleProcessImages} disabled={isProcessing} className="w-full">
+              {isProcessing ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  处理中...
+                </>
+              ) : (
+                <>
+                  <Image className="h-4 w-4 mr-2" />
+                  开始处理
+                </>
+              )}
+            </Button>
+          </TabsContent>
+        </Tabs>
+
+        {results.length > 0 && (
+          <div className="mt-4">
+            <div className="flex items-center justify-between mb-2">
+              <Label>处理结果</Label>
+              <Button variant="ghost" size="sm" onClick={handleReset}>
+                <RefreshCw className="h-4 w-4 mr-1" />
+                清除
+              </Button>
+            </div>
+            <div className="border rounded-lg max-h-[200px] overflow-y-auto">
+              {results.map((item, index) => (
+                <div key={index} className="p-3 border-b last:border-b-0 flex items-center gap-3">
+                  {item.success !== false ? (
+                    <CheckCircle className="h-4 w-4 text-green-500 shrink-0" />
+                  ) : (
+                    <X className="h-4 w-4 text-red-500 shrink-0" />
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm truncate">
+                      {item.name || item.source_url || item.original_url || `图片 ${index + 1}`}
+                    </p>
+                    {item.error && (
+                      <p className="text-xs text-red-500">{item.error}</p>
+                    )}
+                    {item.processed_url && (
+                      <p className="text-xs text-green-500">处理完成</p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>关闭</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// 批量定价对话框组件
+function BatchPricingDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const [products, setProducts] = useState<Array<{
+    id: string;
+    name: string;
+    costPrice: number;
+    domesticShipping: number;
+    firstMileShipping: number;
+    competitorPrice?: number;
+  }>>([]);
+  const [pricingParams, setPricingParams] = useState({
+    platformFeeRate: 0.06,
+    adBudgetRate: 0.05,
+    targetProfitRate: 0.20,
+  });
+  const [isCalculating, setIsCalculating] = useState(false);
+  const [results, setResults] = useState<any[]>([]);
+
+  const handleAddProduct = () => {
+    setProducts([...products, {
+      id: Date.now().toString(),
+      name: '',
+      costPrice: 0,
+      domesticShipping: 0,
+      firstMileShipping: 0,
+    }]);
+  };
+
+  const handleRemoveProduct = (id: string) => {
+    setProducts(products.filter(p => p.id !== id));
+  };
+
+  const handleUpdateProduct = (id: string, field: string, value: any) => {
+    setProducts(products.map(p => 
+      p.id === id ? { ...p, [field]: value } : p
+    ));
+  };
+
+  const handleCalculate = async () => {
+    if (products.length === 0) {
+      toast.error('请先添加商品');
+      return;
+    }
+
+    setIsCalculating(true);
+    try {
+      const pricingResults = [];
+      for (const product of products) {
+        const productId = product.id || `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        const response = await fetch('/api/v1/erp/pricing', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            product_id: productId,
+            cost_price: product.costPrice,
+            domestic_shipping: product.domesticShipping,
+            first_mile_shipping: product.firstMileShipping,
+            competitor_price: product.competitorPrice,
+            platform_fee_rate: pricingParams.platformFeeRate,
+            ad_budget_rate: pricingParams.adBudgetRate,
+            target_profit_rate: pricingParams.targetProfitRate,
+          }),
+        });
+        const data = await response.json();
+        pricingResults.push({
+          name: product.name || `商品 ${pricingResults.length + 1}`,
+          ...data,
+        });
+      }
+      setResults(pricingResults);
+      toast.success(`成功计算 ${pricingResults.length} 个商品的价格`);
+    } catch (error) {
+      console.error('定价计算失败:', error);
+      toast.error('定价计算失败');
+    } finally {
+      setIsCalculating(false);
+    }
+  };
+
+  const handleReset = () => {
+    setProducts([]);
+    setResults([]);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>批量定价</DialogTitle>
+          <DialogDescription>
+            批量计算商品最优售价，支持利润率和竞品价格参考
+          </DialogDescription>
+        </DialogHeader>
+
+        <Tabs defaultValue="products">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="products">商品列表</TabsTrigger>
+            <TabsTrigger value="results">定价结果</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="products" className="space-y-4">
+            {/* 定价参数 */}
+            <Card className="bg-muted/30">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm">定价参数</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <Label className="text-xs">平台佣金率</Label>
+                    <div className="flex items-center gap-2 mt-1">
+                      <Input
+                        type="number"
+                        value={(pricingParams.platformFeeRate * 100).toFixed(0)}
+                        onChange={(e) => setPricingParams({
+                          ...pricingParams,
+                          platformFeeRate: parseFloat(e.target.value) / 100 || 0,
+                        })}
+                        className="w-20"
+                      />
+                      <span className="text-sm">%</span>
+                    </div>
+                  </div>
+                  <div>
+                    <Label className="text-xs">广告预算占比</Label>
+                    <div className="flex items-center gap-2 mt-1">
+                      <Input
+                        type="number"
+                        value={(pricingParams.adBudgetRate * 100).toFixed(0)}
+                        onChange={(e) => setPricingParams({
+                          ...pricingParams,
+                          adBudgetRate: parseFloat(e.target.value) / 100 || 0,
+                        })}
+                        className="w-20"
+                      />
+                      <span className="text-sm">%</span>
+                    </div>
+                  </div>
+                  <div>
+                    <Label className="text-xs">目标利润率</Label>
+                    <div className="flex items-center gap-2 mt-1">
+                      <Input
+                        type="number"
+                        value={(pricingParams.targetProfitRate * 100).toFixed(0)}
+                        onChange={(e) => setPricingParams({
+                          ...pricingParams,
+                          targetProfitRate: parseFloat(e.target.value) / 100 || 0,
+                        })}
+                        className="w-20"
+                      />
+                      <span className="text-sm">%</span>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* 商品列表 */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label>商品成本</Label>
+                <Button variant="outline" size="sm" onClick={handleAddProduct}>
+                  <Plus className="h-4 w-4 mr-1" />
+                  添加商品
+                </Button>
+              </div>
+
+              {products.length === 0 && (
+                <div className="text-center py-8 text-muted-foreground border rounded-lg">
+                  <DollarSign className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                  <p className="text-sm">点击"添加商品"开始定价</p>
+                </div>
+              )}
+
+              {products.map((product, index) => (
+                <Card key={product.id}>
+                  <CardContent className="p-4">
+                    <div className="flex items-start gap-4">
+                      <div className="flex-1 grid grid-cols-5 gap-3">
+                        <div className="col-span-2">
+                          <Label className="text-xs">商品名称</Label>
+                          <Input
+                            placeholder="商品名称"
+                            value={product.name}
+                            onChange={(e) => handleUpdateProduct(product.id, 'name', e.target.value)}
+                            className="mt-1"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-xs">商品成本</Label>
+                          <Input
+                            type="number"
+                            placeholder="0.00"
+                            value={product.costPrice || ''}
+                            onChange={(e) => handleUpdateProduct(product.id, 'costPrice', parseFloat(e.target.value) || 0)}
+                            className="mt-1"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-xs">国内运费</Label>
+                          <Input
+                            type="number"
+                            placeholder="0.00"
+                            value={product.domesticShipping || ''}
+                            onChange={(e) => handleUpdateProduct(product.id, 'domesticShipping', parseFloat(e.target.value) || 0)}
+                            className="mt-1"
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-xs">头程运费</Label>
+                          <Input
+                            type="number"
+                            placeholder="0.00"
+                            value={product.firstMileShipping || ''}
+                            onChange={(e) => handleUpdateProduct(product.id, 'firstMileShipping', parseFloat(e.target.value) || 0)}
+                            className="mt-1"
+                          />
+                        </div>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleRemoveProduct(product.id)}
+                        className="mt-6"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+
+            <div className="flex gap-2">
+              <Button onClick={handleCalculate} disabled={isCalculating || products.length === 0} className="flex-1">
+                {isCalculating ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    计算中...
+                  </>
+                ) : (
+                  <>
+                    <TrendingUp className="h-4 w-4 mr-2" />
+                    计算价格
+                  </>
+                )}
+              </Button>
+              <Button variant="outline" onClick={handleReset}>
+                <RefreshCw className="h-4 w-4 mr-1" />
+                重置
+              </Button>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="results">
+            {results.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground">
+                <TrendingUp className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p className="font-medium">暂无定价结果</p>
+                <p className="text-sm mt-2">先在"商品列表"中添加商品并计算价格</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {results.map((result, index) => (
+                  <Card key={index}>
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="font-medium">{result.name}</h4>
+                        <Badge variant="outline">
+                          利润率: {result.profit_margin?.toFixed(1) || 0}%
+                        </Badge>
+                      </div>
+                      <div className="grid grid-cols-4 gap-4 text-sm">
+                        <div>
+                          <p className="text-muted-foreground">总成本</p>
+                          <p className="font-medium">¥{result.total_cost?.toFixed(2) || 0}</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">建议售价</p>
+                          <p className="font-medium text-green-600">¥{result.suggested_price?.toFixed(2) || 0}</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">竞品参考</p>
+                          <p className="font-medium">¥{result.competitor_price?.toFixed(2) || '-'}</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">预计利润</p>
+                          <p className="font-medium text-blue-600">
+                            ¥{((result.suggested_price || 0) - (result.total_cost || 0)).toFixed(2)}
+                          </p>
+                        </div>
+                      </div>
+                      {result.pricing_basis && (
+                        <p className="text-xs text-muted-foreground mt-2">
+                          计算依据: {result.pricing_basis}
+                        </p>
+                      )}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>关闭</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
