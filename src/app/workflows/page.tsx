@@ -595,6 +595,11 @@ function WorkflowWizard({
 
     try {
       const token = localStorage.getItem('token');
+      
+      // 创建AbortController用于超时控制
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30秒超时
+      
       // 调用1688采集API
       const res = await fetch('/api/v1/1688/collect', {
         method: 'POST',
@@ -603,8 +608,10 @@ function WorkflowWizard({
           ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
         },
         body: JSON.stringify({ url: link.url }),
+        signal: controller.signal,
       });
       
+      clearTimeout(timeoutId);
       const data = await res.json();
       
       if (data.success && data.product_id) {
@@ -631,12 +638,18 @@ function WorkflowWizard({
         ));
         toast.success('采集成功！');
       } else {
+        console.error('采集失败:', data);
         setCollectionLinks(prev => prev.map(l => l.id === id ? { ...l, status: 'failed' } : l));
         toast.error(data.detail || data.error || '采集失败');
       }
-    } catch (error) {
+    } catch (error: any) {
+      console.error('采集异常:', error);
       setCollectionLinks(prev => prev.map(l => l.id === id ? { ...l, status: 'failed' } : l));
-      toast.error('采集失败，请检查链接');
+      if (error.name === 'AbortError') {
+        toast.error('采集超时，请重试');
+      } else {
+        toast.error('采集失败，请检查链接');
+      }
     }
   };
 
