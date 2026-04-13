@@ -96,7 +96,8 @@ export default function TaskLogsPage() {
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
-    if (!userData) {
+    const token = localStorage.getItem('token');
+    if (!userData || !token) {
       router.push('/login');
       return;
     }
@@ -222,20 +223,20 @@ export default function TaskLogsPage() {
           <Card className="bg-white border-border shadow-sm">
             <CardContent className="p-4 text-center">
               <div className="text-[13px] text-muted-foreground mb-1">已完成</div>
-              <div className="text-[20px] font-semibold text-success">{stats?.success_count || 0}</div>
+              <div className="text-[20px] font-semibold text-success">{stats?.success_tasks || 0}</div>
             </CardContent>
           </Card>
           <Card className="bg-white border-border shadow-sm">
             <CardContent className="p-4 text-center">
               <div className="text-[13px] text-muted-foreground mb-1">失败</div>
-              <div className="text-[20px] font-semibold text-destructive">{stats?.failed_count || 0}</div>
+              <div className="text-[20px] font-semibold text-destructive">{stats?.failed_tasks || 0}</div>
             </CardContent>
           </Card>
           <Card className="bg-white border-border shadow-sm">
             <CardContent className="p-4 text-center">
               <div className="text-[13px] text-muted-foreground mb-1">成功率</div>
               <div className="text-[20px] font-semibold text-foreground">
-                {stats?.total_tasks ? Math.round((stats.success_count / stats.total_tasks) * 100) : 0}%
+                {stats?.success_rate ? Math.round(stats.success_rate * 100) : 0}%
               </div>
             </CardContent>
           </Card>

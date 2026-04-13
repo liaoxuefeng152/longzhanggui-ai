@@ -31,10 +31,13 @@ export interface TaskLogListResponse {
 // 统计摘要
 export interface TaskLogStats {
   total_tasks: number;
-  success_count: number;
-  failed_count: number;
+  success_tasks: number;
+  failed_tasks: number;
+  success_rate: number;
   avg_duration: number;
   total_tokens: number;
+  start_date: string;
+  end_date: string;
 }
 
 /**
@@ -53,7 +56,14 @@ export async function getTaskLogs(params?: {
   if (params?.page_size) searchParams.set('page_size', String(params.page_size));
   
   const endpoint = `${API_ENDPOINTS.taskLogs.list}?${searchParams.toString()}`;
-  return apiClient.get<TaskLogListResponse>(endpoint);
+  const response = await apiClient.get<{ items?: TaskLog[]; logs?: TaskLog[]; total: number; page: number; page_size: number }>(endpoint);
+  // 兼容后端返回的 items 字段
+  return {
+    logs: response.items || response.logs || [],
+    total: response.total,
+    page: response.page,
+    page_size: response.page_size,
+  };
 }
 
 /**

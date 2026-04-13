@@ -80,10 +80,10 @@ export const API_ENDPOINTS = {
   
   // 任务日志
   taskLogs: {
-    list: '/task-logs',
-    detail: (id: string) => `/task-logs/${id}`,
-    retry: (id: string) => `/task-logs/${id}/retry`,
-    stats: '/task-logs/stats/summary',
+    list: '/api/v1/task-logs',
+    detail: (id: string) => `/api/v1/task-logs/${id}`,
+    retry: (id: string) => `/api/v1/task-logs/${id}/retry`,
+    stats: '/api/v1/task-logs/stats/summary',
   },
   
   // 平台绑定
