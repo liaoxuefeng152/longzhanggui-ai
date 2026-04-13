@@ -595,7 +595,8 @@ function WorkflowWizard({
 
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch('/api/v1/collection/collect', {
+      // 调用1688采集API
+      const res = await fetch('/api/v1/1688/collect', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -606,16 +607,23 @@ function WorkflowWizard({
       
       const data = await res.json();
       
-      if (data.success && data.data) {
+      if (data.success && data.product_id) {
+        // 获取采集后的商品详情
+        const detailRes = await fetch(`/api/v1/workflow/products/${data.product_id}`);
+        const detailData = await detailRes.json();
+        
+        const productData = detailData.success ? detailData.data : {};
+        const collectionData = productData.collection || {};
+        
         const collectedProduct: CollectedProduct = {
-          id: 'collected_' + Date.now(),
+          id: data.product_id,
           sourceUrl: link.url,
           source: link.source,
-          name: data.data.name || selectedProducts[0]?.name || '采集商品',
-          price: data.data.price || selectedProducts[0]?.cost || 50,
-          images: data.data.images || [],
-          description: data.data.description || '',
-          specs: data.data.specs || {},
+          name: collectionData.title || productData.name_zh || selectedProducts[0]?.name || '采集商品',
+          price: collectionData.price || productData.cost_price || selectedProducts[0]?.cost || 50,
+          images: collectionData.images || productData.images || [],
+          description: collectionData.description || productData.description || '',
+          weight: collectionData.weight || productData.weight || 0,
         };
         
         setCollectionLinks(prev => prev.map(l => 
@@ -624,7 +632,7 @@ function WorkflowWizard({
         toast.success('采集成功！');
       } else {
         setCollectionLinks(prev => prev.map(l => l.id === id ? { ...l, status: 'failed' } : l));
-        toast.error(data.error || '采集失败');
+        toast.error(data.detail || data.error || '采集失败');
       }
     } catch (error) {
       setCollectionLinks(prev => prev.map(l => l.id === id ? { ...l, status: 'failed' } : l));
