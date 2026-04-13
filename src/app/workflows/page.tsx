@@ -82,6 +82,9 @@ interface SelectedProduct {
   cost?: number;
   reason?: string;
   risks?: string[];
+  monthlySales?: string;
+  competitionLevel?: string;
+  sellingPoints?: string[];
 }
 
 interface ProcessedImage {
@@ -193,100 +196,122 @@ function WorkflowWizard({
     
     try {
       if (currentStep === 0) {
-        // 调用AI选品API
-        const res = await fetch('/api/v1/ai-agents/select-products', {
+        // 调用AI选品智能体（与AI智能体中心一致）
+        const res = await fetch('/api/v1/ai/select-products', {
           method: 'POST',
           headers,
           body: JSON.stringify({
             category: productParams.category,
             platform: productParams.platform,
-            region: productParams.region,
-            quantity: productParams.count,
+            site: productParams.region,
+            count: productParams.count,
           }),
         });
         const data = await res.json();
         
         if (data.success && data.data?.products) {
-          const products = data.data.products.map((p: any) => ({
-            id: p.id,
+          const products = data.data.products.map((p: any, index: number) => ({
+            id: p.name + '_' + index,
             name: p.name,
             category: productParams.category,
             platform: productParams.platform + ' ' + productParams.region.toUpperCase(),
-            salesTrend: Math.random() * 50 + 50, // 从API分析结果中提取
-            profitMargin: parseFloat(p.profit_margin?.replace(/[^0-9.]/g, '') || '50'),
-            cost: p.estimated_cost,
-            reason: p.reason,
+            salesTrend: parseFloat(p.trend?.replace(/[^0-9.]/g, '') || '50'),
+            profitMargin: parseFloat(p.profit_rate?.replace(/[^0-9.]/g, '') || '50'),
+            cost: p.source_price ? parseFloat(p.source_price.replace(/[^0-9.]/g, '')) : 50 + index * 10,
+            reason: p.reason || p.selling_points?.join(', ') || '',
             risks: p.risks || [],
+            monthlySales: p.monthly_sales || '100-500',
+            competitionLevel: p.competition_level || '中等',
+            sellingPoints: p.selling_points || [],
           }));
           setSelectedProducts(products);
           toast.success('AI选品完成！');
         } else {
-          toast.error(data.error || '选品失败');
+          toast.error(data.error || data.detail || '选品失败');
         }
       } else if (currentStep === 1) {
-        // 调用Listing优化API
+        // 调用Listing优化智能体（与AI智能体中心一致）
         const selectedProduct = selectedProducts[0];
         if (selectedProduct) {
-          const res = await fetch('/api/v1/ai-agents/optimize-listing', {
+          const res = await fetch('/api/v1/ai/optimize-listing', {
             method: 'POST',
             headers,
             body: JSON.stringify({
-              product_name: selectedProduct.name,
-              product_description: selectedProduct.reason || selectedProduct.name,
-              target_platform: productParams.platform,
-              target_language: productParams.region,
+              product_info: {
+                name: selectedProduct.name,
+                description: selectedProduct.sellingPoints?.join('; ') || selectedProduct.name,
+                category: productParams.category,
+              },
+              platform: productParams.platform,
+              language: productParams.region,
+              keywords: selectedProduct.sellingPoints || [],
             }),
           });
           const data = await res.json();
           
           if (data.success && data.data) {
+            const result = data.data;
+            // 处理不同的响应格式
+            const title = result.optimized_title || result.title || '';
+            const description = result.optimized_description || result.description || '';
+            const keyFeatures = result.optimized_bullets || result.key_features || result.bullets || [];
+            const keywords = result.keywords || result.search_keywords || [];
+            
             setListing({
-              title: data.data.title || '',
-              description: data.data.description || '',
-              keyFeatures: data.data.key_features || [],
-              keywords: data.data.keywords || [],
+              title,
+              description,
+              keyFeatures: Array.isArray(keyFeatures) ? keyFeatures : [],
+              keywords: Array.isArray(keywords) ? keywords : [],
             });
             toast.success('Listing优化完成！');
           } else {
-            toast.error(data.error || 'Listing优化失败');
+            toast.error(data.error || data.detail || 'Listing优化失败');
           }
         }
         
-        // 模拟图片处理结果
+        // 模拟图片处理结果（实际应调用 /api/v1/ai/process-image）
         setProcessedImages([
           { id: '1', type: 'original', url: 'https://picsum.photos/400/400?random=1', status: 'completed' },
           { id: '2', type: 'translated', url: 'https://picsum.photos/400/400?random=2', status: 'completed' },
           { id: '3', type: 'white_bg', url: 'https://picsum.photos/400/400?random=3', status: 'completed' },
         ]);
       } else if (currentStep === 2) {
-        // 调用智能定价API
+        // 调用智能定价（这是计算服务，不是智能体）
         const selectedProduct = selectedProducts[0];
         if (selectedProduct) {
           const costPrice = selectedProduct.cost || 68;
-          const res = await fetch('/api/v1/ai-agents/calculate-price', {
+          const res = await fetch('/api/v1/ai/calculate-price', {
             method: 'POST',
             headers,
             body: JSON.stringify({
               cost_price: costPrice,
-              logistics_cost: 15,
-              platform_fee_rate: 0.12,
+              domestic_shipping: 0,
+              first_mile_shipping: 15,
+              platform_commission_rate: 0.12,
+              ad_cost_rate: 0.05,
               target_profit_rate: 0.30,
             }),
           });
           const data = await res.json();
           
           if (data.success && data.data) {
+            const result = data.data;
+            // 处理不同的响应格式
+            const priceCalc = result.price_calculation || {};
+            const costBreakdown = result.cost_breakdown || {};
+            const profitAnalysis = result.profit_analysis || {};
+            
             setPriceSuggestion({
-              costPrice: data.data.cost_price,
-              logisticsCost: data.data.logistics_cost,
-              platformFee: data.data.platform_fee_rate,
-              profit: data.data.profit,
-              suggestedPrice: data.data.suggested_price,
-              profitRate: data.data.profit_rate,
+              costPrice: costBreakdown.total_cost || costPrice + 15,
+              logisticsCost: (costBreakdown.domestic_shipping || 0) + (costBreakdown.first_mile_shipping || 15),
+              platformFee: result.platform_commission_rate || 0.12,
+              profit: profitAnalysis.gross_profit || 0,
+              suggestedPrice: result.suggested_price || result.target_price || 0,
+              profitRate: profitAnalysis.profit_rate || 0,
             });
             toast.success('定价计算完成！');
           } else {
-            toast.error(data.error || '定价计算失败');
+            toast.error(data.error || data.detail || '定价计算失败');
           }
         }
       } else if (currentStep === 3) {
@@ -323,6 +348,22 @@ function WorkflowWizard({
 
   return (
     <div className="space-y-6">
+      {/* 正在执行时显示 */}
+      {isExecuting && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-center gap-3">
+          <Loader2 className="h-5 w-5 animate-spin text-blue-500" />
+          <div>
+            <p className="font-medium text-blue-800">
+              {currentStep === 0 && '选品智能体分析中...'}
+              {currentStep === 1 && '选品智能体分析中...'}
+              {currentStep === 2 && 'Listing优化智能体 + 图片处理中...'}
+              {currentStep === 3 && '智能定价计算中...'}
+            </p>
+            <p className="text-sm text-blue-600">请稍候，AI正在处理...</p>
+          </div>
+        </div>
+      )}
+      
       {/* 步骤指示器 */}
       <div className="flex items-center justify-between">
         {steps.map((step, index) => (
@@ -355,21 +396,21 @@ function WorkflowWizard({
       {/* 步骤内容 */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">
+          <CardTitle className="text-lg flex items-center gap-2">
             {currentStep === 0 && '步骤1：设置选品参数'}
-            {currentStep === 1 && '步骤2：选择候选商品'}
-            {currentStep === 2 && '步骤3：图片处理'}
-            {currentStep === 3 && '步骤4：生成Listing'}
-            {currentStep === 4 && '步骤5：确认定价'}
-            {currentStep === 5 && '步骤6：确认上架'}
+            {currentStep === 1 && '步骤2：选品智能体分析'}
+            {currentStep === 2 && '步骤3：图片处理 + Listing优化'}
+            {currentStep === 3 && '步骤4：智能定价'}
+            {currentStep === 4 && '步骤5：确认上架'}
+            {currentStep === 5 && '步骤6：完成'}
           </CardTitle>
           <CardDescription>
             {currentStep === 0 && '设置要分析的品类和平台'}
-            {currentStep === 1 && '从AI推荐的商品中选择要上架的商品'}
-            {currentStep === 2 && '查看处理后的商品图片'}
-            {currentStep === 3 && '编辑生成的Listing内容'}
-            {currentStep === 4 && '确认最终售价'}
-            {currentStep === 5 && '确认所有信息后提交上架'}
+            {currentStep === 1 && '选品智能体正在分析市场需求、竞争程度、利润空间...'}
+            {currentStep === 2 && '图片处理智能体处理图片 + Listing优化智能体生成内容'}
+            {currentStep === 3 && '智能定价工具计算最优售价'}
+            {currentStep === 4 && '确认所有信息后提交上架'}
+            {currentStep === 5 && '商品上架成功！'}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -435,13 +476,13 @@ function WorkflowWizard({
               {selectedProducts.length === 0 ? (
                 <div className="text-center py-8">
                   <Loader2 className="h-8 w-8 mx-auto animate-spin text-primary" />
-                  <p className="mt-2 text-muted-foreground">AI正在分析市场数据...</p>
+                  <p className="mt-2 text-muted-foreground">AI选品智能体正在分析市场数据...</p>
                 </div>
               ) : (
                 <div className="space-y-4">
                   <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
                     <p className="text-sm text-green-800">
-                      <span className="font-medium">AI分析完成！</span> 根据市场趋势和竞争分析，推荐以下商品。
+                      <span className="font-medium">选品智能体分析完成！</span> 根据市场需求、竞争程度、利润空间等维度推荐以下商品。
                     </p>
                   </div>
                   {selectedProducts.map((product, index) => (
@@ -455,7 +496,7 @@ function WorkflowWizard({
                             <h4 className="font-medium">{product.name}</h4>
                             {index === 0 && <Badge variant="default" className="text-xs">推荐</Badge>}
                           </div>
-                          <div className="flex items-center gap-4 mt-2 text-sm">
+                          <div className="flex flex-wrap items-center gap-4 mt-2 text-sm">
                             <span className="flex items-center gap-1">
                               <TrendingUp className="h-3 w-3 text-green-500" />
                               销量趋势 +{product.salesTrend.toFixed(1)}%
@@ -469,17 +510,31 @@ function WorkflowWizard({
                                 成本 ¥{product.cost}
                               </span>
                             )}
+                            {product.monthlySales && (
+                              <span className="text-muted-foreground">
+                                月销 {product.monthlySales}单
+                              </span>
+                            )}
                           </div>
+                          {product.sellingPoints && product.sellingPoints.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mt-2">
+                              {product.sellingPoints.slice(0, 3).map((point, i) => (
+                                <Badge key={i} variant="outline" className="text-xs">
+                                  {point}
+                                </Badge>
+                              ))}
+                            </div>
+                          )}
                           {product.reason && (
                             <p className="text-xs text-muted-foreground mt-2 line-clamp-2">
-                              {product.reason.substring(0, 150)}...
+                              {product.reason.substring(0, 200)}...
                             </p>
                           )}
                           {product.risks && product.risks.length > 0 && (
                             <div className="flex items-center gap-1 mt-2">
                               <AlertTriangle className="h-3 w-3 text-yellow-500" />
                               <span className="text-xs text-yellow-600">
-                                风险: {product.risks[0].substring(0, 50)}...
+                                风险: {product.risks[0]}
                               </span>
                             </div>
                           )}
