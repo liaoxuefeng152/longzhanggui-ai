@@ -98,6 +98,21 @@ interface CollectedProduct {
   specs: Record<string, string>;
 }
 
+interface CollectionLink {
+  id: string;
+  url: string;
+  source: '1688' | 'taobao' | 'pinduoduo';
+  status: 'pending' | 'collecting' | 'completed' | 'failed';
+  product?: CollectedProduct;
+}
+
+interface ProcessedImage {
+  id: string;
+  type: 'original' | 'translated' | 'white_bg' | 'optimized';
+  url: string;
+  status: 'pending' | 'processing' | 'completed';
+}
+
 interface ListingContent {
   title: string;
   description: string;
@@ -1128,21 +1143,23 @@ export default function WorkflowsPage() {
           </Card>
         </div>
 
-        {/* 流程说明 */}
+        {/* 流程说明 - 新品上架工作流 */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">工作流程</CardTitle>
+            <CardTitle className="text-lg">新品上架工作流</CardTitle>
+            <CardDescription>从选品到上架的全链路AI自动化</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between overflow-x-auto">
               {[
                 { icon: Search, name: '选品', desc: 'AI分析市场' },
-                { icon: Image, name: '图片', desc: '翻译优化' },
-                { icon: FileText, name: 'Listing', desc: '生成标题' },
-                { icon: DollarSign, name: '定价', desc: '计算利润' },
-                { icon: CheckCircle, name: '上架', desc: '发布到平台' },
+                { icon: Truck, name: '采集链接', desc: '1688货源' },
+                { icon: FileText, name: '优化Listing', desc: '标题描述' },
+                { icon: Image, name: '翻译图片', desc: '处理主图' },
+                { icon: DollarSign, name: '智能定价', desc: '计算利润' },
+                { icon: CheckCircle, name: '上架', desc: '发布平台' },
               ].map((step, index) => (
-                <div key={step.name} className="flex items-center">
+                <div key={step.name} className="flex items-center min-w-fit">
                   <div className="text-center">
                     <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
                       <step.icon className="h-6 w-6 text-primary" />
@@ -1150,8 +1167,8 @@ export default function WorkflowsPage() {
                     <p className="text-sm font-medium mt-2">{step.name}</p>
                     <p className="text-xs text-muted-foreground">{step.desc}</p>
                   </div>
-                  {index < 4 && (
-                    <ArrowRight className="h-5 w-5 mx-4 text-muted-foreground" />
+                  {index < 5 && (
+                    <ArrowRight className="h-5 w-5 mx-2 text-muted-foreground shrink-0" />
                   )}
                 </div>
               ))}
