@@ -12,6 +12,42 @@ import { getTask } from '@/lib/feishu/task-queue';
 import { getPushClient, pushWelcomeMessage, pushTaskStatus } from '@/lib/feishu/push-service';
 import { INTENT_TYPES } from '@/lib/feishu/config';
 
+// 消息去重缓存（防止飞书重试导致重复处理）
+const processedMessages = new Set<string>();
+const MESSAGE_DEDUP_WINDOW_MS = 10000; // 10秒内相同消息视为重复
+
+/**
+ * 生成消息去重key（基于消息内容+发送者+时间窗口）
+ */
+function getDeduplicationKey(messageId: string, userId: string, textContent: string): string {
+  // 如果有message_id，使用它
+  if (messageId) {
+    return messageId;
+  }
+  // 否则用内容+用户+时间窗口（30秒）生成key
+  const timeWindow = Math.floor(Date.now() / 30000);
+  return `${userId}:${textContent}:${timeWindow}`;
+}
+
+/**
+ * 检查消息是否已处理过
+ */
+function isMessageProcessed(messageId: string, userId: string, textContent: string): boolean {
+  const key = getDeduplicationKey(messageId, userId, textContent);
+  
+  if (processedMessages.has(key)) {
+    return true;
+  }
+  processedMessages.add(key);
+  
+  // 清理过期记录
+  setTimeout(() => {
+    processedMessages.delete(key);
+  }, MESSAGE_DEDUP_WINDOW_MS);
+  
+  return false;
+}
+
 // GET 请求：飞书验证 URL 有效性
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
@@ -101,6 +137,13 @@ async function handleMessageEvent(body: any) {
   const chatType = message.chat_type || 'p2p';
   const senderOpenId = sender?.sender_id?.open_id;
   const userId = senderOpenId || chatId;
+
+  // 消息去重（防止飞书重试）
+  const messageId = message.message_id;
+  if (isMessageProcessed(messageId, userId, textContent)) {
+    console.log(`[Feishu] 消息已处理过，跳过: ${messageId || textContent.slice(0, 20)}`);
+    return;
+  }
 
   console.log(`[Feishu] 收到消息 from ${userId}: ${textContent}`);
 
