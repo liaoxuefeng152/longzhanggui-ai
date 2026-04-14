@@ -372,14 +372,16 @@ POST /ai-agents/select-products
 
 ### Listing优化
 ```
-POST /ai-agents/optimize-listing
+POST /ai/optimize-listing
 ```
 
 **请求体:**
 ```json
 {
-  "product_name": "产品名称",
-  "product_description": "产品描述",
+  "product_info": {
+    "name": "产品名称",
+    "description": "产品描述"
+  },
   "target_platform": "tiktok"
 }
 ```
@@ -462,9 +464,9 @@ POST /ai/customer-reply
 **请求体:**
 ```json
 {
-  "customer_message": "客户消息内容",
-  "order_info": {},
-  "language": "id"
+  "message": "客户消息内容",
+  "language": "id",
+  "order_info": {}
 }
 ```
 
@@ -476,10 +478,8 @@ POST /ai/data-report
 **请求体:**
 ```json
 {
-  "date_range": {
-    "start": "2024-01-01",
-    "end": "2024-01-31"
-  },
+  "start_date": "2024-01-01",
+  "end_date": "2024-01-31",
   "platform": "tiktok"
 }
 ```
@@ -619,6 +619,14 @@ GET /feishu-users
 POST /feishu-users
 ```
 
+**请求体:**
+```json
+{
+  "open_id": "ou_xxx",
+  "nickname": "测试用户"
+}
+```
+
 **更新用户配额:**
 ```
 PUT /feishu-users/{user_id}/quota
@@ -627,6 +635,23 @@ PUT /feishu-users/{user_id}/quota
 **获取用户使用量:**
 ```
 GET /feishu-users/{user_id}/usage
+```
+
+### 工单管理
+
+**创建工单:**
+```
+POST /customer-tickets
+```
+
+**请求体:**
+```json
+{
+  "title": "工单标题",
+  "content": "工单内容",
+  "user_id": "用户ID",
+  "priority": "medium"
+}
 ```
 
 ---
