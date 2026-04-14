@@ -3,7 +3,7 @@
 ## 配置信息
 
 ### 应用信息
-- **App ID**: `cli_a925102a8179dbd6`
+- **App ID**: `cli_a954ed9674789cd3`
 - **App Secret**: `ig2gFSC1KU3wE00sdZOgX3aYalqtAZ2K`
 - **Verification Token**: `VjIworko8nhoKL1bcDrZ6fuTKIwCRl6G`
 
@@ -17,7 +17,7 @@
 
 1. 访问飞书开放平台：https://open.feishu.cn/
 2. 进入应用管理
-3. 选择"龙虾AI"应用 (cli_a925102a8179dbd6)
+3. 选择"龙虾AI"应用 (cli_a954ed9674789cd3)
 
 ### 第二步：配置事件订阅
 

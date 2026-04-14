@@ -25,7 +25,7 @@
 #### 确认以下配置：
 
 1. **App ID 和 App Secret**
-   - App ID: `cli_a925102a8179dbd6`
+   - App ID: `cli_a954ed9674789cd3`
    - App Secret: `ig2gFSC1KU3wE00sdZOgX3aYalqtAZ2K`
 
 2. **Webhook URL 配置**
@@ -234,7 +234,7 @@ tail -n 50 /app/work/logs/bypass/app.log
 
 如果以上方法都无法解决问题，请提供以下信息：
 
-1. 飞书应用 ID：`cli_a925102a8179dbd6`
+1. 飞书应用 ID：`cli_a954ed9674789cd3`
 2. Webhook URL
 3. 系统日志中的错误信息
 4. 发送的消息内容

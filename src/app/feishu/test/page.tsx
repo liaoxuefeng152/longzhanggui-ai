@@ -325,7 +325,7 @@ Verification Token: ${testToken}
               </li>
             </ol>
 
-            <Button onClick={() => window.open('https://open.feishu.cn/app/cli_a925102a8179dbd6/event', '_blank')} className="w-full">
+            <Button onClick={() => window.open('https://open.feishu.cn/app/cli_a954ed9674789cd3/baseinfo', '_blank')} className="w-full">
               <ExternalLink className="h-4 w-4 mr-2" />
               前往飞书开放平台配置
             </Button>

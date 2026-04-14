@@ -79,7 +79,7 @@ export default function FeishuSettingsPage() {
   
   // 飞书配置状态
   const [feishuConfig, setFeishuConfig] = useState<FeishuConfig>({
-    appId: 'cli_a925102a8179dbd6',
+    appId: 'cli_a954ed9674789cd3',
     appSecret: '',
     botName: '龙掌柜',
     enabled: true,

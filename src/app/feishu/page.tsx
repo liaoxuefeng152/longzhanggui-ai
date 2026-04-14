@@ -74,7 +74,7 @@ export default function FeishuPage() {
 
   // 打开飞书开放平台
   const openFeishuPlatform = () => {
-    window.open('https://open.feishu.cn/app/cli_a925102a8179dbd6/event', '_blank');
+    window.open('https://open.feishu.cn/app/cli_a954ed9674789cd3/baseinfo', '_blank');
   };
 
   if (!user) return null;
