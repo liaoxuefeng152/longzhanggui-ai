@@ -4,6 +4,7 @@
 from typing import TypedDict, Annotated, Sequence, Optional
 from langchain_core.messages import BaseMessage, HumanMessage, AIMessage
 from langgraph.graph import StateGraph, END
+from loguru import logger
 import operator
 import json
 import httpx
@@ -294,29 +295,46 @@ class ImageDesignAgent:
     
     async def translate_image_text(self, image_url: str, target_lang: str = "en") -> dict:
         """
-        识别图片中的文字并翻译
+        识别图片中的文字、翻译，并在原图上绘制翻译后生成新图片上传到对象存储
         
         Args:
             image_url: 图片URL
             target_lang: 目标语言
         
         Returns:
-            包含原文和翻译的字典
+            包含原文、翻译、图片URL的字典
         """
+        import io
+        import base64
+        import uuid
+        from PIL import Image, ImageDraw, ImageFont
+        from coze_coding_dev_sdk.s3 import S3SyncStorage
+        import os
+        
         llm_service = LLMService.for_agent("image_design")
         
-        prompt = f"""请完成以下任务：
-1. 识别图片中的所有文字
-2. 将识别的文字翻译成{target_lang}
+        # 语言名称映射
+        lang_names = {
+            "zh": "中文", "en": "英文", "id": "印尼语",
+            "th": "泰语", "vi": "越南语", "ms": "马来语"
+        }
+        target_name = lang_names.get(target_lang, "英文")
+        
+        prompt = f"""请分析这张图片，找出所有可见的文字内容。
 
-请以JSON格式输出：
+请以JSON格式返回识别结果：
 {{
-  "original_text": "识别到的原文",
-  "translated_text": "翻译后的文字",
-  "text_positions": [
-    {{"text": "文字内容", "position": "位置描述"}}
+  "original_text": "识别到的所有文字，用换行分隔",
+  "texts": [
+    {{
+      "text": "识别的文字内容",
+      "position": {{"x": x坐标比例(0-1), "y": y坐标比例(0-1), "width": 宽度比例, "height": 高度比例}},
+      "font_size": "字体大小描述"
+    }}
   ]
-}}"""
+}}
+
+请只返回JSON，不要其他解释。"""
         
         messages = [
             HumanMessage(content=[
@@ -325,5 +343,141 @@ class ImageDesignAgent:
             ])
         ]
         
-        response = await llm_service.json_chat(messages)
-        return response
+        try:
+            # 1. 使用视觉模型识别文字
+            response = await llm_service.json_chat(messages)
+            
+            original_text = response.get("original_text", "")
+            texts = response.get("texts", [])
+            
+            if not texts:
+                return {
+                    "original_text": original_text or "",
+                    "translated_text": original_text or "",
+                    "text_positions": [],
+                    "processed_url": image_url
+                }
+            
+            # 2. 翻译每段文字
+            translated_texts = []
+            system_prompt = f"""你是一个专业的电商翻译。请将以下{target_name}翻译成{target_name}。
+保持翻译简洁、自然，适合电商产品展示。
+只输出翻译结果，不要解释。"""
+            
+            for text_info in texts:
+                original = text_info.get("text", "")
+                if original:
+                    translate_messages = [
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": original}
+                    ]
+                    try:
+                        llm = get_llm_for_agent("image_design")
+                        translate_response = await llm.ainvoke(translate_messages)
+                        translated = translate_response.content.strip()
+                    except:
+                        translated = original
+                    
+                    text_info["translated"] = translated
+                    translated_texts.append(translated_info := {
+                        "text": original,
+                        "translated": translated,
+                        "position": text_info.get("position", {})
+                    })
+            
+            # 3. 下载原图并绘制翻译文字
+            async with httpx.AsyncClient() as client:
+                resp = await client.get(image_url, timeout=30)
+                resp.raise_for_status()
+                image_data = resp.content
+            
+            # 打开图片
+            img = Image.open(io.BytesIO(image_data))
+            if img.mode in ('RGBA', 'LA', 'P'):
+                background = Image.new('RGB', img.size, (255, 255, 255))
+                if img.mode == 'RGBA':
+                    background.paste(img, mask=img.split()[3])
+                else:
+                    background.paste(img)
+                img = background
+            elif img.mode != 'RGB':
+                img = img.convert('RGB')
+            
+            draw = ImageDraw.Draw(img)
+            img_width, img_height = img.size
+            
+            # 字体大小
+            base_font_size = 40 if target_lang == "zh" else 35
+            
+            # 尝试加载字体
+            font = None
+            for font_path in ["/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"]:
+                if os.path.exists(font_path):
+                    try:
+                        font = ImageFont.truetype(font_path, base_font_size)
+                        break
+                    except:
+                        pass
+            
+            if font is None:
+                font = ImageFont.load_default()
+            
+            # 在图片底部绘制翻译文字区域
+            all_translated = " | ".join([t["translated"] for t in translated_texts])
+            
+            # 绘制底部翻译条
+            bar_height = 80
+            bar_y = img_height - bar_height
+            
+            # 白色背景
+            draw.rectangle([0, bar_y, img_width, img_height], fill=(255, 255, 255))
+            
+            # 顶部边框
+            draw.rectangle([0, bar_y, img_width, bar_y + 2], fill=(0, 0, 0))
+            
+            # 绘制翻译文字
+            draw.text((20, bar_y + 25), all_translated[:100], fill=(0, 0, 0), font=font)
+            
+            # 4. 上传到对象存储
+            output = io.BytesIO()
+            img.save(output, format='JPEG', quality=95)
+            output_data = output.getvalue()
+            
+            try:
+                storage = S3SyncStorage(
+                    endpoint_url=os.getenv("COZE_BUCKET_ENDPOINT_URL"),
+                    access_key="",
+                    secret_key="",
+                    bucket_name=os.getenv("COZE_BUCKET_NAME"),
+                    region="cn-beijing",
+                )
+                
+                file_name = f"translated/{uuid.uuid4()}.jpg"
+                key = storage.upload_file(
+                    file_content=output_data,
+                    file_name=file_name,
+                    content_type="image/jpeg"
+                )
+                processed_url = storage.generate_presigned_url(key=key, expire_time=7*24*3600)
+            except Exception as e:
+                logger.error(f"上传失败: {e}")
+                # 上传失败返回base64
+                b64 = base64.b64encode(output_data).decode()
+                processed_url = f"data:image/jpeg;base64,{b64}"
+            
+            return {
+                "original_text": original_text,
+                "translated_text": "\n".join([t["translated"] for t in translated_texts]),
+                "text_positions": translated_texts,
+                "processed_url": processed_url
+            }
+            
+        except Exception as e:
+            logger.error(f"图片翻译处理失败: {e}")
+            return {
+                "original_text": "",
+                "translated_text": "",
+                "text_positions": [],
+                "processed_url": image_url,
+                "error": str(e)
+            }

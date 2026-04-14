@@ -7,17 +7,21 @@ import json
 import base64
 import hashlib
 import asyncio
-from typing import Optional, Dict, Any, List
+import os
+import uuid
+from typing import Optional, Dict, Any, List, Tuple
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
 
 import httpx
+from PIL import Image, ImageDraw, ImageFont
 from langchain_core.messages import HumanMessage, SystemMessage
 from loguru import logger
 
 from app.core.config import settings
 from coze_coding_dev_sdk import LLMClient
+from coze_coding_dev_sdk.s3 import S3SyncStorage
 
 
 class ImageProcessMode(str, Enum):
@@ -71,6 +75,20 @@ class ImageIntelligentAgent:
         self._tasks: Dict[str, ImageTask] = {}
         # 初始化LLM客户端用于翻译
         self._llm_client = LLMClient()
+        # 初始化对象存储客户端
+        self._storage = None
+    
+    def _get_storage(self) -> S3SyncStorage:
+        """获取对象存储客户端"""
+        if self._storage is None:
+            self._storage = S3SyncStorage(
+                endpoint_url=os.getenv("COZE_BUCKET_ENDPOINT_URL"),
+                access_key="",
+                secret_key="",
+                bucket_name=os.getenv("COZE_BUCKET_NAME"),
+                region="cn-beijing",
+            )
+        return self._storage
     
     async def process_image(
         self,
@@ -143,20 +161,20 @@ class ImageIntelligentAgent:
     ) -> Dict[str, Any]:
         """
         翻译模式处理
-        1. OCR识别图片中的文字
+        1. 使用视觉模型识别图片中的文字及位置
         2. 翻译文字到目标语言
-        3. 合成新图片
+        3. 在原图上绘制翻译文字
+        4. 上传到对象存储并返回签名URL
         """
         logger.info(f"开始翻译模式处理: {task.task_id}")
         
         # 1. 下载图片
         image_data = await self._download_image(task.image_url)
         
-        # 2. OCR识别
-        ocr_result = await self._ocr_image(image_data)
-        ocr_texts = ocr_result.get("texts", [])
+        # 2. 使用视觉模型识别文字及位置
+        ocr_result = await self._vision_ocr_image(image_data, task.target_language)
         
-        if not ocr_texts:
+        if not ocr_result.get("texts"):
             logger.info("图片中未检测到文字，返回原图")
             return {
                 "result_url": task.image_url,
@@ -164,35 +182,247 @@ class ImageIntelligentAgent:
                 "translated_text": ""
             }
         
-        # 3. 翻译文字
-        translations = []
-        for text_info in ocr_texts:
-            original_text = text_info.get("text", "")
-            if original_text:
-                translated = await self._translate_text(
-                    original_text,
-                    task.source_language,
-                    task.target_language
-                )
-                translations.append({
-                    "original": original_text,
-                    "translated": translated,
-                    "position": text_info.get("position"),
-                    "font_size": text_info.get("font_size")
-                })
+        ocr_texts = ocr_result.get("texts", [])
+        logger.info(f"识别到 {len(ocr_texts)} 处文字")
         
-        # 4. 合成新图片
-        result_url = await self._compose_translated_image(
-            image_data,
-            translations,
-            task.target_language
-        )
+        # 3. 在原图上绘制翻译文字
+        try:
+            translated_image_data = await self._draw_translated_text(
+                image_data=image_data,
+                texts=ocr_texts,
+                target_language=task.target_language
+            )
+            
+            # 4. 上传到对象存储
+            result_url = await self._upload_translated_image(
+                image_data=translated_image_data,
+                task_id=task.task_id
+            )
+            
+            logger.info(f"翻译图片上传成功: {result_url}")
+            
+            return {
+                "result_url": result_url,
+                "ocr_text": "\n".join([t.get("original", "") for t in ocr_texts]),
+                "translated_text": "\n".join([t.get("translated", "") for t in ocr_texts]),
+                "text_count": len(ocr_texts)
+            }
+        except Exception as e:
+            logger.error(f"生成翻译图片失败: {e}")
+            # 如果绘制失败，返回原图URL
+            return {
+                "result_url": task.image_url,
+                "ocr_text": "\n".join([t.get("original", "") for t in ocr_texts]),
+                "translated_text": "\n".join([t.get("translated", "") for t in ocr_texts]),
+                "text_count": len(ocr_texts),
+                "warning": f"图片合成失败，仅返回文字翻译: {str(e)}"
+            }
+    
+    async def _vision_ocr_image(self, image_data: bytes, target_lang: str) -> Dict[str, Any]:
+        """
+        使用豆包视觉模型识别图片中的文字及位置
+        """
+        # 编码图片为base64
+        image_base64 = base64.b64encode(image_data).decode('utf-8')
         
-        return {
-            "result_url": result_url,
-            "ocr_text": "\n".join([t["original"] for t in translations]),
-            "translated_text": "\n".join([t["translated"] for t in translations])
+        # 语言名称映射
+        lang_names = {
+            "zh": "中文", "en": "英文", "id": "印尼语",
+            "th": "泰语", "vi": "越南语", "ms": "马来语"
         }
+        target_name = lang_names.get(target_lang, "英文")
+        
+        prompt = f"""请分析这张图片，找出所有可见的文字内容。
+
+请以JSON格式返回识别结果：
+{{
+  "texts": [
+    {{
+      "text": "识别的文字内容",
+      "position": {{"x": x坐标比例(0-1), "y": y坐标比例(0-1), "width": 宽度比例(0-1), "height": 高度比例(0-1)}},
+      "font_size": "字体大小描述"
+    }}
+  ]
+}}
+
+请只返回JSON，不要其他解释。"""
+
+        try:
+            # 使用视觉模型识别
+            messages = [
+                HumanMessage(content=[
+                    {"type": "text", "text": prompt},
+                    {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{image_base64}"}}
+                ])
+            ]
+            
+            response = self._llm_client.invoke(
+                messages=messages,
+                model="doubao-seed-1-8-251228",
+                temperature=0.3
+            )
+            
+            content = response.content.strip()
+            # 尝试解析JSON
+            if content.startswith("```json"):
+                content = content[7:]
+            if content.startswith("```"):
+                content = content[3:]
+            if content.endswith("```"):
+                content = content[:-3]
+            
+            result = json.loads(content)
+            logger.info(f"视觉模型识别结果: {result}")
+            return result
+            
+        except Exception as e:
+            logger.error(f"视觉模型识别失败: {e}")
+            return {"texts": []}
+    
+    async def _draw_translated_text(
+        self,
+        image_data: bytes,
+        texts: List[Dict[str, Any]],
+        target_language: str
+    ) -> bytes:
+        """
+        在图片上绘制翻译后的文字
+        """
+        try:
+            # 打开图片
+            img = Image.open(io.BytesIO(image_data))
+            
+            # 转换为RGB（确保可以绘制）
+            if img.mode in ('RGBA', 'LA', 'P'):
+                # 创建白色背景
+                background = Image.new('RGB', img.size, (255, 255, 255))
+                if img.mode == 'RGBA':
+                    background.paste(img, mask=img.split()[3])
+                else:
+                    background.paste(img)
+                img = background
+            elif img.mode != 'RGB':
+                img = img.convert('RGB')
+            
+            draw = ImageDraw.Draw(img)
+            
+            # 获取图片尺寸
+            img_width, img_height = img.size
+            
+            # 语言字体大小映射
+            font_size_map = {
+                "zh": 40,  # 中文需要更大字号
+                "en": 35,
+                "id": 35,
+                "th": 35,
+                "vi": 35,
+                "ms": 35
+            }
+            base_font_size = font_size_map.get(target_language, 35)
+            
+            # 尝试加载字体（使用系统字体）
+            font = None
+            try:
+                # 尝试常用字体路径
+                font_paths = [
+                    "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+                    "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
+                    "/usr/share/fonts/truetype/noto/NotoSans-Regular.ttf",
+                    "/System/Library/Fonts/PingFang.ttc",  # macOS
+                ]
+                for font_path in font_paths:
+                    if os.path.exists(font_path):
+                        font = ImageFont.truetype(font_path, base_font_size)
+                        break
+            except Exception:
+                pass
+            
+            if font is None:
+                # 使用默认字体
+                font = ImageFont.load_default()
+            
+            # 为每段文字创建标注框
+            for text_info in texts:
+                original = text_info.get("text", "")
+                translated = text_info.get("translated", original)
+                position = text_info.get("position", {})
+                
+                if not translated:
+                    continue
+                
+                # 计算位置
+                x_ratio = position.get("x", 0.5)
+                y_ratio = position.get("y", 0.9)  # 默认放底部
+                
+                x = int(x_ratio * img_width)
+                y = int(y_ratio * img_height)
+                
+                # 获取文字尺寸
+                bbox = draw.textbbox((x, y), translated, font=font)
+                text_width = bbox[2] - bbox[0]
+                text_height = bbox[3] - bbox[1]
+                
+                # 绘制半透明背景框
+                padding = 10
+                box_x1 = x - padding
+                box_y1 = y - padding
+                box_x2 = x + text_width + padding
+                box_y2 = y + text_height + padding
+                
+                # 绘制圆角矩形背景（使用多边形模拟）
+                draw.rectangle([box_x1, box_y1, box_x2, box_y2], 
+                              fill=(255, 255, 255, 220),
+                              outline=(0, 0, 0))
+                
+                # 绘制黑色边框
+                draw.rectangle([box_x1, box_y1, box_x2, box_y2], 
+                              outline=(0, 0, 0), width=2)
+                
+                # 绘制翻译文字
+                draw.text((x, y), translated, fill=(0, 0, 0), font=font)
+                
+                logger.info(f"绘制文字: {translated} at ({x}, {y})")
+            
+            # 转换为字节
+            output = io.BytesIO()
+            img.save(output, format='JPEG', quality=95)
+            return output.getvalue()
+            
+        except Exception as e:
+            logger.error(f"绘制翻译文字失败: {e}")
+            raise
+    
+    async def _upload_translated_image(self, image_data: bytes, task_id: str) -> str:
+        """
+        上传翻译后的图片到对象存储
+        """
+        try:
+            storage = self._get_storage()
+            
+            # 生成文件名
+            file_name = f"translated/{task_id}.jpg"
+            
+            # 上传文件
+            key = storage.upload_file(
+                file_content=image_data,
+                file_name=file_name,
+                content_type="image/jpeg"
+            )
+            
+            # 生成签名URL（有效期7天）
+            url = storage.generate_presigned_url(
+                key=key,
+                expire_time=7 * 24 * 3600
+            )
+            
+            logger.info(f"图片上传成功，key: {key}")
+            return url
+            
+        except Exception as e:
+            logger.error(f"上传失败: {e}")
+            # 如果上传失败，返回base64编码的数据URL
+            b64_data = base64.b64encode(image_data).decode('utf-8')
+            return f"data:image/jpeg;base64,{b64_data}"
     
     async def _process_optimize(
         self,
