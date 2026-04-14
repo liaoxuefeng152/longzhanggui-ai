@@ -72,6 +72,9 @@ async function handleMessageEvent(event: any) {
   const message = event.event?.message || event.message;
   const sender = event.event?.sender || event.sender;
   const chatId = message?.chat_id;
+  const chatType = message?.chat_type || 'p2p';
+  // 获取发送者的 open_id (用于回复单聊消息)
+  const senderOpenId = sender?.sender_id?.open_id;
   
   if (!message || !message.content) {
     return { success: false };
@@ -115,7 +118,10 @@ async function handleMessageEvent(event: any) {
   }
   
   if (card) {
-    await sendFeishuCardMessage(chatId, card);
+    // 单聊使用 open_id 回复，群聊使用 chat_id 回复
+    const receiveId = chatType === 'p2p' ? senderOpenId : chatId;
+    const receiveIdType = chatType === 'p2p' ? 'open_id' : 'chat_id';
+    await sendFeishuCardMessage(receiveId, receiveIdType, card);
   }
   
   return { success: true };
@@ -290,7 +296,7 @@ function buildDefaultCard(text: string) {
 
 // ==================== 飞书 API 调用 ====================
 
-async function sendFeishuCardMessage(chatId: string, card: any) {
+async function sendFeishuCardMessage(receiveId: string, receiveIdType: string, card: any) {
   try {
     // 获取 token
     const tokenResponse = await fetch(`${FEISHU_CONFIG.apiBaseUrl}${FEISHU_CONFIG.apiPaths.TENANT_ACCESS_TOKEN}`, {
@@ -307,7 +313,7 @@ async function sendFeishuCardMessage(chatId: string, card: any) {
     }
     
     // 发送卡片消息
-    const sendResponse = await fetch(`${FEISHU_CONFIG.apiBaseUrl}${FEISHU_CONFIG.apiPaths.SEND_MESSAGE}?receive_id_type=chat_id`, {
+    const sendResponse = await fetch(`${FEISHU_CONFIG.apiBaseUrl}${FEISHU_CONFIG.apiPaths.SEND_MESSAGE}?receive_id_type=${receiveIdType}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -315,7 +321,7 @@ async function sendFeishuCardMessage(chatId: string, card: any) {
       },
       body: JSON.stringify({
         msg_type: 'interactive',
-        receive_id: chatId,
+        receive_id: receiveId,
         content: JSON.stringify(card),
       }),
     });

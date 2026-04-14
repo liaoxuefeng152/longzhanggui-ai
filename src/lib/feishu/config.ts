@@ -13,6 +13,14 @@ export const FEISHU_CONFIG = {
   apiBaseUrl: 'https://open.feishu.cn/open-apis',
   webhookUrl: '/api/v1/feishu/webhook',
 
+  // API 路径（内部使用）
+  apiPaths: {
+    TENANT_ACCESS_TOKEN: '/auth/v3/tenant_access_token/internal',
+    SEND_MESSAGE: '/im/v1/messages',
+    GET_USER_INFO: '/contact/v3/users/:user_id',
+    GET_GROUP_INFO: '/im/v1/chats/:chat_id',
+  },
+
   // 加密密钥（如果启用了加密）
   encryptKey: '', // 飞书提供的 Encrypt Key（可选）
 
