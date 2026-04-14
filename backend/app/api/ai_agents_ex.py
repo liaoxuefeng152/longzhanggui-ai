@@ -205,9 +205,12 @@ async def process_image_batch(
                     target_lang=request.target_language or "en"
                 )
                 
+                # 使用翻译后的图片URL（原图或新生成的图片）
+                processed_url = translate_result.get("processed_url") or url
+                
                 results.append({
                     "original_url": url,
-                    "processed_url": url,
+                    "processed_url": processed_url,
                     "original_text": translate_result.get("original_text", ""),
                     "translated_text": translate_result.get("translated_text", ""),
                     "status": "success"
