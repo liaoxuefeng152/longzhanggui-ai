@@ -6,11 +6,16 @@ import { API_ENDPOINTS } from './config';
 
 // 统计数据类型
 export interface DashboardStats {
-  todayCalls: number;
-  onlineUsers: number;
-  todayOrders: number;
-  referralUsers: number;
-  assistantCalls: number; // 智能助理调用次数
+  onlineModels: number;      // 在线模型数
+  todayTaskCount: number;     // 今日任务总量
+  taskSuccessRate: number;   // 任务成功率 (百分比)
+  paidUsers: number;         // 付费用户数
+  assistantCalls: number;     // 智能助理调用次数
+  // 以下为辅助字段
+  todayCalls: number;        // 今日调用次数（保留兼容）
+  onlineUsers: number;       // 在线用户数
+  todayOrders: number;       // 今日订单数
+  referralUsers: number;     // 推荐用户数
   callTrend: Array<{
     date: string;
     calls: number;

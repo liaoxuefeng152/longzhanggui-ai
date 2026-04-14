@@ -171,29 +171,34 @@ export default function DashboardPage() {
     router.push('/login');
   };
 
-  // 核心数据概览
+  // 核心数据概览（按PRD要求：在线模型数、今日任务总量、任务成功率、付费用户数、智能助理调用）
   const coreStats = [
     {
-      title: '今日调用次数',
-      value: stats?.todayCalls?.toLocaleString() || '0',
-      icon: ClipboardList,
-      color: 'text-orange-500',
-      bgColor: 'bg-gradient-to-br from-orange-500/20 to-orange-500/10',
-      borderColor: 'border-orange-500/20',
-      gradient: 'from-orange-500 to-orange-600',
-    },
-    {
-      title: '在线用户数',
-      value: stats?.onlineUsers?.toLocaleString() || '0',
-      icon: Users,
+      title: '在线模型数',
+      value: stats?.onlineModels?.toLocaleString() || '0',
+      unit: '个',
+      icon: Bot,
       color: 'text-blue-600',
       bgColor: 'bg-gradient-to-br from-blue-500/20 to-blue-500/10',
       borderColor: 'border-blue-500/20',
       gradient: 'from-blue-500 to-blue-600',
     },
     {
-      title: '今日订单数',
-      value: stats?.todayOrders?.toLocaleString() || '0',
+      title: '今日任务总量',
+      value: stats?.todayTaskCount?.toLocaleString() || '0',
+      unit: '单',
+      icon: ClipboardList,
+      color: 'text-orange-500',
+      bgColor: 'bg-gradient-to-br from-orange-500/20 to-orange-500/10',
+      borderColor: 'border-orange-500/20',
+      gradient: 'from-orange-500 to-orange-600',
+      trend: stats?.taskSuccessRate ? `${stats.taskSuccessRate > 0 ? '+' : ''}${stats.taskSuccessRate.toFixed(1)}%` : undefined,
+      trendUp: stats?.taskSuccessRate !== undefined ? stats.taskSuccessRate > 0 : undefined,
+    },
+    {
+      title: '任务成功率',
+      value: stats?.taskSuccessRate ? `${stats.taskSuccessRate.toFixed(1)}` : '0',
+      unit: '%',
       icon: CheckCircle,
       color: 'text-green-600',
       bgColor: 'bg-gradient-to-br from-green-500/20 to-green-500/10',
@@ -201,9 +206,10 @@ export default function DashboardPage() {
       gradient: 'from-green-500 to-green-600',
     },
     {
-      title: '推荐用户数',
-      value: stats?.referralUsers?.toLocaleString() || '0',
-      icon: Activity,
+      title: '付费用户数',
+      value: stats?.paidUsers?.toLocaleString() || '0',
+      unit: '人',
+      icon: Users,
       color: 'text-purple-600',
       bgColor: 'bg-gradient-to-br from-purple-500/20 to-purple-500/10',
       borderColor: 'border-purple-500/20',
@@ -212,6 +218,7 @@ export default function DashboardPage() {
     {
       title: '智能助理调用',
       value: stats?.assistantCalls?.toLocaleString() || '0',
+      unit: '次',
       icon: Sparkles,
       color: 'text-violet-600',
       bgColor: 'bg-gradient-to-br from-violet-500/20 to-violet-500/10',
@@ -319,7 +326,7 @@ export default function DashboardPage() {
                       </p>
                       <div className="flex items-baseline gap-2">
                         <p className="text-3xl font-bold text-foreground">{stat.value}</p>
-                        <span className="text-xs text-muted-foreground">次</span>
+                        {stat.unit && <span className="text-xs text-muted-foreground">{stat.unit}</span>}
                       </div>
                     </div>
                     <div className={cn(
