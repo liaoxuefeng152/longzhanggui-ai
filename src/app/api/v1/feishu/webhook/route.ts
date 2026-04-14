@@ -16,8 +16,12 @@ export async function GET(request: NextRequest) {
   const challenge = searchParams.get('challenge');
   
   if (challenge) {
-    // 返回验证挑战 - 飞书要求返回 JSON 格式
-    return NextResponse.json({ challenge });
+    // 返回验证挑战 - 飞书要求返回纯 JSON 格式
+    return new NextResponse(JSON.stringify({ challenge }), {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
   }
   
   return NextResponse.json({
@@ -26,10 +30,35 @@ export async function GET(request: NextRequest) {
   });
 }
 
-// POST 请求：接收飞书事件
+// POST 请求：接收飞书事件（也用于 challenge 验证）
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
+    // 检查 URL 中是否有 challenge 参数（优先使用）
+    const urlChallenge = request.nextUrl.searchParams.get('challenge');
+    
+    // 解析 body
+    const bodyText = await request.text();
+    let body: any = {};
+    try {
+      body = JSON.parse(bodyText);
+    } catch {
+      // 如果解析失败，可能是 URL-encoded 格式
+      const params = new URLSearchParams(bodyText);
+      params.forEach((value, key) => {
+        body[key] = value;
+      });
+    }
+    
+    // Challenge 验证（优先使用 URL 参数）
+    const challenge = urlChallenge || body.challenge;
+    if (challenge) {
+      console.log('[Feishu Webhook] Challenge 验证:', challenge);
+      return new NextResponse(JSON.stringify({ challenge }), {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+    }
     
     console.log('[Feishu Webhook] 收到事件:', JSON.stringify(body, null, 2));
     

@@ -5,8 +5,8 @@
 
 export const FEISHU_CONFIG = {
   // 飞书应用信息
-  appId: 'cli_a925102a8179dbd6',
-  appSecret: 'ig2gFSC1KU3wE00sdZOgX3aYalqtAZ2K',
+  appId: 'cli_a954ed9674789cd3',
+  appSecret: 'dSDPvwTC2smGE2nAWZh4cdsX6nIpSG1K',
   verificationToken: '4johe0bj1fCG9V2bAhvTne8Fmz7RCo07',
 
   // API 端点
