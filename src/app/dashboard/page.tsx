@@ -416,8 +416,15 @@ export default function DashboardPage() {
                       {recentTasks.map((task) => {
                         const status = taskStatusMap[task.status];
                         return (
-                          <tr key={task.id} className="border-b border-border hover:bg-muted/30 transition-colors cursor-pointer">
-                            <td className="px-6 py-3 text-[13px] text-primary font-medium">{task.id}</td>
+                          <tr key={task.id} className="border-b border-border hover:bg-muted/30 transition-colors">
+                            <td className="px-6 py-3">
+                              <button 
+                                onClick={() => router.push(`/tasks/${task.id}`)}
+                                className="text-[13px] text-primary font-medium hover:underline cursor-pointer bg-transparent border-0 p-0"
+                              >
+                                {task.id}
+                              </button>
+                            </td>
                             <td className="px-6 py-3 text-[13px] text-foreground">{task.type}</td>
                             <td className="px-6 py-3">
                               <Badge variant="outline" className={`${status.bgColor} ${status.color} border-0 text-[12px]`}>
