@@ -136,21 +136,43 @@ async def process_image(
     
     try:
         agent = ImageDesignAgent()
-        result = await agent.run({
-            "image_url": request.image_url,
-            "mode": request.mode,
-            "target_language": request.target_language
-        })
         
-        return {
-            "success": True,
-            "data": {
-                "original_url": request.image_url,
-                "processed_url": result.get("output", {}).get("image_url", ""),
-                "mode": request.mode,
-                "processing_time": result.get("output", {}).get("processing_time", "0s")
+        # 根据mode选择不同的处理方式
+        if request.mode == "translate":
+            # 翻译模式：识别图片文字并翻译
+            translate_result = await agent.translate_image_text(
+                image_url=request.image_url,
+                target_lang=request.target_language or "en"
+            )
+            
+            return {
+                "success": True,
+                "data": {
+                    "original_url": request.image_url,
+                    "processed_url": request.image_url,  # 当前版本只返回原文
+                    "mode": request.mode,
+                    "original_text": translate_result.get("original_text", ""),
+                    "translated_text": translate_result.get("translated_text", ""),
+                    "text_positions": translate_result.get("text_positions", []),
+                    "note": "文字翻译已完成，请使用翻译结果进行后续处理"
+                }
             }
-        }
+        else:
+            # 其他模式：使用完整的图片设计流程
+            result = await agent.run(
+                product_name=request.image_url,  # 使用图片URL作为标识
+                product_description=f"图片处理模式: {request.mode}"
+            )
+            
+            return {
+                "success": True,
+                "data": {
+                    "original_url": request.image_url,
+                    "processed_url": result.get("generated_images", [{}])[0].get("url", "") if result.get("generated_images") else "",
+                    "mode": request.mode,
+                    "processing_time": "0s"
+                }
+            }
     except Exception as e:
         logger.error(f"图片处理失败: {e}")
         return {
@@ -175,17 +197,33 @@ async def process_image_batch(
     for url in request.image_urls:
         try:
             agent = ImageDesignAgent()
-            result = await agent.run({
-                "image_url": url,
-                "mode": request.mode,
-                "target_language": request.target_language
-            })
             
-            results.append({
-                "original_url": url,
-                "processed_url": result.get("output", {}).get("image_url", ""),
-                "status": "success"
-            })
+            if request.mode == "translate":
+                # 翻译模式
+                translate_result = await agent.translate_image_text(
+                    image_url=url,
+                    target_lang=request.target_language or "en"
+                )
+                
+                results.append({
+                    "original_url": url,
+                    "processed_url": url,
+                    "original_text": translate_result.get("original_text", ""),
+                    "translated_text": translate_result.get("translated_text", ""),
+                    "status": "success"
+                })
+            else:
+                # 其他模式
+                result = await agent.run(
+                    product_name=url,
+                    product_description=f"图片处理模式: {request.mode}"
+                )
+                
+                results.append({
+                    "original_url": url,
+                    "processed_url": result.get("generated_images", [{}])[0].get("url", "") if result.get("generated_images") else "",
+                    "status": "success"
+                })
         except Exception as e:
             results.append({
                 "original_url": url,

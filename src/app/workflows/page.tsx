@@ -386,7 +386,7 @@ function WorkflowWizard({
         
         // 如果有采集的商品图片，调用图片处理API
         if (collectedProduct?.images && collectedProduct.images.length > 0) {
-          const res = await fetch('/api/v1/ai/process-image', {
+          const res = await fetch('/api/v1/ai-agents/process-image', {
             method: 'POST',
             headers,
             body: JSON.stringify({

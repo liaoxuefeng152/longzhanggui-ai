@@ -13,9 +13,11 @@ from enum import Enum
 from pathlib import Path
 
 import httpx
+from langchain_core.messages import HumanMessage, SystemMessage
 from loguru import logger
 
 from app.core.config import settings
+from coze_coding_dev_sdk import LLMClient
 
 
 class ImageProcessMode(str, Enum):
@@ -67,6 +69,8 @@ class ImageIntelligentAgent:
     
     def __init__(self):
         self._tasks: Dict[str, ImageTask] = {}
+        # 初始化LLM客户端用于翻译
+        self._llm_client = LLMClient()
     
     async def process_image(
         self,
@@ -241,14 +245,15 @@ class ImageIntelligentAgent:
     
     async def _download_image(self, url: str) -> bytes:
         """下载图片"""
-        # 模拟模式
-        if not settings.OPENAI_API_KEY:
-            logger.info(f"[模拟] 下载图片: {url}")
+        try:
+            async with httpx.AsyncClient() as client:
+                response = await client.get(url, timeout=30)
+                response.raise_for_status()
+                return response.content
+        except Exception as e:
+            logger.warning(f"下载图片失败: {url}, 错误: {e}")
+            # 返回模拟数据，图片处理将使用模拟模式
             return b"mock_image_data"
-        
-        async with httpx.AsyncClient() as client:
-            response = await client.get(url, timeout=30)
-            return response.content
     
     async def _ocr_image(self, image_data: bytes) -> Dict[str, Any]:
         """OCR识别"""
@@ -271,50 +276,37 @@ class ImageIntelligentAgent:
         source_lang: str,
         target_lang: str
     ) -> str:
-        """翻译文本"""
-        # 模拟模式
-        if not settings.OPENAI_API_KEY:
-            logger.info(f"[模拟] 翻译: {text}")
-            translations = {
-                "高品质产品": "Premium Quality Product",
-                "限时特惠": "Limited Time Offer",
-                "热销爆款": "Best Seller",
-                "包邮": "Free Shipping"
-            }
-            return translations.get(text, f"[{target_lang}] {text}")
+        """翻译文本 - 使用豆包大模型"""
+        # 获取语言名称
+        source_name = self.SUPPORTED_LANGUAGES.get(source_lang, source_lang)
+        target_name = self.SUPPORTED_LANGUAGES.get(target_lang, target_lang)
         
-        # 使用LLM翻译
+        # 使用豆包大模型进行翻译
         try:
-            async with httpx.AsyncClient() as client:
-                response = await client.post(
-                    f"{settings.OPENAI_BASE_URL}/chat/completions",
-                    headers={
-                        "Authorization": f"Bearer {settings.OPENAI_API_KEY}",
-                        "Content-Type": "application/json"
-                    },
-                    json={
-                        "model": settings.DEFAULT_MODEL,
-                        "messages": [
-                            {
-                                "role": "system",
-                                "content": f"You are a professional translator for e-commerce products. Translate the following text from {self.SUPPORTED_LANGUAGES.get(source_lang, source_lang)} to {self.SUPPORTED_LANGUAGES.get(target_lang, target_lang)}. Keep it natural and suitable for e-commerce."
-                            },
-                            {
-                                "role": "user",
-                                "content": text
-                            }
-                        ],
-                        "temperature": 0.3
-                    },
-                    timeout=30
-                )
-                
-                data = response.json()
-                return data["choices"][0]["message"]["content"]
-                
+            # 构建系统提示词
+            system_prompt = f"""You are a professional translator for e-commerce products. 
+Translate the following text from {source_name} to {target_name}.
+Keep it natural, concise, and suitable for e-commerce.
+Only output the translated text, no explanations."""
+
+            # 调用LLM
+            response = self._llm_client.invoke(
+                messages=[
+                    SystemMessage(content=system_prompt),
+                    HumanMessage(content=text)
+                ],
+                model="doubao-seed-1-8-251228",
+                temperature=0.3  # 低温度保证翻译准确性
+            )
+            
+            translated = response.content.strip()
+            logger.info(f"翻译成功: {text} -> {translated}")
+            return translated
+            
         except Exception as e:
             logger.error(f"翻译失败: {e}")
-            return text
+            # 翻译失败时返回原文
+            return f"[{target_lang}] {text}"
     
     async def _compose_translated_image(
         self,

@@ -238,6 +238,18 @@ coze dev
 | `/api/ai/generate-video` | POST | 视频生成 |
 | `/api/ai/agents` | GET | 智能体列表 |
 
+### 图片处理API
+| 路由 | 方法 | 功能 |
+|------|------|------|
+| `/api/v1/ai-agents/process-image` | POST | 图片翻译处理（豆包视觉模型） |
+| `/api/v1/ai-agents/process-image/batch` | POST | 批量图片翻译处理 |
+
+**图片处理功能说明**：
+- **翻译模式**：使用豆包视觉模型识别图片中的文字并翻译到目标语言
+- **支持语言**：中文(zh)、英文(en)、印尼语(id)、泰语(th)、越南语(vi)、马来语(ms)
+- **认证要求**：需要Bearer Token认证
+- **返回字段**：original_text（原文）、translated_text（译文）、text_positions（文字位置）
+
 ### ERP系统API路由
 | 路由 | 方法 | 功能 |
 |------|------|------|
