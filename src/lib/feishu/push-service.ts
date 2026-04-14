@@ -103,8 +103,9 @@ export class FeishuPushClient {
     );
 
     const data = await response.json();
+    console.log(`[Push] 飞书API响应: code=${data.code}, msg=${data.msg}, status=${response.status}`);
     if (data.code !== 0) {
-      console.error(`[Push] 发送失败: ${data.msg}`);
+      console.error(`[Push] 飞书API错误: ${JSON.stringify(data)}`);
       return; // 不要抛出异常
     }
   }
@@ -195,7 +196,7 @@ export async function pushTaskProgress(
 /**
  * 推送欢迎消息
  */
-export async function pushWelcomeMessage(chatId: string): Promise<void> {
+export async function pushWelcomeMessage(receiveId: string, receiveIdType: string): Promise<void> {
   const card = {
     config: { wide_screen_mode: true },
     header: {
@@ -218,7 +219,7 @@ export async function pushWelcomeMessage(chatId: string): Promise<void> {
   };
 
   try {
-    await globalPushClient.sendCardMessage(chatId, 'chat_id', card);
+    await globalPushClient.sendCardMessage(receiveId, receiveIdType, card);
   } catch (error) {
     console.error(`[Push] 欢迎消息推送失败:`, error);
   }
@@ -227,10 +228,10 @@ export async function pushWelcomeMessage(chatId: string): Promise<void> {
 /**
  * 推送任务状态查询卡片
  */
-export async function pushTaskStatus(chatId: string, taskId: string): Promise<void> {
+export async function pushTaskStatus(receiveId: string, receiveIdType: string, taskId: string): Promise<void> {
   const task = getTask(taskId);
   if (!task) {
-    await globalPushClient.sendTextMessage(chatId, 'chat_id', `任务 ${taskId} 不存在`);
+    await globalPushClient.sendTextMessage(receiveId, receiveIdType, `任务 ${taskId} 不存在`);
     return;
   }
 
@@ -260,7 +261,7 @@ export async function pushTaskStatus(chatId: string, taskId: string): Promise<vo
     ],
   };
 
-  await globalPushClient.sendCardMessage(chatId, 'chat_id', card);
+  await globalPushClient.sendCardMessage(receiveId, receiveIdType, card);
 }
 
 // ==================== 卡片构建函数 ====================

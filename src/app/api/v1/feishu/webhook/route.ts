@@ -316,7 +316,7 @@ async function sendAsyncTaskMessage(receiveId: string, receiveIdType: string, re
 /**
  * 发送结果消息
  */
-async function sendResultMessage(chatId: string, result: any, intent: string) {
+async function sendResultMessage(receiveId: string, receiveIdType: string, result: any, intent: string) {
   const pushClient = getPushClient();
 
   // 根据数据类型选择不同的卡片模板
@@ -324,68 +324,68 @@ async function sendResultMessage(chatId: string, result: any, intent: string) {
 
   switch (data?.type) {
     case 'daily_report':
-      await sendDailyReportCard(chatId, data);
+      await sendDailyReportCard(receiveId, receiveIdType, data);
       break;
 
     case 'product_selection':
-      await sendProductSelectionCard(chatId, data);
+      await sendProductSelectionCard(receiveId, receiveIdType, data);
       break;
 
     case 'inventory_alert':
-      await sendInventoryAlertCard(chatId, data);
+      await sendInventoryAlertCard(receiveId, receiveIdType, data);
       break;
 
     case 'order_list':
-      await sendOrderListCard(chatId, data);
+      await sendOrderListCard(receiveId, receiveIdType, data);
       break;
 
     case 'sales_report':
-      await sendSalesReportCard(chatId, data);
+      await sendSalesReportCard(receiveId, receiveIdType, data);
       break;
 
     case 'generated_copy':
-      await sendGeneratedCopyCard(chatId, data);
+      await sendGeneratedCopyCard(receiveId, receiveIdType, data);
       break;
 
     case 'listing_optimized':
-      await sendListingOptimizedCard(chatId, data);
+      await sendListingOptimizedCard(receiveId, receiveIdType, data);
       break;
 
     case 'image_processed':
-      await sendImageProcessedCard(chatId, data);
+      await sendImageProcessedCard(receiveId, receiveIdType, data);
       break;
 
     case 'video_generated':
-      await sendVideoGeneratedCard(chatId, data);
+      await sendVideoGeneratedCard(receiveId, receiveIdType, data);
       break;
 
     case 'price_calculated':
-      await sendPriceCalculatedCard(chatId, data);
+      await sendPriceCalculatedCard(receiveId, receiveIdType, data);
       break;
 
     case 'product_published':
-      await sendProductPublishedCard(chatId, data);
+      await sendProductPublishedCard(receiveId, receiveIdType, data);
       break;
 
     case 'links_collected':
-      await sendLinksCollectedCard(chatId, data);
+      await sendLinksCollectedCard(receiveId, receiveIdType, data);
       break;
 
     case 'greeting':
-      await pushClient.sendTextMessage(chatId, 'chat_id', data.content);
+      await pushClient.sendTextMessage(receiveId, receiveIdType, data.content);
       break;
 
     case 'help':
-      await sendHelpCard(chatId, data.content);
+      await sendHelpCard(receiveId, receiveIdType, data.content);
       break;
 
     case 'unknown':
-      await sendUnknownCard(chatId, data.content);
+      await sendUnknownCard(receiveId, receiveIdType, data.content);
       break;
 
     default:
       // 默认卡片
-      await pushClient.sendCardMessage(chatId, 'chat_id', {
+      await pushClient.sendCardMessage(receiveId, receiveIdType, {
         config: { wide_screen_mode: true },
         header: {
           title: { tag: 'plain_text', content: '📋 查询结果' },
@@ -401,7 +401,7 @@ async function sendResultMessage(chatId: string, result: any, intent: string) {
 /**
  * 发送日报卡片
  */
-async function sendDailyReportCard(chatId: string, data: any) {
+async function sendDailyReportCard(receiveId: string, receiveIdType: string, data: any) {
   const pushClient = getPushClient();
 
   const stats = data.stats || {};
@@ -470,13 +470,13 @@ async function sendDailyReportCard(chatId: string, data: any) {
     ],
   };
 
-  await pushClient.sendCardMessage(chatId, 'chat_id', card);
+  await pushClient.sendCardMessage(receiveId, receiveIdType, card);
 }
 
 /**
  * 发送选品结果卡片
  */
-async function sendProductSelectionCard(chatId: string, data: any) {
+async function sendProductSelectionCard(receiveId: string, receiveIdType: string, data: any) {
   const pushClient = getPushClient();
   const products = data.products || [];
 
@@ -514,13 +514,13 @@ async function sendProductSelectionCard(chatId: string, data: any) {
     ],
   };
 
-  await pushClient.sendCardMessage(chatId, 'chat_id', card);
+  await pushClient.sendCardMessage(receiveId, receiveIdType, card);
 }
 
 /**
  * 发送库存预警卡片
  */
-async function sendInventoryAlertCard(chatId: string, data: any) {
+async function sendInventoryAlertCard(receiveId: string, receiveIdType: string, data: any) {
   const pushClient = getPushClient();
   const items = data.items || [];
 
@@ -566,13 +566,13 @@ async function sendInventoryAlertCard(chatId: string, data: any) {
     ],
   };
 
-  await pushClient.sendCardMessage(chatId, 'chat_id', card);
+  await pushClient.sendCardMessage(receiveId, receiveIdType, card);
 }
 
 /**
  * 发送订单列表卡片
  */
-async function sendOrderListCard(chatId: string, data: any) {
+async function sendOrderListCard(receiveId: string, receiveIdType: string, data: any) {
   const pushClient = getPushClient();
   const orders = data.orders || [];
 
@@ -614,13 +614,13 @@ async function sendOrderListCard(chatId: string, data: any) {
     ],
   };
 
-  await pushClient.sendCardMessage(chatId, 'chat_id', card);
+  await pushClient.sendCardMessage(receiveId, receiveIdType, card);
 }
 
 /**
  * 发送销售报告卡片
  */
-async function sendSalesReportCard(chatId: string, data: any) {
+async function sendSalesReportCard(receiveId: string, receiveIdType: string, data: any) {
   const pushClient = getPushClient();
   const stats = data.stats || {};
   const comparison = data.comparison || {};
@@ -680,13 +680,13 @@ async function sendSalesReportCard(chatId: string, data: any) {
     ],
   };
 
-  await pushClient.sendCardMessage(chatId, 'chat_id', card);
+  await pushClient.sendCardMessage(receiveId, receiveIdType, card);
 }
 
 /**
  * 发送生成的文案卡片
  */
-async function sendGeneratedCopyCard(chatId: string, data: any) {
+async function sendGeneratedCopyCard(receiveId: string, receiveIdType: string, data: any) {
   const pushClient = getPushClient();
 
   const card = {
@@ -708,13 +708,13 @@ async function sendGeneratedCopyCard(chatId: string, data: any) {
     ],
   };
 
-  await pushClient.sendCardMessage(chatId, 'chat_id', card);
+  await pushClient.sendCardMessage(receiveId, receiveIdType, card);
 }
 
 /**
  * 发送帮助卡片
  */
-async function sendHelpCard(chatId: string, content: string) {
+async function sendHelpCard(receiveId: string, receiveIdType: string, content: string) {
   const pushClient = getPushClient();
 
   const card = {
@@ -728,13 +728,13 @@ async function sendHelpCard(chatId: string, content: string) {
     ],
   };
 
-  await pushClient.sendCardMessage(chatId, 'chat_id', card);
+  await pushClient.sendCardMessage(receiveId, receiveIdType, card);
 }
 
 /**
  * 发送未知意图卡片
  */
-async function sendUnknownCard(chatId: string, content: string) {
+async function sendUnknownCard(receiveId: string, receiveIdType: string, content: string) {
   const pushClient = getPushClient();
 
   const card = {
@@ -748,13 +748,13 @@ async function sendUnknownCard(chatId: string, content: string) {
     ],
   };
 
-  await pushClient.sendCardMessage(chatId, 'chat_id', card);
+  await pushClient.sendCardMessage(receiveId, receiveIdType, card);
 }
 
 /**
  * 发送错误消息
  */
-async function sendErrorMessage(chatId: string, error: string) {
+async function sendErrorMessage(receiveId: string, receiveIdType: string, error: string) {
   const pushClient = getPushClient();
 
   const card = {
@@ -773,13 +773,13 @@ async function sendErrorMessage(chatId: string, error: string) {
     ],
   };
 
-  await pushClient.sendCardMessage(chatId, 'chat_id', card);
+  await pushClient.sendCardMessage(receiveId, receiveIdType, card);
 }
 
 /**
  * 发送Listing优化结果卡片
  */
-async function sendListingOptimizedCard(chatId: string, data: any) {
+async function sendListingOptimizedCard(receiveId: string, receiveIdType: string, data: any) {
   const pushClient = getPushClient();
 
   const card = {
@@ -812,13 +812,13 @@ async function sendListingOptimizedCard(chatId: string, data: any) {
     ],
   };
 
-  await pushClient.sendCardMessage(chatId, 'chat_id', card);
+  await pushClient.sendCardMessage(receiveId, receiveIdType, card);
 }
 
 /**
  * 发送图片处理结果卡片
  */
-async function sendImageProcessedCard(chatId: string, data: any) {
+async function sendImageProcessedCard(receiveId: string, receiveIdType: string, data: any) {
   const pushClient = getPushClient();
 
   const card = {
@@ -840,13 +840,13 @@ async function sendImageProcessedCard(chatId: string, data: any) {
     ],
   };
 
-  await pushClient.sendCardMessage(chatId, 'chat_id', card);
+  await pushClient.sendCardMessage(receiveId, receiveIdType, card);
 }
 
 /**
  * 发送视频生成结果卡片
  */
-async function sendVideoGeneratedCard(chatId: string, data: any) {
+async function sendVideoGeneratedCard(receiveId: string, receiveIdType: string, data: any) {
   const pushClient = getPushClient();
 
   const card = {
@@ -898,13 +898,13 @@ async function sendVideoGeneratedCard(chatId: string, data: any) {
     ],
   };
 
-  await pushClient.sendCardMessage(chatId, 'chat_id', card);
+  await pushClient.sendCardMessage(receiveId, receiveIdType, card);
 }
 
 /**
  * 发送智能定价结果卡片
  */
-async function sendPriceCalculatedCard(chatId: string, data: any) {
+async function sendPriceCalculatedCard(receiveId: string, receiveIdType: string, data: any) {
   const pushClient = getPushClient();
 
   const breakdownLines = Object.entries(data.costBreakdown || {})
@@ -955,13 +955,13 @@ async function sendPriceCalculatedCard(chatId: string, data: any) {
     ],
   };
 
-  await pushClient.sendCardMessage(chatId, 'chat_id', card);
+  await pushClient.sendCardMessage(receiveId, receiveIdType, card);
 }
 
 /**
  * 发送新品上架结果卡片
  */
-async function sendProductPublishedCard(chatId: string, data: any) {
+async function sendProductPublishedCard(receiveId: string, receiveIdType: string, data: any) {
   const pushClient = getPushClient();
 
   const card = {
@@ -1002,13 +1002,13 @@ async function sendProductPublishedCard(chatId: string, data: any) {
     ],
   };
 
-  await pushClient.sendCardMessage(chatId, 'chat_id', card);
+  await pushClient.sendCardMessage(receiveId, receiveIdType, card);
 }
 
 /**
  * 发送链接采集结果卡片
  */
-async function sendLinksCollectedCard(chatId: string, data: any) {
+async function sendLinksCollectedCard(receiveId: string, receiveIdType: string, data: any) {
   const pushClient = getPushClient();
 
   const card = {
@@ -1057,5 +1057,5 @@ async function sendLinksCollectedCard(chatId: string, data: any) {
     ],
   };
 
-  await pushClient.sendCardMessage(chatId, 'chat_id', card);
+  await pushClient.sendCardMessage(receiveId, receiveIdType, card);
 }
