@@ -48,6 +48,20 @@ function isMessageProcessed(messageId: string, userId: string, textContent: stri
   return false;
 }
 
+/**
+ * 获取消息接收者信息
+ * 单聊(p2p): 使用发送者的 open_id 回复
+ * 群聊(group): 使用 chat_id 回复
+ */
+function getReceiveInfo(chatType: string, userId: string, chatId: string): { receiveId: string; receiveIdType: string } {
+  if (chatType === 'p2p') {
+    // 单聊：回复给发送者
+    return { receiveId: userId, receiveIdType: 'open_id' };
+  }
+  // 群聊：回复到群里
+  return { receiveId: chatId, receiveIdType: 'chat_id' };
+}
+
 // GET 请求：飞书验证 URL 有效性
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
@@ -150,18 +164,21 @@ async function handleMessageEvent(body: any) {
   // 添加到会话上下文
   addUserMessage(userId, chatId, textContent);
 
+  // 获取消息接收者信息
+  const { receiveId, receiveIdType } = getReceiveInfo(chatType, userId, chatId);
+
   // 检查是否是查询任务状态的指令
   if (textContent.startsWith('任务状态 ') || textContent.includes('task')) {
     const taskId = textContent.replace('任务状态 ', '').replace('task', '').trim();
     if (taskId) {
-      await pushTaskStatus(chatId, taskId);
+      await pushTaskStatus(receiveId, receiveIdType, taskId);
       return;
     }
   }
 
   // 检查是否是欢迎消息
   if (/^(hi|hello|你好|嗨)/i.test(textContent.trim())) {
-    await pushWelcomeMessage(chatId);
+    await pushWelcomeMessage(receiveId, receiveIdType);
     return;
   }
 
@@ -172,7 +189,7 @@ async function handleMessageEvent(body: any) {
 
   // 如果需要追问
   if (intentResult.needClarification && intentResult.clarificationQuestion) {
-    await sendClarificationMessage(chatId, intentResult);
+    await sendClarificationMessage(receiveId, receiveIdType, intentResult);
     return;
   }
 
@@ -191,20 +208,20 @@ async function handleMessageEvent(body: any) {
   // 发送结果
   if (result.isAsync) {
     // 异步任务：发送处理中消息
-    await sendAsyncTaskMessage(chatId, result, intentResult.intent);
+    await sendAsyncTaskMessage(receiveId, receiveIdType, result, intentResult.intent);
   } else if (result.success) {
     // 同步任务：直接发送结果
-    await sendResultMessage(chatId, result, intentResult.intent);
+    await sendResultMessage(receiveId, receiveIdType, result, intentResult.intent);
   } else {
     // 执行失败
-    await sendErrorMessage(chatId, result.error || '执行失败');
+    await sendErrorMessage(receiveId, receiveIdType, result.error || '执行失败');
   }
 }
 
 /**
  * 发送追问消息
  */
-async function sendClarificationMessage(chatId: string, intentResult: any) {
+async function sendClarificationMessage(receiveId: string, receiveIdType: string, intentResult: any) {
   const pushClient = getPushClient();
   
   const intentNames: Record<string, string> = {
@@ -239,13 +256,13 @@ async function sendClarificationMessage(chatId: string, intentResult: any) {
     ],
   };
 
-  await pushClient.sendCardMessage(chatId, 'chat_id', card);
+  await pushClient.sendCardMessage(receiveId, receiveIdType, card);
 }
 
 /**
  * 发送异步任务处理中消息
  */
-async function sendAsyncTaskMessage(chatId: string, result: any, intent: string) {
+async function sendAsyncTaskMessage(receiveId: string, receiveIdType: string, result: any, intent: string) {
   const pushClient = getPushClient();
 
   const intentNames: Record<string, string> = {
@@ -293,7 +310,7 @@ async function sendAsyncTaskMessage(chatId: string, result: any, intent: string)
     ],
   };
 
-  await pushClient.sendCardMessage(chatId, 'chat_id', card);
+  await pushClient.sendCardMessage(receiveId, receiveIdType, card);
 }
 
 /**

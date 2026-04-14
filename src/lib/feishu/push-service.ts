@@ -124,8 +124,13 @@ export async function pushTaskResult(taskId: string): Promise<void> {
   }
 
   try {
-    const receiveId = task.chatId;
-    const receiveIdType = 'chat_id';
+    // 单聊优先使用 userId（open_id），群聊使用 chatId
+    // userId 通常是 open_id 格式（ou_开头），chatId 是群聊ID
+    const isOpenId = task.userId && task.userId.startsWith('ou_');
+    const receiveId = isOpenId ? task.userId : task.chatId;
+    const receiveIdType = isOpenId ? 'open_id' : 'chat_id';
+
+    console.log(`[Push] 推送类型: ${receiveIdType}, ID: ${receiveId}`);
 
     // 根据任务类型生成不同的卡片
     let card: any;

@@ -492,13 +492,23 @@ export async function recognizeIntent(
   const coreMatch = matchCoreKeywords(text);
   if (coreMatch) {
     console.log(`[Intent] 核心关键词匹配: ${coreMatch.intent}`);
+    const params = extractParamsFromText(text);
+    
+    // 选品：如果没有指定品类，使用默认品类"热门"，直接执行
+    if (coreMatch.intent === INTENT_TYPES.SELECT_PRODUCTS && !params.category) {
+      params.category = '热门商品';
+    }
+    
+    // 检查是否需要追问（缺少关键信息如链接、图片等）
+    const needsClarification = checkNeedsClarification(coreMatch.intent, params);
+    
     return {
       intent: coreMatch.intent,
       confidence: coreMatch.confidence,
-      params: extractParamsFromText(text),
+      params,
       originalText: text,
-      needClarification: true,
-      clarificationQuestion: getClarificationQuestion(coreMatch.intent),
+      needClarification: needsClarification,
+      clarificationQuestion: needsClarification ? getClarificationQuestion(coreMatch.intent) : undefined,
     };
   }
 
@@ -514,6 +524,13 @@ export async function recognizeIntent(
   // 4. 规则识别
   const rulesResult = recognizeByRules(text, context);
   
+  // 选品：如果没有指定品类，使用默认品类"热门"，直接执行
+  if (rulesResult.intent === INTENT_TYPES.SELECT_PRODUCTS && !rulesResult.params.category) {
+    rulesResult.params.category = '热门商品';
+    rulesResult.needClarification = false;
+    rulesResult.clarificationQuestion = undefined;
+  }
+  
   // 5. LLM 增强（仅用于模糊输入）
   if (rulesResult.confidence < 0.8) {
     const enhancedResult = await enhanceWithLLM(text, rulesResult);
@@ -521,6 +538,30 @@ export async function recognizeIntent(
   }
 
   return rulesResult;
+}
+
+/**
+ * 检查是否需要追问
+ * 某些意图需要用户提供额外信息（如链接、图片等）才需要追问
+ */
+function checkNeedsClarification(intent: string, params: Record<string, any>): boolean {
+  // 需要追问的意图类型（需要用户提供链接、图片等）
+  const needsDetailsIntents = [
+    INTENT_TYPES.PROCESS_IMAGE,
+    INTENT_TYPES.GENERATE_VIDEO,
+    INTENT_TYPES.CALCULATE_PRICE,
+    INTENT_TYPES.PUBLISH_PRODUCT,
+    INTENT_TYPES.COLLECT_LINKS,
+    INTENT_TYPES.OPTIMIZE_LISTING,
+  ];
+  
+  // 这些意图需要追问
+  if (needsDetailsIntents.includes(intent as any)) {
+    return true;
+  }
+  
+  // 其他意图默认不需要追问
+  return false;
 }
 
 /**
