@@ -122,14 +122,14 @@ async function handleMessageEvent(body: any) {
     return;
   }
 
-  // 识别意图
-  const intentResult = await recognizeIntent(textContent);
+  // 识别意图（传入上下文）
+  const intentResult = await recognizeIntent(textContent, userId, chatId);
 
-  console.log(`[Feishu] 识别意图: ${intentResult.intent}, 置信度: ${intentResult.confidence}`);
+  console.log(`[Feishu] 识别意图: ${intentResult.intent}, 置信度: ${intentResult.confidence}${intentResult.fromContext ? ' (从上下文推断)' : ''}`);
 
   // 如果需要追问
   if (intentResult.needClarification && intentResult.clarificationQuestion) {
-    await sendClarificationMessage(chatId, intentResult.clarificationQuestion);
+    await sendClarificationMessage(chatId, intentResult);
     return;
   }
 
@@ -142,8 +142,8 @@ async function handleMessageEvent(body: any) {
     textContent
   );
 
-  // 添加到会话上下文
-  addAssistantMessage(userId, chatId, JSON.stringify(result));
+  // 添加到会话上下文（记录意图）
+  addAssistantMessage(userId, chatId, JSON.stringify(result), intentResult.intent, intentResult.params);
 
   // 发送结果
   if (result.isAsync) {
@@ -161,17 +161,31 @@ async function handleMessageEvent(body: any) {
 /**
  * 发送追问消息
  */
-async function sendClarificationMessage(chatId: string, question: string) {
+async function sendClarificationMessage(chatId: string, intentResult: any) {
   const pushClient = getPushClient();
+  
+  const intentNames: Record<string, string> = {
+    [INTENT_TYPES.SELECT_PRODUCTS]: '选品分析',
+    [INTENT_TYPES.PROCESS_IMAGE]: '图片处理',
+    [INTENT_TYPES.GENERATE_VIDEO]: '视频生成',
+    [INTENT_TYPES.CALCULATE_PRICE]: '智能定价',
+    [INTENT_TYPES.PUBLISH_PRODUCT]: '新品上架',
+    [INTENT_TYPES.COLLECT_LINKS]: '链接采集',
+    [INTENT_TYPES.OPTIMIZE_LISTING]: 'Listing优化',
+    [INTENT_TYPES.CREATE_AD]: '创建广告',
+  };
+  
+  const intentName = intentNames[intentResult.intent] || '处理';
+  const contextHint = intentResult.fromContext ? '\n\n💡 我注意到您可能在继续上次的操作。' : '';
 
   const card = {
     config: { wide_screen_mode: true },
     header: {
-      title: { tag: 'plain_text', content: '🤔 需要更多信息' },
-      template: 'yellow',
+      title: { tag: 'plain_text', content: `📋 ${intentName} - 需要更多信息` },
+      template: 'blue',
     },
     elements: [
-      { tag: 'markdown', content: question },
+      { tag: 'markdown', content: intentResult.clarificationQuestion + contextHint },
       { tag: 'hr' },
       {
         tag: 'note',

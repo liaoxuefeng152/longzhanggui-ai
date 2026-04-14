@@ -11,7 +11,7 @@ export interface ConversationMessage {
   role: 'user' | 'assistant' | 'system';
   content: string;
   timestamp: number;
-  intent?: string;
+  intent?: string;  // 明确记录的意图
   taskId?: string;  // 关联的任务ID
 }
 
@@ -19,18 +19,22 @@ export interface ConversationMessage {
 export interface ConversationContext {
   userId: string;
   chatId: string;
-  messages: ConversationMessage[];
-  lastIntent?: string;
-  lastParams?: Record<string, any>;
+  messages: ConversationMessage[];  // 消息历史（最多保留20条）
+  lastClearIntent?: string;  // 上一个明确的意图（用于追问）
+  lastParams?: Record<string, any>;  // 上一个意图的参数
   lastTaskId?: string;
   lastProductCategory?: string;  // 最近提到的商品品类
   lastPlatform?: string;        // 最近提到的平台
+  pendingClarifications: string[];  // 待确认的信息
   createdAt: number;
   updatedAt: number;
 }
 
-// 上下文有效期（30分钟无交互则过期）
-const CONTEXT_EXPIRY_MS = 30 * 60 * 1000;
+// 上下文有效期（60分钟无交互则过期，增加到1小时）
+const CONTEXT_EXPIRY_MS = 60 * 60 * 1000;
+
+// 最大消息保留数量
+const MAX_MESSAGES = 20;
 
 // 全局会话存储
 declare global {
@@ -70,6 +74,7 @@ export function getOrCreateContext(
       userId,
       chatId,
       messages: [],
+      pendingClarifications: [],
       createdAt: Date.now(),
       updatedAt: Date.now(),
     };
@@ -87,10 +92,19 @@ export function getOrCreateContext(
   
   // 检查是否过期
   if (Date.now() - context.updatedAt > CONTEXT_EXPIRY_MS) {
-    // 重置会话但保留关键信息
+    // 重置会话但保留关键信息（如用户偏好）
+    const preservedInfo = {
+      lastProductCategory: context.lastProductCategory,
+      lastPlatform: context.lastPlatform,
+    };
+    
     context = {
       ...context,
+      ...preservedInfo,
       messages: [],
+      pendingClarifications: [],
+      lastClearIntent: undefined,
+      lastParams: undefined,
       updatedAt: Date.now(),
     };
     global.feishuConversations.set(key, context);
@@ -106,27 +120,27 @@ export function addUserMessage(
   userId: string,
   chatId: string,
   content: string,
-  intent?: string,
-  taskId?: string
+  intent?: string
 ): ConversationContext {
   const context = getOrCreateContext(userId, chatId);
   
   const message: ConversationMessage = {
-    id: `msg_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+    id: `msg_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
     role: 'user',
     content,
     timestamp: Date.now(),
     intent,
-    taskId,
   };
   
   context.messages.push(message);
-  context.lastIntent = intent;
-  context.lastTaskId = taskId;
-  context.updatedAt = Date.now();
   
-  // 提取并保存关键实体
-  extractEntities(content, context);
+  // 限制消息数量
+  if (context.messages.length > MAX_MESSAGES) {
+    context.messages = context.messages.slice(-MAX_MESSAGES);
+  }
+  
+  context.updatedAt = Date.now();
+  global.feishuConversations.set(getConversationKey(userId, chatId), context);
   
   return context;
 }
@@ -137,153 +151,130 @@ export function addUserMessage(
 export function addAssistantMessage(
   userId: string,
   chatId: string,
-  content: string
+  content: string,
+  intent?: string,
+  params?: Record<string, any>
 ): ConversationContext {
   const context = getOrCreateContext(userId, chatId);
   
   const message: ConversationMessage = {
-    id: `msg_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+    id: `msg_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
     role: 'assistant',
     content,
     timestamp: Date.now(),
+    intent,
   };
   
   context.messages.push(message);
+  
+  // 更新最后意图（仅当意图明确时）
+  if (intent && intent !== 'unknown') {
+    context.lastClearIntent = intent;
+    context.lastParams = params || context.lastParams;
+  }
+  
+  // 限制消息数量
+  if (context.messages.length > MAX_MESSAGES) {
+    context.messages = context.messages.slice(-MAX_MESSAGES);
+  }
+  
   context.updatedAt = Date.now();
+  global.feishuConversations.set(getConversationKey(userId, chatId), context);
   
   return context;
 }
 
 /**
- * 从消息中提取关键实体
- */
-function extractEntities(content: string, context: ConversationContext): void {
-  const text = content.toLowerCase();
-  
-  // 提取商品品类
-  const categories = [
-    '宠物用品', '宠物玩具', '宠物食品', '宠物服饰',
-    '3c产品', '手机配件', '电脑配件', '数码',
-    '家居用品', '厨房用品', '卧室用品',
-    '服装', '女装', '男装', '童装',
-    '美妆', '化妆品', '护肤',
-    '母婴', '玩具',
-  ];
-  
-  for (const category of categories) {
-    if (text.includes(category)) {
-      context.lastProductCategory = category;
-      break;
-    }
-  }
-  
-  // 提取平台
-  const platforms = [
-    'shopee', '虾皮', 'lazada', '来赞达',
-    'amazon', '亚马逊', 'ebay', 'wish',
-  ];
-  
-  for (const platform of platforms) {
-    if (text.includes(platform)) {
-      context.lastPlatform = platform;
-      break;
-    }
-  }
-}
-
-/**
- * 获取最近N条消息
- */
-export function getRecentMessages(
-  userId: string,
-  chatId: string,
-  count = 10
-): ConversationMessage[] {
-  const context = getOrCreateContext(userId, chatId);
-  return context.messages.slice(-count);
-}
-
-/**
- * 构建对话历史（用于LLM调用）
- */
-export function buildConversationHistory(
-  userId: string,
-  chatId: string,
-  maxMessages = 10
-): string {
-  const messages = getRecentMessages(userId, chatId, maxMessages);
-  
-  return messages
-    .map(m => `${m.role === 'user' ? '用户' : '助手'}: ${m.content}`)
-    .join('\n');
-}
-
-/**
- * 检查是否需要追问
- */
-export function shouldAskClarification(
-  intent: string,
-  params: Record<string, any>
-): { need: boolean; question?: string } {
-  switch (intent) {
-    case TaskType.SELECT_PRODUCTS:
-      if (!params.category) {
-        return {
-          need: true,
-          question: '请问您想选哪个品类的商品呢？比如：宠物用品、3C产品、家居用品等',
-        };
-      }
-      if (!params.count || params.count < 1) {
-        return {
-          need: true,
-          question: '请问您需要推荐几款商品呢？',
-        };
-      }
-      break;
-      
-    case TaskType.QUERY_INVENTORY:
-      if (!params.productName && !params.category) {
-        return {
-          need: true,
-          question: '请问您想查询哪个商品或品类的库存？',
-        };
-      }
-      break;
-      
-    case TaskType.CREATE_AD:
-      if (!params.productId) {
-        return {
-          need: true,
-          question: '请问您想为哪个商品创建广告？',
-        };
-      }
-      break;
-  }
-  
-  return { need: false };
-}
-
-/**
- * 清除会话上下文
+ * 清除会话
  */
 export function clearContext(userId: string, chatId: string): void {
-  initConversations();
   const key = getConversationKey(userId, chatId);
   global.feishuConversations.delete(key);
 }
 
 /**
- * 获取用户的最近会话
+ * 获取会话摘要（用于调试）
  */
-export function getUserRecentChats(userId: string, limit = 5): ConversationContext[] {
-  initConversations();
+export function getContextSummary(userId: string, chatId: string): string {
+  const context = getOrCreateContext(userId, chatId);
   
-  const chatIds = global.feishuConversationIndex.get(userId) || [];
-  const now = Date.now();
+  return `会话摘要:
+- 用户: ${context.userId}
+- 消息数: ${context.messages.length}
+- 最后意图: ${context.lastClearIntent || '无'}
+- 待确认: ${context.pendingClarifications.length > 0 ? context.pendingClarifications.join(', ') : '无'}
+- 最近品类: ${context.lastProductCategory || '无'}
+- 创建时间: ${new Date(context.createdAt).toLocaleString()}
+- 最后更新: ${new Date(context.updatedAt).toLocaleString()}
+`;
+}
+
+/**
+ * 更新上下文中的品类信息
+ */
+export function updateCategory(
+  userId: string,
+  chatId: string,
+  category: string
+): ConversationContext {
+  const context = getOrCreateContext(userId, chatId);
+  context.lastProductCategory = category;
+  context.updatedAt = Date.now();
+  global.feishuConversations.set(getConversationKey(userId, chatId), context);
+  return context;
+}
+
+/**
+ * 添加待确认信息
+ */
+export function addPendingClarification(
+  userId: string,
+  chatId: string,
+  clarification: string
+): ConversationContext {
+  const context = getOrCreateContext(userId, chatId);
+  if (!context.pendingClarifications.includes(clarification)) {
+    context.pendingClarifications.push(clarification);
+  }
+  context.updatedAt = Date.now();
+  global.feishuConversations.set(getConversationKey(userId, chatId), context);
+  return context;
+}
+
+/**
+ * 获取完整的对话历史（用于 LLM 上下文）
+ */
+export function getConversationHistory(
+  userId: string,
+  chatId: string,
+  maxMessages: number = 10
+): ConversationMessage[] {
+  const context = getOrCreateContext(userId, chatId);
+  return context.messages.slice(-maxMessages);
+}
+
+/**
+ * 格式化对话历史为文本（用于 LLM 上下文）
+ */
+export function formatConversationHistory(
+  userId: string,
+  chatId: string,
+  maxMessages: number = 10
+): string {
+  const history = getConversationHistory(userId, chatId, maxMessages);
   
-  return chatIds
-    .map(chatId => global.feishuConversations.get(getConversationKey(userId, chatId)))
-    .filter((c): c is ConversationContext => c !== undefined && now - c.updatedAt < CONTEXT_EXPIRY_MS)
-    .sort((a, b) => b.updatedAt - a.updatedAt)
-    .slice(0, limit);
+  if (history.length === 0) {
+    return '';
+  }
+  
+  const lines = ['【对话历史】'];
+  for (const msg of history) {
+    const role = msg.role === 'user' ? '用户' : '助理';
+    lines.push(`${role}: ${msg.content}`);
+    if (msg.intent) {
+      lines.push(`  [意图: ${msg.intent}]`);
+    }
+  }
+  
+  return lines.join('\n');
 }
