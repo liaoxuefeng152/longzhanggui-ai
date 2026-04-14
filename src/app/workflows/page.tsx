@@ -1600,9 +1600,13 @@ function BatchProcessDialog({ open, onClose }: { open: boolean; onClose: () => v
 
     setIsProcessing(true);
     try {
-      const response = await fetch('/api/v1/ai/process-image/batch', {
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/v1/ai-agents/process-image/batch', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify({
           image_urls: imageList,
           mode: processMode,
