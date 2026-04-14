@@ -273,6 +273,30 @@ async function sendResultMessage(chatId: string, result: any, intent: string) {
       await sendGeneratedCopyCard(chatId, data);
       break;
 
+    case 'listing_optimized':
+      await sendListingOptimizedCard(chatId, data);
+      break;
+
+    case 'image_processed':
+      await sendImageProcessedCard(chatId, data);
+      break;
+
+    case 'video_generated':
+      await sendVideoGeneratedCard(chatId, data);
+      break;
+
+    case 'price_calculated':
+      await sendPriceCalculatedCard(chatId, data);
+      break;
+
+    case 'product_published':
+      await sendProductPublishedCard(chatId, data);
+      break;
+
+    case 'links_collected':
+      await sendLinksCollectedCard(chatId, data);
+      break;
+
     case 'greeting':
       await pushClient.sendTextMessage(chatId, 'chat_id', data.content);
       break;
@@ -672,6 +696,290 @@ async function sendErrorMessage(chatId: string, error: string) {
         tag: 'markdown',
         content: '请稍后重试，或联系管理员',
       },
+    ],
+  };
+
+  await pushClient.sendCardMessage(chatId, 'chat_id', card);
+}
+
+/**
+ * 发送Listing优化结果卡片
+ */
+async function sendListingOptimizedCard(chatId: string, data: any) {
+  const pushClient = getPushClient();
+
+  const card = {
+    config: { wide_screen_mode: true },
+    header: {
+      title: { tag: 'plain_text', content: '📝 Listing优化完成' },
+      template: 'green',
+    },
+    elements: [
+      { tag: 'markdown', content: `**优化标题**\n${data.title || '标题优化完成'}` },
+      { tag: 'hr' },
+      { tag: 'markdown', content: `**关键词**\n${(data.keywords || []).join(', ')}` },
+      { tag: 'hr' },
+      { tag: 'markdown', content: `**产品要点**\n${(data.bulletPoints || []).map((b: string, i: number) => `${i + 1}. ${b}`).join('\n')}` },
+      { tag: 'hr' },
+      {
+        tag: 'column_set',
+        flex_mode: 'none',
+        elements: [
+          {
+            tag: 'column',
+            width: 'weighted',
+            weight: 1,
+            elements: [
+              { tag: 'markdown', content: `**SEO评分**\n${data.seoScore || 0}分` },
+            ],
+          },
+        ],
+      },
+    ],
+  };
+
+  await pushClient.sendCardMessage(chatId, 'chat_id', card);
+}
+
+/**
+ * 发送图片处理结果卡片
+ */
+async function sendImageProcessedCard(chatId: string, data: any) {
+  const pushClient = getPushClient();
+
+  const card = {
+    config: { wide_screen_mode: true },
+    header: {
+      title: { tag: 'plain_text', content: `🖼️ 图片${data.modeLabel || '处理'}完成` },
+      template: 'green',
+    },
+    elements: [
+      { tag: 'markdown', content: data.message || '图片处理完成！' },
+      { tag: 'hr' },
+      {
+        tag: 'image',
+        img_key: data.processedUrl || '/placeholder.png',
+        alt: '处理后的图片',
+      },
+      { tag: 'hr' },
+      { tag: 'markdown', content: '💡 *点击图片可查看大图*' },
+    ],
+  };
+
+  await pushClient.sendCardMessage(chatId, 'chat_id', card);
+}
+
+/**
+ * 发送视频生成结果卡片
+ */
+async function sendVideoGeneratedCard(chatId: string, data: any) {
+  const pushClient = getPushClient();
+
+  const card = {
+    config: { wide_screen_mode: true },
+    header: {
+      title: { tag: 'plain_text', content: '🎬 TikTok视频生成完成' },
+      template: 'green',
+    },
+    elements: [
+      {
+        tag: 'column_set',
+        flex_mode: 'none',
+        elements: [
+          {
+            tag: 'column',
+            width: 'weighted',
+            weight: 1,
+            elements: [
+              { tag: 'markdown', content: `**时长**\n${data.duration || 10}秒` },
+            ],
+          },
+          {
+            tag: 'column',
+            width: 'weighted',
+            weight: 1,
+            elements: [
+              { tag: 'markdown', content: `**分辨率**\n${data.resolution || '720p'}` },
+            ],
+          },
+          {
+            tag: 'column',
+            width: 'weighted',
+            weight: 1,
+            elements: [
+              { tag: 'markdown', content: `**比例**\n${data.ratio || '9:16'}` },
+            ],
+          },
+        ],
+      },
+      { tag: 'hr' },
+      {
+        tag: 'thumbnail',
+        img_key: data.thumbnailUrl || '/placeholder.png',
+        title: '视频封面',
+        alt: '视频封面',
+      },
+      { tag: 'hr' },
+      { tag: 'markdown', content: '💡 *视频已生成，可直接下载使用*' },
+    ],
+  };
+
+  await pushClient.sendCardMessage(chatId, 'chat_id', card);
+}
+
+/**
+ * 发送智能定价结果卡片
+ */
+async function sendPriceCalculatedCard(chatId: string, data: any) {
+  const pushClient = getPushClient();
+
+  const breakdownLines = Object.entries(data.costBreakdown || {})
+    .map(([key, value]) => `${key}: ${value}`)
+    .join('\n');
+
+  const card = {
+    config: { wide_screen_mode: true },
+    header: {
+      title: { tag: 'plain_text', content: '💰 智能定价结果' },
+      template: 'blue',
+    },
+    elements: [
+      {
+        tag: 'column_set',
+        flex_mode: 'none',
+        elements: [
+          {
+            tag: 'column',
+            width: 'weighted',
+            weight: 1,
+            elements: [
+              { tag: 'markdown', content: `**成本价**\n¥${data.costPrice || 0}` },
+            ],
+          },
+          {
+            tag: 'column',
+            width: 'weighted',
+            weight: 1,
+            elements: [
+              { tag: 'markdown', content: `**建议售价**\n¥${data.suggestedPrice || 0}` },
+            ],
+          },
+          {
+            tag: 'column',
+            width: 'weighted',
+            weight: 1,
+            elements: [
+              { tag: 'markdown', content: `**利润率**\n${data.profitMargin || 0}%` },
+            ],
+          },
+        ],
+      },
+      { tag: 'hr' },
+      { tag: 'markdown', content: `**成本明细**\n${breakdownLines}` },
+      { tag: 'hr' },
+      { tag: 'markdown', content: `📍 平台: ${data.platform || 'Shopee'}\n💡 *点击查看详细定价策略*` },
+    ],
+  };
+
+  await pushClient.sendCardMessage(chatId, 'chat_id', card);
+}
+
+/**
+ * 发送新品上架结果卡片
+ */
+async function sendProductPublishedCard(chatId: string, data: any) {
+  const pushClient = getPushClient();
+
+  const card = {
+    config: { wide_screen_mode: true },
+    header: {
+      title: { tag: 'plain_text', content: '📦 商品上架成功' },
+      template: 'green',
+    },
+    elements: [
+      { tag: 'markdown', content: `**商品名称**\n${data.productName || '商品'}` },
+      { tag: 'hr' },
+      {
+        tag: 'column_set',
+        flex_mode: 'none',
+        elements: [
+          {
+            tag: 'column',
+            width: 'weighted',
+            weight: 1,
+            elements: [
+              { tag: 'markdown', content: `**目标平台**\n${data.platform || 'Shopee'}` },
+            ],
+          },
+          {
+            tag: 'column',
+            width: 'weighted',
+            weight: 1,
+            elements: [
+              { tag: 'markdown', content: `**状态**\n${data.status === 'published' ? '✅ 已发布' : '📝 草稿'}` },
+            ],
+          },
+        ],
+      },
+      ...(data.listingUrl ? [
+        { tag: 'hr' },
+        { tag: 'markdown', content: `🔗 [查看商品链接](${data.listingUrl})` },
+      ] : []),
+    ],
+  };
+
+  await pushClient.sendCardMessage(chatId, 'chat_id', card);
+}
+
+/**
+ * 发送链接采集结果卡片
+ */
+async function sendLinksCollectedCard(chatId: string, data: any) {
+  const pushClient = getPushClient();
+
+  const card = {
+    config: { wide_screen_mode: true },
+    header: {
+      title: { tag: 'plain_text', content: `🔗 ${data.source || '1688'}商品采集完成` },
+      template: 'green',
+    },
+    elements: [
+      { tag: 'markdown', content: `**商品名称**\n${data.productName || '采集的商品'}` },
+      { tag: 'hr' },
+      {
+        tag: 'column_set',
+        flex_mode: 'none',
+        elements: [
+          {
+            tag: 'column',
+            width: 'weighted',
+            weight: 1,
+            elements: [
+              { tag: 'markdown', content: `**价格**\n¥${data.price || 0}` },
+            ],
+          },
+          {
+            tag: 'column',
+            width: 'weighted',
+            weight: 1,
+            elements: [
+              { tag: 'markdown', content: `**供应商**\n${data.supplier || '-'}` },
+            ],
+          },
+          {
+            tag: 'column',
+            width: 'weighted',
+            weight: 1,
+            elements: [
+              { tag: 'markdown', content: `**起订量**\n${data.minOrder || 1}件` },
+            ],
+          },
+        ],
+      },
+      { tag: 'hr' },
+      { tag: 'markdown', content: `**规格**\n${(data.specifications || []).join('\n')}` },
+      { tag: 'hr' },
+      { tag: 'markdown', content: '💡 *已保存到商品库，可进行下一步处理*' },
     ],
   };
 

@@ -54,6 +54,24 @@ export async function executeIntent(
     case INTENT_TYPES.GENERATE_REPORT:
       return executeGenerateReport(params, userId, chatId);
 
+    case INTENT_TYPES.OPTIMIZE_LISTING:
+      return executeOptimizeListing(params, userId, chatId, needsAsync);
+
+    case INTENT_TYPES.PROCESS_IMAGE:
+      return executeProcessImage(params, userId, chatId, needsAsync);
+
+    case INTENT_TYPES.GENERATE_VIDEO:
+      return executeGenerateVideo(params, userId, chatId, needsAsync);
+
+    case INTENT_TYPES.CALCULATE_PRICE:
+      return executeCalculatePrice(params, userId, chatId);
+
+    case INTENT_TYPES.PUBLISH_PRODUCT:
+      return executePublishProduct(params, userId, chatId, needsAsync);
+
+    case INTENT_TYPES.COLLECT_LINKS:
+      return executeCollectLinks(params, userId, chatId, needsAsync);
+
     case INTENT_TYPES.GREETING:
       return executeGreeting(userId, chatId);
 
@@ -512,6 +530,309 @@ function generateMockCopy(type: string): string {
 祝您生活愉快！🎉`;
   }
   return '感谢您的购买！期待您的好评~';
+}
+
+// ==================== Listing优化 ====================
+
+async function executeOptimizeListing(
+  params: Record<string, any>,
+  userId: string,
+  chatId: string,
+  isAsync: boolean
+): Promise<ExecutionResult> {
+  if (isAsync) {
+    const { createTask } = await import('./task-queue');
+    const task = createTask(
+      TaskType.OPTIMIZE_LISTING,
+      userId,
+      chatId,
+      params
+    );
+
+    // 异步执行
+    setTimeout(() => {
+      completeTask(task.id, {
+        type: 'listing_optimized',
+        title: `【优化版】${params.productName || '宠物自动喂食器'}`,
+        keywords: ['pet feeder', 'automatic', 'dog bowl', 'cat food'],
+        bulletPoints: [
+          '大容量5L，满足宠物一天所需',
+          '智能定时投喂，科学喂养',
+          'APP远程控制，随时随地',
+          '不锈钢材质，安全耐用',
+        ],
+        seoScore: 85,
+      });
+    }, 3000);
+
+    return {
+      success: true,
+      data: { message: '正在优化Listing，请稍候...', taskId: task.id },
+      isAsync: true,
+      taskId: task.id,
+    };
+  }
+
+  return {
+    success: true,
+    data: {
+      type: 'listing_optimized',
+      title: `【优化版】${params.productName || '商品标题'}`,
+      keywords: ['关键词1', '关键词2', '关键词3'],
+      bulletPoints: ['要点1', '要点2', '要点3'],
+      seoScore: 85,
+    },
+  };
+}
+
+// ==================== 图片处理 ====================
+
+async function executeProcessImage(
+  params: Record<string, any>,
+  userId: string,
+  chatId: string,
+  isAsync: boolean
+): Promise<ExecutionResult> {
+  if (isAsync) {
+    const { createTask } = await import('./task-queue');
+    const task = createTask(
+      TaskType.OPTIMIZE_LISTING, // 复用类型
+      userId,
+      chatId,
+      { ...params, imageType: 'process' }
+    );
+
+    const modeLabels: Record<string, string> = {
+      translate: '翻译',
+      remove_watermark: '去水印',
+      white_background: '白底图',
+      optimize: 'AI优化',
+    };
+
+    setTimeout(() => {
+      completeTask(task.id, {
+        type: 'image_processed',
+        mode: params.mode || 'translate',
+        modeLabel: modeLabels[params.mode] || '处理完成',
+        processedUrl: 'https://example.com/processed-image.jpg',
+        message: '图片处理完成！',
+      });
+    }, 2000);
+
+    return {
+      success: true,
+      data: {
+        message: `正在进行${modeLabels[params.mode] || '图片处理'}，请稍候...`,
+        taskId: task.id,
+      },
+      isAsync: true,
+      taskId: task.id,
+    };
+  }
+
+  return {
+    success: true,
+    data: {
+      type: 'image_processed',
+      processedUrl: 'https://example.com/processed-image.jpg',
+    },
+  };
+}
+
+// ==================== TikTok视频生成 ====================
+
+async function executeGenerateVideo(
+  params: Record<string, any>,
+  userId: string,
+  chatId: string,
+  isAsync: boolean
+): Promise<ExecutionResult> {
+  if (isAsync) {
+    const { createTask } = await import('./task-queue');
+    const task = createTask(
+      TaskType.OPTIMIZE_LISTING, // 复用类型
+      userId,
+      chatId,
+      { ...params, videoType: 'TikTok' }
+    );
+
+    setTimeout(() => {
+      completeTask(task.id, {
+        type: 'video_generated',
+        videoUrl: 'https://example.com/generated-video.mp4',
+        thumbnailUrl: 'https://example.com/video-thumb.jpg',
+        duration: 10,
+        resolution: '720p',
+        ratio: '9:16',
+        scenes: [
+          { description: '开场展示产品', duration: 3 },
+          { description: '功能展示', duration: 4 },
+          { description: '使用场景', duration: 3 },
+        ],
+      });
+    }, 5000);
+
+    return {
+      success: true,
+      data: {
+        message: '正在生成TikTok视频，请稍候...（预计5-10秒）',
+        taskId: task.id,
+      },
+      isAsync: true,
+      taskId: task.id,
+    };
+  }
+
+  return {
+    success: true,
+    data: {
+      type: 'video_generated',
+      videoUrl: 'https://example.com/generated-video.mp4',
+    },
+  };
+}
+
+// ==================== 智能定价 ====================
+
+async function executeCalculatePrice(
+  params: Record<string, any>,
+  userId: string,
+  chatId: string
+): Promise<ExecutionResult> {
+  const costPrice = params.costPrice || params.cost_price || 50;
+
+  // 模拟定价计算
+  const domesticShipping = 5;
+  const firstMileShipping = 8;
+  const platformCommission = 0.15; // 15%
+  const adCostRate = 0.1; // 10%
+  const targetProfitRate = 0.3; // 30%
+
+  const totalCost = costPrice + domesticShipping + firstMileShipping;
+  const targetPrice = totalCost * (1 + platformCommission + adCostRate + targetProfitRate);
+  const suggestedPrice = Math.ceil(targetPrice / 10) * 10 - 0.01; // 四舍五入到整数
+
+  return {
+    success: true,
+    data: {
+      type: 'price_calculated',
+      costPrice,
+      totalCost,
+      suggestedPrice,
+      profitMargin: targetProfitRate * 100,
+      platform: params.platform || 'Shopee',
+      costBreakdown: {
+        '商品成本': costPrice,
+        '国内运费': domesticShipping,
+        '头程运费': firstMileShipping,
+        '平台佣金': `${platformCommission * 100}%`,
+        '广告费用': `${adCostRate * 100}%`,
+        '利润': `${targetProfitRate * 100}%`,
+      },
+    },
+  };
+}
+
+// ==================== 新品上架 ====================
+
+async function executePublishProduct(
+  params: Record<string, any>,
+  userId: string,
+  chatId: string,
+  isAsync: boolean
+): Promise<ExecutionResult> {
+  if (isAsync) {
+    const { createTask } = await import('./task-queue');
+    const task = createTask(
+      TaskType.PUBLISH_PRODUCTS,
+      userId,
+      chatId,
+      params
+    );
+
+    setTimeout(() => {
+      completeTask(task.id, {
+        type: 'product_published',
+        productName: params.productName || '商品名称',
+        platform: params.platform || 'Shopee',
+        status: 'published',
+        publishedAt: new Date().toISOString(),
+        listingUrl: 'https://shopee.example.com/product/12345',
+      });
+    }, 3000);
+
+    return {
+      success: true,
+      data: {
+        message: `正在上架到${params.platform || 'Shopee'}，请稍候...`,
+        taskId: task.id,
+      },
+      isAsync: true,
+      taskId: task.id,
+    };
+  }
+
+  return {
+    success: true,
+    data: {
+      type: 'product_published',
+      platform: params.platform || 'Shopee',
+      status: 'draft',
+    },
+  };
+}
+
+// ==================== 链接采集 ====================
+
+async function executeCollectLinks(
+  params: Record<string, any>,
+  userId: string,
+  chatId: string,
+  isAsync: boolean
+): Promise<ExecutionResult> {
+  if (isAsync) {
+    const { createTask } = await import('./task-queue');
+    const task = createTask(
+      TaskType.OPTIMIZE_LISTING, // 复用类型
+      userId,
+      chatId,
+      { ...params, collectType: '1688' }
+    );
+
+    setTimeout(() => {
+      completeTask(task.id, {
+        type: 'links_collected',
+        source: '1688',
+        productName: '采集的商品名称',
+        price: 45.00,
+        supplier: '某某供应商',
+        minOrder: 2,
+        images: [
+          'https://example.com/image1.jpg',
+          'https://example.com/image2.jpg',
+        ],
+        specifications: ['颜色: 红色/蓝色/绿色', '尺寸: S/M/L'],
+      });
+    }, 2000);
+
+    return {
+      success: true,
+      data: {
+        message: '正在采集商品信息，请稍候...',
+        taskId: task.id,
+      },
+      isAsync: true,
+      taskId: task.id,
+    };
+  }
+
+  return {
+    success: true,
+    data: {
+      type: 'links_collected',
+      source: '1688',
+    },
+  };
 }
 
 function generateMockReportStats() {

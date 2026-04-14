@@ -24,6 +24,11 @@ export enum TaskType {
   QUERY_ORDERS = 'query_orders',        // 订单查询
   QUERY_SALES = 'query_sales',          // 销售查询
   GENERATE_REPORT = 'generate_report',  // 生成报告
+  PROCESS_IMAGE = 'process_image',      // 图片处理
+  GENERATE_VIDEO = 'generate_video',    // 视频生成
+  CALCULATE_PRICE = 'calculate_price',  // 智能定价
+  PUBLISH_PRODUCTS = 'publish_products', // 新品上架
+  COLLECT_LINKS = 'collect_links',      // 链接采集
 }
 
 // 任务接口

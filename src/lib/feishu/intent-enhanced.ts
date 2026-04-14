@@ -34,9 +34,14 @@ const SYSTEM_PROMPT = `你是一个跨境电商智能运营助理的意图识别
 8. **optimize_listing** - Listing优化：优化商品 listing，如"帮我优化一下这个listing"
 9. **analyze_competition** - 竞品分析：分析竞品，如"分析一下竞品价格"
 10. **generate_report** - 报表生成：生成数据报表，如"生成今日日报"
-11. **help** - 帮助：查看帮助，如"你有什么功能？"
-12. **greeting** - 问候：打招呼，如"你好"
-13. **unknown** - 未知意图：无法识别的意图
+11. **process_image** - 图片处理：处理商品图片，如"翻译这张图片"或"给图片去水印"
+12. **generate_video** - TikTok视频生成：生成带货视频，如"生成一个TikTok视频"
+13. **calculate_price** - 智能定价：计算商品最优价格，如"帮我计算这个产品的定价"
+14. **publish_product** - 新品上架：上架商品到平台，如"把这个商品上架到Shopee"
+15. **collect_links** - 链接采集：采集1688等平台的商品链接，如"采集这个1688链接"
+16. **help** - 帮助：查看帮助，如"你有什么功能？"
+17. **greeting** - 问候：打招呼，如"你好"
+18. **unknown** - 未知意图：无法识别的意图
 
 ## 输出格式
 请严格按以下JSON格式输出，不要添加任何其他内容：
@@ -217,6 +222,66 @@ function fallbackToRules(text: string): IntentResult {
     };
   }
 
+  // 图片处理
+  if (/图片|翻译.*图|去水印|白底/.test(trimmedText) && /处理|翻译|优化/.test(trimmedText)) {
+    return {
+      intent: INTENT_TYPES.PROCESS_IMAGE,
+      confidence: 0.7,
+      params: extractParamsFromText(text),
+      originalText: text,
+      needClarification: true,
+      clarificationQuestion: '请发送需要处理的图片，并告诉我处理方式（翻译/去水印/白底）',
+    };
+  }
+
+  // TikTok视频
+  if (/视频|tiktok|TikTok|生成.*视频|做个视频/.test(trimmedText)) {
+    return {
+      intent: INTENT_TYPES.GENERATE_VIDEO,
+      confidence: 0.8,
+      params: extractParamsFromText(text),
+      originalText: text,
+      needClarification: true,
+      clarificationQuestion: '请告诉我视频要展示什么内容，或者发送商品图片',
+    };
+  }
+
+  // 智能定价
+  if (/定价|价格|算.*价格|成本.*利润/.test(trimmedText)) {
+    return {
+      intent: INTENT_TYPES.CALCULATE_PRICE,
+      confidence: 0.7,
+      params: extractParamsFromText(text),
+      originalText: text,
+      needClarification: true,
+      clarificationQuestion: '请提供商品的成本价格',
+    };
+  }
+
+  // 新品上架
+  if (/上架|发布|发布.*商品|上架.*shopee|上架.*lazada/.test(trimmedText)) {
+    return {
+      intent: INTENT_TYPES.PUBLISH_PRODUCT,
+      confidence: 0.7,
+      params: extractParamsFromText(text),
+      originalText: text,
+      needClarification: true,
+      clarificationQuestion: '请告诉我需要上架的商品名称或上传商品链接',
+    };
+  }
+
+  // 链接采集
+  if (/采集|抓取|1688.*链接|淘.*链接/.test(trimmedText)) {
+    return {
+      intent: INTENT_TYPES.COLLECT_LINKS,
+      confidence: 0.7,
+      params: {},
+      originalText: text,
+      needClarification: true,
+      clarificationQuestion: '请发送需要采集的商品链接',
+    };
+  }
+
   // 未知
   return {
     intent: INTENT_TYPES.UNKNOWN,
@@ -294,6 +359,11 @@ export function getIntentDescription(intent: string): string {
     [INTENT_TYPES.OPTIMIZE_LISTING]: 'Listing优化',
     [INTENT_TYPES.ANALYZE_COMPETITION]: '竞品分析',
     [INTENT_TYPES.GENERATE_REPORT]: '报表生成',
+    [INTENT_TYPES.PROCESS_IMAGE]: '图片处理',
+    [INTENT_TYPES.GENERATE_VIDEO]: '视频生成',
+    [INTENT_TYPES.CALCULATE_PRICE]: '智能定价',
+    [INTENT_TYPES.PUBLISH_PRODUCT]: '新品上架',
+    [INTENT_TYPES.COLLECT_LINKS]: '链接采集',
     [INTENT_TYPES.HELP]: '帮助',
     [INTENT_TYPES.GREETING]: '问候',
     [INTENT_TYPES.UNKNOWN]: '未知意图',
@@ -319,9 +389,27 @@ export function generateHelpMessage(): string {
 • "帮我选3款宠物用品" - AI智能选品
 • "推荐一些热销品" - 热卖商品
 
+**🖼️ 图片处理**
+• "帮我翻译这张图片" - 图片文字翻译
+• "给图片去水印" - 去除水印
+• "生成白底图" - 商品白底图
+
 **✍️ 文案生成**
 • "写一个催好评的消息" - 自动生成
 • "帮我写产品描述" - Listing优化
+
+**🎬 TikTok视频**
+• "帮我生成一个带货视频" - AI视频生成
+• "做一个宠物用品视频" - 商品展示视频
+
+**💰 智能定价**
+• "帮我计算这个产品的定价" - 成本利润计算
+
+**📦 新品上架**
+• "把这个商品上架到Shopee" - 一键发布
+
+**🔗 链接采集**
+• "帮我采集这个1688链接" - 商品信息采集
 
 **📈 广告管理**
 • "帮我创建广告计划" - 智能投放

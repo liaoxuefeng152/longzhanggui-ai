@@ -55,6 +55,7 @@ export const INTENT_TYPES = {
 
   // 上架相关
   PUBLISH_PRODUCTS: 'publish_products', // 上架
+  PUBLISH_PRODUCT: 'publish_product', // 新品上架
 
   // 广告相关
   CREATE_AD: 'create_ad', // 创建广告
@@ -75,6 +76,10 @@ export const INTENT_TYPES = {
   GENERATE_REPORT: 'generate_report', // 报表生成
   OPTIMIZE_LISTING: 'optimize_listing', // Listing优化
   ANALYZE_COMPETITION: 'analyze_competition', // 竞品分析
+  PROCESS_IMAGE: 'process_image', // 图片处理
+  GENERATE_VIDEO: 'generate_video', // TikTok视频生成
+  CALCULATE_PRICE: 'calculate_price', // 智能定价
+  COLLECT_LINKS: 'collect_links', // 链接采集
 
   // 智能助理 - 日常问询
   DAILY_REPORT: 'daily_report', // 运营日报
