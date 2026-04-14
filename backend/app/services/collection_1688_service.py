@@ -363,7 +363,8 @@ class Collection1688Service:
             self._playwright = await async_playwright().start()
             self._browser = await self._playwright.chromium.launch(
                 headless=True,
-                args=['--no-sandbox', '--disable-setuid-sandbox']
+                executable_path="/root/.cache/ms-playwright/chromium-1208/chrome-linux64/chrome",
+                args=['--no-sandbox', '--disable-setuid-sandbox', '--disable-blink-features=AutomationControlled']
             )
             self._context = await self._browser.new_context(
                 user_agent=self.headers["User-Agent"]
