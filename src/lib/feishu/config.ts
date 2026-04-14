@@ -67,7 +67,14 @@ export const INTENT_TYPES = {
   QUERY_SALES: 'query_sales', // 查询销量
   QUERY_INVENTORY: 'query_inventory', // 查询库存
   QUERY_ORDERS: 'query_orders', // 查询订单
+  QUERY_DAILY: 'query_daily', // 日常查询
   QUERY_STATUS: 'query_status', // 查询状态
+
+  // 生成相关
+  GENERATE_COPY: 'generate_copy', // 文案生成
+  GENERATE_REPORT: 'generate_report', // 报表生成
+  OPTIMIZE_LISTING: 'optimize_listing', // Listing优化
+  ANALYZE_COMPETITION: 'analyze_competition', // 竞品分析
 
   // 智能助理 - 日常问询
   DAILY_REPORT: 'daily_report', // 运营日报
@@ -91,6 +98,9 @@ export const INTENT_TYPES = {
   // 智能助理 - 报表生成
   REPORT_GENERATION: 'report_generation', // 报表生成
   EXPORT_DATA: 'export_data', // 导出数据
+
+  // 问候
+  GREETING: 'greeting', // 问候
 
   // 系统相关
   HELP: 'help', // 帮助
