@@ -60,8 +60,16 @@ class Collection1688Service:
             self._browser = None
             self._page = None
     
+    def _is_search_page(self, url: str) -> bool:
+        """检测是否为搜索页URL"""
+        return 'search.1688.com' in url or 's.1688.com' in url or 'youyuan.1688.com' in url
+
     def _extract_offer_id(self, url: str) -> Optional[str]:
         """从URL提取商品ID"""
+        # 检测是否为搜索页URL
+        if self._is_search_page(url):
+            return None  # 搜索页不支持提取商品ID
+        
         # 支持 offer/xxx.html 格式
         match = re.search(r'offer/(\d+)\.html', url)
         if match:
@@ -75,6 +83,12 @@ class Collection1688Service:
         
         return None
     
+    def _get_error_message_for_url(self, url: str) -> str:
+        """根据URL类型返回友好的错误消息"""
+        if self._is_search_page(url):
+            return "检测到搜索页链接，请使用商品详情页链接进行采集。如果需要从搜索页批量采集，请使用「搜索页采集」功能。"
+        return "无法识别链接格式，请确保是1688商品详情页链接（格式如：https://detail.1688.com/offer/xxxxx.html）"
+    
     async def collect_product(self, url: str) -> Optional[Dict[str, Any]]:
         """
         采集单个商品
@@ -83,12 +97,17 @@ class Collection1688Service:
             url: 1688商品链接
             
         Returns:
-            商品信息字典
+            商品信息字典，失败时返回None
         """
+        # 检测是否为搜索页URL
+        if self._is_search_page(url):
+            logger.error(f"检测到搜索页链接，不支持单个商品采集: {url}")
+            raise ValueError(self._get_error_message_for_url(url))
+        
         offer_id = self._extract_offer_id(url)
         if not offer_id:
             logger.error(f"无法从URL提取商品ID: {url}")
-            return None
+            raise ValueError(self._get_error_message_for_url(url))
         
         # 方案1: 尝试HTTPX快速采集
         try:

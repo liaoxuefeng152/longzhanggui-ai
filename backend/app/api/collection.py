@@ -48,6 +48,14 @@ async def collect_product(request: CollectRequest):
         else:
             raise HTTPException(status_code=500, detail="采集失败")
             
+    except ValueError as e:
+        # 友好的错误消息（URL格式问题）
+        logger.warning(f"URL格式错误: {e}")
+        return {
+            "success": False,
+            "message": str(e),
+            "error_type": "invalid_url"
+        }
     except Exception as e:
         logger.error(f"采集失败: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -71,6 +79,14 @@ async def preview_product(request: CollectRequest):
         else:
             raise HTTPException(status_code=400, detail="无效的商品链接")
             
+    except ValueError as e:
+        # 友好的错误消息
+        logger.warning(f"URL格式错误: {e}")
+        return {
+            "success": False,
+            "message": str(e),
+            "error_type": "invalid_url"
+        }
     except Exception as e:
         logger.error(f"预览失败: {e}")
         raise HTTPException(status_code=500, detail=str(e))
