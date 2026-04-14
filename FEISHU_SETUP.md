@@ -5,7 +5,7 @@
 ### 应用信息
 - **App ID**: `cli_a925102a8179dbd6`
 - **App Secret**: `ig2gFSC1KU3wE00sdZOgX3aYalqtAZ2K`
-- **Verification Token**: `4johe0bj1fCG9V2bAhvTne8Fmz7RCo07`
+- **Verification Token**: `VjIworko8nhoKL1bcDrZ6fuTKIwCRl6G`
 
 ### Webhook 配置
 - **请求地址**: `https://c3471164-d4a8-459c-a047-271336351e54.dev.coze.site/api/v1/feishu/webhook`
@@ -29,7 +29,7 @@
    ```
 4. 配置 Verification Token：
    ```
-   4johe0bj1fCG9V2bAhvTne8Fmz7RCo07
+   VjIworko8nhoKL1bcDrZ6fuTKIwCRl6G
    ```
 
 ### 第三步：验证 Webhook
@@ -63,7 +63,7 @@ curl -X POST https://abc123.dev.coze.site/api/v1/feishu/webhook \
   -H 'Content-Type: application/json' \
   -d '{
     "type": "url_verification",
-    "token": "4johe0bj1fCG9V2bAhvTne8Fmz7RCo07",
+    "token": "VjIworko8nhoKL1bcDrZ6fuTKIwCRl6G",
     "challenge": "test123"
   }'
 ```

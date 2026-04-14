@@ -35,7 +35,7 @@
 
 3. **Verification Token**
    ```
-   4johe0bj1fCG9V2bAhvTne8Fmz7RCo07
+   VjIworko8nhoKL1bcDrZ6fuTKIwCRl6G
    ```
 
 ### 2. 权限配置
@@ -94,7 +94,7 @@ curl -X POST https://c3471164-d4a8-459c-a047-271336351e54.dev.coze.site/api/v1/f
   -H "Content-Type: application/json" \
   -d '{
     "type": "url_verification",
-    "token": "4johe0bj1fCG9V2bAhvTne8Fmz7RCo07",
+    "token": "VjIworko8nhoKL1bcDrZ6fuTKIwCRl6G",
     "challenge": "test123"
   }'
 

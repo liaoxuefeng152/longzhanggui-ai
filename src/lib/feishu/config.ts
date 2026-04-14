@@ -7,7 +7,7 @@ export const FEISHU_CONFIG = {
   // 飞书应用信息
   appId: 'cli_a954ed9674789cd3',
   appSecret: 'dSDPvwTC2smGE2nAWZh4cdsX6nIpSG1K',
-  verificationToken: '4johe0bj1fCG9V2bAhvTne8Fmz7RCo07',
+  verificationToken: 'VjIworko8nhoKL1bcDrZ6fuTKIwCRl6G',
 
   // API 端点
   apiBaseUrl: 'https://open.feishu.cn/open-apis',

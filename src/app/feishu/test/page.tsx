@@ -15,7 +15,7 @@ export default function FeishuTestPage() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [webhookUrl, setWebhookUrl] = useState('');
-  const [testToken, setTestToken] = useState('4johe0bj1fCG9V2bAhvTne8Fmz7RCo07');
+  const [testToken, setTestToken] = useState('VjIworko8nhoKL1bcDrZ6fuTKIwCRl6G');
   const [testChallenge, setTestChallenge] = useState('');
   const [testResult, setTestResult] = useState<any>(null);
   const [isTesting, setIsTesting] = useState(false);
