@@ -49,6 +49,7 @@ import {
   ShoppingBag,
   Copy,
   CheckCircle2,
+  Building,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { selectProducts, analyzeCompetition } from '@/lib/api/ai-agents';
@@ -767,7 +768,7 @@ ${report.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
         </div>
 
         {/* 核心能力标签 */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
             <MessageSquare className="h-3 w-3 mr-1" />
             需求分析
@@ -782,44 +783,62 @@ ${report.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
           </Badge>
           <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
             <Users className="h-3 w-3 mr-1" />
-            竞品拆解
+            竞品分析
           </Badge>
           <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
             <FileText className="h-3 w-3 mr-1" />
             报告生成
+          </Badge>
+          <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
+            <Building className="h-3 w-3 mr-1" />
+            供应商筛选
           </Badge>
         </div>
 
         {/* 流程指引 */}
         <Card className="bg-gradient-to-r from-primary/5 to-primary/10 border-primary/20">
           <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
+            <div className="flex items-center justify-between gap-1 overflow-x-auto">
+              <div className="flex items-center gap-2 min-w-fit">
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center ${activeTab === 'requirement' ? 'bg-primary text-white' : 'bg-primary/20 text-primary'}`}>
                   {directionStep === 'output' ? <Check className="h-4 w-4" /> : <span className="text-[14px] font-medium">1</span>}
                 </div>
                 <span className={`text-[13px] ${activeTab === 'requirement' ? 'font-medium text-primary' : 'text-muted-foreground'}`}>需求分析</span>
               </div>
-              <ChevronRight className="h-4 w-4 text-muted-foreground" />
-              <div className="flex items-center gap-2">
+              <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+              <div className="flex items-center gap-2 min-w-fit">
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center ${activeTab === 'hot-products' ? 'bg-primary text-white' : 'bg-primary/20 text-primary'}`}>
                   {hotProducts.length > 0 ? <Check className="h-4 w-4" /> : <span className="text-[14px] font-medium">2</span>}
                 </div>
                 <span className={`text-[13px] ${activeTab === 'hot-products' ? 'font-medium text-primary' : 'text-muted-foreground'}`}>爆款挖掘</span>
               </div>
-              <ChevronRight className="h-4 w-4 text-muted-foreground" />
-              <div className="flex items-center gap-2">
+              <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+              <div className="flex items-center gap-2 min-w-fit">
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center ${activeTab === 'feasibility' ? 'bg-primary text-white' : 'bg-primary/20 text-primary'}`}>
                   {feasibilityResults.length > 0 ? <Check className="h-4 w-4" /> : <span className="text-[14px] font-medium">3</span>}
                 </div>
                 <span className={`text-[13px] ${activeTab === 'feasibility' ? 'font-medium text-primary' : 'text-muted-foreground'}`}>可行性分析</span>
               </div>
-              <ChevronRight className="h-4 w-4 text-muted-foreground" />
-              <div className="flex items-center gap-2">
+              <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+              <div className="flex items-center gap-2 min-w-fit">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${activeTab === 'competitor' ? 'bg-primary text-white' : 'bg-primary/20 text-primary'}`}>
+                  {competitors.length > 0 ? <Check className="h-4 w-4" /> : <span className="text-[14px] font-medium">4</span>}
+                </div>
+                <span className={`text-[13px] ${activeTab === 'competitor' ? 'font-medium text-primary' : 'text-muted-foreground'}`}>竞品分析</span>
+              </div>
+              <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+              <div className="flex items-center gap-2 min-w-fit">
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center ${activeTab === 'report' ? 'bg-primary text-white' : 'bg-primary/20 text-primary'}`}>
-                  {report ? <Check className="h-4 w-4" /> : <span className="text-[14px] font-medium">4</span>}
+                  {report ? <Check className="h-4 w-4" /> : <span className="text-[14px] font-medium">5</span>}
                 </div>
                 <span className={`text-[13px] ${activeTab === 'report' ? 'font-medium text-primary' : 'text-muted-foreground'}`}>报告生成</span>
+              </div>
+              <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+              <div className="flex items-center gap-2 min-w-fit">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${activeTab === 'suppliers' ? 'bg-primary text-white' : 'bg-primary/20 text-primary'}`}>
+                  {suppliers.length > 0 ? <Check className="h-4 w-4" /> : <span className="text-[14px] font-medium">6</span>}
+                </div>
+                <span className={`text-[13px] ${activeTab === 'suppliers' ? 'font-medium text-primary' : 'text-muted-foreground'}`}>供应商筛选</span>
               </div>
             </div>
           </CardContent>
@@ -1295,76 +1314,95 @@ ${report.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
                       </div>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                      {/* 利润测算 */}
-                      <div className="grid grid-cols-4 gap-4 p-4 bg-muted/30 rounded-lg">
-                        <div className="text-center">
-                          <div className="text-[12px] text-muted-foreground">毛利</div>
-                          <div className="text-[18px] font-semibold text-success">
-                            ${result.profitCalc.grossProfit.toFixed(2)}
+                      {/* 合规状态突出显示 */}
+                      <div className={`p-4 rounded-lg border-2 ${
+                        result.compliance.status === '合规' ? 'bg-success/5 border-success/30' :
+                        result.compliance.status === '禁售' ? 'bg-destructive/5 border-destructive/30' :
+                        'bg-warning/5 border-warning/30'
+                      }`}>
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-2">
+                            {result.compliance.status === '合规' ? (
+                              <Shield className="h-5 w-5 text-success" />
+                            ) : result.compliance.status === '禁售' ? (
+                              <ShieldAlert className="h-5 w-5 text-destructive" />
+                            ) : (
+                              <AlertCircle className="h-5 w-5 text-warning" />
+                            )}
+                            <span className="text-[14px] font-semibold">合规校验</span>
                           </div>
+                          <Badge className={`text-[12px] px-3 py-1 ${
+                            result.compliance.status === '合规' ? 'bg-success text-white' :
+                            result.compliance.status === '禁售' ? 'bg-destructive text-white' :
+                            'bg-warning text-white'
+                          }`}>
+                            {result.compliance.status === '合规' ? '✓ 审核通过' :
+                             result.compliance.status === '禁售' ? '✗ 禁止销售' :
+                             '⚠ 需认证'}
+                          </Badge>
                         </div>
-                        <div className="text-center">
-                          <div className="text-[12px] text-muted-foreground">毛利率</div>
-                          <div className="text-[18px] font-semibold text-success">
-                            {result.profitCalc.grossMargin.toFixed(1)}%
+                        
+                        {/* 禁售原因 */}
+                        {result.compliance.issues.length > 0 ? (
+                          <div className="bg-destructive/10 rounded-lg p-3 mb-2">
+                            <div className="flex items-center gap-2 text-destructive text-[13px] font-medium mb-1">
+                              <XCircle className="h-4 w-4" />
+                              禁售原因
+                            </div>
+                            <ul className="text-[12px] text-destructive/80 space-y-1">
+                              {result.compliance.issues.map((issue, i) => (
+                                <li key={i}>• {issue}</li>
+                              ))}
+                            </ul>
                           </div>
-                        </div>
-                        <div className="text-center">
-                          <div className="text-[12px] text-muted-foreground">回本周期</div>
-                          <div className="text-[18px] font-semibold">
-                            {result.profitCalc.paybackDays}天
+                        ) : (
+                          <div className="flex items-center gap-2 text-success text-[12px]">
+                            <CheckCircle className="h-4 w-4" />
+                            通过平台合规审核，可正常销售
                           </div>
-                        </div>
-                        <div className="text-center">
-                          <div className="text-[12px] text-muted-foreground">售价</div>
-                          <div className="text-[18px] font-semibold">
-                            ${result.product.price}
+                        )}
+                        
+                        {/* 注意事项/认证要求 */}
+                        {result.compliance.warnings && result.compliance.warnings.length > 0 && (
+                          <div className="bg-warning/10 rounded-lg p-3 mt-2">
+                            <div className="flex items-center gap-2 text-warning text-[13px] font-medium mb-1">
+                              <AlertTriangle className="h-4 w-4" />
+                              认证要求
+                            </div>
+                            <ul className="text-[12px] text-warning/80 space-y-1">
+                              {result.compliance.warnings.map((warning, i) => (
+                                <li key={i}>• {warning}</li>
+                              ))}
+                            </ul>
                           </div>
-                        </div>
+                        )}
                       </div>
 
-                      {/* 合规 & 供应链 */}
+                      {/* 利润 & 供应链 */}
                       <div className="grid grid-cols-2 gap-4">
                         <div className="p-3 border rounded-lg">
                           <div className="flex items-center gap-2 mb-2">
-                            <Shield className="h-4 w-4 text-primary" />
-                            <span className="text-[13px] font-medium">合规校验</span>
-                            <Badge variant="outline" className={
-                              result.compliance.status === '合规' ? 'bg-success/10 text-success border-success/20' :
-                              result.compliance.status === '禁售' ? 'bg-destructive/10 text-destructive border-destructive/20' :
-                              'bg-warning/10 text-warning border-warning/20'
-                            }>
-                              {result.compliance.status}
-                            </Badge>
+                            <DollarSign className="h-4 w-4 text-primary" />
+                            <span className="text-[13px] font-medium">利润测算</span>
                           </div>
-                          {result.compliance.issues.length > 0 ? (
-                            <ul className="text-[11px] space-y-1">
-                              {result.compliance.issues.map((issue, i) => (
-                                <li key={i} className={result.compliance.status === '禁售' ? 'text-destructive' : 'text-warning'}>
-                                  {result.compliance.status === '禁售' ? <XCircle className="h-3 w-3 inline mr-1" /> : <AlertTriangle className="h-3 w-3 inline mr-1" />}
-                                  {issue}
-                                </li>
-                              ))}
-                            </ul>
-                          ) : (
-                            <div className="text-[11px] text-success flex items-center gap-1">
-                              <CheckCircle className="h-3 w-3" />
-                              通过平台合规审核
+                          <div className="grid grid-cols-2 gap-2 text-[12px]">
+                            <div>
+                              <span className="text-muted-foreground">毛利:</span>
+                              <span className="ml-1 font-medium text-success">${result.profitCalc.grossProfit.toFixed(2)}</span>
                             </div>
-                          )}
-                          {result.compliance.warnings && result.compliance.warnings.length > 0 && (
-                            <div className="mt-2 pt-2 border-t">
-                              <div className="text-[11px] text-warning flex items-center gap-1">
-                                <AlertTriangle className="h-3 w-3" />
-                                注意事项:
-                              </div>
-                              <ul className="text-[11px] text-warning/80 mt-1 space-y-0.5">
-                                {result.compliance.warnings.map((warning, i) => (
-                                  <li key={i}>{warning}</li>
-                                ))}
-                              </ul>
+                            <div>
+                              <span className="text-muted-foreground">毛利率:</span>
+                              <span className="ml-1 font-medium text-success">{result.profitCalc.grossMargin.toFixed(1)}%</span>
                             </div>
-                          )}
+                            <div>
+                              <span className="text-muted-foreground">回本周期:</span>
+                              <span className="ml-1 font-medium">{result.profitCalc.paybackDays}天</span>
+                            </div>
+                            <div>
+                              <span className="text-muted-foreground">售价:</span>
+                              <span className="ml-1 font-medium">${result.product.price}</span>
+                            </div>
+                          </div>
                         </div>
                         <div className="p-3 border rounded-lg">
                           <div className="flex items-center gap-2 mb-2">
@@ -1379,7 +1417,7 @@ ${report.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
                             </Badge>
                           </div>
                           <div className="text-[11px] text-muted-foreground">
-                            供应商: {result.supplyChain.supplier} | MOQ: {result.supplyChain.moq}件 | 交期: {result.supplyChain.delivery}天
+                            {result.supplyChain.supplier} | MOQ: {result.supplyChain.moq}件 | 交期: {result.supplyChain.delivery}天
                           </div>
                         </div>
                       </div>
