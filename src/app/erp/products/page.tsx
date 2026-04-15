@@ -487,47 +487,9 @@ export default function ERPProductsPage() {
     toast.success('模板已下载');
   };
 
-  const handleViewDetail = async (productId: string) => {
-    try {
-      const { default: store } = await import('@/lib/store');
-      const product = store.getProduct(productId);
-      if (product) {
-        setSelectedProduct(product as any);
-        // 初始化编辑表单
-        setEditForm({
-          name_zh: product.name_zh,
-          name_en: product.name_en || '',
-          internal_sku: product.internal_sku,
-          category: product.category || '',
-          supplier_name: product.supplier_name || '',
-          source_url: product.source_url || '',
-          cost_price: product.cost_price,
-          domestic_shipping: product.domestic_shipping,
-          first_mile_shipping: product.first_mile_shipping,
-          total_cost: product.total_cost,
-          weight_kg: product.weight_kg || 0,
-          dimensions_length: product.dimensions?.length || 0,
-          dimensions_width: product.dimensions?.width || 0,
-          dimensions_height: product.dimensions?.height || 0,
-          packaging_list: product.packaging_list?.join('\n') || '',
-          brand: product.brand || '',
-          color: product.color || '',
-          size: product.size || '',
-          listing_title: product.listing?.title || '',
-          listing_title_en: product.listing?.title_en || '',
-          listing_description: product.listing?.description || '',
-          bullet_points: product.listing?.bullet_points?.join('\n') || '',
-          keywords: product.listing?.keywords?.join(', ') || '',
-        });
-        setIsEditing(false);
-        setIsDetailOpen(true);
-      } else {
-        toast.error('商品不存在');
-      }
-    } catch (error) {
-      console.error('获取商品详情失败:', error);
-      toast.error('获取商品详情失败');
-    }
+  const handleViewDetail = (productId: string) => {
+    // 跳转到新的详情页面
+    router.push(`/erp/products/${productId}`);
   };
 
   // 保存商品编辑

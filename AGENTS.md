@@ -394,6 +394,10 @@ npx tsc --noEmit
 - 飞书配置管理: `src/app/feishu/settings/page.tsx`
 - 数据导入管理: `src/app/feishu/import/page.tsx`
 
+### ERP系统页面
+- **商品列表: `src/app/erp/products/page.tsx`** - 商品列表管理
+- **商品详情: `src/app/erp/products/[id]/page.tsx`** - 商品详情编辑页（独立页面，支持 Listing 多语言编辑和 AI 优化）
+
 ### 选品智能体 - 6大核心模块
 
 #### 模块1: 需求分析
