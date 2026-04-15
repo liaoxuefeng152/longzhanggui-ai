@@ -494,6 +494,9 @@ export default function SelectionAgentPage() {
   const [competitors, setCompetitors] = useState<Competitor[]>([]);
   const [analyzingCompetitor, setAnalyzingCompetitor] = useState<string | null>(null);
   
+  // 供应商加载状态
+  const [loadingSuppliers, setLoadingSuppliers] = useState(false);
+  
   // 报告状态
   const [report, setReport] = useState<SelectionReport | null>(null);
 
@@ -1392,10 +1395,19 @@ ${report.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
                       </div>
                       <Button 
                         onClick={handleStartFeasibilityAnalysis}
-                        disabled={selectedProducts.length === 0}
+                        disabled={selectedProducts.length === 0 || isAnalyzing}
                       >
-                        <ArrowRight className="h-4 w-4 mr-2" />
-                        开始可行性分析
+                        {isAnalyzing ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            分析中...
+                          </>
+                        ) : (
+                          <>
+                            <ArrowRight className="h-4 w-4 mr-2" />
+                            开始可行性分析
+                          </>
+                        )}
                       </Button>
                     </div>
                   </div>
@@ -1737,9 +1749,18 @@ ${report.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
                     </div>
 
                     <div className="flex justify-end">
-                      <Button onClick={handleGenerateReport}>
-                        <FileText className="h-4 w-4 mr-2" />
-                        生成选品报告
+                      <Button onClick={handleGenerateReport} disabled={isAnalyzing}>
+                        {isAnalyzing ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            生成中...
+                          </>
+                        ) : (
+                          <>
+                            <FileText className="h-4 w-4 mr-2" />
+                            生成选品报告
+                          </>
+                        )}
                       </Button>
                     </div>
                   </div>
@@ -1825,12 +1846,21 @@ ${report.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
                         返回竞品分析
                       </Button>
                       <div className="flex gap-2">
-                        <Button variant="outline" onClick={() => setActiveTab('requirement')}>
+                        <Button variant="outline" onClick={() => setActiveTab('requirement')} disabled={isAnalyzing}>
                           重新选品
                         </Button>
-                        <Button onClick={handleGenerateReport}>
-                          <RefreshCw className="h-4 w-4 mr-2" />
-                          刷新报告
+                        <Button onClick={handleGenerateReport} disabled={isAnalyzing}>
+                          {isAnalyzing ? (
+                            <>
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              生成中...
+                            </>
+                          ) : (
+                            <>
+                              <RefreshCw className="h-4 w-4 mr-2" />
+                              刷新报告
+                            </>
+                          )}
                         </Button>
                       </div>
                     </div>
@@ -1930,13 +1960,27 @@ ${report.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
                     <ShoppingBag className="h-12 w-12 mx-auto mb-3 text-muted-foreground opacity-50" />
                     <p className="text-muted-foreground mb-4">点击"刷新供应商"加载推荐供应商</p>
                     <Button 
-                      onClick={() => {
+                      onClick={async () => {
+                        setLoadingSuppliers(true);
+                        // 模拟加载延迟
+                        await new Promise(resolve => setTimeout(resolve, 1500));
                         setSuppliers(mockSuppliers);
+                        setLoadingSuppliers(false);
                         toast.success('已加载5个推荐供应商');
                       }}
+                      disabled={loadingSuppliers}
                     >
-                      <RefreshCw className="h-4 w-4 mr-2" />
-                      加载供应商
+                      {loadingSuppliers ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          加载中...
+                        </>
+                      ) : (
+                        <>
+                          <RefreshCw className="h-4 w-4 mr-2" />
+                          加载供应商
+                        </>
+                      )}
                     </Button>
                   </div>
                 ) : (
