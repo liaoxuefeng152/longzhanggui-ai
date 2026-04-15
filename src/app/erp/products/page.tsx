@@ -411,14 +411,17 @@ export default function ERPProductsPage() {
 
   const handleViewDetail = async (productId: string) => {
     try {
-      const response = await fetch(`/api/v1/erp/products/${productId}`);
-      const data = await response.json();
-      if (data.success) {
-        setSelectedProduct(data.data);
+      const { default: store } = await import('@/lib/store');
+      const product = store.getProduct(productId);
+      if (product) {
+        setSelectedProduct(product as any);
         setIsDetailOpen(true);
+      } else {
+        toast.error('商品不存在');
       }
     } catch (error) {
       console.error('获取商品详情失败:', error);
+      toast.error('获取商品详情失败');
     }
   };
 
