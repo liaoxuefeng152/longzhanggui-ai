@@ -77,6 +77,16 @@ const menuItems: MenuItem[] = [
     ],
   },
   {
+    title: '平台配置',
+    href: '/platform',
+    icon: Settings,
+    submenu: [
+      { title: '数据源配置', href: '/platform/datasources' },
+      { title: '店铺管理', href: '/shops' },
+      { title: '平台凭证', href: '/shops/platforms' },
+    ],
+  },
+  {
     title: 'ERP系统',
     href: '/erp',
     icon: Package,
@@ -88,8 +98,6 @@ const menuItems: MenuItem[] = [
       { title: '订单管理', href: '/erp/orders' },
       { title: '物流管理', href: '/erp/logistics' },
       { title: '财务管理', href: '/erp/finance' },
-      { title: '店铺管理', href: '/shops' },
-      { title: '平台配置', href: '/shops/platforms' },
     ],
   },
   {

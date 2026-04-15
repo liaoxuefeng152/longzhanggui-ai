@@ -388,26 +388,13 @@ npx tsc --noEmit
 - 工作流编排: `src/app/workflows/page.tsx`
 - 选品分析: `src/app/agents/product-selection/page.tsx` - **支持供应商筛选功能**
 - 图片设计: `src/app/agents/image-design/page.tsx`
+- **平台配置: `src/app/platform/datasources/page.tsx`** - 数据源配置和选品策略
+- **店铺管理: `src/app/shops/page.tsx`** - 店铺授权管理
+- **平台凭证: `src/app/shops/platforms/page.tsx`** - API密钥管理
 - 飞书配置管理: `src/app/feishu/settings/page.tsx`
 - 数据导入管理: `src/app/feishu/import/page.tsx`
 
-### 选品智能体 - 7大核心模块
-
-#### 模块0: 数据源配置（新增）
-- **数据源管理**: 支持配置多个第三方选品工具API
-  - 蝉妈妈TK版 - TK热门商品数据、销量趋势
-  - Jungle Scout - 亚马逊竞品分析、市场洞察
-  - Helium 10 - 关键词研究、产品调研
-  - TK Trends - TK平台热门话题和趋势
-  - Google Trends - 品类搜索趋势分析
-- **选品策略配置**:
-  - 最低月销量阈值
-  - 最低利润率阈值
-  - 最高竞争度过滤
-  - 增长趋势阈值
-  - 结果数量限制
-  - 排序方式选择
-- **连接测试**: 支持API凭证配置、连接测试、数据同步
+### 选品智能体 - 6大核心模块
 
 #### 模块1: 需求分析
 - **引导式提问**: 目标市场、类目偏好、预算范围、核心诉求
