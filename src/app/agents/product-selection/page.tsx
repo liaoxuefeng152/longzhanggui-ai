@@ -705,7 +705,7 @@ export default function SelectionAgentPage() {
   // 导出报告
   const handleExportReport = () => {
     if (!report) return;
-    const content = `# TK跨境电商选品报告
+    const content = `# 电商选品报告
 
 ## 一、选品需求概述
 - **目标市场**: ${requirement.market}
@@ -758,8 +758,8 @@ ${report.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
               <ShoppingCart className="h-7 w-7 text-primary" />
             </div>
             <div>
-              <h1 className="text-[18px] font-semibold text-foreground">TK跨境选品智能体</h1>
-              <p className="text-[14px] text-muted-foreground">基于PRD规范的智能选品决策辅助工具</p>
+              <h1 className="text-[18px] font-semibold text-foreground">选品智能体</h1>
+              <p className="text-[14px] text-muted-foreground">基于合规的智能选品决策辅助工具</p>
             </div>
           </div>
           <Badge className="bg-success text-white">
