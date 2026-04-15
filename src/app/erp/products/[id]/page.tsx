@@ -114,6 +114,7 @@ export default function ProductDetailPage() {
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isAiOptimizing, setIsAiOptimizing] = useState<string | null>(null);
+  const [isPublishing, setIsPublishing] = useState<string | null>(null);
 
   // 编辑表单
   const [form, setForm] = useState({
@@ -301,6 +302,67 @@ export default function ProductDetailPage() {
       toast.error('保存失败');
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  // 上架发布
+  const handlePublish = async () => {
+    if (!product || !selectedListing) return;
+
+    // 检查必填项
+    if (!listingForm.title) {
+      toast.error('请先填写商品标题');
+      return;
+    }
+    if (!listingForm.sale_price) {
+      toast.error('请先设置售价');
+      return;
+    }
+
+    setIsPublishing(selectedListing.id);
+    try {
+      // 先保存 Listing
+      const { default: store } = await import('@/lib/store');
+
+      const listings = product.platform_listings?.map(l => {
+        if (l.id === selectedListing.id) {
+          return {
+            ...l,
+            listing_title: listingForm.title,
+            listing_description: listingForm.description,
+            bullet_points: listingForm.bullet_points.split('\n').filter(p => p.trim()),
+            keywords: listingForm.keywords.split(',').map(k => k.trim()).filter(k => k),
+            sale_price: listingForm.sale_price,
+            language: listingForm.language,
+            status: 'listed',
+            listed_at: new Date().toISOString(),
+          };
+        }
+        return l;
+      }) || [];
+
+      // 更新商品状态为已上架
+      store.updateProduct(product.id, { 
+        platform_listings: listings,
+        status: 'published',
+      });
+
+      // 刷新数据
+      const updated = store.getProduct(product.id) as unknown as ERPProduct;
+      setProduct(updated);
+
+      // 更新当前选中的 Listing
+      const updatedListing = updated.platform_listings?.find(l => l.id === selectedListing.id);
+      if (updatedListing) {
+        setSelectedListing(updatedListing);
+      }
+
+      toast.success(`${selectedListing.platform_name || selectedListing.platform} 上架成功！`);
+    } catch (error) {
+      console.error('上架失败:', error);
+      toast.error('上架失败');
+    } finally {
+      setIsPublishing(null);
     }
   };
 
@@ -1112,12 +1174,34 @@ export default function ProductDetailPage() {
                       </div>
                     </div>
 
-                    {/* 保存按钮 */}
-                    <div className="flex justify-end gap-2 pt-4 border-t">
-                      <Button onClick={handleSaveListing} disabled={isSaving}>
-                        {isSaving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                        保存 Listing
-                      </Button>
+                    {/* 保存和发布按钮 */}
+                    <div className="flex justify-between items-center pt-4 border-t">
+                      <div className="text-[12px] text-muted-foreground">
+                        {selectedListing?.status === 'listed' || selectedListing?.status === 'active' ? (
+                          <span className="text-success flex items-center gap-1">
+                            <CheckCircle className="h-3 w-3" />
+                            已上架 · {selectedListing.listed_at ? new Date(selectedListing.listed_at).toLocaleDateString() : ''}
+                          </span>
+                        ) : (
+                          <span>草稿状态 · 填写完成后可发布</span>
+                        )}
+                      </div>
+                      <div className="flex gap-2">
+                        <Button variant="outline" onClick={handleSaveListing} disabled={isSaving || !!isPublishing}>
+                          {isSaving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                          保存 Listing
+                        </Button>
+                        {selectedListing?.status !== 'listed' && selectedListing?.status !== 'active' && (
+                          <Button onClick={handlePublish} disabled={!!isPublishing || !listingForm.title || !listingForm.sale_price}>
+                            {!!isPublishing ? (
+                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            ) : (
+                              <Rocket className="h-4 w-4 mr-2" />
+                            )}
+                            上架发布
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 ) : (
