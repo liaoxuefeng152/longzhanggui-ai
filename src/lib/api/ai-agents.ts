@@ -75,6 +75,97 @@ export async function analyzeCompetition(productName: string, platform?: string)
   return apiClient.post('/api/v1/ai/analyze-competition', { product_name: productName, platform });
 }
 
+// ============ 选品方向推荐 ============
+
+export interface SuggestDirectionRequest {
+  market?: string;
+  category?: string;
+  budget?: string;
+  core_appeal?: string;
+}
+
+export interface DirectionItem {
+  id: string;
+  name: string;
+  category: string;
+  reason: string;
+  marketPotential: number;
+  competition: string;
+  avgProfitRate: number;
+  trending: boolean;
+  icon?: string;
+}
+
+export async function suggestDirections(request: SuggestDirectionRequest): Promise<{
+  success: boolean;
+  directions?: DirectionItem[];
+  analysis?: string;
+}> {
+  return apiClient.post('/api/v1/ai/suggest-directions', request);
+}
+
+// ============ 竞品分析 ============
+
+export interface CompetitorItem {
+  id: string;
+  name: string;
+  sales: number;
+  rating: number;
+  price: string;
+  mainSellingPoint: string;
+  userPainPoints: string[];
+}
+
+export interface AnalyzeCompetitionRequest {
+  product_name: string;
+  platform?: string;
+  site?: string;
+}
+
+export async function analyzeCompetitorDetail(request: AnalyzeCompetitionRequest): Promise<{
+  success: boolean;
+  competitors?: CompetitorItem[];
+  differentiation?: string;
+  opportunities?: string;
+  analysis?: string;
+}> {
+  return apiClient.post('/api/v1/ai/analyze-competition', request);
+}
+
+// ============ 选品报告生成 ============
+
+export interface SelectionReportRequest {
+  market: string;
+  category?: string;
+  products: any[];
+  feasibility: any[];
+  competitors: any[];
+}
+
+export interface RecommendationItem {
+  product: string;
+  priority: string;
+  reason: string;
+  price_suggestion: string;
+  video_idea: string;
+  risk_level: string;
+}
+
+export interface SelectionReportResult {
+  summary: string;
+  recommendations: RecommendationItem[];
+  actionItems: string[];
+  nextSteps: string;
+}
+
+export async function generateSelectionReport(request: SelectionReportRequest): Promise<{
+  success: boolean;
+  report?: SelectionReportResult;
+  generatedAt?: string;
+}> {
+  return apiClient.post('/api/v1/ai/generate-selection-report', request);
+}
+
 // ============ 图片智能体 ============
 
 export type ImageProcessMode = 'translate' | 'optimize' | 'remove_watermark' | 'white_background';

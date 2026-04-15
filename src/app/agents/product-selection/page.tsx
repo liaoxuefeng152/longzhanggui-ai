@@ -52,7 +52,7 @@ import {
   Building,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { selectProducts, analyzeCompetition } from '@/lib/api/ai-agents';
+import { selectProducts, analyzeCompetition, suggestDirections, analyzeCompetitorDetail, generateSelectionReport } from '@/lib/api/ai-agents';
 
 // ==================== 类型定义 ====================
 
@@ -90,6 +90,20 @@ interface SelectionRequirement {
   budget: string;
   core诉求: string;
   avoidCategories: string;
+}
+
+// 选品方向
+interface Direction {
+  id: string;
+  name: string;
+  category?: string;
+  reason: string;
+  stars?: number;
+  marketPotential?: number;
+  competition?: string;
+  avgProfitRate?: number;
+  trending?: boolean;
+  icon?: string;
 }
 
 // 爆款商品
@@ -159,10 +173,10 @@ interface SelectionReport {
 
 // ==================== 模拟数据 ====================
 
-const mockDirections = [
-  { name: '厨房收纳小工具', reason: '近30天搜索增长60%，在售卖家少', stars: 5 },
-  { name: '宠物喂食器配件', reason: '宠物类目持续热销，竞争度适中', stars: 4 },
-  { name: '浴室置物小物件', reason: '单价低、退货率低，适合新手', stars: 4 },
+const mockDirections: Direction[] = [
+  { id: 'DIR-1', name: '厨房收纳小工具', reason: '近30天搜索增长60%，在售卖家少', stars: 5 },
+  { id: 'DIR-2', name: '宠物喂食器配件', reason: '宠物类目持续热销，竞争度适中', stars: 4 },
+  { id: 'DIR-3', name: '浴室置物小物件', reason: '单价低、退货率低，适合新手', stars: 4 },
 ];
 
 // 供应商模拟数据
@@ -465,6 +479,7 @@ export default function SelectionAgentPage() {
     avoidCategories: '',
   });
   const [directionStep, setDirectionStep] = useState<'input' | 'output'>('input');
+  const [directions, setDirections] = useState<Direction[]>([]);
   
   // 爆款挖掘状态
   const [hotProducts, setHotProducts] = useState<HotProduct[]>([]);
@@ -514,13 +529,50 @@ export default function SelectionAgentPage() {
     setRequirement(prev => ({ ...prev, [key]: value }));
   };
 
-  // 开始需求分析
-  const handleStartRequirementAnalysis = () => {
+  // 开始需求分析 - 调用AI推荐选品方向
+  const handleStartRequirementAnalysis = async () => {
     if (!requirement.market) {
       toast.error('请选择目标市场');
       return;
     }
-    setDirectionStep('output');
+    
+    setIsAnalyzing(true);
+    try {
+      const result = await suggestDirections({
+        market: requirement.market,
+        category: requirement.category,
+        budget: requirement.budget,
+        core_appeal: requirement.core诉求,
+      });
+      
+      if (result.success && result.directions && result.directions.length > 0) {
+        // 使用AI推荐的选品方向
+        const mappedDirections = result.directions.map((d: any, i: number) => ({
+          id: d.id || `DIR-${i}`,
+          name: d.name,
+          category: d.category || d.name,
+          reason: d.reason,
+          marketPotential: d.marketPotential || 7,
+          competition: d.competition || '中等',
+          avgProfitRate: d.avgProfitRate || 35,
+          trending: d.trending || false,
+          icon: d.icon || '📦',
+        }));
+        setDirections(mappedDirections);
+        toast.success(`AI推荐了 ${mappedDirections.length} 个选品方向`);
+      } else {
+        // 使用默认方向
+        setDirections(mockDirections);
+        toast.success('已加载选品方向（演示数据）');
+      }
+    } catch (error) {
+      console.error('选品方向推荐失败:', error);
+      setDirections(mockDirections);
+      toast.success('已加载选品方向（演示数据）');
+    } finally {
+      setDirectionStep('output');
+      setIsAnalyzing(false);
+    }
   };
 
   // 开始爆款挖掘
@@ -654,52 +706,122 @@ export default function SelectionAgentPage() {
 
   // 开始竞品分析
   const handleStartCompetitorAnalysis = async (productId: string) => {
+    const product = hotProducts.find(p => p.id === productId);
+    if (!product) {
+      toast.error('未找到商品信息');
+      return;
+    }
+
     setAnalyzingCompetitor(productId);
     try {
-      // 模拟竞品分析
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      setCompetitors([
-        {
-          name: '竞品A - 店铺X',
-          sales: 15000,
-          rating: 4.5,
-          mainSellingPoint: '强调耐用性',
-          userPainPoints: ['续航短', '体积大'],
-        },
-        {
-          name: '竞品B - 店铺Y',
-          sales: 12000,
-          rating: 4.3,
-          mainSellingPoint: '价格优势',
-          userPainPoints: ['质量一般', '售后差'],
-        },
-      ]);
-      toast.success('竞品分析完成');
+      const result = await analyzeCompetitorDetail({
+        product_name: product.name,
+        platform: 'tiktok',
+        site: requirement.market || 'id',
+      });
+      
+      if (result.success && result.competitors && result.competitors.length > 0) {
+        const mappedCompetitors = result.competitors.map((c: any) => ({
+          name: c.name,
+          sales: c.sales || 10000,
+          rating: c.rating || 4.0,
+          mainSellingPoint: c.mainSellingPoint || c.main_selling_point || '品质好',
+          userPainPoints: c.userPainPoints || c.pain_points || ['质量一般'],
+        }));
+        setCompetitors(mappedCompetitors);
+        toast.success(`竞品分析完成，发现 ${mappedCompetitors.length} 个主要竞品`);
+      } else {
+        // 使用模拟数据
+        setCompetitors([
+          { name: `${product.name} - 热销竞品A`, sales: 15000, rating: 4.5, mainSellingPoint: '强调品质', userPainPoints: ['价格偏高'] },
+          { name: `${product.name} - 热销竞品B`, sales: 12000, rating: 4.3, mainSellingPoint: '价格优势', userPainPoints: ['质量一般'] },
+        ]);
+        toast.success('竞品分析完成（演示数据）');
+      }
     } catch (error) {
-      toast.error('竞品分析失败');
+      console.error('竞品分析失败:', error);
+      setCompetitors([
+        { name: `${product.name} - 热销竞品A`, sales: 15000, rating: 4.5, mainSellingPoint: '强调品质', userPainPoints: ['价格偏高'] },
+      ]);
+      toast.success('竞品分析完成（演示数据）');
     } finally {
       setAnalyzingCompetitor(null);
     }
   };
 
-  // 生成选品报告
-  const handleGenerateReport = () => {
-    const newReport: SelectionReport = {
-      requirements: requirement,
-      direction: mockDirections.filter(d => selectedProducts.includes(d.name)).map(d => d.name),
-      hotProducts: hotProducts.filter(p => selectedProducts.includes(p.id)),
-      feasibility: feasibilityResults,
-      competitors,
-      recommendations: [
-        '优先测试厨房硅胶收纳夹，蓝海类目，利润率高',
-        '定价建议9.99美元，略低于竞品但保持利润空间',
-        '视频创意建议：场景化使用演示，突出多功能卖点',
-        '首批备货100件，控制库存成本和退货风险',
-      ],
-    };
-    setReport(newReport);
-    setActiveTab('report');
-    toast.success('选品报告已生成');
+  // 生成选品报告 - 调用AI生成
+  const handleGenerateReport = async () => {
+    // 检查是否有足够的数据
+    if (feasibilityResults.length === 0) {
+      toast.error('请先完成可行性分析');
+      return;
+    }
+
+    setIsAnalyzing(true);
+    try {
+      const result = await generateSelectionReport({
+        market: requirement.market || 'id',
+        category: requirement.category,
+        products: hotProducts.filter(p => selectedProducts.includes(p.id)),
+        feasibility: feasibilityResults,
+        competitors: competitors,
+      });
+
+      if (result.success && result.report) {
+        const aiReport = result.report;
+        const newReport: SelectionReport = {
+          requirements: requirement,
+          direction: mockDirections.filter(d => selectedProducts.includes(d.name)).map(d => d.name),
+          hotProducts: hotProducts.filter(p => selectedProducts.includes(p.id)),
+          feasibility: feasibilityResults,
+          competitors,
+          recommendations: aiReport.recommendations?.map((r: any) => 
+            `${r.product} - ${r.reason} (${r.price_suggestion})`
+          ) || [],
+        };
+        setReport(newReport);
+        setActiveTab('report');
+        toast.success('AI选品报告已生成');
+      } else {
+        // 使用默认报告
+        const defaultReport: SelectionReport = {
+          requirements: requirement,
+          direction: mockDirections.filter(d => selectedProducts.includes(d.name)).map(d => d.name),
+          hotProducts: hotProducts.filter(p => selectedProducts.includes(p.id)),
+          feasibility: feasibilityResults,
+          competitors,
+          recommendations: [
+            '优先测试高利润、低竞争商品',
+            '定价参考竞品价格，保持利润空间',
+            '视频创意建议：场景化使用演示',
+            '首批备货控制数量，降低风险',
+          ],
+        };
+        setReport(defaultReport);
+        setActiveTab('report');
+        toast.success('选品报告已生成（演示数据）');
+      }
+    } catch (error) {
+      console.error('报告生成失败:', error);
+      const defaultReport: SelectionReport = {
+        requirements: requirement,
+        direction: mockDirections.filter(d => selectedProducts.includes(d.name)).map(d => d.name),
+        hotProducts: hotProducts.filter(p => selectedProducts.includes(p.id)),
+        feasibility: feasibilityResults,
+        competitors,
+        recommendations: [
+          '优先测试高利润、低竞争商品',
+          '定价参考竞品价格，保持利润空间',
+          '视频创意建议：场景化使用演示',
+          '首批备货控制数量，降低风险',
+        ],
+      };
+      setReport(defaultReport);
+      setActiveTab('report');
+      toast.success('选品报告已生成（演示数据）');
+    } finally {
+      setIsAnalyzing(false);
+    }
   };
 
   // 导出报告
@@ -997,11 +1119,20 @@ ${report.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
 
                   <Button 
                     onClick={handleStartRequirementAnalysis}
-                    disabled={!requirement.market}
+                    disabled={!requirement.market || isAnalyzing}
                     className="mt-4"
                   >
-                    <Sparkles className="h-4 w-4 mr-2" />
-                    开始分析选品方向
+                    {isAnalyzing ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        AI分析中...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="h-4 w-4 mr-2" />
+                        开始分析选品方向
+                      </>
+                    )}
                   </Button>
                 </CardContent>
               </Card>
@@ -1021,46 +1152,58 @@ ${report.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {mockDirections.map((direction, index) => (
-                    <div 
-                      key={index}
-                      className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
-                        selectedProducts.includes(direction.name) 
-                          ? 'border-primary bg-primary/5' 
-                          : 'border-border hover:border-primary/50'
-                      }`}
-                      onClick={() => toggleProductSelect(direction.name)}
-                    >
-                      <div className="flex items-start justify-between">
-                        <div className="flex items-start gap-3">
-                          <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
-                            selectedProducts.includes(direction.name) 
-                              ? 'bg-primary border-primary' 
-                              : 'border-muted-foreground'
-                          }`}>
-                            {selectedProducts.includes(direction.name) && (
-                              <Check className="h-4 w-4 text-white" />
-                            )}
-                          </div>
-                          <div>
-                            <div className="text-[14px] font-medium text-foreground">
-                              {index + 1}. {direction.name}
+                  {directions.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <Target className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                      <p>暂无选品方向数据，请先进行需求分析</p>
+                    </div>
+                  ) : (
+                    directions.map((direction, index) => (
+                      <div 
+                        key={direction.id || index}
+                        className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                          selectedProducts.includes(direction.name) 
+                            ? 'border-primary bg-primary/5' 
+                            : 'border-border hover:border-primary/50'
+                        }`}
+                        onClick={() => toggleProductSelect(direction.name)}
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-start gap-3">
+                            <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
+                              selectedProducts.includes(direction.name) 
+                                ? 'bg-primary border-primary' 
+                                : 'border-muted-foreground'
+                            }`}>
+                              {selectedProducts.includes(direction.name) && (
+                                <Check className="h-4 w-4 text-white" />
+                              )}
                             </div>
-                            <div className="text-[12px] text-muted-foreground mt-1">
-                              原因：{direction.reason}
+                            <div>
+                              <div className="text-[14px] font-medium text-foreground">
+                                {direction.icon || '📦'} {direction.name}
+                              </div>
+                              <div className="text-[12px] text-muted-foreground mt-1">
+                                {direction.reason}
+                              </div>
+                              {direction.avgProfitRate && (
+                                <Badge variant="outline" className="mt-1 text-[10px]">
+                                  预估利润率: {direction.avgProfitRate}%
+                                </Badge>
+                              )}
                             </div>
                           </div>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          {Array.from({ length: 5 }).map((_, i) => (
-                            <span key={i} className={i < direction.stars ? 'text-warning' : 'text-muted'}>
-                              ★
-                            </span>
-                          ))}
+                          <div className="flex items-center gap-1">
+                            {Array.from({ length: 5 }).map((_, i) => (
+                              <span key={i} className={i < (direction.stars || Math.floor((direction.marketPotential || 7) / 2)) ? 'text-warning' : 'text-muted'}>
+                                ★
+                              </span>
+                            ))}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    ))
+                  )}
 
                   <div className="flex items-center justify-between pt-4 border-t">
                     <div className="text-[13px] text-muted-foreground">
