@@ -40,7 +40,7 @@ const menuItems: MenuItem[] = [
     icon: Link2,
     submenu: [
       { title: '采集中心', href: '/erp/collection' },
-      { title: '公用采集箱', href: '/erp/collection', badge: 'V1.0' },
+      { title: '公用采集箱', href: '/erp/public-collection' },
       // 预留：{ title: '自动采集', href: '/erp/auto-collect', badge: 'V1.1' },
     ],
   },
@@ -50,7 +50,6 @@ const menuItems: MenuItem[] = [
     icon: Package,
     submenu: [
       { title: '商品列表', href: '/erp/products' },
-      { title: '商品详情', href: '/erp/products/[id]', badge: 'V1.0' },
       // 预留：{ title: '批量处理', href: '/erp/batch', badge: 'V1.1' },
       // 预留：{ title: '库存管理', href: '/erp/inventory', badge: 'V1.1' },
     ],
@@ -173,9 +172,9 @@ export default function Sidebar() {
                     "ml-4 mt-1 space-y-1 overflow-hidden transition-all duration-300 ease-in-out",
                     active ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
                   )}>
-                    {item.submenu.map((subItem) => (
+                    {item.submenu.map((subItem, idx) => (
                       <Link
-                        key={subItem.href}
+                        key={`${subItem.title}-${idx}`}
                         href={subItem.href}
                         className={cn(
                           "flex items-center gap-2 px-3 py-1.5 rounded-md text-xs transition-all duration-200",
