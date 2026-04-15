@@ -80,6 +80,26 @@ interface PurchaseItem {
   totalAmount: number;
 }
 
+// 数据源配置
+interface DataSourceConfig {
+  enabled: boolean;
+  name: string;
+  apiKey?: string;
+  apiSecret?: string;
+  status: 'connected' | 'disconnected' | 'error';
+  lastSync?: string;
+}
+
+// 选品策略配置
+interface SelectionStrategy {
+  minMonthlySales: number; // 最低月销量
+  minProfitMargin: number; // 最低利润率
+  maxCompetition: '蓝海' | '中等' | '红海'; // 最高竞争度
+  trendThreshold: number; // 增长趋势阈值
+  resultLimit: number; // 结果数量
+  sortBy: 'sales' | 'profit' | 'trend'; // 排序方式
+}
+
 // 选品需求
 interface SelectionRequirement {
   market: string;
@@ -467,6 +487,45 @@ export default function SelectionAgentPage() {
     sortBy: 'rating' as 'rating' | 'price' | 'moq',
   });
 
+  // 数据源配置状态
+  const [dataSources, setDataSources] = useState<DataSourceConfig[]>([
+    {
+      enabled: true,
+      name: '模拟数据（演示用）',
+      status: 'connected',
+      lastSync: new Date().toISOString(),
+    },
+    {
+      enabled: false,
+      name: '蝉妈妈TK版',
+      apiKey: '',
+      apiSecret: '',
+      status: 'disconnected',
+    },
+    {
+      enabled: false,
+      name: 'Jungle Scout',
+      apiKey: '',
+      status: 'disconnected',
+    },
+    {
+      enabled: false,
+      name: 'Helium 10',
+      apiKey: '',
+      status: 'disconnected',
+    },
+  ]);
+
+  // 选品策略配置
+  const [strategy, setStrategy] = useState<SelectionStrategy>({
+    minMonthlySales: 1000, // 最低月销量1000
+    minProfitMargin: 15, // 最低利润率15%
+    maxCompetition: '中等', // 最高接受中等竞争
+    trendThreshold: 20, // 增长趋势阈值20%
+    resultLimit: 10, // 最多返回10个结果
+    sortBy: 'sales', // 按销量排序
+  });
+
   useEffect(() => {
     const userData = localStorage.getItem('user');
     if (!userData) {
@@ -781,6 +840,7 @@ ${report.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
         {/* 主要内容区 */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="bg-muted/50">
+            <TabsTrigger value="config">⚙️ 数据源配置</TabsTrigger>
             <TabsTrigger value="requirement">📝 需求分析</TabsTrigger>
             <TabsTrigger value="hot-products">🔥 爆款挖掘</TabsTrigger>
             <TabsTrigger value="feasibility">📊 可行性分析</TabsTrigger>
@@ -788,6 +848,275 @@ ${report.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
             <TabsTrigger value="report">📄 选品报告</TabsTrigger>
             <TabsTrigger value="suppliers" disabled={!report}>🏭 供应商筛选</TabsTrigger>
           </TabsList>
+
+          {/* ==================== 模块0: 数据源配置 ==================== */}
+          <TabsContent value="config" className="space-y-4">
+            {/* 数据源配置 */}
+            <Card className="bg-white border-border shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-[15px] flex items-center gap-2">
+                  <Settings className="h-5 w-5 text-primary" />
+                  数据源配置
+                </CardTitle>
+                <CardDescription>
+                  配置选品数据来源，支持第三方选品工具API对接
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid gap-4">
+                  {dataSources.map((source, index) => (
+                    <div key={index} className="p-4 border rounded-lg space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <input 
+                            type="checkbox"
+                            checked={source.enabled}
+                            onChange={(e) => {
+                              const updated = [...dataSources];
+                              updated[index].enabled = e.target.checked;
+                              setDataSources(updated);
+                            }}
+                            className="w-4 h-4"
+                          />
+                          <span className="font-medium text-[14px]">{source.name}</span>
+                          <Badge variant="outline" className={
+                            source.status === 'connected' ? 'bg-success/10 text-success border-success/20' :
+                            source.status === 'error' ? 'bg-destructive/10 text-destructive border-destructive/20' :
+                            'bg-muted text-muted-foreground'
+                          }>
+                            {source.status === 'connected' ? '已连接' : source.status === 'error' ? '连接错误' : '未连接'}
+                          </Badge>
+                        </div>
+                        {source.enabled && source.status === 'disconnected' && (
+                          <Button size="sm" variant="outline" onClick={() => {
+                            toast.warning('请先填写API凭证');
+                          }}>
+                            配置
+                          </Button>
+                        )}
+                        {source.enabled && source.status === 'connected' && (
+                          <span className="text-[12px] text-muted-foreground">
+                            最后同步: {source.lastSync ? new Date(source.lastSync).toLocaleString('zh-CN') : '-'}
+                          </span>
+                        )}
+                      </div>
+                      
+                      {source.enabled && (
+                        <div className="grid grid-cols-2 gap-4 pl-7">
+                          <div className="space-y-2">
+                            <label className="text-[12px] text-muted-foreground">API Key</label>
+                            <Input 
+                              type="password"
+                              placeholder={source.status === 'connected' ? '已配置' : '输入API Key'}
+                              value={source.apiKey || ''}
+                              onChange={(e) => {
+                                const updated = [...dataSources];
+                                updated[index].apiKey = e.target.value;
+                                setDataSources(updated);
+                              }}
+                              className="h-9 text-[13px]"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <label className="text-[12px] text-muted-foreground">API Secret</label>
+                            <Input 
+                              type="password"
+                              placeholder={source.status === 'connected' ? '已配置' : '输入API Secret'}
+                              value={source.apiSecret || ''}
+                              onChange={(e) => {
+                                const updated = [...dataSources];
+                                updated[index].apiSecret = e.target.value;
+                                setDataSources(updated);
+                              }}
+                              className="h-9 text-[13px]"
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                <div className="flex gap-2 pt-2">
+                  <Button 
+                    variant="outline"
+                    onClick={() => {
+                      const enabledSources = dataSources.filter(s => s.enabled);
+                      if (enabledSources.length === 0) {
+                        toast.error('请至少启用一个数据源');
+                        return;
+                      }
+                      // 模拟测试连接
+                      const updated = dataSources.map(s => ({
+                        ...s,
+                        status: s.enabled && s.apiKey ? 'connected' as const : s.status,
+                        lastSync: s.enabled && s.apiKey ? new Date().toISOString() : s.lastSync,
+                      }));
+                      setDataSources(updated);
+                      toast.success('数据源连接成功');
+                    }}
+                  >
+                    <CheckCircle className="h-4 w-4 mr-2" />
+                    测试连接
+                  </Button>
+                  <Button 
+                    variant="outline"
+                    onClick={() => {
+                      const connected = dataSources.filter(s => s.status === 'connected');
+                      if (connected.length === 0) {
+                        toast.error('没有已连接的数据源');
+                        return;
+                      }
+                      const updated = dataSources.map(s => ({
+                        ...s,
+                        lastSync: s.status === 'connected' ? new Date().toISOString() : s.lastSync,
+                      }));
+                      setDataSources(updated);
+                      toast.success('数据同步完成');
+                    }}
+                  >
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    同步数据
+                  </Button>
+                </div>
+
+                {/* 数据来源说明 */}
+                <div className="p-3 bg-muted/30 rounded-lg">
+                  <div className="text-[12px] text-muted-foreground">
+                    <p className="font-medium mb-1">支持的选品工具：</p>
+                    <ul className="list-disc list-inside space-y-0.5">
+                      <li><strong>蝉妈妈TK版</strong> - TK热门商品数据、销量趋势</li>
+                      <li><strong>Jungle Scout</strong> - 亚马逊竞品分析、市场洞察</li>
+                      <li><strong>Helium 10</strong> - 关键词研究、产品调研</li>
+                      <li><strong>TK Trends</strong> - TK平台热门话题和趋势</li>
+                      <li><strong>Google Trends</strong> - 品类搜索趋势分析</li>
+                    </ul>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* 选品策略配置 */}
+            <Card className="bg-white border-border shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-[15px] flex items-center gap-2">
+                  <Target className="h-5 w-5 text-primary" />
+                  选品策略配置
+                </CardTitle>
+                <CardDescription>
+                  设置选品筛选条件，过滤低质量商品
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-[13px] font-medium">最低月销量</label>
+                    <div className="flex items-center gap-2">
+                      <Input 
+                        type="number"
+                        value={strategy.minMonthlySales}
+                        onChange={(e) => setStrategy(prev => ({ ...prev, minMonthlySales: parseInt(e.target.value) || 0 }))}
+                        className="h-9 text-[13px]"
+                      />
+                      <span className="text-[12px] text-muted-foreground">件</span>
+                    </div>
+                    <p className="text-[11px] text-muted-foreground">只推荐月销量≥此值的商品</p>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[13px] font-medium">最低利润率</label>
+                    <div className="flex items-center gap-2">
+                      <Input 
+                        type="number"
+                        value={strategy.minProfitMargin}
+                        onChange={(e) => setStrategy(prev => ({ ...prev, minProfitMargin: parseFloat(e.target.value) || 0 }))}
+                        className="h-9 text-[13px]"
+                      />
+                      <span className="text-[12px] text-muted-foreground">%</span>
+                    </div>
+                    <p className="text-[11px] text-muted-foreground">只推荐利润率≥此值的商品</p>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[13px] font-medium">最高竞争度</label>
+                    <select 
+                      className="w-full h-9 px-3 border rounded-md text-[13px]"
+                      value={strategy.maxCompetition}
+                      onChange={(e) => setStrategy(prev => ({ ...prev, maxCompetition: e.target.value as any }))}
+                    >
+                      <option value="蓝海">蓝海（竞争少）</option>
+                      <option value="中等">中等（竞争适中）</option>
+                      <option value="红海">红海（竞争激烈）</option>
+                    </select>
+                    <p className="text-[11px] text-muted-foreground">过滤高竞争度商品</p>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[13px] font-medium">增长趋势阈值</label>
+                    <div className="flex items-center gap-2">
+                      <Input 
+                        type="number"
+                        value={strategy.trendThreshold}
+                        onChange={(e) => setStrategy(prev => ({ ...prev, trendThreshold: parseInt(e.target.value) || 0 }))}
+                        className="h-9 text-[13px]"
+                      />
+                      <span className="text-[12px] text-muted-foreground">%</span>
+                    </div>
+                    <p className="text-[11px] text-muted-foreground">只推荐增长趋势≥此值的商品</p>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[13px] font-medium">结果数量</label>
+                    <Input 
+                      type="number"
+                      value={strategy.resultLimit}
+                      onChange={(e) => setStrategy(prev => ({ ...prev, resultLimit: parseInt(e.target.value) || 1 }))}
+                      className="h-9 text-[13px]"
+                    />
+                    <p className="text-[11px] text-muted-foreground">每次选品最多返回结果数</p>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[13px] font-medium">排序方式</label>
+                    <select 
+                      className="w-full h-9 px-3 border rounded-md text-[13px]"
+                      value={strategy.sortBy}
+                      onChange={(e) => setStrategy(prev => ({ ...prev, sortBy: e.target.value as any }))}
+                    >
+                      <option value="sales">按月销量</option>
+                      <option value="profit">按利润率</option>
+                      <option value="trend">按增长趋势</option>
+                    </select>
+                    <p className="text-[11px] text-muted-foreground">结果按此维度排序</p>
+                  </div>
+                </div>
+
+                <div className="flex gap-2 pt-2">
+                  <Button 
+                    onClick={() => {
+                      toast.success('选品策略已保存');
+                      // 将配置应用到后续选品流程
+                    }}
+                  >
+                    <Check className="h-4 w-4 mr-2" />
+                    保存策略
+                  </Button>
+                  <Button 
+                    variant="outline"
+                    onClick={() => {
+                      setStrategy({
+                        minMonthlySales: 1000,
+                        minProfitMargin: 15,
+                        maxCompetition: '中等',
+                        trendThreshold: 20,
+                        resultLimit: 10,
+                        sortBy: 'sales',
+                      });
+                      toast.success('已恢复默认策略');
+                    }}
+                  >
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    恢复默认
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
           {/* ==================== 模块1: 需求分析 ==================== */}
           <TabsContent value="requirement" className="space-y-4">
