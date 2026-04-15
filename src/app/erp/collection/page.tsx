@@ -6,6 +6,7 @@ import MainLayout from '@/components/layout/MainLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import {
   Search,
@@ -21,23 +22,19 @@ import {
   ExternalLink,
   Loader2,
   Sparkles,
+  ShoppingCart,
+  ListOrdered,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { collectProduct, previewProduct, batchCollectProducts, getCollectionHistory, CollectionHistory, ProductPreview } from '@/lib/api/collection';
-
-interface CollectionItem {
-  id: string;
-  source_url: string;
-  source_id?: string;
-  product_id?: string;
-  status: string;
-  created_at: string;
-}
+import { store } from '@/lib/store';
+import type { CollectionItem } from '@/lib/store';
 
 // Mock数据
 const mockHistory: CollectionItem[] = [
   {
     id: 'COL001',
+    source: '1688' as const,
     source_url: 'https://detail.1688.com/offer/1234567890.html',
     source_id: '1234567890',
     product_id: 'PROD001',
@@ -46,6 +43,7 @@ const mockHistory: CollectionItem[] = [
   },
   {
     id: 'COL002',
+    source: '1688' as const,
     source_url: 'https://detail.1688.com/offer/2345678901.html',
     source_id: '2345678901',
     product_id: 'PROD002',
@@ -54,6 +52,7 @@ const mockHistory: CollectionItem[] = [
   },
   {
     id: 'COL003',
+    source: '1688' as const,
     source_url: 'https://detail.1688.com/offer/3456789012.html',
     source_id: '3456789012',
     product_id: 'PROD003',
@@ -62,13 +61,16 @@ const mockHistory: CollectionItem[] = [
   },
   {
     id: 'COL004',
+    source: '1688' as const,
     source_url: 'https://detail.1688.com/offer/4567890123.html',
     source_id: '4567890123',
     status: 'pending',
+    added_from: 'manual',
     created_at: '2026-03-20 11:20:00',
   },
   {
     id: 'COL005',
+    source: '1688' as const,
     source_url: 'https://detail.1688.com/offer/5678901234.html',
     source_id: '5678901234',
     product_id: 'PROD005',
@@ -77,13 +79,16 @@ const mockHistory: CollectionItem[] = [
   },
   {
     id: 'COL006',
+    source: '1688' as const,
     source_url: 'https://detail.1688.com/offer/6789012345.html',
     source_id: '6789012345',
     status: 'failed',
+    added_from: 'manual',
     created_at: '2026-03-19 10:00:00',
   },
   {
     id: 'COL007',
+    source: '1688' as const,
     source_url: 'https://detail.1688.com/offer/7890123456.html',
     source_id: '7890123456',
     product_id: 'PROD006',
@@ -92,6 +97,7 @@ const mockHistory: CollectionItem[] = [
   },
   {
     id: 'COL008',
+    source: '1688' as const,
     source_url: 'https://detail.1688.com/offer/8901234567.html',
     source_id: '8901234567',
     product_id: 'PROD007',
@@ -117,6 +123,14 @@ export default function Collection1688Page() {
   const [history, setHistory] = useState<CollectionItem[]>([]);
   const [historyLoading, setHistoryLoading] = useState(true);
 
+  // 待采集清单
+  const [pendingCollections, setPendingCollections] = useState<CollectionItem[]>([]);
+
+  // 刷新待采集清单
+  const refreshPendingCollections = () => {
+    setPendingCollections(store.getPendingCollections());
+  };
+
   useEffect(() => {
     const userData = localStorage.getItem('user');
     if (!userData) {
@@ -125,13 +139,43 @@ export default function Collection1688Page() {
     }
     setUser(JSON.parse(userData));
     fetchHistory();
+    refreshPendingCollections();
+    
+    // 监听storage变化，刷新待采集清单
+    const handleStorageChange = () => {
+      refreshPendingCollections();
+    };
+    window.addEventListener('storage', handleStorageChange);
+    
+    // 定时刷新待采集清单
+    const interval = setInterval(refreshPendingCollections, 3000);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      clearInterval(interval);
+    };
   }, [router]);
 
   const fetchHistory = async () => {
     setHistoryLoading(true);
     try {
       const data = await getCollectionHistory(1, 20);
-      setHistory(data.items && data.items.length > 0 ? data.items : mockHistory);
+      if (data.items && data.items.length > 0) {
+        // 转换 CollectionHistory 为 CollectionItem
+        const converted: CollectionItem[] = data.items.map((item: any) => ({
+          id: item.id,
+          source: (item.source as '1688' | 'taobao' | 'pinduoduo') || '1688',
+          source_url: item.source_url,
+          source_id: item.source_id,
+          product_id: item.product_id,
+          status: item.status as 'pending' | 'collected' | 'failed',
+          added_from: item.added_from as 'selection_agent' | 'manual' || 'manual',
+          created_at: item.created_at,
+        }));
+        setHistory(converted);
+      } else {
+        setHistory(mockHistory);
+      }
     } catch (error) {
       console.error('获取采集历史失败:', error);
       // 使用mock数据
@@ -374,70 +418,215 @@ export default function Collection1688Page() {
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle className="text-[15px]">采集历史</CardTitle>
-                <CardDescription>查看已采集的商品记录</CardDescription>
+                <CardTitle className="text-[15px]">采集管理</CardTitle>
+                <CardDescription>管理待采集链接和采集历史</CardDescription>
               </div>
-              <Button variant="outline" size="sm" onClick={fetchHistory}>
+              <Button variant="outline" size="sm" onClick={() => { fetchHistory(); refreshPendingCollections(); }}>
                 刷新
               </Button>
             </div>
           </CardHeader>
           <CardContent>
-            {historyLoading ? (
-              <div className="text-center py-8 text-muted-foreground">加载中...</div>
-            ) : history.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                <Package className="h-12 w-12 mx-auto mb-3 opacity-30" />
-                <p>暂无采集记录</p>
-                <p className="text-[12px] mt-1">输入1688链接开始采集商品</p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {history.map((item) => (
-                  <div key={item.id} className="p-4 border border-border rounded-lg hover:bg-muted/30 transition-colors">
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-start gap-3">
-                        <div className="w-10 h-10 bg-orange-500/10 rounded-lg flex items-center justify-center">
-                          <Package className="h-5 w-5 text-orange-500" />
-                        </div>
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-2">
-                            <span className="text-[12px] text-muted-foreground font-mono">ID: {item.source_id}</span>
-                            {getStatusBadge(item.status)}
-                          </div>
-                          <div className="text-[13px] text-foreground truncate max-w-[400px]">
-                            {item.source_url}
-                          </div>
-                          <div className="text-[11px] text-muted-foreground">
-                            采集时间: {new Date(item.created_at).toLocaleString()}
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => window.open(item.source_url, '_blank')}
-                        >
-                          <ExternalLink className="h-3 w-3 mr-1" />
-                          查看1688
-                        </Button>
-                        {item.product_id && (
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => router.push(`/erp/products?id=${item.product_id}`)}
-                          >
-                            <Eye className="h-3 w-3 mr-1" />
-                            商品详情
-                          </Button>
-                        )}
-                      </div>
-                    </div>
+            <Tabs defaultValue="pending" className="w-full">
+              <TabsList className="mb-4">
+                <TabsTrigger value="pending" className="flex items-center gap-1">
+                  <ShoppingCart className="h-3 w-3" />
+                  待采集清单
+                  {pendingCollections.length > 0 && (
+                    <Badge variant="secondary" className="ml-1 text-[10px]">{pendingCollections.length}</Badge>
+                  )}
+                </TabsTrigger>
+                <TabsTrigger value="history" className="flex items-center gap-1">
+                  <ListOrdered className="h-3 w-3" />
+                  采集历史
+                </TabsTrigger>
+              </TabsList>
+              
+              {/* 待采集清单 */}
+              <TabsContent value="pending">
+                {pendingCollections.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <ShoppingCart className="h-12 w-12 mx-auto mb-3 opacity-30" />
+                    <p>待采集清单为空</p>
+                    <p className="text-[12px] mt-1">从选品智能体添加供应商链接后，将显示在这里</p>
                   </div>
-                ))}
-              </div>
-            )}
+                ) : (
+                  <div className="space-y-3">
+                    {pendingCollections.map((item) => (
+                      <div key={item.id} className="p-4 border border-border rounded-lg hover:bg-muted/30 transition-colors">
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-start gap-3">
+                            <div className="w-10 h-10 bg-orange-500/10 rounded-lg flex items-center justify-center">
+                              <Package className="h-5 w-5 text-orange-500" />
+                            </div>
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-2">
+                                <span className="text-[12px] text-orange-500 font-medium">
+                                  {item.source === '1688' ? '1688' : item.source === 'taobao' ? '淘宝' : '拼多多'}
+                                </span>
+                                <Badge variant="outline" className="text-[10px] bg-primary/10 text-primary">
+                                  {item.added_from === 'selection_agent' ? '选品智能体' : '手动添加'}
+                                </Badge>
+                              </div>
+                              <div className="text-[13px] font-medium text-foreground line-clamp-2 max-w-[400px]">
+                                {item.product_name || '未命名商品'}
+                              </div>
+                              <div className="text-[11px] text-muted-foreground truncate max-w-[400px] font-mono">
+                                {item.source_url}
+                              </div>
+                              {item.keyword && (
+                                <div className="text-[11px] text-muted-foreground">
+                                  选品关键词: {item.keyword}
+                                </div>
+                              )}
+                              <div className="text-[11px] text-muted-foreground">
+                                添加时间: {new Date(item.created_at).toLocaleString()}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Button 
+                              variant="default" 
+                              size="sm"
+                              className="bg-orange-500 hover:bg-orange-600"
+                              onClick={() => {
+                                // 模拟采集
+                                store.updatePendingCollection(item.id, { status: 'collected' });
+                                toast.success('采集成功');
+                                refreshPendingCollections();
+                              }}
+                            >
+                              <Download className="h-3 w-3 mr-1" />
+                              采集
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => window.open(item.source_url, '_blank')}
+                            >
+                              <ExternalLink className="h-3 w-3 mr-1" />
+                              查看
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              onClick={() => {
+                                store.removePendingCollection(item.id);
+                                toast.success('已移除');
+                                refreshPendingCollections();
+                              }}
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                    
+                    {/* 批量操作 */}
+                    {pendingCollections.length > 0 && (
+                      <div className="mt-4 pt-4 border-t">
+                        <div className="flex items-center justify-between">
+                          <div className="text-[13px] text-muted-foreground">
+                            共 {pendingCollections.length} 个待采集链接
+                          </div>
+                          <div className="flex gap-2">
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => {
+                                pendingCollections.forEach(item => {
+                                  store.updatePendingCollection(item.id, { status: 'collected' });
+                                });
+                                toast.success('全部采集成功');
+                                refreshPendingCollections();
+                              }}
+                            >
+                              <Download className="h-3 w-3 mr-1" />
+                              批量采集
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              className="text-destructive hover:text-destructive"
+                              onClick={() => {
+                                pendingCollections.forEach(item => {
+                                  store.removePendingCollection(item.id);
+                                });
+                                toast.success('已清空全部');
+                                refreshPendingCollections();
+                              }}
+                            >
+                              <Trash2 className="h-3 w-3 mr-1" />
+                              清空
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </TabsContent>
+              
+              {/* 采集历史 */}
+              <TabsContent value="history">
+                {historyLoading ? (
+                  <div className="text-center py-8 text-muted-foreground">加载中...</div>
+                ) : history.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Package className="h-12 w-12 mx-auto mb-3 opacity-30" />
+                    <p>暂无采集记录</p>
+                    <p className="text-[12px] mt-1">输入1688链接开始采集商品</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {history.map((item) => (
+                      <div key={item.id} className="p-4 border border-border rounded-lg hover:bg-muted/30 transition-colors">
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-start gap-3">
+                            <div className="w-10 h-10 bg-orange-500/10 rounded-lg flex items-center justify-center">
+                              <Package className="h-5 w-5 text-orange-500" />
+                            </div>
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-2">
+                                <span className="text-[12px] text-muted-foreground font-mono">ID: {item.source_id}</span>
+                                {getStatusBadge(item.status)}
+                              </div>
+                              <div className="text-[13px] text-foreground truncate max-w-[400px]">
+                                {item.source_url}
+                              </div>
+                              <div className="text-[11px] text-muted-foreground">
+                                采集时间: {new Date(item.created_at).toLocaleString()}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => window.open(item.source_url, '_blank')}
+                            >
+                              <ExternalLink className="h-3 w-3 mr-1" />
+                              查看1688
+                            </Button>
+                            {item.product_id && (
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => router.push(`/erp/products?id=${item.product_id}`)}
+                              >
+                                <Eye className="h-3 w-3 mr-1" />
+                                商品详情
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </TabsContent>
+            </Tabs>
           </CardContent>
         </Card>
 

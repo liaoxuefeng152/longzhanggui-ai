@@ -277,6 +277,24 @@ export interface WorkflowStep {
   error?: string;
 }
 
+// ============ 采集清单类型 ============
+
+export interface CollectionItem {
+  id: string;
+  source: '1688' | 'taobao' | 'pinduoduo';
+  source_url: string;
+  source_id?: string;
+  product_name?: string;
+  keyword?: string;
+  status: 'pending' | 'collected' | 'failed';
+  product_id?: string;
+  error?: string;
+  added_from?: 'selection_agent' | 'manual';
+  selection_report_id?: string;
+  created_at: string;
+  collected_at?: string;
+}
+
 // ============ 全局存储 ============
 
 declare global {
@@ -294,6 +312,9 @@ class LobsterStore {
   logistics: Map<string, Logistics> = new Map();
   financeRecords: Map<string, FinanceRecord> = new Map();
   workflows: Map<string, WorkflowExecution> = new Map();
+  
+  // 待采集清单
+  pendingCollections: Map<string, CollectionItem> = new Map();
   
   // 定时任务相关
   scheduledTasks: any[] = [];
@@ -932,6 +953,81 @@ class LobsterStore {
   getWorkflows(): WorkflowExecution[] {
     return Array.from(this.workflows.values()).sort((a, b) => 
       new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    );
+  }
+
+  // ============ 采集清单相关方法 ============
+
+  /**
+   * 添加到待采集清单
+   */
+  addToPendingCollection(data: {
+    source: '1688' | 'taobao' | 'pinduoduo';
+    source_url: string;
+    source_id?: string;
+    product_name?: string;
+    keyword?: string;
+    added_from?: 'selection_agent' | 'manual';
+    selection_report_id?: string;
+  }): CollectionItem {
+    const id = this.generateId('COL');
+    const now = this.now();
+    const item: CollectionItem = {
+      id,
+      source: data.source,
+      source_url: data.source_url,
+      source_id: data.source_id,
+      product_name: data.product_name,
+      keyword: data.keyword,
+      status: 'pending',
+      added_from: data.added_from || 'manual',
+      selection_report_id: data.selection_report_id,
+      created_at: now,
+    };
+    this.pendingCollections.set(id, item);
+    return item;
+  }
+
+  /**
+   * 获取待采集清单列表
+   */
+  getPendingCollections(): CollectionItem[] {
+    return Array.from(this.pendingCollections.values()).sort((a, b) => 
+      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    );
+  }
+
+  /**
+   * 更新采集清单状态
+   */
+  updatePendingCollection(id: string, data: Partial<CollectionItem>): CollectionItem | undefined {
+    const item = this.pendingCollections.get(id);
+    if (!item) return undefined;
+    
+    const updated = {
+      ...item,
+      ...data,
+      id: item.id,
+      created_at: item.created_at,
+      collected_at: data.status === 'collected' ? this.now() : item.collected_at,
+    };
+    this.pendingCollections.set(id, updated);
+    return updated;
+  }
+
+  /**
+   * 从待采集清单移除
+   */
+  removePendingCollection(id: string): boolean {
+    return this.pendingCollections.delete(id);
+  }
+
+  /**
+   * 检查链接是否已在采集清单中
+   */
+  isInPendingCollection(source_url: string): boolean {
+    return Array.from(this.pendingCollections.values()).some(
+      item => item.source_url === source_url
     );
   }
 }

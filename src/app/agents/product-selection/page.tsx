@@ -53,6 +53,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { selectProducts, analyzeCompetition, suggestDirections, analyzeCompetitorDetail, generateSelectionReport, assessRisks } from '@/lib/api/ai-agents';
+import { store } from '@/lib/store';
 
 // ==================== 类型定义 ====================
 
@@ -2180,7 +2181,21 @@ ${report.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
                                   size="sm"
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    toast.success('已加入采集清单');
+                                    // 添加到待采集清单
+                                    store.addToPendingCollection({
+                                      source: '1688',
+                                      source_url: supplier.productUrl,
+                                      source_id: supplier.id,
+                                      product_name: supplier.name,
+                                      keyword: hotProducts[0]?.name || mockHotProducts[0]?.name,
+                                      added_from: 'selection_agent',
+                                    });
+                                    toast.success('已加入待采集清单，可在1688采集中心查看', {
+                                      action: {
+                                        label: '去采集',
+                                        onClick: () => router.push('/erp/collection'),
+                                      },
+                                    });
                                   }}
                                 >
                                   <ShoppingCart className="h-3 w-3 mr-1" />
