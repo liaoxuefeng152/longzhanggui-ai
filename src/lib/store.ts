@@ -330,6 +330,30 @@ export interface CollectionItem {
   collected_at?: string;
 }
 
+// ============ 公用采集箱类型 ============
+
+export interface PublicCollectionItem {
+  id: string;
+  collection_id: string;      // 关联的采集记录ID
+  product_id: string;          // 关联的商品ID
+  product_name: string;        // 商品名称
+  product_name_en?: string;    // 英文名称
+  source: '1688' | 'taobao' | 'pinduoduo';
+  source_url: string;
+  source_id?: string;
+  supplier_name?: string;
+  cost_price?: number;
+  images?: string[];           // 商品图片列表
+  category?: string;
+  claimed: boolean;           // 是否已被认领
+  claimed_by?: string;         // 认领人
+  claimed_at?: string;        // 认领时间
+  claimed_shop_id?: string;    // 认领到的店铺ID
+  status: 'pending' | 'processing' | 'ready' | 'claimed';
+  created_at: string;
+  updated_at: string;
+}
+
 // ============ 全局存储 ============
 
 declare global {
@@ -350,6 +374,9 @@ class LobsterStore {
   
   // 待采集清单
   pendingCollections: Map<string, CollectionItem> = new Map();
+  
+  // 公用采集箱（采集完成待认领的商品）
+  publicCollections: Map<string, PublicCollectionItem> = new Map();
   
   // 定时任务相关
   scheduledTasks: any[] = [];
@@ -1055,6 +1082,124 @@ class LobsterStore {
    */
   removePendingCollection(id: string): boolean {
     return this.pendingCollections.delete(id);
+  }
+
+  // ============ 公用采集箱方法 ============
+
+  /**
+   * 添加到公用采集箱
+   */
+  addToPublicCollection(data: {
+    collection_id: string;
+    product_id: string;
+    product_name: string;
+    product_name_en?: string;
+    source: '1688' | 'taobao' | 'pinduoduo';
+    source_url: string;
+    source_id?: string;
+    supplier_name?: string;
+    cost_price?: number;
+    images?: string[];
+    category?: string;
+  }): PublicCollectionItem {
+    const id = this.generateId('PUB');
+    const now = this.now();
+    const item: PublicCollectionItem = {
+      id,
+      collection_id: data.collection_id,
+      product_id: data.product_id,
+      product_name: data.product_name,
+      product_name_en: data.product_name_en,
+      source: data.source,
+      source_url: data.source_url,
+      source_id: data.source_id,
+      supplier_name: data.supplier_name,
+      cost_price: data.cost_price,
+      images: data.images,
+      category: data.category,
+      claimed: false,
+      status: 'pending',
+      created_at: now,
+      updated_at: now,
+    };
+    this.publicCollections.set(id, item);
+    return item;
+  }
+
+  /**
+   * 获取公用采集箱列表
+   */
+  getPublicCollections(claimed?: boolean): PublicCollectionItem[] {
+    let items = Array.from(this.publicCollections.values());
+    if (claimed !== undefined) {
+      items = items.filter(item => item.claimed === claimed);
+    }
+    return items.sort((a, b) => 
+      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    );
+  }
+
+  /**
+   * 获取公用采集箱单个商品
+   */
+  getPublicCollection(id: string): PublicCollectionItem | undefined {
+    return this.publicCollections.get(id);
+  }
+
+  /**
+   * 认领公用采集箱商品到店铺
+   */
+  claimPublicCollection(id: string, shopId: string, shopName: string): PublicCollectionItem | undefined {
+    const item = this.publicCollections.get(id);
+    if (!item || item.claimed) return undefined;
+
+    const updated: PublicCollectionItem = {
+      ...item,
+      claimed: true,
+      claimed_by: 'current_user',
+      claimed_at: this.now(),
+      claimed_shop_id: shopId,
+      status: 'claimed',
+      updated_at: this.now(),
+    };
+    this.publicCollections.set(id, updated);
+    return updated;
+  }
+
+  /**
+   * 更新公用采集箱商品
+   */
+  updatePublicCollection(id: string, data: Partial<PublicCollectionItem>): PublicCollectionItem | undefined {
+    const item = this.publicCollections.get(id);
+    if (!item) return undefined;
+    
+    const updated = {
+      ...item,
+      ...data,
+      id: item.id,
+      updated_at: this.now(),
+    };
+    this.publicCollections.set(id, updated);
+    return updated;
+  }
+
+  /**
+   * 从公用采集箱移除
+   */
+  removePublicCollection(id: string): boolean {
+    return this.publicCollections.delete(id);
+  }
+
+  /**
+   * 获取公用采集箱统计数据
+   */
+  getPublicCollectionStats(): { total: number; pending: number; claimed: number } {
+    const items = Array.from(this.publicCollections.values());
+    return {
+      total: items.length,
+      pending: items.filter(item => !item.claimed).length,
+      claimed: items.filter(item => item.claimed).length,
+    };
   }
 
   /**

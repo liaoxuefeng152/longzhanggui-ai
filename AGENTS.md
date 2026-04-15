@@ -396,7 +396,8 @@ npx tsc --noEmit
 
 ### ERP系统页面
 - **商品列表: `src/app/erp/products/page.tsx`** - 商品列表管理
-- **商品详情: `src/app/erp/products/[id]/page.tsx`** - 商品详情编辑页（独立页面，支持 Listing 多语言编辑和 AI 优化）
+- **商品详情: `src/app/erp/products/[id]/page.tsx`** - 商品详情编辑页（独立页面，6 Tab结构：基本信息/类目属性/销售属性/产品图片/产品视频/物流信息）
+- **采集中心: `src/app/erp/collection/page.tsx`** - 1688商品采集、公用采集箱、认领到店铺
 
 ### 选品智能体 - 6大核心模块
 
