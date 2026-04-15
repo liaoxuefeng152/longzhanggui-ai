@@ -381,23 +381,13 @@ npx tsc --noEmit
 
 ## 关键文件索引
 
-### 核心页面
-- 控制台: `src/app/dashboard/page.tsx`
-- AI智能体中心: `src/app/ai-agents/page.tsx`
-- Prompt中心: `src/app/prompts/page.tsx`
-- 工作流编排: `src/app/workflows/page.tsx`
-- 选品分析: `src/app/agents/product-selection/page.tsx` - **支持供应商筛选功能**
-- 图片设计: `src/app/agents/image-design/page.tsx`
-- **平台配置: `src/app/platform/datasources/page.tsx`** - 数据源配置和选品策略
-- **店铺管理: `src/app/shops/page.tsx`** - 店铺授权管理
-- **平台凭证: `src/app/shops/platforms/page.tsx`** - API密钥管理
-- 飞书配置管理: `src/app/feishu/settings/page.tsx`
-- 数据导入管理: `src/app/feishu/import/page.tsx`
-
-### ERP系统页面
-- **商品列表: `src/app/erp/products/page.tsx`** - 商品列表管理
-- **商品详情: `src/app/erp/products/[id]/page.tsx`** - 商品详情编辑页（独立页面，6 Tab结构：基本信息/类目属性/销售属性/产品图片/产品视频/物流信息）
+### V1.0 核心页面（导航栏显示）
+- **工作台（首页）: `src/app/dashboard/page.tsx`** - 待办事项、快捷操作、今日动态
 - **采集中心: `src/app/erp/collection/page.tsx`** - 1688商品采集、公用采集箱、认领到店铺
+- **商品列表: `src/app/erp/products/page.tsx`** - 商品列表管理
+- **商品详情: `src/app/erp/products/[id]/page.tsx`** - 商品详情编辑页（独立页面，6 Tab结构）
+- **智能助理: `src/app/ai-assistant/page.tsx`** - AI对话界面、快捷指令、意图识别
+- **设置: `src/app/shops/page.tsx`** - 店铺管理、平台配置
 
 ### 选品智能体 - 6大核心模块
 
@@ -452,7 +442,42 @@ npx tsc --noEmit
 - 普通用户添加店铺时只需填写基本信息，无需填写敏感凭证
 - 用户点击「去授权」按钮完成店铺绑定
 
-### 飞书集成核心文件
+### V1.x 预留功能（代码保留，导航隐藏）
+
+#### V1.1 (计划中)
+- 库存管理 (`src/app/erp/inventory/page.tsx`)
+- 采购管理 (`src/app/erp/purchase/page.tsx`)
+- 供应商管理 (`src/app/suppliers/page.tsx`)
+- 参数配置 (`src/app/settings/config/page.tsx`)
+- 批量处理 (`src/app/erp/batch/page.tsx`)
+
+#### V1.2 (计划中)
+- 订单管理 (`src/app/erp/orders/page.tsx`)
+- 物流跟踪 (`src/app/erp/logistics/page.tsx`)
+
+#### V1.3 (计划中)
+- 销售分析 (`src/app/reports/page.tsx`)
+- 利润统计 (`src/app/reports/profit/page.tsx`)
+
+#### V2.0 (计划中)
+- 选品智能体 (`src/app/agents/product-selection/page.tsx`)
+- 图片智能体 (`src/app/agents/image-design/page.tsx`)
+- 视频生成 (`src/app/agents/video-generation/page.tsx`)
+- Listing优化 (`src/app/agents/listing-optimization/page.tsx`)
+- 数据复盘 (`src/app/agents/data-review/page.tsx`)
+
+#### V2.1 (计划中)
+- 广告智能体 (`src/app/agents/advertising/page.tsx`)
+- 客服智能体 (`src/app/agents/customer-service/page.tsx`)
+- 广告报表 (`src/app/reports/ads/page.tsx`)
+
+#### V2.2 (计划中)
+- 飞书集成 (`src/app/feishu/*`)
+
+#### V2.x (计划中)
+- 系统管理 (`src/app/users`, `src/app/roles`)
+- Prompt管理 (`src/app/prompts/page.tsx`)
+- 工作流编排 (`src/app/workflows/page.tsx`)### 飞书集成核心文件
 - 飞书配置: `src/lib/feishu/config.ts`
 - 飞书客户端: `src/lib/feishu/client.ts`
 - 意图识别: `src/lib/feishu/intent.ts`

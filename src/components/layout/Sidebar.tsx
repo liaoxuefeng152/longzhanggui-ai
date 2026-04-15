@@ -5,29 +5,15 @@ import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import {
   LayoutDashboard,
-  Cpu,
-  FileText,
   Bot,
-  Users,
-  CreditCard,
-  ClipboardList,
-  Link2,
-  Package,
-  ShoppingCart,
-  Headphones,
-  BarChart3,
   Settings,
+  Package,
+  Link2,
   ChevronRight,
-  Warehouse,
-  DollarSign,
-  Receipt,
-  Truck,
   Sparkles,
-  Zap,
-  MessageSquare,
-  Upload,
-  Clock,
-  Shield,
+  BarChart3,
+  ShoppingCart,
+  Truck,
 } from 'lucide-react';
 
 interface MenuItem {
@@ -37,118 +23,97 @@ interface MenuItem {
   submenu?: {
     title: string;
     href: string;
+    badge?: string;
   }[];
 }
 
-// 根据PRD文档的14个核心页面配置导航菜单
+// V1.0 精简菜单 - 预留扩展空间
 const menuItems: MenuItem[] = [
   {
-    title: '控制台',
+    title: '首页',
     href: '/dashboard',
     icon: LayoutDashboard,
   },
   {
-    title: '工作流编排',
-    href: '/workflows',
-    icon: Zap,
-  },
-  {
-    title: '模型路由',
-    href: '/models',
-    icon: Cpu,
-  },
-  {
-    title: 'Prompt中心',
-    href: '/prompts',
-    icon: FileText,
-  },
-  {
-    title: 'AI智能体中心',
-    href: '/ai-agents',
-    icon: Bot,
+    title: '采集',
+    href: '/erp/collection',
+    icon: Link2,
     submenu: [
-      { title: '选品智能体', href: '/agents/product-selection' },
-      { title: '图片智能体', href: '/agents/image-design' },
-      { title: '视频生成智能体', href: '/agents/video-generation' },
-      { title: 'Listing优化', href: '/agents/listing-optimization' },
-      { title: '广告投放智能体', href: '/agents/advertising' },
-      { title: 'AI客服智能体', href: '/agents/customer-service' },
-      { title: '数据复盘智能体', href: '/agents/data-review' },
+      { title: '采集中心', href: '/erp/collection' },
+      { title: '公用采集箱', href: '/erp/collection', badge: 'V1.0' },
+      // 预留：{ title: '自动采集', href: '/erp/auto-collect', badge: 'V1.1' },
     ],
   },
   {
-    title: '平台配置',
-    href: '/platform',
-    icon: Settings,
-    submenu: [
-      { title: '数据源配置', href: '/platform/datasources' },
-      { title: '店铺管理', href: '/shops' },
-      { title: '平台凭证', href: '/shops/platforms' },
-    ],
-  },
-  {
-    title: 'ERP系统',
-    href: '/erp',
+    title: '商品',
+    href: '/erp/products',
     icon: Package,
     submenu: [
-      { title: '1688采集', href: '/erp/collection' },
-      { title: '商品管理', href: '/erp/products' },
-      { title: '库存管理', href: '/erp/inventory' },
-      { title: '采购管理', href: '/erp/purchase' },
-      { title: '订单管理', href: '/erp/orders' },
-      { title: '物流管理', href: '/erp/logistics' },
-      { title: '财务管理', href: '/erp/finance' },
+      { title: '商品列表', href: '/erp/products' },
+      { title: '商品详情', href: '/erp/products/[id]', badge: 'V1.0' },
+      // 预留：{ title: '批量处理', href: '/erp/batch', badge: 'V1.1' },
+      // 预留：{ title: '库存管理', href: '/erp/inventory', badge: 'V1.1' },
     ],
   },
   {
-    title: '定时任务',
-    href: '/scheduler',
-    icon: Clock,
-  },
-  {
-    title: '用户管理',
-    href: '/users',
-    icon: Users,
+    title: 'AI智能体',
+    href: '/ai-assistant',
+    icon: Bot,
     submenu: [
-      { title: '用户列表', href: '/users' },
-      { title: '角色权限', href: '/roles' },
+      { title: '智能助理', href: '/ai-assistant', badge: 'V1.0' },
+      // 预留：
+      // { title: '选品智能体', href: '/agents/product-selection', badge: 'V2.0' },
+      // { title: '图片智能体', href: '/agents/image-design', badge: 'V2.0' },
+      // { title: 'Listing优化', href: '/agents/listing-optimization', badge: 'V2.0' },
+      // { title: '广告智能体', href: '/agents/advertising', badge: 'V2.1' },
+      // { title: '客服智能体', href: '/agents/customer-service', badge: 'V2.1' },
+      // { title: '数据复盘', href: '/agents/data-review', badge: 'V2.0' },
     ],
   },
   {
-    title: '套餐管理',
-    href: '/packages',
-    icon: CreditCard,
+    title: '设置',
+    href: '/shops',
+    icon: Settings,
+    submenu: [
+      { title: '店铺管理', href: '/shops' },
+      { title: '平台配置', href: '/shops/platforms' },
+      // 预留：{ title: '供应商管理', href: '/suppliers', badge: 'V1.1' },
+      // 预留：{ title: '参数配置', href: '/settings/config', badge: 'V1.1' },
+    ],
   },
+];
+
+// 预留菜单（V1.x 暂不显示）
+const reservedMenuItems: MenuItem[] = [
   {
-    title: '任务日志',
-    href: '/task-logs',
-    icon: ClipboardList,
-  },
-  {
-    title: '客服工单',
-    href: '/customer-tickets',
-    icon: Headphones,
+    title: '订单管理',
+    href: '/erp/orders',
+    icon: ShoppingCart,
+    submenu: [
+      { title: '订单列表', href: '/erp/orders', badge: 'V1.2' },
+      { title: '物流跟踪', href: '/erp/logistics', badge: 'V1.2' },
+    ],
   },
   {
     title: '数据报表',
     href: '/reports',
     icon: BarChart3,
-  },
-  {
-    title: '飞书机器人',
-    href: '/feishu',
-    icon: MessageSquare,
     submenu: [
-      { title: '机器人管理', href: '/feishu' },
-      { title: '配置管理', href: '/feishu/settings' },
-      { title: '推送日志', href: '/feishu/logs' },
-      { title: 'Webhook测试', href: '/feishu/test' },
+      { title: '销售分析', href: '/reports', badge: 'V1.3' },
+      { title: '利润统计', href: '/reports/profit', badge: 'V1.3' },
+      { title: '广告报表', href: '/reports/ads', badge: 'V2.1' },
     ],
   },
   {
-    title: '系统设置',
-    href: '/settings',
+    title: '系统管理',
+    href: '/users',
     icon: Settings,
+    submenu: [
+      { title: '用户管理', href: '/users', badge: 'V1.x' },
+      { title: '角色权限', href: '/roles', badge: 'V1.x' },
+      { title: '操作日志', href: '/task-logs', badge: 'V1.x' },
+      { title: '飞书集成', href: '/feishu', badge: 'V2.2' },
+    ],
   },
 ];
 
@@ -221,7 +186,12 @@ export default function Sidebar() {
                         )}
                       >
                         <div className="w-1 h-1 rounded-full bg-primary/50" />
-                        {subItem.title}
+                        <span className="flex-1">{subItem.title}</span>
+                        {subItem.badge && (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/20 text-primary/70">
+                            {subItem.badge}
+                          </span>
+                        )}
                       </Link>
                     ))}
                   </div>
