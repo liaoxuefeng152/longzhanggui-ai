@@ -132,6 +132,32 @@ export async function analyzeCompetitorDetail(request: AnalyzeCompetitionRequest
   return apiClient.post('/api/v1/ai/analyze-competition', request);
 }
 
+// ============ 风险评估 ============
+
+export interface RiskItem {
+  type: string;
+  level: string;
+  suggestion: string;
+}
+
+export interface AssessRisksRequest {
+  product_name: string;
+  category?: string;
+  market?: string;
+  price?: number;
+  monthly_sales?: number;
+}
+
+export async function assessRisks(request: AssessRisksRequest): Promise<{
+  success: boolean;
+  risks?: RiskItem[];
+  overallRisk?: string;
+  keyConcerns?: string;
+  source?: string;
+}> {
+  return apiClient.post('/api/v1/ai/assess-risks', request);
+}
+
 // ============ 选品报告生成 ============
 
 export interface SelectionReportRequest {

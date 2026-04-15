@@ -52,7 +52,7 @@ import {
   Building,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { selectProducts, analyzeCompetition, suggestDirections, analyzeCompetitorDetail, generateSelectionReport } from '@/lib/api/ai-agents';
+import { selectProducts, analyzeCompetition, suggestDirections, analyzeCompetitorDetail, generateSelectionReport, assessRisks } from '@/lib/api/ai-agents';
 
 // ==================== 类型定义 ====================
 
@@ -137,18 +137,12 @@ interface FeasibilityResult {
     issues: string[];
     warnings?: string[];
   };
-  supplyChain: {
-    supplier: string;
-    price: number;
-    moq: number;
-    delivery: number;
-    stability: '高' | '中' | '低';
-  };
   risks: {
     type: string;
     level: '高' | '中' | '低';
     suggestion: string;
   }[];
+  overallRisk?: string;
   conclusion: '强烈推荐' | '谨慎推荐' | '不推荐';
 }
 
@@ -630,8 +624,8 @@ export default function SelectionAgentPage() {
     );
   };
 
-  // 开始可行性分析
-  const handleStartFeasibilityAnalysis = () => {
+  // 开始可行性分析 - 合规+利润+风险AI评估
+  const handleStartFeasibilityAnalysis = async () => {
     if (selectedProducts.length === 0) {
       toast.error('请至少选择一个商品进行分析');
       return;
@@ -642,6 +636,8 @@ export default function SelectionAgentPage() {
     // 过滤前的统计
     let bannedCount = 0;
     const results: FeasibilityResult[] = [];
+    
+    setIsAnalyzing(true);
     
     for (const product of selected) {
       // 合规检查
@@ -658,10 +654,47 @@ export default function SelectionAgentPage() {
         continue;
       }
       
-      // 模拟可行性分析
+      // 利润测算
       const grossProfit = product.price - profitParams.cost - profitParams.logistics - 
         (product.price * profitParams.commission / 100) - (product.price * profitParams.vat / 100);
       const grossMargin = (grossProfit / product.price) * 100;
+      
+      // 调用AI风险评估
+      let risks: FeasibilityResult['risks'] = [];
+      let overallRisk: string = '低';
+      
+      try {
+        const riskResult = await assessRisks({
+          product_name: product.name,
+          category: product.category || requirement.category || '',
+          market: requirement.market || 'id',
+          price: product.price,
+          monthly_sales: product.monthlySales,
+        });
+        
+        if (riskResult.success && riskResult.risks) {
+          risks = riskResult.risks.map((r: any) => ({
+            type: r.type,
+            level: r.level as '高' | '中' | '低',
+            suggestion: r.suggestion,
+          }));
+          overallRisk = riskResult.overallRisk || '低';
+        } else {
+          // 使用默认风险
+          risks = [
+            { type: '退货风险', level: product.name.includes('电子') ? '高' as const : '低' as const, suggestion: '做好产品包装，减少运输损坏' },
+            { type: '季节风险', level: '低' as const, suggestion: '关注季节性，提前备货' },
+          ];
+          overallRisk = '低';
+        }
+      } catch (error) {
+        console.error('风险评估失败:', error);
+        risks = [
+          { type: '退货风险', level: product.name.includes('电子') ? '高' as const : '低' as const, suggestion: '做好产品包装，减少运输损坏' },
+          { type: '季节风险', level: '低' as const, suggestion: '关注季节性，提前备货' },
+        ];
+        overallRisk = '低';
+      }
       
       results.push({
         product,
@@ -673,30 +706,23 @@ export default function SelectionAgentPage() {
           vat: profitParams.vat,
           grossProfit,
           grossMargin,
-          paybackDays: Math.ceil(profitParams.cost / (grossProfit * 0.1)),
+          paybackDays: Math.ceil(profitParams.cost / Math.max(grossProfit * 0.1, 0.01)),
         },
         compliance: {
           status: complianceResult.warnings.length > 0 ? '需认证' : '合规',
           issues: complianceResult.issues,
           warnings: complianceResult.warnings,
         },
-        supplyChain: {
-          supplier: '义乌XXX供应商',
-          price: profitParams.cost,
-          moq: 100,
-          delivery: 5,
-          stability: '高',
-        },
-        risks: [
-          { type: '退货风险', level: product.name.includes('电子') ? '高' : '低', suggestion: '做好包装，减少运输损坏' },
-          { type: '季节风险', level: product.category === '家居' ? '低' : '中', suggestion: '关注季节性，提前备货' },
-        ],
-        conclusion: grossMargin >= 30 ? '强烈推荐' : grossMargin >= 15 ? '谨慎推荐' : '不推荐',
+        risks,
+        overallRisk,
+        conclusion: grossMargin >= 30 && overallRisk !== '高' ? '强烈推荐' : 
+                    grossMargin >= 15 || overallRisk !== '高' ? '谨慎推荐' : '不推荐',
       });
     }
     
     setFeasibilityResults(results);
     setActiveTab('feasibility');
+    setIsAnalyzing(false);
     
     if (bannedCount > 0) {
       toast.warning(`已自动过滤 ${bannedCount} 个不合规商品（禁售品类）`);
@@ -1521,7 +1547,7 @@ ${report.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
                         )}
                       </div>
 
-                      {/* 利润 & 供应链 */}
+                      {/* 利润 & 风险评估 */}
                       <div className="grid grid-cols-2 gap-4">
                         <div className="p-3 border rounded-lg">
                           <div className="flex items-center gap-2 mb-2">
@@ -1547,42 +1573,72 @@ ${report.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
                             </div>
                           </div>
                         </div>
-                        <div className="p-3 border rounded-lg">
+                        <div className={`p-3 border rounded-lg ${
+                          result.overallRisk === '高' ? 'bg-destructive/5 border-destructive/30' :
+                          result.overallRisk === '中' ? 'bg-warning/5 border-warning/30' :
+                          'bg-success/5 border-success/30'
+                        }`}>
                           <div className="flex items-center gap-2 mb-2">
-                            <Package className="h-4 w-4 text-primary" />
-                            <span className="text-[13px] font-medium">供应链</span>
+                            <AlertTriangle className={`h-4 w-4 ${
+                              result.overallRisk === '高' ? 'text-destructive' :
+                              result.overallRisk === '中' ? 'text-warning' :
+                              'text-success'
+                            }`} />
+                            <span className="text-[13px] font-medium">风险评估</span>
                             <Badge variant="outline" className={
-                              result.supplyChain.stability === '高' ? 'bg-success/10 text-success border-success/20' :
-                              result.supplyChain.stability === '中' ? 'bg-warning/10 text-warning border-warning/20' :
-                              'bg-destructive/10 text-destructive border-destructive/20'
+                              result.overallRisk === '高' ? 'bg-destructive/10 text-destructive border-destructive/20' :
+                              result.overallRisk === '中' ? 'bg-warning/10 text-warning border-warning/20' :
+                              'bg-success/10 text-success border-success/20'
                             }>
-                              稳定性{result.supplyChain.stability}
+                              整体{result.overallRisk || '低'}风险
                             </Badge>
                           </div>
-                          <div className="text-[11px] text-muted-foreground">
-                            {result.supplyChain.supplier} | MOQ: {result.supplyChain.moq}件 | 交期: {result.supplyChain.delivery}天
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* 风险提示 */}
-                      {result.risks.length > 0 && (
-                        <div className="p-3 bg-warning/10 border border-warning/20 rounded-lg">
-                          <div className="flex items-center gap-2 mb-2">
-                            <AlertTriangle className="h-4 w-4 text-warning" />
-                            <span className="text-[13px] font-medium">风险提示</span>
-                          </div>
-                          <div className="space-y-1">
-                            {result.risks.map((risk, i) => (
-                              <div key={i} className="text-[12px]">
-                                <span className={`px-1.5 py-0.5 rounded text-[10px] mr-2 ${
+                          <div className="space-y-1 text-[11px]">
+                            {result.risks.slice(0, 3).map((risk, i) => (
+                              <div key={i} className="flex items-center gap-2">
+                                <span className={`px-1.5 py-0.5 rounded text-[10px] ${
                                   risk.level === '高' ? 'bg-destructive/20 text-destructive' :
                                   risk.level === '中' ? 'bg-warning/20 text-warning' :
                                   'bg-success/20 text-success'
                                 }`}>
                                   {risk.level}
                                 </span>
-                                <span className="text-muted-foreground">{risk.type}: {risk.suggestion}</span>
+                                <span className="text-muted-foreground">{risk.type}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* 风险详情 */}
+                      {result.risks.length > 0 && (
+                        <div className={`p-3 rounded-lg border ${
+                          result.overallRisk === '高' ? 'bg-destructive/5 border-destructive/20' :
+                          result.overallRisk === '中' ? 'bg-warning/5 border-warning/20' :
+                          'bg-success/5 border-success/20'
+                        }`}>
+                          <div className="flex items-center gap-2 mb-2">
+                            <AlertTriangle className={`h-4 w-4 ${
+                              result.overallRisk === '高' ? 'text-destructive' :
+                              result.overallRisk === '中' ? 'text-warning' :
+                              'text-success'
+                            }`} />
+                            <span className="text-[13px] font-medium">风险详情与建议</span>
+                          </div>
+                          <div className="space-y-2">
+                            {result.risks.map((risk, i) => (
+                              <div key={i} className="flex items-start gap-2 text-[12px]">
+                                <span className={`px-1.5 py-0.5 rounded text-[10px] mt-0.5 ${
+                                  risk.level === '高' ? 'bg-destructive/20 text-destructive' :
+                                  risk.level === '中' ? 'bg-warning/20 text-warning' :
+                                  'bg-success/20 text-success'
+                                }`}>
+                                  {risk.level}
+                                </span>
+                                <div>
+                                  <span className="font-medium">{risk.type}: </span>
+                                  <span className="text-muted-foreground">{risk.suggestion}</span>
+                                </div>
                               </div>
                             ))}
                           </div>
