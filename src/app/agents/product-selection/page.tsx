@@ -74,7 +74,7 @@ interface Supplier {
   searchUrl: string; // 1688搜索链接
 }
 
-// 采购项
+// 采集项
 interface PurchaseItem {
   product: HotProduct;
   supplier: Supplier;
@@ -2094,12 +2094,12 @@ ${report.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
                             </div>
                           </div>
 
-                          {/* 选中后显示采购操作 */}
+                          {/* 选中后显示采集操作 */}
                           {selectedSupplier?.id === supplier.id && (
                             <div className="mt-4 pt-4 border-t space-y-3">
                               <div className="flex items-center gap-4">
                                 <div className="flex items-center gap-2">
-                                  <span className="text-[13px]">采购数量:</span>
+                                  <span className="text-[13px]">采集数量:</span>
                                   <div className="flex items-center gap-1">
                                     <Button 
                                       size="sm" 
@@ -2180,11 +2180,11 @@ ${report.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
                                   size="sm"
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    toast.success('已加入采购清单');
+                                    toast.success('已加入采集清单');
                                   }}
                                 >
                                   <ShoppingCart className="h-3 w-3 mr-1" />
-                                  加入采购单
+                                  加入采集单
                                 </Button>
                                 <Button 
                                   size="sm"
@@ -2206,13 +2206,13 @@ ${report.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
                   </div>
                 )}
 
-                {/* 采购清单汇总 */}
+                {/* 采集清单汇总 */}
                 {purchaseItems.length > 0 && (
                   <div className="mt-6 p-4 bg-primary/5 border border-primary/20 rounded-lg">
                     <div className="flex items-center justify-between mb-3">
                       <h4 className="font-medium text-[14px] flex items-center gap-2">
                         <ShoppingCart className="h-4 w-4" />
-                        采购清单汇总
+                        采集清单汇总
                       </h4>
                       <span className="text-[13px] text-muted-foreground">
                         共 {purchaseItems.length} 个供应商
@@ -2227,7 +2227,7 @@ ${report.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
                       ))}
                     </div>
                     <div className="flex items-center justify-between mt-3 pt-3 border-t">
-                      <span className="font-medium">预计采购总额</span>
+                      <span className="font-medium">预计采集总额</span>
                       <span className="text-lg font-bold text-primary">
                         ¥{purchaseItems.reduce((sum, item) => sum + item.totalAmount, 0).toFixed(2)}
                       </span>
@@ -2235,7 +2235,7 @@ ${report.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
                     <div className="flex gap-2 mt-4">
                       <Button className="flex-1">
                         <ShoppingCart className="h-4 w-4 mr-2" />
-                        提交采购单
+                        提交采集单
                       </Button>
                       <Button variant="outline" onClick={() => setPurchaseItems([])}>
                         清空清单
