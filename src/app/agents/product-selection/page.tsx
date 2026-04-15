@@ -13,9 +13,11 @@ import {
   ShoppingCart,
   TrendingUp,
   Shield,
+  ShieldAlert,
   CheckCircle,
   XCircle,
   AlertTriangle,
+  AlertCircle,
   RefreshCw,
   Play,
   Loader2,
@@ -116,7 +118,7 @@ interface FeasibilityResult {
     paybackDays: number;
   };
   compliance: {
-    status: '合规' | '有风险' | '禁售' | '需认证';
+    status: '合规' | '需认证' | '禁售';
     issues: string[];
     warnings?: string[];
   };
@@ -248,28 +250,40 @@ const mockSuppliers: Supplier[] = [
 
 // ==================== 合规规则库 ====================
 
-// TikTok Shop 禁售品类
+// TikTok Shop 禁售品类 - 自动过滤关键词
 const bannedCategories = [
-  '武器弹药', '管制刀具', '弩', '仿真枪', '催泪器', '防狼喷雾',
-  '药品', '保健品', '医疗器械', '处方药', '兽药',
-  '食品添加剂', '肉类', '活体动物', '濒危物种制品',
-  '赌博用品', '色情用品', '成人用品', '性用品',
-  '假证件', '伪造品', '仿牌产品', '侵权商品',
-  '货币', '邮票', '证券', '毒品', '精神类药物',
-  '酒精饮料', '烟草', '电子烟', '大麻',
-  '宗教用品', '政治敏感物品', '迷信用品',
+  // 武器类
+  '武器', '枪', '弹', '刀', '剑', '匕首', '弩', '仿真枪', '催泪器', '防狼', '电击', '钢珠枪',
+  // 药品医疗类
+  '药品', '药片', '药丸', '胶囊', '处方药', '兽药', '保健品', '医疗器械', '体温计', '血压计', '注射器', '避孕套', '验孕棒',
+  // 食品类
+  '食品添加剂', '肉类', '活体动物', '濒危物种', '野生动物', '燕窝', '海参', '虫草',
+  // 成人用品类
+  '赌博', '色情', '成人用品', '性用品', '情趣', '飞机杯', '震动棒', '充气娃娃',
+  // 假货仿品类
+  '假证件', '伪造', '仿牌', '侵权', 'A货', '高仿',
+  // 违禁品类
+  '货币', '邮票', '证券', '毒品', '大麻', '精神类药物',
+  // 烟草酒精类
+  '酒精', '酒', '烟草', '香烟', '电子烟', '烟油', ' vape ',
+  // 其他违禁类
+  '宗教', '政治', '迷信', '邪教', '国旗', '国徽',
 ];
 
 // 需要特殊认证的品类
 const requiredCertifications: Record<string, string[]> = {
-  '美妆护肤': ['FDA', 'CPNP'],
+  '美妆': ['FDA', 'CPNP'],
+  '护肤': ['FDA', 'CPNP'],
+  '化妆品': ['FDA', 'CPNP'],
   '食品': ['FDA', 'COA', '检测报告'],
   '玩具': ['CPC', 'CE', 'ASTM'],
-  '电子产品': ['CE', 'FCC', 'ROHS', 'UL'],
-  '宠物用品': ['检测报告', 'COA'],
-  '母婴用品': ['CPC', 'CE', 'EN71'],
-  '医疗器械': ['FDA', 'CE', 'NMPA'],
-  '珠宝首饰': ['检测报告', '镀层检测'],
+  '电子': ['CE', 'FCC', 'ROHS'],
+  '电器': ['CE', 'FCC', 'ROHS'],
+  '宠物': ['检测报告', 'COA'],
+  '母婴': ['CPC', 'CE', 'EN71'],
+  '医疗': ['FDA', 'CE', 'NMPA'],
+  '珠宝': ['检测报告', '镀层检测'],
+  '首饰': ['检测报告', '镀层检测'],
 };
 
 // 平台合规要求
@@ -315,13 +329,29 @@ const checkProductCompliance = (
 ): { isCompliant: boolean; issues: string[]; warnings: string[] } => {
   const issues: string[] = [];
   const warnings: string[] = [];
+  
+  // 合并检查文本（类目 + 商品名称）
+  const checkText = `${category} ${productName}`.toLowerCase();
 
-  // 1. 检查是否在禁售清单
-  const isBanned = bannedCategories.some(banned => 
-    category.includes(banned) || productName.includes(banned)
+  // 1. 检查是否在禁售清单（自动过滤）
+  const bannedMatches = bannedCategories.filter(banned => 
+    checkText.includes(banned.toLowerCase())
   );
-  if (isBanned) {
-    issues.push(`商品可能属于禁售品类`);
+  if (bannedMatches.length > 0) {
+    // 优先提示更具体的违禁原因
+    if (bannedMatches.some(m => ['枪', '刀', '武器', '仿真'].includes(m))) {
+      issues.push('【自动过滤】武器/管制器具类商品禁止销售');
+    } else if (bannedMatches.some(m => ['药', '医疗', '保健'].includes(m))) {
+      issues.push('【自动过滤】药品/医疗器械类商品禁止销售');
+    } else if (bannedMatches.some(m => ['赌', '色', '情趣', '成人'].includes(m))) {
+      issues.push('【自动过滤】成人/情趣用品类商品禁止销售');
+    } else if (bannedMatches.some(m => ['仿', '假', '侵权', 'A货', '高仿'].includes(m))) {
+      issues.push('【自动过滤】仿牌/侵权商品禁止销售');
+    } else if (bannedMatches.some(m => ['毒', '大麻', '电子烟', '烟草'].includes(m))) {
+      issues.push('【自动过滤】烟草/毒品类商品禁止销售');
+    } else {
+      issues.push('【自动过滤】该商品属于禁售品类');
+    }
   }
 
   // 2. 检查平台限制
@@ -329,7 +359,7 @@ const checkProductCompliance = (
   if (platform) {
     // 检查价格是否超过限额
     if (price > platform.maxValue / 100) {
-      warnings.push(`商品价格可能超过${market.toUpperCase()}站点限额`);
+      warnings.push(`价格可能超过${market.toUpperCase()}站点限额`);
     }
 
     // 检查是否需要特殊认证
@@ -341,9 +371,11 @@ const checkProductCompliance = (
   }
 
   // 3. 检查类目认证要求
-  const certs = requiredCertifications[category];
-  if (certs) {
-    warnings.push(`该类目建议准备: ${certs.join(', ')}`);
+  for (const [key, certs] of Object.entries(requiredCertifications)) {
+    if (category.includes(key) || productName.includes(key)) {
+      warnings.push(`该类目建议准备: ${certs.join(', ')}`);
+      break;
+    }
   }
 
   return {
@@ -553,12 +585,12 @@ export default function SelectionAgentPage() {
     }
     
     const selected = hotProducts.filter(p => selectedProducts.includes(p.id));
-    const results: FeasibilityResult[] = selected.map(product => {
-      // 模拟可行性分析
-      const grossProfit = product.price - profitParams.cost - profitParams.logistics - 
-        (product.price * profitParams.commission / 100) - (product.price * profitParams.vat / 100);
-      const grossMargin = (grossProfit / product.price) * 100;
-      
+    
+    // 过滤前的统计
+    let bannedCount = 0;
+    const results: FeasibilityResult[] = [];
+    
+    for (const product of selected) {
       // 合规检查
       const complianceResult = checkProductCompliance(
         requirement.category || '家居用品',
@@ -567,7 +599,18 @@ export default function SelectionAgentPage() {
         requirement.market
       );
       
-      return {
+      // 如果是禁售商品，跳过（自动过滤）
+      if (!complianceResult.isCompliant) {
+        bannedCount++;
+        continue;
+      }
+      
+      // 模拟可行性分析
+      const grossProfit = product.price - profitParams.cost - profitParams.logistics - 
+        (product.price * profitParams.commission / 100) - (product.price * profitParams.vat / 100);
+      const grossMargin = (grossProfit / product.price) * 100;
+      
+      results.push({
         product,
         profitCalc: {
           cost: profitParams.cost,
@@ -580,7 +623,7 @@ export default function SelectionAgentPage() {
           paybackDays: Math.ceil(profitParams.cost / (grossProfit * 0.1)),
         },
         compliance: {
-          status: complianceResult.isCompliant ? '合规' : '禁售',
+          status: complianceResult.warnings.length > 0 ? '需认证' : '合规',
           issues: complianceResult.issues,
           warnings: complianceResult.warnings,
         },
@@ -596,11 +639,15 @@ export default function SelectionAgentPage() {
           { type: '季节风险', level: product.category === '家居' ? '低' : '中', suggestion: '关注季节性，提前备货' },
         ],
         conclusion: grossMargin >= 30 ? '强烈推荐' : grossMargin >= 15 ? '谨慎推荐' : '不推荐',
-      };
-    });
+      });
+    }
     
     setFeasibilityResults(results);
     setActiveTab('feasibility');
+    
+    if (bannedCount > 0) {
+      toast.warning(`已自动过滤 ${bannedCount} 个不合规商品（禁售品类）`);
+    }
     toast.success(`已完成 ${results.length} 个商品的可行性分析`);
   };
 
@@ -1029,6 +1076,17 @@ ${report.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
 
           {/* ==================== 模块2: 爆款挖掘 ==================== */}
           <TabsContent value="hot-products" className="space-y-4">
+            {/* 合规预警提示 */}
+            {hotProducts.length > 0 && (
+              <Card className="bg-warning/5 border-warning/20">
+                <CardContent className="py-3 px-4">
+                  <div className="flex items-center gap-2 text-warning text-[13px]">
+                    <ShieldAlert className="h-4 w-4" />
+                    <span>温馨提示：以下商品将自动进行合规校验，禁售品类商品（如武器、药品、食品、医疗器械等）将在可行性分析阶段被自动过滤</span>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
             <Card className="bg-white border-border shadow-sm">
               <CardHeader>
                 <CardTitle className="text-[15px] flex items-center gap-2">
@@ -1090,6 +1148,32 @@ ${report.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
                                   趋势：<span className="font-medium text-success">↑{product.trend}%</span>
                                 </span>
                               </div>
+                              {/* 合规风险提示 */}
+                              {(() => {
+                                const compliance = checkProductCompliance(
+                                  requirement.category || '家居用品',
+                                  product.name,
+                                  product.price,
+                                  requirement.market
+                                );
+                                if (!compliance.isCompliant) {
+                                  return (
+                                    <div className="flex items-center gap-1 text-destructive text-[12px]">
+                                      <ShieldAlert className="h-3 w-3" />
+                                      <span>{compliance.issues[0]}</span>
+                                    </div>
+                                  );
+                                }
+                                if (compliance.warnings.length > 0) {
+                                  return (
+                                    <div className="flex items-center gap-1 text-warning text-[12px]">
+                                      <AlertCircle className="h-3 w-3" />
+                                      <span>{compliance.warnings[0]}</span>
+                                    </div>
+                                  );
+                                }
+                                return null;
+                              })()}
                             </div>
                           </div>
                           <div className="text-right">
