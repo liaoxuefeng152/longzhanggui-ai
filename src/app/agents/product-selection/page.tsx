@@ -41,11 +41,44 @@ import {
   X,
   Plus,
   Minus,
+  ExternalLink,
+  Star,
+  Truck,
+  ShoppingBag,
+  Copy,
+  CheckCircle2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { selectProducts, analyzeCompetition } from '@/lib/api/ai-agents';
 
 // ==================== 类型定义 ====================
+
+// 供应商
+interface Supplier {
+  id: string;
+  name: string;
+  company: string;
+  location: string;
+  rating: number;
+  responseTime: string;
+  moq: number; // 最小起订量
+  price: number;
+  priceRange: string; // 价格区间
+  deliveryDays: number;
+  isDropshipping: boolean; // 支持一件代发
+  certifications: string[]; // 认证
+  productUrl: string; // 1688商品链接
+  searchUrl: string; // 1688搜索链接
+}
+
+// 采购项
+interface PurchaseItem {
+  product: HotProduct;
+  supplier: Supplier;
+  quantity: number;
+  unitPrice: number;
+  totalAmount: number;
+}
 
 // 选品需求
 interface SelectionRequirement {
@@ -60,6 +93,7 @@ interface SelectionRequirement {
 interface HotProduct {
   id: string;
   name: string;
+  category?: string; // 商品类目
   core卖点: string;
   price: number;
   monthlySales: number;
@@ -125,6 +159,90 @@ const mockDirections = [
   { name: '厨房收纳小工具', reason: '近30天搜索增长60%，在售卖家少', stars: 5 },
   { name: '宠物喂食器配件', reason: '宠物类目持续热销，竞争度适中', stars: 4 },
   { name: '浴室置物小物件', reason: '单价低、退货率低，适合新手', stars: 4 },
+];
+
+// 供应商模拟数据
+const mockSuppliers: Supplier[] = [
+  {
+    id: 'S001',
+    name: '义乌市优品家居用品有限公司',
+    company: '义乌市优品家居用品有限公司',
+    location: '浙江义乌',
+    rating: 4.8,
+    responseTime: '<30s',
+    moq: 50,
+    price: 2.8,
+    priceRange: '¥2.5-4.5',
+    deliveryDays: 3,
+    isDropshipping: true,
+    certifications: ['ISO9001', 'CE', 'FDA'],
+    productUrl: 'https://detail.1688.com/offer/628547891023.html',
+    searchUrl: 'https://s.1688.com/youyuan/index.htm?keywords=厨房硅胶收纳夹',
+  },
+  {
+    id: 'S002',
+    name: '深圳市龙华区宏达塑料制品厂',
+    company: '深圳市龙华区宏达塑料制品厂',
+    location: '广东深圳',
+    rating: 4.6,
+    responseTime: '<1min',
+    moq: 100,
+    price: 2.5,
+    priceRange: '¥2.2-4.0',
+    deliveryDays: 5,
+    isDropshipping: true,
+    certifications: ['ISO9001', 'SGS'],
+    productUrl: 'https://detail.1688.com/offer/628547891024.html',
+    searchUrl: 'https://s.1688.com/youyuan/index.htm?keywords=厨房硅胶收纳夹',
+  },
+  {
+    id: 'S003',
+    name: '广州白云区金源塑料制品有限公司',
+    company: '广州白云区金源塑料制品厂',
+    location: '广东广州',
+    rating: 4.5,
+    responseTime: '<2min',
+    moq: 200,
+    price: 2.2,
+    priceRange: '¥2.0-3.8',
+    deliveryDays: 7,
+    isDropshipping: false,
+    certifications: ['ISO9001'],
+    productUrl: 'https://detail.1688.com/offer/628547891025.html',
+    searchUrl: 'https://s.1688.com/youyuan/index.htm?keywords=厨房硅胶收纳夹',
+  },
+  {
+    id: 'S004',
+    name: '宠物用品专营店-小李',
+    company: '汕头市潮安区宠物用品厂',
+    location: '广东汕头',
+    rating: 4.9,
+    responseTime: '<15s',
+    moq: 30,
+    price: 8.5,
+    priceRange: '¥8.0-12.0',
+    deliveryDays: 2,
+    isDropshipping: true,
+    certifications: ['ISO9001', 'CE', 'ROHS'],
+    productUrl: 'https://detail.1688.com/offer/628547891026.html',
+    searchUrl: 'https://s.1688.com/youyuan/index.htm?keywords=宠物自动饮水机配件',
+  },
+  {
+    id: 'S005',
+    name: '浴室家居专营',
+    company: '佛山市顺德区雅洁家居用品厂',
+    location: '广东佛山',
+    rating: 4.7,
+    responseTime: '<45s',
+    moq: 60,
+    price: 5.8,
+    priceRange: '¥5.5-8.5',
+    deliveryDays: 4,
+    isDropshipping: true,
+    certifications: ['ISO9001', 'CE'],
+    productUrl: 'https://detail.1688.com/offer/628547891027.html',
+    searchUrl: 'https://s.1688.com/youyuan/index.htm?keywords=浴室防水收纳盒',
+  },
 ];
 
 const mockHotProducts: HotProduct[] = [
@@ -225,6 +343,18 @@ export default function SelectionAgentPage() {
   
   // 报告状态
   const [report, setReport] = useState<SelectionReport | null>(null);
+
+  // 供应商筛选状态
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null);
+  const [purchaseItems, setPurchaseItems] = useState<PurchaseItem[]>([]);
+  const [isLoadingSuppliers, setIsLoadingSuppliers] = useState(false);
+  const [supplierFilter, setSupplierFilter] = useState({
+    minMoq: 0,
+    maxMoq: 100,
+    hasDropshipping: false,
+    sortBy: 'rating' as 'rating' | 'price' | 'moq',
+  });
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -536,6 +666,7 @@ ${report.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
             <TabsTrigger value="feasibility">📊 可行性分析</TabsTrigger>
             <TabsTrigger value="competitor">👥 竞品分析</TabsTrigger>
             <TabsTrigger value="report">📄 选品报告</TabsTrigger>
+            <TabsTrigger value="suppliers" disabled={!report}>🏭 供应商筛选</TabsTrigger>
           </TabsList>
 
           {/* ==================== 模块1: 需求分析 ==================== */}
@@ -1141,10 +1272,18 @@ ${report.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
                       整合所有分析数据，生成结构化选品报告
                     </CardDescription>
                   </div>
-                  <Button variant="outline" onClick={handleExportReport} disabled={!report}>
-                    <Download className="h-4 w-4 mr-2" />
-                    导出报告
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button variant="outline" onClick={handleExportReport} disabled={!report}>
+                      <Download className="h-4 w-4 mr-2" />
+                      导出报告
+                    </Button>
+                    {report && (
+                      <Button variant="default" onClick={() => setActiveTab('suppliers')}>
+                        <ShoppingBag className="h-4 w-4 mr-2" />
+                        筛选供应商
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </CardHeader>
               <CardContent>
@@ -1204,6 +1343,362 @@ ${report.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
                           刷新报告
                         </Button>
                       </div>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* ==================== 模块6: 供应商筛选 ==================== */}
+          <TabsContent value="suppliers" className="space-y-4">
+            <Card className="bg-white border-border shadow-sm">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-[15px] flex items-center gap-2">
+                      <ShoppingBag className="h-5 w-5 text-primary" />
+                      供应商筛选
+                    </CardTitle>
+                    <CardDescription>
+                      根据选品报告推荐商品，匹配合适的1688供应商
+                    </CardDescription>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button 
+                      variant="outline" 
+                      onClick={() => {
+                        setSuppliers([]);
+                        setIsLoadingSuppliers(true);
+                        setTimeout(() => {
+                          setSuppliers(mockSuppliers);
+                          setIsLoadingSuppliers(false);
+                          toast.success('已加载5个推荐供应商');
+                        }, 1000);
+                      }}
+                    >
+                      <RefreshCw className="h-4 w-4 mr-2" />
+                      刷新供应商
+                    </Button>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {/* 筛选条件 */}
+                <div className="flex flex-wrap gap-4 mb-6 p-4 bg-muted/30 rounded-lg">
+                  <div className="flex items-center gap-2">
+                    <Filter className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-[13px]">筛选条件:</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <label className="text-[13px]">支持一件代发</label>
+                    <input 
+                      type="checkbox" 
+                      checked={supplierFilter.hasDropshipping}
+                      onChange={(e) => setSupplierFilter(prev => ({ ...prev, hasDropshipping: e.target.checked }))}
+                      className="w-4 h-4"
+                    />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <label className="text-[13px]">MOQ≤</label>
+                    <Input 
+                      type="number" 
+                      className="w-20 h-8 text-[13px]"
+                      value={supplierFilter.maxMoq}
+                      onChange={(e) => setSupplierFilter(prev => ({ ...prev, maxMoq: parseInt(e.target.value) || 0 }))}
+                    />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <label className="text-[13px]">排序:</label>
+                    <select 
+                      className="h-8 px-2 border rounded text-[13px]"
+                      value={supplierFilter.sortBy}
+                      onChange={(e) => setSupplierFilter(prev => ({ ...prev, sortBy: e.target.value as any }))}
+                    >
+                      <option value="rating">评分最高</option>
+                      <option value="price">价格最低</option>
+                      <option value="moq">MOQ最低</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* 供应商列表 */}
+                {isLoadingSuppliers ? (
+                  <div className="text-center py-12">
+                    <Loader2 className="h-8 w-8 mx-auto mb-3 animate-spin text-primary" />
+                    <p className="text-muted-foreground">正在搜索1688供应商...</p>
+                  </div>
+                ) : suppliers.length === 0 ? (
+                  <div className="text-center py-12">
+                    <ShoppingBag className="h-12 w-12 mx-auto mb-3 text-muted-foreground opacity-50" />
+                    <p className="text-muted-foreground mb-4">点击"刷新供应商"加载推荐供应商</p>
+                    <Button 
+                      onClick={() => {
+                        setSuppliers(mockSuppliers);
+                        toast.success('已加载5个推荐供应商');
+                      }}
+                    >
+                      <RefreshCw className="h-4 w-4 mr-2" />
+                      加载供应商
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {suppliers
+                      .filter(s => 
+                        (!supplierFilter.hasDropshipping || s.isDropshipping) &&
+                        s.moq <= supplierFilter.maxMoq
+                      )
+                      .sort((a, b) => {
+                        if (supplierFilter.sortBy === 'rating') return b.rating - a.rating;
+                        if (supplierFilter.sortBy === 'price') return a.price - b.price;
+                        return a.moq - b.moq;
+                      })
+                      .map((supplier) => (
+                        <div 
+                          key={supplier.id}
+                          className={`p-4 border-2 rounded-lg transition-all cursor-pointer ${
+                            selectedSupplier?.id === supplier.id 
+                              ? 'border-primary bg-primary/5' 
+                              : 'border-border hover:border-primary/50'
+                          }`}
+                          onClick={() => setSelectedSupplier(supplier)}
+                        >
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-3 mb-2">
+                                <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
+                                  selectedSupplier?.id === supplier.id 
+                                    ? 'bg-primary border-primary' 
+                                    : 'border-muted-foreground'
+                                }`}>
+                                  {selectedSupplier?.id === supplier.id && (
+                                    <Check className="h-4 w-4 text-white" />
+                                  )}
+                                </div>
+                                <div>
+                                  <div className="font-medium text-[14px]">{supplier.name}</div>
+                                  <div className="text-[12px] text-muted-foreground">{supplier.company}</div>
+                                </div>
+                              </div>
+                              
+                              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-3">
+                                <div>
+                                  <div className="text-[11px] text-muted-foreground">供应商评分</div>
+                                  <div className="flex items-center gap-1">
+                                    <Star className="h-3 w-3 text-warning fill-warning" />
+                                    <span className="text-[13px] font-medium">{supplier.rating}</span>
+                                  </div>
+                                </div>
+                                <div>
+                                  <div className="text-[11px] text-muted-foreground">响应速度</div>
+                                  <div className="text-[13px] font-medium">{supplier.responseTime}</div>
+                                </div>
+                                <div>
+                                  <div className="text-[11px] text-muted-foreground">最小起订量</div>
+                                  <div className="text-[13px] font-medium">{supplier.moq}件</div>
+                                </div>
+                                <div>
+                                  <div className="text-[11px] text-muted-foreground">单价</div>
+                                  <div className="text-[13px] font-medium text-primary">¥{supplier.price.toFixed(2)}</div>
+                                </div>
+                              </div>
+
+                              <div className="flex flex-wrap items-center gap-2 mt-3">
+                                <Badge variant="outline" className="text-[11px]">
+                                  <Truck className="h-3 w-3 mr-1" />
+                                  {supplier.location}
+                                </Badge>
+                                {supplier.isDropshipping && (
+                                  <Badge variant="outline" className="bg-success/10 text-success border-success/20 text-[11px]">
+                                    <CheckCircle2 className="h-3 w-3 mr-1" />
+                                    支持一件代发
+                                  </Badge>
+                                )}
+                                <Badge variant="outline" className="text-[11px]">
+                                  <Clock className="h-3 w-3 mr-1" />
+                                  {supplier.deliveryDays}天发货
+                                </Badge>
+                                {supplier.certifications.map((cert) => (
+                                  <Badge key={cert} variant="outline" className="text-[11px]">
+                                    {cert}
+                                  </Badge>
+                                ))}
+                              </div>
+                            </div>
+
+                            <div className="flex flex-col gap-2 ml-4">
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  window.open(supplier.productUrl, '_blank');
+                                }}
+                              >
+                                <ExternalLink className="h-3 w-3 mr-1" />
+                                商品链接
+                              </Button>
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  window.open(supplier.searchUrl, '_blank');
+                                }}
+                              >
+                                <ExternalLink className="h-3 w-3 mr-1" />
+                                1688搜索
+                              </Button>
+                            </div>
+                          </div>
+
+                          {/* 选中后显示采购操作 */}
+                          {selectedSupplier?.id === supplier.id && (
+                            <div className="mt-4 pt-4 border-t space-y-3">
+                              <div className="flex items-center gap-4">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-[13px]">采购数量:</span>
+                                  <div className="flex items-center gap-1">
+                                    <Button 
+                                      size="sm" 
+                                      variant="outline" 
+                                      className="h-8 w-8 p-0"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        const qty = purchaseItems.find(p => p.supplier.id === supplier.id)?.quantity || supplier.moq;
+                                        if (qty > supplier.moq) {
+                                          setPurchaseItems(prev => prev.map(p => 
+                                            p.supplier.id === supplier.id 
+                                              ? { ...p, quantity: p.quantity - 10 }
+                                              : p
+                                          ));
+                                        }
+                                      }}
+                                    >
+                                      <Minus className="h-3 w-3" />
+                                    </Button>
+                                    <Input 
+                                      className="w-20 h-8 text-center text-[13px]"
+                                      value={purchaseItems.find(p => p.supplier.id === supplier.id)?.quantity || supplier.moq}
+                                      onChange={(e) => {
+                                        e.stopPropagation();
+                                        const qty = parseInt(e.target.value) || supplier.moq;
+                                        setPurchaseItems(prev => {
+                                          const existing = prev.find(p => p.supplier.id === supplier.id);
+                                          if (existing) {
+                                            return prev.map(p => 
+                                              p.supplier.id === supplier.id 
+                                                ? { ...p, quantity: qty, totalAmount: qty * p.unitPrice }
+                                                : p
+                                            );
+                                          } else {
+                                            return [...prev, {
+                                              product: hotProducts[0] || mockHotProducts[0],
+                                              supplier,
+                                              quantity: qty,
+                                              unitPrice: supplier.price,
+                                              totalAmount: qty * supplier.price,
+                                            }];
+                                          }
+                                        });
+                                      }}
+                                      onClick={(e) => e.stopPropagation()}
+                                    />
+                                    <Button 
+                                      size="sm" 
+                                      variant="outline" 
+                                      className="h-8 w-8 p-0"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        const qty = purchaseItems.find(p => p.supplier.id === supplier.id)?.quantity || supplier.moq;
+                                        setPurchaseItems(prev => prev.map(p => 
+                                          p.supplier.id === supplier.id 
+                                            ? { ...p, quantity: p.quantity + 10, totalAmount: (p.quantity + 10) * p.unitPrice }
+                                            : p
+                                        ));
+                                      }}
+                                    >
+                                      <Plus className="h-3 w-3" />
+                                    </Button>
+                                  </div>
+                                </div>
+                                <div className="text-[13px]">
+                                  <span className="text-muted-foreground">价格区间:</span>
+                                  <span className="ml-1 font-medium">{supplier.priceRange}</span>
+                                </div>
+                                <div className="text-[13px]">
+                                  <span className="text-muted-foreground">预计总价:</span>
+                                  <span className="ml-1 font-medium text-primary">
+                                    ¥{((purchaseItems.find(p => p.supplier.id === supplier.id)?.quantity || supplier.moq) * supplier.price).toFixed(2)}
+                                  </span>
+                                </div>
+                              </div>
+                              <div className="flex gap-2">
+                                <Button 
+                                  size="sm"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    toast.success('已加入采购清单');
+                                  }}
+                                >
+                                  <ShoppingCart className="h-3 w-3 mr-1" />
+                                  加入采购单
+                                </Button>
+                                <Button 
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    navigator.clipboard.writeText(supplier.productUrl);
+                                    toast.success('链接已复制');
+                                  }}
+                                >
+                                  <Copy className="h-3 w-3 mr-1" />
+                                  复制链接
+                                </Button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                  </div>
+                )}
+
+                {/* 采购清单汇总 */}
+                {purchaseItems.length > 0 && (
+                  <div className="mt-6 p-4 bg-primary/5 border border-primary/20 rounded-lg">
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="font-medium text-[14px] flex items-center gap-2">
+                        <ShoppingCart className="h-4 w-4" />
+                        采购清单汇总
+                      </h4>
+                      <span className="text-[13px] text-muted-foreground">
+                        共 {purchaseItems.length} 个供应商
+                      </span>
+                    </div>
+                    <div className="space-y-2">
+                      {purchaseItems.map((item, index) => (
+                        <div key={index} className="flex items-center justify-between text-[13px]">
+                          <span>{item.supplier.name}</span>
+                          <span>{item.quantity}件 × ¥{item.unitPrice.toFixed(2)} = ¥{item.totalAmount.toFixed(2)}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="flex items-center justify-between mt-3 pt-3 border-t">
+                      <span className="font-medium">预计采购总额</span>
+                      <span className="text-lg font-bold text-primary">
+                        ¥{purchaseItems.reduce((sum, item) => sum + item.totalAmount, 0).toFixed(2)}
+                      </span>
+                    </div>
+                    <div className="flex gap-2 mt-4">
+                      <Button className="flex-1">
+                        <ShoppingCart className="h-4 w-4 mr-2" />
+                        提交采购单
+                      </Button>
+                      <Button variant="outline" onClick={() => setPurchaseItems([])}>
+                        清空清单
+                      </Button>
                     </div>
                   </div>
                 )}
