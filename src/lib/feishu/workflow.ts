@@ -51,33 +51,63 @@ async function handleSelectProducts(
     // 先发送处理中消息
     await sendCardMessage(
       receiveId,
-      createProcessingCard('选品分析', '正在分析市场潜力，请稍候...')
+      createProcessingCard('选品分析', '正在调用AI分析市场潜力，请稍候...')
     );
 
     // 调用选品工作流
     const result = await callWorkflow('select_products', {
-      category: params.category || '全部',
+      category: params.category || '热门商品',
       count: params.count || 5,
+      site: params.site || 'id',
     });
 
-    // 发送成功消息
+    // 构建商品列表的飞书卡片
+    const products = result.data?.products || [];
+    const productElements = products.slice(0, 5).map((p: any) => ({
+      tag: 'div',
+      text: {
+        tag: 'lark_md',
+        content: `**${p.name}**\n💰 价格: $${p.price} | 利润率: ${p.profit_margin}%\n📈 日销量: ${p.daily_sales}+ | 竞争: ${p.competition === 'low' ? '🟢 低' : p.competition === 'medium' ? '🟡 中' : '🔴 高'}\n💡 ${p.reason?.substring(0, 80) || '市场需求旺盛'}`,
+      },
+    }));
+
+    // 发送详细的选品结果卡片
     await sendCardMessage(
       receiveId,
-      createSuccessCard(
-        '选品完成',
-        [
-          `✅ 已成功选品 ${result.data?.count || 5} 款`,
-          `📊 类目: ${params.category || '全部'}`,
-          `💰 预计利润率: ${result.data?.avgProfitRate || '35-45%'}`,
-          `📈 市场潜力: ${result.data?.marketPotential || '优秀'}`,
-        ],
-        [
+      {
+        title: `🎯 选品结果 - ${result.data?.count || products.length}款推荐`,
+        elements: [
           {
-            text: '查看详情',
-            url: `${process.env.NEXT_PUBLIC_APP_URL || 'https://abc123.dev.coze.site'}/agents/product-selection`,
+            tag: 'div',
+            text: {
+              tag: 'lark_md',
+              content: `📊 **市场分析报告**\n${result.data?.analysis?.substring(0, 200) || '东南亚 TikTok Shop 市场持续增长，建议关注热门品类。'}\n\n---\n\n**📦 推荐商品清单**`,
+            },
           },
-        ]
-      )
+          ...productElements,
+          {
+            tag: 'hr',
+          },
+          {
+            tag: 'div',
+            text: {
+              tag: 'lark_md',
+              content: `✅ **选品汇总**\n- 推荐商品: ${result.data?.count || products.length} 款\n- 平均利润率: ${result.data?.summary?.avgProfitRate || '35-45%'}\n- 市场潜力: ${result.data?.summary?.marketPotential || '优秀'}`,
+            },
+          },
+          {
+            tag: 'action',
+            actions: [
+              {
+                tag: 'button',
+                text: { tag: 'plain_text', content: '查看更多' },
+                type: 'primary',
+                url: `${process.env.NEXT_PUBLIC_APP_URL || 'https://abc123.dev.coze.site'}/agents/product-selection`,
+              },
+            ],
+          },
+        ],
+      }
     );
 
     return {

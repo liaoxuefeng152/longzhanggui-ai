@@ -121,13 +121,17 @@ function recognizeByRules(text: string, context?: any): IntentResult {
   // 选品（精确匹配）
   if (/^选品$|^选品\s/.test(trimmedText) || /选品/.test(trimmedText)) {
     const params = extractParamsFromText(text);
+    // 未指定品类时使用默认值，直接执行不追问
     return {
       intent: INTENT_TYPES.SELECT_PRODUCTS,
       confidence: 0.9,
-      params,
+      params: {
+        ...params,
+        category: params.category || '热门商品',
+        count: params.count || 5,
+      },
       originalText: text,
-      needClarification: !params.category,
-      clarificationQuestion: '请问您想选哪个品类的商品呢？比如：宠物用品、3C产品、家居用品等',
+      needClarification: false,
     };
   }
 
