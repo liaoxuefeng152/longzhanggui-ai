@@ -125,13 +125,13 @@ export async function pushTaskResult(taskId: string): Promise<void> {
   }
 
   try {
-    // 单聊优先使用 userId（open_id），群聊使用 chatId
-    // userId 通常是 open_id 格式（ou_开头），chatId 是群聊ID
-    const isOpenId = task.userId && task.userId.startsWith('ou_');
-    const receiveId = isOpenId ? task.userId : task.chatId;
-    const receiveIdType = isOpenId ? 'open_id' : 'chat_id';
+    // 群聊优先使用 chatId，单聊使用 userId
+    // chatId 如果以 oc_ 开头则是群聊 ID，否则使用 userId（open_id 格式）
+    const isGroupChat = task.chatId && task.chatId.startsWith('oc_');
+    const receiveId = isGroupChat ? task.chatId : task.userId;
+    const receiveIdType = isGroupChat ? 'chat_id' : 'open_id';
 
-    console.log(`[Push] 推送类型: ${receiveIdType}, ID: ${receiveId}`);
+    console.log(`[Push] 推送类型: ${receiveIdType}, ID: ${receiveId}, isGroup: ${isGroupChat}`);
 
     // 根据任务类型生成不同的卡片
     let card: any;
