@@ -27,6 +27,16 @@ export interface Product {
   first_mile_shipping: number;
   total_cost: number;
   
+  // 产品规格
+  weight_kg?: number;  // 产品重量(kg)
+  dimensions?: { length: number; width: number; height: number }; // 产品尺寸(cm)
+  packaging_list?: string[]; // 包装清单
+  brand?: string; // 品牌
+  model?: string; // 型号
+  material?: string; // 材质
+  color?: string; // 颜色
+  size?: string; // 尺寸
+  
   // 处理阶段
   images?: ProductImage[];
   listing?: ProductListing;
@@ -98,6 +108,31 @@ export interface PlatformListing {
   status: 'pending' | 'listed' | 'active' | 'inactive' | 'removed';
   listed_at?: string;
   listing_url?: string;
+  
+  // 认领店铺时设置的定价
+  sale_price?: number;
+  currency?: string;
+  
+  // 关联的Listing信息
+  listing_title?: string;
+  listing_description?: string;
+  bullet_points?: string[];
+  keywords?: string[];
+  
+  // 变体关系
+  variants?: PlatformVariant[];
+}
+
+export interface PlatformVariant {
+  id: string;
+  platform_variant_id?: string;
+  name: string;
+  sku?: string;
+  price: number;
+  quantity?: number;
+  image_url?: string;
+  attributes?: Record<string, string>;
+  status: 'active' | 'inactive';
 }
 
 export interface Inventory {

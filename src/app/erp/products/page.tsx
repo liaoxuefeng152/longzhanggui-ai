@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Dialog,
   DialogContent,
@@ -16,6 +17,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from '@/components/ui/tabs';
 import {
   Package,
   Search,
@@ -37,14 +44,65 @@ import {
   Rocket,
   RefreshCw,
   MoreHorizontal,
+  Save,
+  X,
+  Copy,
+  ExternalLink,
+  Truck,
+  Store,
+  Package2,
+  Ruler,
+  Weight,
+  ShoppingCart,
+  PlusCircle,
+  Trash,
+  Star,
+  TrendingUp,
+  FileText,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+
+interface ProductImage {
+  id: string;
+  original_url: string;
+  processed_url?: string;
+  type: string;
+}
+
+interface ProductListing {
+  id: string;
+  platform: string;
+  shop_id: string;
+  shop_name?: string;
+  status: string;
+  listing_title?: string;
+  listing_title_en?: string;
+  listing_description?: string;
+  bullet_points?: string[];
+  keywords?: string[];
+  sale_price?: number;
+  currency?: string;
+  listing_url?: string;
+}
+
+interface ProductPricing {
+  suggested_price: number;
+  target_price: number;
+  profit_margin: number;
+}
+
+interface ProductDimensions {
+  length: number;
+  width: number;
+  height: number;
+}
 
 interface ERPProduct {
   id: string;
@@ -67,7 +125,22 @@ interface ERPProduct {
   total_sales?: number;
   total_orders?: number;
   total_profit?: number;
-  platform_listings?: any[];
+  platform_listings?: ProductListing[];
+  images?: ProductImage[];
+  listing?: {
+    title?: string;
+    title_en?: string;
+    description?: string;
+    bullet_points?: string[];
+    keywords?: string[];
+  };
+  pricing?: ProductPricing;
+  weight_kg?: number;
+  dimensions?: ProductDimensions;
+  packaging_list?: string[];
+  brand?: string;
+  color?: string;
+  size?: string;
   created_at: string;
   updated_at: string;
 }
@@ -98,6 +171,11 @@ export default function ERPProductsPage() {
   const [selectedProduct, setSelectedProduct] = useState<ERPProduct | null>(null);
   const [isProcessing, setIsProcessing] = useState<string | null>(null);
   const [isPublishing, setIsPublishing] = useState<string | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  
+  // 编辑表单数据
+  const [editForm, setEditForm] = useState<any>({});
   
   // 导入相关状态
   const [importFile, setImportFile] = useState<File | null>(null);
@@ -415,6 +493,33 @@ export default function ERPProductsPage() {
       const product = store.getProduct(productId);
       if (product) {
         setSelectedProduct(product as any);
+        // 初始化编辑表单
+        setEditForm({
+          name_zh: product.name_zh,
+          name_en: product.name_en || '',
+          internal_sku: product.internal_sku,
+          category: product.category || '',
+          supplier_name: product.supplier_name || '',
+          source_url: product.source_url || '',
+          cost_price: product.cost_price,
+          domestic_shipping: product.domestic_shipping,
+          first_mile_shipping: product.first_mile_shipping,
+          total_cost: product.total_cost,
+          weight_kg: product.weight_kg || 0,
+          dimensions_length: product.dimensions?.length || 0,
+          dimensions_width: product.dimensions?.width || 0,
+          dimensions_height: product.dimensions?.height || 0,
+          packaging_list: product.packaging_list?.join('\n') || '',
+          brand: product.brand || '',
+          color: product.color || '',
+          size: product.size || '',
+          listing_title: product.listing?.title || '',
+          listing_title_en: product.listing?.title_en || '',
+          listing_description: product.listing?.description || '',
+          bullet_points: product.listing?.bullet_points?.join('\n') || '',
+          keywords: product.listing?.keywords?.join(', ') || '',
+        });
+        setIsEditing(false);
         setIsDetailOpen(true);
       } else {
         toast.error('商品不存在');
@@ -422,6 +527,149 @@ export default function ERPProductsPage() {
     } catch (error) {
       console.error('获取商品详情失败:', error);
       toast.error('获取商品详情失败');
+    }
+  };
+
+  // 保存商品编辑
+  const handleSaveEdit = async () => {
+    if (!selectedProduct) return;
+    
+    setIsSaving(true);
+    try {
+      const { default: store } = await import('@/lib/store');
+      
+      // 计算总成本
+      const costPrice = parseFloat(editForm.cost_price) || 0;
+      const domesticShipping = parseFloat(editForm.domestic_shipping) || 0;
+      const firstMileShipping = parseFloat(editForm.first_mile_shipping) || 0;
+      const totalCost = costPrice + domesticShipping + firstMileShipping;
+      
+      // 解析包装清单
+      const packagingList = editForm.packaging_list 
+        ? editForm.packaging_list.split('\n').filter((p: string) => p.trim())
+        : [];
+      
+      // 解析尺寸
+      const dimensions = {
+        length: parseFloat(editForm.dimensions_length) || 0,
+        width: parseFloat(editForm.dimensions_width) || 0,
+        height: parseFloat(editForm.dimensions_height) || 0,
+      };
+      
+      store.updateProduct(selectedProduct.id, {
+        name_zh: editForm.name_zh,
+        name_en: editForm.name_en,
+        internal_sku: editForm.internal_sku,
+        category: editForm.category,
+        supplier_name: editForm.supplier_name,
+        source_url: editForm.source_url,
+        cost_price: costPrice,
+        domestic_shipping: domesticShipping,
+        first_mile_shipping: firstMileShipping,
+        total_cost: totalCost,
+        weight_kg: parseFloat(editForm.weight_kg) || 0,
+        dimensions: dimensions,
+        packaging_list: packagingList,
+        brand: editForm.brand,
+        color: editForm.color,
+        size: editForm.size,
+        listing: {
+          title: editForm.listing_title,
+          title_en: editForm.listing_title_en,
+          description: editForm.listing_description,
+          bullet_points: editForm.bullet_points ? editForm.bullet_points.split('\n').filter((p: string) => p.trim()) : [],
+          keywords: editForm.keywords ? editForm.keywords.split(',').map((k: string) => k.trim()).filter((k: string) => k) : [],
+        },
+      });
+      
+      // 刷新列表
+      fetchProducts();
+      
+      // 重新加载详情
+      const updated = store.getProduct(selectedProduct.id);
+      if (updated) {
+        setSelectedProduct(updated as any);
+      }
+      
+      setIsEditing(false);
+      toast.success('商品信息已保存');
+    } catch (error) {
+      console.error('保存失败:', error);
+      toast.error('保存失败');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // 认领到店铺
+  const handleClaimToShop = async (shopId: string, platform: string) => {
+    if (!selectedProduct) return;
+    
+    try {
+      const { default: store } = await import('@/lib/store');
+      const product = store.getProduct(selectedProduct.id);
+      
+      if (!product) return;
+      
+      const newListing = {
+        id: `PL-${Date.now()}`,
+        platform: platform as 'tiktok' | 'amazon' | 'shopee',
+        shop_id: shopId,
+        shop_name: '店铺-' + shopId,
+        status: 'pending' as const,
+        listing_title: product.listing?.title || product.name_zh,
+        listing_description: product.listing?.description || '',
+        bullet_points: product.listing?.bullet_points || [],
+        keywords: product.listing?.keywords || [],
+      };
+      
+      const updatedListings = [...(product.platform_listings || []), newListing];
+      
+      store.updateProduct(selectedProduct.id, {
+        platform_listings: updatedListings,
+      });
+      
+      // 刷新详情
+      const updated = store.getProduct(selectedProduct.id);
+      if (updated) {
+        setSelectedProduct(updated as any);
+      }
+      
+      fetchProducts();
+      toast.success('已认领到店铺');
+    } catch (error) {
+      console.error('认领失败:', error);
+      toast.error('认领失败');
+    }
+  };
+
+  // 删除店铺关联
+  const handleRemoveShopListing = async (listingId: string) => {
+    if (!selectedProduct) return;
+    
+    try {
+      const { default: store } = await import('@/lib/store');
+      const product = store.getProduct(selectedProduct.id);
+      
+      if (!product) return;
+      
+      const updatedListings = (product.platform_listings || []).filter(l => l.id !== listingId);
+      
+      store.updateProduct(selectedProduct.id, {
+        platform_listings: updatedListings,
+      });
+      
+      // 刷新详情
+      const updated = store.getProduct(selectedProduct.id);
+      if (updated) {
+        setSelectedProduct(updated as any);
+      }
+      
+      fetchProducts();
+      toast.success('已移除店铺关联');
+    } catch (error) {
+      console.error('移除失败:', error);
+      toast.error('移除失败');
     }
   };
 
@@ -775,95 +1023,584 @@ export default function ERPProductsPage() {
         </Dialog>
 
         {/* 商品详情对话框 */}
-        <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
-          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>商品详情</DialogTitle>
-            </DialogHeader>
-            {selectedProduct && (
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label className="text-muted-foreground">商品ID</Label>
-                    <div className="font-mono text-[14px]">{selectedProduct.id}</div>
-                  </div>
-                  <div>
-                    <Label className="text-muted-foreground">SKU</Label>
-                    <div className="font-mono text-[14px]">{selectedProduct.internal_sku}</div>
-                  </div>
-                </div>
-                <div>
-                  <Label className="text-muted-foreground">商品名称</Label>
-                  <div className="text-[16px] font-medium">{selectedProduct.name_zh}</div>
-                  {selectedProduct.name_en && (
-                    <div className="text-[14px] text-muted-foreground">{selectedProduct.name_en}</div>
+        <Dialog open={isDetailOpen} onOpenChange={(open) => {
+          setIsDetailOpen(open);
+          if (!open) setIsEditing(false);
+        }}>
+          <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
+            <DialogHeader className="flex flex-row items-center justify-between">
+              <div>
+                <DialogTitle className="flex items-center gap-2">
+                  <Package2 className="h-5 w-5" />
+                  商品详情
+                  {selectedProduct && (
+                    <Badge variant="outline" className="ml-2">{getStatusBadge(selectedProduct.status)}</Badge>
                   )}
-                </div>
-                <div className="grid grid-cols-3 gap-4">
-                  <div>
-                    <Label className="text-muted-foreground">成本价</Label>
-                    <div className="text-[18px] font-semibold">¥{selectedProduct.cost_price}</div>
-                  </div>
-                  <div>
-                    <Label className="text-muted-foreground">总成本</Label>
-                    <div className="text-[18px] font-semibold">¥{selectedProduct.total_cost}</div>
-                  </div>
-                  <div>
-                    <Label className="text-muted-foreground">状态</Label>
-                    <div>{getStatusBadge(selectedProduct.status)}</div>
-                  </div>
-                </div>
-                
-                {selectedProduct.total_orders !== undefined && selectedProduct.total_orders > 0 && (
-                  <div className="grid grid-cols-3 gap-4 p-4 bg-muted/50 rounded-lg">
-                    <div>
-                      <Label className="text-muted-foreground">总销量</Label>
-                      <div className="text-[20px] font-semibold text-success">{selectedProduct.total_sales}</div>
-                    </div>
-                    <div>
-                      <Label className="text-muted-foreground">订单数</Label>
-                      <div className="text-[20px] font-semibold">{selectedProduct.total_orders}</div>
-                    </div>
-                    <div>
-                      <Label className="text-muted-foreground">总利润</Label>
-                      <div className="text-[20px] font-semibold text-success">¥{selectedProduct.total_profit?.toFixed(2)}</div>
-                    </div>
-                  </div>
+                </DialogTitle>
+                {selectedProduct && (
+                  <DialogDescription className="font-mono text-[12px] mt-1">
+                    ID: {selectedProduct.id} | SKU: {selectedProduct.internal_sku}
+                  </DialogDescription>
                 )}
+              </div>
+              <div className="flex items-center gap-2">
+                {!isEditing ? (
+                  <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
+                    <Edit className="h-4 w-4 mr-1" />
+                    编辑
+                  </Button>
+                ) : (
+                  <>
+                    <Button variant="outline" size="sm" onClick={() => setIsEditing(false)}>
+                      取消
+                    </Button>
+                    <Button size="sm" onClick={handleSaveEdit} disabled={isSaving}>
+                      {isSaving ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Save className="h-4 w-4 mr-1" />}
+                      保存
+                    </Button>
+                  </>
+                )}
+              </div>
+            </DialogHeader>
+            
+            {selectedProduct && (
+              <div className="mt-4">
+                <Tabs defaultValue="basic" className="w-full">
+                  <TabsList className="grid grid-cols-6 w-full">
+                    <TabsTrigger value="basic">基本信息</TabsTrigger>
+                    <TabsTrigger value="images">图片</TabsTrigger>
+                    <TabsTrigger value="listing">Listing</TabsTrigger>
+                    <TabsTrigger value="pricing">成本定价</TabsTrigger>
+                    <TabsTrigger value="specs">规格包装</TabsTrigger>
+                    <TabsTrigger value="shops">店铺</TabsTrigger>
+                  </TabsList>
 
-                {selectedProduct.platform_listings && selectedProduct.platform_listings.length > 0 && (
-                  <div>
-                    <Label className="text-muted-foreground">上架平台</Label>
-                    <div className="space-y-2 mt-2">
-                      {selectedProduct.platform_listings.map((listing: any) => (
-                        <div key={listing.id} className="flex items-center justify-between p-3 bg-muted/50 rounded">
-                          <div className="flex items-center gap-2">
-                            <Badge>{listing.platform}</Badge>
-                            <span className="text-[14px]">{listing.region?.toUpperCase()}</span>
-                          </div>
-                          <Badge variant="outline">{listing.status}</Badge>
-                        </div>
-                      ))}
+                  {/* 基本信息Tab */}
+                  <TabsContent value="basic" className="space-y-4 mt-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label className="text-muted-foreground text-[12px]">商品名称（中文）</Label>
+                        {isEditing ? (
+                          <Input 
+                            value={editForm.name_zh} 
+                            onChange={(e) => setEditForm({ ...editForm, name_zh: e.target.value })}
+                          />
+                        ) : (
+                          <div className="p-2 bg-muted/30 rounded text-[14px] font-medium">{selectedProduct.name_zh}</div>
+                        )}
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-muted-foreground text-[12px]">商品名称（英文）</Label>
+                        {isEditing ? (
+                          <Input 
+                            value={editForm.name_en} 
+                            onChange={(e) => setEditForm({ ...editForm, name_en: e.target.value })}
+                          />
+                        ) : (
+                          <div className="p-2 bg-muted/30 rounded text-[14px]">{selectedProduct.name_en || '-'}</div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                )}
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label className="text-muted-foreground text-[12px]">SKU编码</Label>
+                        {isEditing ? (
+                          <Input 
+                            value={editForm.internal_sku} 
+                            onChange={(e) => setEditForm({ ...editForm, internal_sku: e.target.value })}
+                          />
+                        ) : (
+                          <div className="p-2 bg-muted/30 rounded font-mono">{selectedProduct.internal_sku}</div>
+                        )}
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-muted-foreground text-[12px]">商品类目</Label>
+                        {isEditing ? (
+                          <Input 
+                            value={editForm.category} 
+                            onChange={(e) => setEditForm({ ...editForm, category: e.target.value })}
+                            placeholder="请输入类目"
+                          />
+                        ) : (
+                          <div className="p-2 bg-muted/30 rounded">{selectedProduct.category || '-'}</div>
+                        )}
+                      </div>
+                    </div>
 
-                {(selectedProduct as any).inventory && (selectedProduct as any).inventory.length > 0 && (
-                  <div>
-                    <Label className="text-muted-foreground">库存信息</Label>
-                    <div className="space-y-2 mt-2">
-                      {(selectedProduct as any).inventory.map((inv: any) => (
-                        <div key={inv.id} className="flex items-center justify-between p-3 bg-muted/50 rounded">
-                          <div className="flex items-center gap-2">
-                            <Badge variant="outline">{inv.warehouse}</Badge>
-                            {inv.location && <span className="text-[12px] text-muted-foreground">{inv.location}</span>}
-                          </div>
-                          <span className="font-medium">{inv.qty_available} 可用</span>
+                    <div className="space-y-2">
+                      <Label className="text-muted-foreground text-[12px]">供应商信息</Label>
+                      <div className="p-3 bg-muted/30 rounded">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Truck className="h-4 w-4 text-muted-foreground" />
+                          <span className="text-[13px]">{selectedProduct.supplier_name || '-'}</span>
                         </div>
-                      ))}
+                        {isEditing ? (
+                          <Input 
+                            value={editForm.source_url} 
+                            onChange={(e) => setEditForm({ ...editForm, source_url: e.target.value })}
+                            placeholder="货源链接"
+                            className="mt-2"
+                          />
+                        ) : selectedProduct.source_url ? (
+                          <Button variant="ghost" size="sm" className="h-6 text-[11px]" onClick={() => window.open(selectedProduct.source_url, '_blank')}>
+                            <ExternalLink className="h-3 w-3 mr-1" />
+                            查看1688链接
+                          </Button>
+                        ) : null}
+                      </div>
                     </div>
-                  </div>
-                )}
+
+                    {/* 销售统计 */}
+                    {(selectedProduct.total_orders ?? 0) > 0 && (
+                      <div className="p-4 bg-primary/5 border border-primary/20 rounded-lg">
+                        <div className="flex items-center gap-2 mb-3">
+                          <TrendingUp className="h-4 w-4 text-primary" />
+                          <span className="text-[14px] font-medium">销售统计</span>
+                        </div>
+                        <div className="grid grid-cols-3 gap-4">
+                          <div>
+                            <div className="text-[12px] text-muted-foreground">总销量</div>
+                            <div className="text-[20px] font-semibold text-success">{selectedProduct.total_sales || 0}</div>
+                          </div>
+                          <div>
+                            <div className="text-[12px] text-muted-foreground">订单数</div>
+                            <div className="text-[20px] font-semibold">{selectedProduct.total_orders || 0}</div>
+                          </div>
+                          <div>
+                            <div className="text-[12px] text-muted-foreground">总利润</div>
+                            <div className="text-[20px] font-semibold text-success">¥{(selectedProduct.total_profit || 0).toFixed(2)}</div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </TabsContent>
+
+                  {/* 图片Tab */}
+                  <TabsContent value="images" className="space-y-4 mt-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="text-[14px] font-medium">商品图片</h3>
+                        <p className="text-[12px] text-muted-foreground">建议尺寸: 800x800px，支持JPG/PNG格式</p>
+                      </div>
+                      <Button size="sm" variant="outline" disabled>
+                        <Plus className="h-4 w-4 mr-1" />
+                        上传图片
+                      </Button>
+                    </div>
+                    
+                    {selectedProduct.images && selectedProduct.images.length > 0 ? (
+                      <div className="grid grid-cols-4 gap-3">
+                        {selectedProduct.images.map((img, idx) => (
+                          <div key={img.id} className="relative group">
+                            <div className="aspect-square bg-muted rounded-lg overflow-hidden border">
+                              <img src={img.processed_url || img.original_url} alt="" className="w-full h-full object-cover" />
+                            </div>
+                            <div className="absolute top-2 left-2">
+                              <Badge variant={img.type === 'main' ? 'default' : 'secondary'} className="text-[10px]">
+                                {img.type === 'main' ? '主图' : img.type}
+                              </Badge>
+                            </div>
+                            {isEditing && (
+                              <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <Button variant="destructive" size="sm" className="h-6 w-6 p-0">
+                                  <Trash className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-12 text-muted-foreground">
+                        <ImageIcon className="h-12 w-12 mx-auto mb-3 opacity-30" />
+                        <p className="text-[14px]">暂无图片</p>
+                        <p className="text-[12px]">点击"处理图片"自动生成商品图片</p>
+                      </div>
+                    )}
+
+                    <div className="flex gap-2">
+                      <Button variant="outline" className="flex-1" disabled>
+                        <ImageIcon className="h-4 w-4 mr-2" />
+                        AI生成主图
+                      </Button>
+                      <Button variant="outline" className="flex-1" disabled>
+                        <ImageIcon className="h-4 w-4 mr-2" />
+                        批量白底图
+                      </Button>
+                    </div>
+                  </TabsContent>
+
+                  {/* Listing编辑Tab */}
+                  <TabsContent value="listing" className="space-y-4 mt-4">
+                    <div className="space-y-3">
+                      <div className="space-y-2">
+                        <Label className="text-muted-foreground text-[12px]">英文标题 (Title)</Label>
+                        {isEditing ? (
+                          <Input 
+                            value={editForm.listing_title} 
+                            onChange={(e) => setEditForm({ ...editForm, listing_title: e.target.value })}
+                            placeholder="输入英文标题，建议60-100字符"
+                          />
+                        ) : (
+                          <div className="p-3 bg-muted/30 rounded text-[13px]">
+                            {selectedProduct.listing?.title || selectedProduct.name_en || '-'}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label className="text-muted-foreground text-[12px]">五点描述 (Bullet Points)</Label>
+                        {isEditing ? (
+                          <Textarea 
+                            value={editForm.bullet_points} 
+                            onChange={(e) => setEditForm({ ...editForm, bullet_points: e.target.value })}
+                            placeholder="每行一个卖点"
+                            rows={5}
+                            className="text-[13px]"
+                          />
+                        ) : (
+                          <div className="p-3 bg-muted/30 rounded space-y-2">
+                            {selectedProduct.listing?.bullet_points && selectedProduct.listing.bullet_points.length > 0 ? (
+                              selectedProduct.listing.bullet_points.map((point, idx) => (
+                                <div key={idx} className="flex items-start gap-2 text-[13px]">
+                                  <CheckCircle className="h-4 w-4 text-success mt-0.5 flex-shrink-0" />
+                                  <span>{point}</span>
+                                </div>
+                              ))
+                            ) : (
+                              <span className="text-muted-foreground">暂无五点描述</span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label className="text-muted-foreground text-[12px]">商品描述 (Description)</Label>
+                        {isEditing ? (
+                          <Textarea 
+                            value={editForm.listing_description} 
+                            onChange={(e) => setEditForm({ ...editForm, listing_description: e.target.value })}
+                            placeholder="输入详细描述"
+                            rows={6}
+                            className="text-[13px]"
+                          />
+                        ) : (
+                          <div className="p-3 bg-muted/30 rounded text-[13px] max-h-40 overflow-y-auto">
+                            {selectedProduct.listing?.description || '-'}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label className="text-muted-foreground text-[12px]">关键词 (Search Terms)</Label>
+                        {isEditing ? (
+                          <Input 
+                            value={editForm.keywords} 
+                            onChange={(e) => setEditForm({ ...editForm, keywords: e.target.value })}
+                            placeholder="关键词，用逗号分隔"
+                          />
+                        ) : (
+                          <div className="flex flex-wrap gap-2">
+                            {selectedProduct.listing?.keywords && selectedProduct.listing.keywords.length > 0 ? (
+                              selectedProduct.listing.keywords.map((kw, idx) => (
+                                <Badge key={idx} variant="outline">{kw}</Badge>
+                              ))
+                            ) : (
+                              <span className="text-muted-foreground">暂无关键词</span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {!isEditing && (
+                      <div className="flex gap-2">
+                        <Button variant="outline" className="flex-1" disabled>
+                          <Star className="h-4 w-4 mr-2" />
+                          AI优化标题
+                        </Button>
+                        <Button variant="outline" className="flex-1" disabled>
+                          <FileText className="h-4 w-4 mr-2" />
+                          AI生成描述
+                        </Button>
+                      </div>
+                    )}
+                  </TabsContent>
+
+                  {/* 成本定价Tab */}
+                  <TabsContent value="pricing" className="space-y-4 mt-4">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div className="space-y-2">
+                        <Label className="text-muted-foreground text-[12px]">采购成本</Label>
+                        {isEditing ? (
+                          <Input 
+                            type="number"
+                            value={editForm.cost_price} 
+                            onChange={(e) => setEditForm({ ...editForm, cost_price: e.target.value })}
+                          />
+                        ) : (
+                          <div className="p-3 bg-muted/30 rounded">
+                            <span className="text-[18px] font-semibold">¥{selectedProduct.cost_price.toFixed(2)}</span>
+                          </div>
+                        )}
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-muted-foreground text-[12px]">国内运费</Label>
+                        {isEditing ? (
+                          <Input 
+                            type="number"
+                            value={editForm.domestic_shipping} 
+                            onChange={(e) => setEditForm({ ...editForm, domestic_shipping: e.target.value })}
+                          />
+                        ) : (
+                          <div className="p-3 bg-muted/30 rounded">
+                            <span className="text-[18px] font-semibold">¥{selectedProduct.domestic_shipping.toFixed(2)}</span>
+                          </div>
+                        )}
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-muted-foreground text-[12px]">头程运费</Label>
+                        {isEditing ? (
+                          <Input 
+                            type="number"
+                            value={editForm.first_mile_shipping} 
+                            onChange={(e) => setEditForm({ ...editForm, first_mile_shipping: e.target.value })}
+                          />
+                        ) : (
+                          <div className="p-3 bg-muted/30 rounded">
+                            <span className="text-[18px] font-semibold">¥{selectedProduct.first_mile_shipping.toFixed(2)}</span>
+                          </div>
+                        )}
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-primary text-[12px]">总成本</Label>
+                        <div className="p-3 bg-primary/10 rounded">
+                          <span className="text-[20px] font-semibold text-primary">¥{selectedProduct.total_cost.toFixed(2)}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 智能定价建议 */}
+                    {selectedProduct.pricing && (
+                      <div className="p-4 border border-primary/20 rounded-lg bg-primary/5">
+                        <div className="flex items-center gap-2 mb-3">
+                          <DollarSign className="h-4 w-4 text-primary" />
+                          <span className="text-[14px] font-medium">智能定价建议</span>
+                        </div>
+                        <div className="grid grid-cols-3 gap-4 text-[13px]">
+                          <div>
+                            <span className="text-muted-foreground">建议售价:</span>
+                            <span className="ml-2 font-semibold">${selectedProduct.pricing.suggested_price.toFixed(2)}</span>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground">目标价:</span>
+                            <span className="ml-2 font-semibold">${selectedProduct.pricing.target_price.toFixed(2)}</span>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground">利润率:</span>
+                            <span className="ml-2 font-semibold text-success">{selectedProduct.pricing.profit_margin.toFixed(1)}%</span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* 店铺定价 */}
+                    {selectedProduct.platform_listings && selectedProduct.platform_listings.length > 0 && (
+                      <div className="space-y-3">
+                        <Label className="text-muted-foreground text-[12px]">店铺定价</Label>
+                        {selectedProduct.platform_listings.map(listing => (
+                          <div key={listing.id} className="flex items-center justify-between p-3 bg-muted/30 rounded">
+                            <div className="flex items-center gap-2">
+                              <Badge variant="outline" className="capitalize">{listing.platform}</Badge>
+                              <span className="text-[13px]">{listing.shop_name || '-'}</span>
+                            </div>
+                            <div className="text-[14px] font-semibold">
+                              {listing.sale_price ? `$${listing.sale_price.toFixed(2)}` : '-'}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </TabsContent>
+
+                  {/* 规格包装Tab */}
+                  <TabsContent value="specs" className="space-y-4 mt-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label className="text-muted-foreground text-[12px]">产品重量 (kg)</Label>
+                        {isEditing ? (
+                          <Input 
+                            type="number"
+                            step="0.01"
+                            value={editForm.weight_kg} 
+                            onChange={(e) => setEditForm({ ...editForm, weight_kg: e.target.value })}
+                          />
+                        ) : (
+                          <div className="p-2 bg-muted/30 rounded flex items-center gap-2">
+                            <Weight className="h-4 w-4 text-muted-foreground" />
+                            <span>{selectedProduct.weight_kg || 0} kg</span>
+                          </div>
+                        )}
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-muted-foreground text-[12px]">品牌</Label>
+                        {isEditing ? (
+                          <Input 
+                            value={editForm.brand} 
+                            onChange={(e) => setEditForm({ ...editForm, brand: e.target.value })}
+                            placeholder="品牌名"
+                          />
+                        ) : (
+                          <div className="p-2 bg-muted/30 rounded">
+                            <span>{selectedProduct.brand || '-'}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-muted-foreground text-[12px]">产品尺寸 (cm)</Label>
+                      <div className="grid grid-cols-3 gap-2">
+                        {isEditing ? (
+                          <>
+                            <Input type="number" placeholder="长" value={editForm.dimensions_length} onChange={(e) => setEditForm({ ...editForm, dimensions_length: e.target.value })} />
+                            <Input type="number" placeholder="宽" value={editForm.dimensions_width} onChange={(e) => setEditForm({ ...editForm, dimensions_width: e.target.value })} />
+                            <Input type="number" placeholder="高" value={editForm.dimensions_height} onChange={(e) => setEditForm({ ...editForm, dimensions_height: e.target.value })} />
+                          </>
+                        ) : (
+                          <>
+                            <div className="p-2 bg-muted/30 rounded flex items-center gap-2">
+                              <Ruler className="h-4 w-4 text-muted-foreground" />
+                              <span>{(selectedProduct as any).dimensions?.length || 0} cm</span>
+                            </div>
+                            <div className="p-2 bg-muted/30 rounded flex items-center gap-2">
+                              <span>{(selectedProduct as any).dimensions?.width || 0} cm</span>
+                            </div>
+                            <div className="p-2 bg-muted/30 rounded flex items-center gap-2">
+                              <span>{(selectedProduct as any).dimensions?.height || 0} cm</span>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-muted-foreground text-[12px]">包装清单</Label>
+                      {isEditing ? (
+                        <Textarea 
+                          value={editForm.packaging_list} 
+                          onChange={(e) => setEditForm({ ...editForm, packaging_list: e.target.value })}
+                          placeholder="每行一个物品"
+                          rows={4}
+                          className="text-[13px]"
+                        />
+                      ) : (
+                        <div className="p-3 bg-muted/30 rounded">
+                          {selectedProduct.packaging_list && selectedProduct.packaging_list.length > 0 ? (
+                            <ul className="list-disc list-inside text-[13px] space-y-1">
+                              {selectedProduct.packaging_list.map((item, idx) => (
+                                <li key={idx}>{item}</li>
+                              ))}
+                            </ul>
+                          ) : (
+                            <span className="text-muted-foreground">暂无包装信息</span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label className="text-muted-foreground text-[12px]">颜色</Label>
+                        {isEditing ? (
+                          <Input value={editForm.color} onChange={(e) => setEditForm({ ...editForm, color: e.target.value })} />
+                        ) : (
+                          <div className="p-2 bg-muted/30 rounded">{selectedProduct.color || '-'}</div>
+                        )}
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-muted-foreground text-[12px]">尺寸</Label>
+                        {isEditing ? (
+                          <Input value={editForm.size} onChange={(e) => setEditForm({ ...editForm, size: e.target.value })} />
+                        ) : (
+                          <div className="p-2 bg-muted/30 rounded">{selectedProduct.size || '-'}</div>
+                        )}
+                      </div>
+                    </div>
+                  </TabsContent>
+
+                  {/* 店铺关联Tab */}
+                  <TabsContent value="shops" className="space-y-4 mt-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="text-[14px] font-medium">认领到店铺</h3>
+                        <p className="text-[12px] text-muted-foreground">将商品关联到店铺后，可以设置平台专属的标题、描述和定价</p>
+                      </div>
+                    </div>
+
+                    {/* 已关联的店铺 */}
+                    {selectedProduct.platform_listings && selectedProduct.platform_listings.length > 0 ? (
+                      <div className="space-y-3">
+                        {selectedProduct.platform_listings.map(listing => (
+                          <div key={listing.id} className="p-4 border rounded-lg">
+                            <div className="flex items-center justify-between mb-3">
+                              <div className="flex items-center gap-2">
+                                <Store className="h-4 w-4 text-primary" />
+                                <Badge variant="outline" className="capitalize">{listing.platform}</Badge>
+                                <span className="text-[14px] font-medium">{listing.shop_name || '-'}</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Badge className={
+                                  listing.status === 'active' ? 'bg-success text-white' :
+                                  listing.status === 'listed' ? 'bg-blue-500/10 text-blue-500' :
+                                  'bg-muted text-muted-foreground'
+                                }>
+                                  {listing.status === 'active' ? '在售' :
+                                   listing.status === 'listed' ? '已上架' :
+                                   listing.status === 'pending' ? '待上架' : listing.status}
+                                </Badge>
+                                {isEditing && (
+                                  <Button variant="ghost" size="sm" className="text-destructive" onClick={() => handleRemoveShopListing(listing.id)}>
+                                    <Trash className="h-4 w-4" />
+                                  </Button>
+                                )}
+                              </div>
+                            </div>
+                            {listing.listing_url && (
+                              <Button variant="ghost" size="sm" onClick={() => window.open(listing.listing_url, '_blank')}>
+                                <ExternalLink className="h-3 w-3 mr-1" />
+                                查看链接
+                              </Button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-8 border border-dashed rounded-lg">
+                        <Store className="h-12 w-12 mx-auto mb-3 text-muted-foreground opacity-30" />
+                        <p className="text-muted-foreground">尚未认领到任何店铺</p>
+                        <p className="text-[12px] text-muted-foreground mt-1">点击下方按钮认领到店铺</p>
+                      </div>
+                    )}
+
+                    {/* 认领按钮 */}
+                    <div className="grid grid-cols-3 gap-3">
+                      <Button variant="outline" onClick={() => handleClaimToShop('tiktok-id', 'tiktok')}>
+                        <PlusCircle className="h-4 w-4 mr-2" />
+                        TikTok Shop
+                      </Button>
+                      <Button variant="outline" onClick={() => handleClaimToShop('amazon-id', 'amazon')}>
+                        <PlusCircle className="h-4 w-4 mr-2" />
+                        Amazon
+                      </Button>
+                      <Button variant="outline" onClick={() => handleClaimToShop('shopee-id', 'shopee')}>
+                        <PlusCircle className="h-4 w-4 mr-2" />
+                        Shopee
+                      </Button>
+                    </div>
+                  </TabsContent>
+                </Tabs>
               </div>
             )}
           </DialogContent>
