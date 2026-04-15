@@ -46,9 +46,26 @@ export interface CompetitionAnalysis {
 
 export async function selectProducts(request: SelectProductsRequest): Promise<{
   success: boolean;
-  data: SelectedProduct[];
+  data?: SelectedProduct[];
+  products?: SelectedProduct[];
+  analysis?: string;
+  summary?: any;
 }> {
-  return apiClient.post('/api/v1/ai/select-products', request);
+  const response = await apiClient.post<{
+    success: boolean;
+    products: SelectedProduct[];
+    analysis?: string;
+    summary?: any;
+  }>('/api/v1/ai/select-products', request);
+  
+  // API 返回的 products 在根级别
+  return {
+    success: response.success,
+    data: response.products,
+    products: response.products,
+    analysis: response.analysis,
+    summary: response.summary,
+  };
 }
 
 export async function analyzeCompetition(productName: string, platform?: string): Promise<{

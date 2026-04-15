@@ -132,7 +132,7 @@ export async function POST(request: NextRequest) {
     ];
 
     // 调用豆包大模型
-    const response = await client.invoke(messages, {
+    const response = await client.invoke(messages as any, {
       model: 'doubao-seed-1-8-251228',
       temperature: 0.7,
       thinking: 'disabled',

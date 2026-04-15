@@ -214,24 +214,22 @@ export default function SelectionAgentPage() {
       });
       
       if (result.success) {
-        // 后端返回格式: { products: [...], analysis: "...", summary: {...} }
-        const responseData = result.data as any;
-        const productsArray = responseData.products || responseData || [];
+        // API 返回格式: { success, products: [...], analysis: "...", summary: {...} }
+        const productsArray = result.products || result.data || [];
         
         if (Array.isArray(productsArray) && productsArray.length > 0) {
           // 将API返回的数据转换为页面展示格式
           const newProducts: Product[] = productsArray.map((item: any, index: number) => {
             // 解析后端返回的各种字段格式
-            // 后端可能返回: name, product_name, product_name 等字段
             const name = item.name || item.product_name || item.productName || `商品${index + 1}`;
             
             // 解析利润率和销量趋势
-            let profitMargin = item.profit_rate || item.profitMargin || item.profit_rate_text || 35;
+            let profitMargin = item.profit_margin || item.profitMargin || item.profit_rate || item.profit_rate_text || 35;
             if (typeof profitMargin === 'string') {
               profitMargin = parseFloat(profitMargin.replace(/[^0-9.]/g, '')) || 35;
             }
             
-            let salesTrend = item.sales_trend || item.salesTrend || item.trend_value || 75;
+            let salesTrend = item.sales_trend || item.salesTrend || item.daily_sales || item.trend_value || 75;
             if (typeof salesTrend === 'string' && salesTrend.includes('%')) {
               salesTrend = parseFloat(salesTrend.replace(/[^0-9.]/g, '')) || 75;
             }
@@ -239,15 +237,15 @@ export default function SelectionAgentPage() {
             return {
               id: item.id || `P${Date.now()}-${index}`,
               name: name,
-              category: item.category || responseData.category || '热门商品',
+              category: item.category || '热门商品',
               platform: item.platform?.toUpperCase() === 'AMAZON' ? 'Amazon' : 'TK',
-              salesTrend: salesTrend,
-              profitMargin: profitMargin,
+              salesTrend: typeof salesTrend === 'number' ? salesTrend : 75,
+              profitMargin: typeof profitMargin === 'number' ? profitMargin : 35,
               complianceStatus: (item.compliance_status || 'passed') as 'passed' | 'failed' | 'pending',
               supplyChain: (item.supply_chain || 'matched') as 'matched' | 'unmatched' | 'checking',
               purchaseCycle: item.purchase_cycle || item.purchaseCycle || 7,
               stockCostRatio: item.stock_cost_ratio || item.stockCostRatio || 30,
-              predictedProfit: item.predicted_profit || item.predictedProfit || profitMargin * 2,
+              predictedProfit: item.predicted_profit || item.predictedProfit || item.profit || profitMargin * 2,
               selectedAt: new Date().toLocaleString('zh-CN'),
             };
           });
@@ -258,11 +256,11 @@ export default function SelectionAgentPage() {
           });
         } else {
           toast.warning('选品未返回商品数据', {
-            description: responseData.analysis?.substring(0, 100) || '请稍后重试'
+            description: result.analysis?.substring(0, 100) || '请稍后重试'
           });
         }
       } else {
-        toast.error('选品返回数据格式错误');
+        toast.error('选品失败，请重试');
       }
     } catch (error: any) {
       console.error('启动选品失败:', error);
