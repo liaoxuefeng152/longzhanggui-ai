@@ -13,38 +13,51 @@ import { getPushClient, pushWelcomeMessage, pushTaskStatus } from '@/lib/feishu/
 import { INTENT_TYPES } from '@/lib/feishu/config';
 
 // 消息去重缓存（防止飞书重试导致重复处理）
-const processedMessages = new Set<string>();
-const MESSAGE_DEDUP_WINDOW_MS = 10000; // 10秒内相同消息视为重复
+const processedMessages = new Map<string, number>();
+const MESSAGE_DEDUP_WINDOW_MS = 30000; // 30秒内相同消息视为重复
 
 /**
- * 生成消息去重key（基于消息内容+发送者+时间窗口）
+ * 生成消息去重key（基于消息内容+发送者+chatId）
+ * 群聊时飞书可能使用不同 message_id 重试，但内容相同
  */
-function getDeduplicationKey(messageId: string, userId: string, textContent: string): string {
-  // 如果有message_id，使用它
-  if (messageId) {
-    return messageId;
+function getDeduplicationKey(messageId: string, userId: string, chatId: string, textContent: string): string {
+  // 清理过期记录
+  const now = Date.now();
+  for (const [key, timestamp] of processedMessages.entries()) {
+    if (now - timestamp > MESSAGE_DEDUP_WINDOW_MS) {
+      processedMessages.delete(key);
+    }
   }
-  // 否则用内容+用户+时间窗口（30秒）生成key
-  const timeWindow = Math.floor(Date.now() / 30000);
-  return `${userId}:${textContent}:${timeWindow}`;
+  
+  // 群聊模式：基于 chatId + 内容去重（飞书重试时 message_id 可能不同）
+  if (chatId && chatId.startsWith('oc_')) {
+    // 清理消息内容中的 @mention，只保留核心文本
+    const cleanContent = textContent.replace(/@_user_\d+/g, '').trim();
+    return `group:${chatId}:${cleanContent}`;
+  }
+  
+  // 单聊模式：使用 message_id（如果有）
+  if (messageId) {
+    return `p2p:${messageId}`;
+  }
+  // 兜底：使用内容+用户+时间窗口
+  const timeWindow = Math.floor(now / 30000);
+  return `p2p:${userId}:${textContent}:${timeWindow}`;
 }
 
 /**
  * 检查消息是否已处理过
  */
-function isMessageProcessed(messageId: string, userId: string, textContent: string): boolean {
-  const key = getDeduplicationKey(messageId, userId, textContent);
+function isMessageProcessed(messageId: string, userId: string, chatId: string, textContent: string): boolean {
+  const key = getDeduplicationKey(messageId, userId, chatId, textContent);
   
   if (processedMessages.has(key)) {
+    console.log(`[Feishu] 消息已处理过（去重），key: ${key}`);
     return true;
   }
-  processedMessages.add(key);
   
-  // 清理过期记录
-  setTimeout(() => {
-    processedMessages.delete(key);
-  }, MESSAGE_DEDUP_WINDOW_MS);
-  
+  processedMessages.set(key, Date.now());
+  console.log(`[Feishu] 新消息，加入去重缓存，key: ${key}`);
   return false;
 }
 
@@ -164,7 +177,7 @@ async function handleMessageEvent(body: any) {
 
   // 消息去重（防止飞书重试）
   const messageId = message.message_id;
-  if (isMessageProcessed(messageId, userId, textContent)) {
+  if (isMessageProcessed(messageId, userId, chatId, textContent)) {
     console.log(`[Feishu] 消息已处理过，跳过: ${messageId || textContent.slice(0, 20)}`);
     return;
   }
