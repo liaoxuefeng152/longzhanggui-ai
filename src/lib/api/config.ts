@@ -74,8 +74,8 @@ export const API_ENDPOINTS = {
   
   // 套餐管理
   packages: {
-    list: '/packages',
-    detail: (id: string) => `/packages/${id}`,
+    list: '/api/packages',
+    detail: (id: string) => `/api/packages/${id}`,
   },
   
   // 任务日志
