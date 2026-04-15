@@ -116,8 +116,9 @@ interface FeasibilityResult {
     paybackDays: number;
   };
   compliance: {
-    status: '合规' | '需补充认证' | '侵权风险高';
+    status: '合规' | '有风险' | '禁售' | '需认证';
     issues: string[];
+    warnings?: string[];
   };
   supplyChain: {
     supplier: string;
@@ -244,6 +245,116 @@ const mockSuppliers: Supplier[] = [
     searchUrl: 'https://s.1688.com/youyuan/index.htm?keywords=浴室防水收纳盒',
   },
 ];
+
+// ==================== 合规规则库 ====================
+
+// TikTok Shop 禁售品类
+const bannedCategories = [
+  '武器弹药', '管制刀具', '弩', '仿真枪', '催泪器', '防狼喷雾',
+  '药品', '保健品', '医疗器械', '处方药', '兽药',
+  '食品添加剂', '肉类', '活体动物', '濒危物种制品',
+  '赌博用品', '色情用品', '成人用品', '性用品',
+  '假证件', '伪造品', '仿牌产品', '侵权商品',
+  '货币', '邮票', '证券', '毒品', '精神类药物',
+  '酒精饮料', '烟草', '电子烟', '大麻',
+  '宗教用品', '政治敏感物品', '迷信用品',
+];
+
+// 需要特殊认证的品类
+const requiredCertifications: Record<string, string[]> = {
+  '美妆护肤': ['FDA', 'CPNP'],
+  '食品': ['FDA', 'COA', '检测报告'],
+  '玩具': ['CPC', 'CE', 'ASTM'],
+  '电子产品': ['CE', 'FCC', 'ROHS', 'UL'],
+  '宠物用品': ['检测报告', 'COA'],
+  '母婴用品': ['CPC', 'CE', 'EN71'],
+  '医疗器械': ['FDA', 'CE', 'NMPA'],
+  '珠宝首饰': ['检测报告', '镀层检测'],
+};
+
+// 平台合规要求
+const platformCompliance: Record<string, { maxValue: number; restrictedCategories: string[]; requiredDocs: string[] }> = {
+  us: {
+    maxValue: 800,
+    restrictedCategories: ['食品', '化妆品', '玩具', '电子产品'],
+    requiredDocs: ['FDA注册', 'CPC证书', 'FCC认证'],
+  },
+  uk: {
+    maxValue: 135,
+    restrictedCategories: ['食品', '化妆品', '玩具', '电子产品'],
+    requiredDocs: ['UKCA认证', 'CE认证', '英代信息'],
+  },
+  id: {
+    maxValue: 5000000,
+    restrictedCategories: ['食品', '化妆品', '药品', '医疗器械'],
+    requiredDocs: ['BPOM注册', 'HALAL认证', '印尼本地品牌限制'],
+  },
+  th: {
+    maxValue: 1000000,
+    restrictedCategories: ['食品', '化妆品', '药品'],
+    requiredDocs: ['Thai FDA注册', 'TIS标准'],
+  },
+  vn: {
+    maxValue: 10000000,
+    restrictedCategories: ['食品', '化妆品', '药品', '儿童用品'],
+    requiredDocs: ['越南FDA注册', 'COA'],
+  },
+  my: {
+    maxValue: 500,
+    restrictedCategories: ['食品', '化妆品', '药品'],
+    requiredDocs: ['MAL注册', 'HALAL认证'],
+  },
+};
+
+// 合规检查函数
+const checkProductCompliance = (
+  category: string,
+  productName: string,
+  price: number,
+  market: string
+): { isCompliant: boolean; issues: string[]; warnings: string[] } => {
+  const issues: string[] = [];
+  const warnings: string[] = [];
+
+  // 1. 检查是否在禁售清单
+  const isBanned = bannedCategories.some(banned => 
+    category.includes(banned) || productName.includes(banned)
+  );
+  if (isBanned) {
+    issues.push(`商品可能属于禁售品类`);
+  }
+
+  // 2. 检查平台限制
+  const platform = platformCompliance[market];
+  if (platform) {
+    // 检查价格是否超过限额
+    if (price > platform.maxValue / 100) {
+      warnings.push(`商品价格可能超过${market.toUpperCase()}站点限额`);
+    }
+
+    // 检查是否需要特殊认证
+    const needsCert = platform.restrictedCategories.some(rc => category.includes(rc));
+    if (needsCert) {
+      const certs = requiredCertifications[category] || platform.requiredDocs;
+      warnings.push(`该类目需要认证: ${certs.join(', ')}`);
+    }
+  }
+
+  // 3. 检查类目认证要求
+  const certs = requiredCertifications[category];
+  if (certs) {
+    warnings.push(`该类目建议准备: ${certs.join(', ')}`);
+  }
+
+  return {
+    isCompliant: issues.length === 0,
+    issues,
+    warnings,
+  };
+};
+
+// 合规状态类型
+type ComplianceStatus = '合规' | '有风险' | '禁售' | '需认证';
 
 const mockHotProducts: HotProduct[] = [
   {
@@ -448,6 +559,14 @@ export default function SelectionAgentPage() {
         (product.price * profitParams.commission / 100) - (product.price * profitParams.vat / 100);
       const grossMargin = (grossProfit / product.price) * 100;
       
+      // 合规检查
+      const complianceResult = checkProductCompliance(
+        requirement.category || '家居用品',
+        product.name,
+        product.price,
+        requirement.market
+      );
+      
       return {
         product,
         profitCalc: {
@@ -461,8 +580,9 @@ export default function SelectionAgentPage() {
           paybackDays: Math.ceil(profitParams.cost / (grossProfit * 0.1)),
         },
         compliance: {
-          status: product.competition === '蓝海' ? '合规' : '需补充认证',
-          issues: product.competition === '蓝海' ? [] : ['需要类目审核', '建议准备认证资料'],
+          status: complianceResult.isCompliant ? '合规' : '禁售',
+          issues: complianceResult.issues,
+          warnings: complianceResult.warnings,
         },
         supplyChain: {
           supplier: '义乌XXX供应商',
@@ -786,6 +906,29 @@ ${report.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
                     />
                   </div>
 
+                  {/* 合规风险提示 */}
+                  <div className="p-4 bg-warning/5 border border-warning/20 rounded-lg space-y-3">
+                    <div className="flex items-center gap-2">
+                      <AlertTriangle className="h-4 w-4 text-warning" />
+                      <span className="text-[13px] font-medium text-warning">合规风险提示</span>
+                    </div>
+                    <div className="text-[12px] text-muted-foreground space-y-2">
+                      <p>根据目标市场 <strong>{marketOptions.find(m => m.value === requirement.market)?.label || '未选择'}</strong> 的合规要求：</p>
+                      <ul className="list-disc list-inside space-y-1 pl-2">
+                        {requirement.market && platformCompliance[requirement.market] ? (
+                          <>
+                            <li>禁售品类：武器、食品、药品、医疗器械、仿真枪、濒危物种等</li>
+                            <li>需要认证：{platformCompliance[requirement.market].requiredDocs.join('、')}</li>
+                            <li>价格限制：单件不超过 ¥{platformCompliance[requirement.market].maxValue / 100}</li>
+                          </>
+                        ) : (
+                          <li>请先选择目标市场查看具体合规要求</li>
+                        )}
+                      </ul>
+                      <p className="text-warning/80">系统将在后续分析中自动检查合规性</p>
+                    </div>
+                  </div>
+
                   <Button 
                     onClick={handleStartRequirementAnalysis}
                     disabled={!requirement.market}
@@ -1104,24 +1247,50 @@ ${report.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
                             <span className="text-[13px] font-medium">合规校验</span>
                             <Badge variant="outline" className={
                               result.compliance.status === '合规' ? 'bg-success/10 text-success border-success/20' :
+                              result.compliance.status === '禁售' ? 'bg-destructive/10 text-destructive border-destructive/20' :
                               'bg-warning/10 text-warning border-warning/20'
                             }>
                               {result.compliance.status}
                             </Badge>
                           </div>
-                          {result.compliance.issues.length > 0 && (
-                            <ul className="text-[11px] text-muted-foreground space-y-1">
+                          {result.compliance.issues.length > 0 ? (
+                            <ul className="text-[11px] space-y-1">
                               {result.compliance.issues.map((issue, i) => (
-                                <li key={i}>⚠️ {issue}</li>
+                                <li key={i} className={result.compliance.status === '禁售' ? 'text-destructive' : 'text-warning'}>
+                                  {result.compliance.status === '禁售' ? <XCircle className="h-3 w-3 inline mr-1" /> : <AlertTriangle className="h-3 w-3 inline mr-1" />}
+                                  {issue}
+                                </li>
                               ))}
                             </ul>
+                          ) : (
+                            <div className="text-[11px] text-success flex items-center gap-1">
+                              <CheckCircle className="h-3 w-3" />
+                              通过平台合规审核
+                            </div>
+                          )}
+                          {result.compliance.warnings && result.compliance.warnings.length > 0 && (
+                            <div className="mt-2 pt-2 border-t">
+                              <div className="text-[11px] text-warning flex items-center gap-1">
+                                <AlertTriangle className="h-3 w-3" />
+                                注意事项:
+                              </div>
+                              <ul className="text-[11px] text-warning/80 mt-1 space-y-0.5">
+                                {result.compliance.warnings.map((warning, i) => (
+                                  <li key={i}>{warning}</li>
+                                ))}
+                              </ul>
+                            </div>
                           )}
                         </div>
                         <div className="p-3 border rounded-lg">
                           <div className="flex items-center gap-2 mb-2">
                             <Package className="h-4 w-4 text-primary" />
                             <span className="text-[13px] font-medium">供应链</span>
-                            <Badge variant="outline" className="bg-success/10 text-success border-success/20">
+                            <Badge variant="outline" className={
+                              result.supplyChain.stability === '高' ? 'bg-success/10 text-success border-success/20' :
+                              result.supplyChain.stability === '中' ? 'bg-warning/10 text-warning border-warning/20' :
+                              'bg-destructive/10 text-destructive border-destructive/20'
+                            }>
                               稳定性{result.supplyChain.stability}
                             </Badge>
                           </div>
@@ -1364,26 +1533,33 @@ ${report.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
                       根据选品报告推荐商品，匹配合适的1688供应商
                     </CardDescription>
                   </div>
-                  <div className="flex gap-2">
-                    <Button 
-                      variant="outline" 
-                      onClick={() => {
-                        setSuppliers([]);
-                        setIsLoadingSuppliers(true);
-                        setTimeout(() => {
-                          setSuppliers(mockSuppliers);
-                          setIsLoadingSuppliers(false);
-                          toast.success('已加载5个推荐供应商');
-                        }, 1000);
-                      }}
-                    >
-                      <RefreshCw className="h-4 w-4 mr-2" />
-                      刷新供应商
-                    </Button>
-                  </div>
                 </div>
               </CardHeader>
               <CardContent>
+                {/* 合规认证提示 */}
+                <div className="mb-4 p-3 bg-primary/5 border border-primary/20 rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Shield className="h-4 w-4 text-primary" />
+                    <span className="text-[13px] font-medium text-primary">供应商合规认证要求</span>
+                  </div>
+                  <div className="text-[12px] text-muted-foreground">
+                    <p className="mb-1">目标市场: <strong>{marketOptions.find(m => m.value === requirement.market)?.label || '美区'}</strong></p>
+                    <p>建议选择具备以下认证的供应商：</p>
+                    <div className="flex flex-wrap gap-1 mt-2">
+                      {requirement.market && platformCompliance[requirement.market] ? (
+                        platformCompliance[requirement.market].requiredDocs.map((cert) => (
+                          <Badge key={cert} variant="outline" className="text-[11px] bg-primary/10">
+                            {cert}
+                          </Badge>
+                        ))
+                      ) : (
+                        <Badge variant="outline" className="text-[11px]">ISO9001</Badge>
+                      )}
+                    </div>
+                    <p className="mt-2 text-warning text-[11px]">注意：认证不全的供应商可能导致商品被平台下架</p>
+                  </div>
+                </div>
+
                 {/* 筛选条件 */}
                 <div className="flex flex-wrap gap-4 mb-6 p-4 bg-muted/30 rounded-lg">
                   <div className="flex items-center gap-2">
