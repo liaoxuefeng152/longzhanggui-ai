@@ -8,6 +8,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
   Table,
   TableBody,
   TableCell,
@@ -31,6 +37,12 @@ import {
   Image,
   FileText,
   TrendingUp,
+  Eye,
+  X,
+  DollarSign,
+  Package2,
+  Shield,
+  BarChart3,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -62,6 +74,11 @@ export default function ProductsPage() {
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterPlatform, setFilterPlatform] = useState<string>('all');
 
+  // 商品详情弹窗
+  const [detailProduct, setDetailProduct] = useState<Product | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
+
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
@@ -77,6 +94,12 @@ export default function ProductsPage() {
     } finally {
       setLoading(false);
     }
+  }, []);
+
+  // 打开商品详情
+  const openProductDetail = useCallback(async (product: Product) => {
+    setDetailProduct(product);
+    setIsDetailOpen(true);
   }, []);
 
   useEffect(() => {
@@ -257,7 +280,11 @@ export default function ProductsPage() {
                 </TableHeader>
                 <TableBody>
                   {filteredProducts.map((product) => (
-                    <TableRow key={product.id} className="border-border hover:bg-muted/30">
+                    <TableRow 
+                      key={product.id} 
+                      className="border-border hover:bg-muted/30 cursor-pointer"
+                      onClick={() => openProductDetail(product)}
+                    >
                       <TableCell className="px-6">
                         <div className="flex items-center gap-3">
                           <div className="w-12 h-12 bg-muted rounded-lg flex items-center justify-center">
@@ -286,7 +313,7 @@ export default function ProductsPage() {
                       </TableCell>
                       <TableCell className="text-[13px] text-foreground">${product.price}</TableCell>
                       <TableCell className="text-[13px] text-foreground">{product.sales}</TableCell>
-                      <TableCell className="text-right px-6">
+                      <TableCell className="text-right px-6" onClick={(e) => e.stopPropagation()}>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button variant="ghost" size="sm">
@@ -294,6 +321,10 @@ export default function ProductsPage() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => openProductDetail(product)}>
+                              <Eye className="h-4 w-4 mr-2" />
+                              查看详情
+                            </DropdownMenuItem>
                             <DropdownMenuItem>
                               <Image className="h-4 w-4 mr-2" />
                               生成图片
@@ -316,6 +347,145 @@ export default function ProductsPage() {
             )}
           </CardContent>
         </Card>
+
+        {/* 商品详情弹窗 */}
+        <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
+          <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="text-lg flex items-center gap-2">
+                <Package2 className="h-5 w-5" />
+                商品详情
+              </DialogTitle>
+            </DialogHeader>
+            {detailProduct && (
+              <div className="space-y-6 mt-4">
+                {/* 商品基本信息 */}
+                <div className="flex gap-4">
+                  <div className="w-32 h-32 bg-muted rounded-lg overflow-hidden flex-shrink-0">
+                    {detailProduct.image ? (
+                      <img src={detailProduct.image} alt={detailProduct.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <Package className="h-12 w-12 text-muted-foreground" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-1 space-y-2">
+                    <h3 className="text-[16px] font-semibold">{detailProduct.name}</h3>
+                    <div className="grid grid-cols-2 gap-2 text-[13px]">
+                      <div className="flex items-center gap-2">
+                        <span className="text-muted-foreground">商品ID:</span>
+                        <span className="font-mono">{detailProduct.id}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-muted-foreground">类目:</span>
+                        <Badge variant="outline">{detailProduct.category || '未分类'}</Badge>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-muted-foreground">平台:</span>
+                        <Badge variant="outline">{detailProduct.platform}</Badge>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-muted-foreground">状态:</span>
+                        {getStatusBadge(detailProduct.status)}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 状态信息 */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="p-4 bg-muted/30 rounded-lg">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Package className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-[12px] text-muted-foreground">库存</span>
+                    </div>
+                    <div className={`text-[20px] font-semibold ${detailProduct.stock < 50 ? 'text-destructive' : 'text-foreground'}`}>
+                      {detailProduct.stock}
+                    </div>
+                  </div>
+                  <div className="p-4 bg-muted/30 rounded-lg">
+                    <div className="flex items-center gap-2 mb-2">
+                      <DollarSign className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-[12px] text-muted-foreground">价格</span>
+                    </div>
+                    <div className="text-[20px] font-semibold text-foreground">
+                      ${detailProduct.price}
+                    </div>
+                  </div>
+                  <div className="p-4 bg-muted/30 rounded-lg">
+                    <div className="flex items-center gap-2 mb-2">
+                      <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-[12px] text-muted-foreground">销量</span>
+                    </div>
+                    <div className="text-[20px] font-semibold text-foreground">
+                      {detailProduct.sales}
+                    </div>
+                  </div>
+                  <div className="p-4 bg-muted/30 rounded-lg">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Shield className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-[12px] text-muted-foreground">合规</span>
+                    </div>
+                    <div>
+                      {getComplianceBadge(detailProduct.compliance_status)}
+                    </div>
+                  </div>
+                </div>
+
+                {/* 统计数据 */}
+                <div className="border-t pt-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <BarChart3 className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-[14px] font-medium">运营数据</span>
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    <div className="flex justify-between text-[13px]">
+                      <span className="text-muted-foreground">浏览量(PV)</span>
+                      <span className="font-medium">{detailProduct.pv || 0}</span>
+                    </div>
+                    <div className="flex justify-between text-[13px]">
+                      <span className="text-muted-foreground">访客数(UV)</span>
+                      <span className="font-medium">{detailProduct.uv || 0}</span>
+                    </div>
+                    <div className="flex justify-between text-[13px]">
+                      <span className="text-muted-foreground">转化率</span>
+                      <span className="font-medium">{detailProduct.conversion_rate || 0}%</span>
+                    </div>
+                    <div className="flex justify-between text-[13px]">
+                      <span className="text-muted-foreground">好评率</span>
+                      <span className="font-medium">{detailProduct.rating || 0}%</span>
+                    </div>
+                    <div className="flex justify-between text-[13px]">
+                      <span className="text-muted-foreground">退款率</span>
+                      <span className="font-medium">{detailProduct.refund_rate || 0}%</span>
+                    </div>
+                    <div className="flex justify-between text-[13px]">
+                      <span className="text-muted-foreground">广告花费</span>
+                      <span className="font-medium">${detailProduct.ad_spend || 0}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 操作按钮 */}
+                <div className="flex gap-2 pt-4 border-t">
+                  <Button variant="outline" className="flex-1" onClick={() => setIsDetailOpen(false)}>
+                    <Eye className="h-4 w-4 mr-2" />
+                    查看详情
+                  </Button>
+                  <Button variant="outline" className="flex-1">
+                    <Image className="h-4 w-4 mr-2" />
+                    生成图片
+                  </Button>
+                  <Button variant="outline" className="flex-1">
+                    <FileText className="h-4 w-4 mr-2" />
+                    优化Listing
+                  </Button>
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     </MainLayout>
   );

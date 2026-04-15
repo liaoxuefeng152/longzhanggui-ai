@@ -18,6 +18,18 @@ export interface Product {
   sales: number;
   created_at: string;
   updated_at: string;
+  // 运营数据（可选）
+  pv?: number;
+  uv?: number;
+  conversion_rate?: number;
+  rating?: number;
+  refund_rate?: number;
+  ad_spend?: number;
+  // 成本信息（可选）
+  cost_price?: number;
+  profit_margin?: number;
+  // 描述（可选）
+  description?: string;
 }
 
 // 商品列表响应
