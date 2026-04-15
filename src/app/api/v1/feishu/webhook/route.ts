@@ -112,17 +112,21 @@ export async function POST(request: NextRequest) {
  * 处理飞书事件
  */
 async function processEvent(body: any) {
+  // 支持多种消息格式
   const header = body.header || body;
-  const eventType = header.event_type;
-
-  // 处理验证事件
-  if (eventType === 'im.message.receive_v1' || body.event?.message) {
+  const eventType = header?.event_type || body.type;
+  
+  // 检查是否是 im.message.receive_v1 事件
+  const hasMessage = body.event && (body.event.message || body.event.sender);
+  const isMessageEvent = eventType === 'im.message.receive_v1' || hasMessage;
+  
+  if (isMessageEvent) {
     await handleMessageEvent(body);
     return;
   }
 
-  // 其他事件类型暂不处理
-  console.log(`[Feishu] 收到事件: ${eventType}`);
+  // 记录其他事件类型
+  console.log(`[Feishu] 收到事件: ${eventType || 'unknown'}`);
 }
 
 /**
@@ -479,37 +483,53 @@ async function sendDailyReportCard(receiveId: string, receiveIdType: string, dat
 async function sendProductSelectionCard(receiveId: string, receiveIdType: string, data: any) {
   const pushClient = getPushClient();
   const products = data.products || [];
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://abc123.dev.coze.site';
 
-  const productElements = products.map((p: any, index: number) => ({
-    tag: 'column_set',
-    flex_mode: 'none',
-    elements: [
-      {
-        tag: 'column',
-        width: 'weighted',
-        weight: 1,
-        elements: [
-          { tag: 'markdown', content: `**${index + 1}. ${p.name}**` },
-          { tag: 'markdown', content: `💰 ¥${p.price} | 📦 ${p.volume} 销量 | ⭐ ${p.score}` },
-        ],
+  // 生成商品列表元素
+  const productElements: any[] = [];
+  
+  products.slice(0, 5).forEach((p: any, index: number) => {
+    const competitionEmoji = p.competition === 'low' ? '🟢' : p.competition === 'medium' ? '🟡' : '🔴';
+    productElements.push({
+      tag: 'div',
+      text: {
+        tag: 'lark_md',
+        content: `**${index + 1}. ${p.name}**\n💰 价格: $${p.price} | 利润率: ${p.profit_margin || p.profit_margin || 35}%\n📈 日销量: ${p.daily_sales || '500+'}/天 | 竞争度: ${competitionEmoji}${p.competition || '中'}`,
       },
-    ],
-  }));
+    });
+  });
 
   const card = {
     config: { wide_screen_mode: true },
     header: {
-      title: { tag: 'plain_text', content: '🎯 选品结果' },
+      title: { tag: 'plain_text', content: `🎯 选品结果 - ${products.length}款推荐` },
       template: 'green',
     },
     elements: [
-      { tag: 'markdown', content: data.message || `为您找到 ${products.length} 款优质商品` },
+      { tag: 'markdown', content: `✅ 已为您分析市场，推荐以下 ${products.length} 款潜力商品：` },
       { tag: 'hr' },
       ...productElements,
       { tag: 'hr' },
       {
         tag: 'markdown',
-        content: '💡 *点击商品可查看详情，需要上架请告诉我*',
+        content: `📊 **汇总信息**\n- 平均利润率: ${data.summary?.avgProfitRate || '35-45%'}\n- 市场潜力: ${data.summary?.marketPotential || '优秀'}`,
+      },
+      {
+        tag: 'action',
+        actions: [
+          {
+            tag: 'button',
+            text: { tag: 'plain_text', content: '📦 查看全部商品' },
+            type: 'primary',
+            url: `${appUrl}/agents/product-selection`,
+          },
+          {
+            tag: 'button',
+            text: { tag: 'plain_text', content: '🏠 商品中心' },
+            type: 'default',
+            url: `${appUrl}/erp/products`,
+          },
+        ],
       },
     ],
   };

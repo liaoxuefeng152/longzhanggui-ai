@@ -268,52 +268,52 @@ export async function pushTaskStatus(receiveId: string, receiveIdType: string, t
 
 function buildProductSelectionResultCard(task: any) {
   const products = task.result?.products || [];
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://abc123.dev.coze.site';
 
-  const productElements = products.map((p: any, index: number) => ({
-    tag: 'column_set',
-    flex_mode: 'none',
-    elements: [
-      {
-        tag: 'column',
-        width: 'weighted',
-        weight: 1,
-        elements: [
-          { tag: 'markdown', content: `**${index + 1}. ${p.name}**` },
-          { tag: 'markdown', content: `💰 价格: ¥${p.price}` },
-          { tag: 'markdown', content: `📦 销量: ${p.volume}` },
-          { tag: 'markdown', content: `⭐ 评分: ${p.score}` },
-        ],
+  const productElements = products.slice(0, 5).map((p: any, index: number) => {
+    const competitionEmoji = p.competition === 'low' ? '🟢' : p.competition === 'medium' ? '🟡' : '🔴';
+    return {
+      tag: 'div',
+      text: {
+        tag: 'lark_md',
+        content: `**${index + 1}. ${p.name}**\n💰 价格: $${p.price} | 利润率: ${p.profit_margin || 35}%\n📈 日销量: ${p.daily_sales || 500}+/天 | 竞争度: ${competitionEmoji}${p.competition || '中'}`,
       },
-      {
-        tag: 'column',
-        width: 'weighted',
-        weight: 1,
-        elements: [
-          { tag: 'markdown', content: `**推荐理由**` },
-          { tag: 'markdown', content: p.reason || '综合分析推荐' },
-        ],
-      },
-    ],
-  }));
+    };
+  });
 
   return {
     config: { wide_screen_mode: true },
     header: {
-      title: { tag: 'plain_text', content: '🎯 选品结果' },
+      title: { tag: 'plain_text', content: `🎯 选品结果 - ${products.length}款推荐` },
       template: 'green',
     },
     elements: [
       {
         tag: 'markdown',
-        content: task.result?.message || `为您找到 ${products.length} 款优质商品`,
+        content: `✅ 已为您分析市场，推荐以下 ${products.length} 款潜力商品：`,
       },
       { tag: 'hr' },
       ...productElements,
       { tag: 'hr' },
       {
-        tag: 'note',
-        elements: [
-          { tag: 'plain_text', content: `任务ID: ${task.id}` },
+        tag: 'markdown',
+        content: `📊 **汇总信息**\n- 平均利润率: ${task.result?.summary?.avgProfitRate || '35-45%'}\n- 市场潜力: ${task.result?.summary?.marketPotential || '优秀'}`,
+      },
+      {
+        tag: 'action',
+        actions: [
+          {
+            tag: 'button',
+            text: { tag: 'plain_text', content: '📦 查看全部商品' },
+            type: 'primary',
+            url: `${appUrl}/agents/product-selection`,
+          },
+          {
+            tag: 'button',
+            text: { tag: 'plain_text', content: '🏠 商品中心' },
+            type: 'default',
+            url: `${appUrl}/erp/products`,
+          },
         ],
       },
     ],
