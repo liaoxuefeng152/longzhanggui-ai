@@ -51,15 +51,21 @@ function isMessageProcessed(messageId: string, userId: string, textContent: stri
 /**
  * 获取消息接收者信息
  * 单聊(p2p): 使用发送者的 open_id 回复
- * 群聊(group): 使用 chat_id 回复
+ * 群聊(group): 使用 chat_id 回复到群里
  */
 function getReceiveInfo(chatType: string, userId: string, chatId: string): { receiveId: string; receiveIdType: string } {
-  if (chatType === 'p2p') {
-    // 单聊：回复给发送者
-    return { receiveId: userId, receiveIdType: 'open_id' };
+  // 飞书群聊的 chat_id 通常以 "oc_" 开头，可以作为辅助判断
+  const isGroupChatId = chatId?.startsWith('oc_');
+  
+  // 群聊判断：chat_type 为 group 或 chat_id 以 oc_ 开头（飞书群 ID 格式）
+  if (chatType === 'group' || isGroupChatId) {
+    console.log(`[Feishu] 群聊模式，使用 chat_id: ${chatId}`);
+    return { receiveId: chatId, receiveIdType: 'chat_id' };
   }
-  // 群聊：回复到群里
-  return { receiveId: chatId, receiveIdType: 'chat_id' };
+  
+  // 单聊模式
+  console.log(`[Feishu] 单聊模式，使用 open_id: ${userId}`);
+  return { receiveId: userId, receiveIdType: 'open_id' };
 }
 
 // GET 请求：飞书验证 URL 有效性
