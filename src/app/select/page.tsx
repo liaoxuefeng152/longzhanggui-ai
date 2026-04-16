@@ -642,10 +642,17 @@ export default function SelectPage() {
                       {mockSuppliers
                         .filter(s => !currentProductForSupplier || s.productId === currentProductForSupplier)
                         .filter(s => !supplierFilters.onePieceDelivery || s.isOnePieceDelivery)
-                        .filter(s => !supplierFilters.maxMoq || s.moq <= parseInt(supplierFilters.maxMoq))
+                        .filter(s => !supplierFilters.maxMoq || s.moq <= parseInt(supplierFilters.maxMoq || '9999'))
                         .sort((a, b) => {
                           if (supplierFilters.sortBy === 'rating') return b.rating - a.rating;
-                          if (supplierFilters.sortBy === 'price') return parseInt(a.priceRange) - parseInt(b.priceRange);
+                          if (supplierFilters.sortBy === 'price') {
+                            // 从价格区间中提取最低价格进行比较
+                            const getPrice = (priceStr: string) => {
+                              const match = priceStr.match(/¥(\d+)/);
+                              return match ? parseInt(match[1]) : 99999;
+                            };
+                            return getPrice(a.priceRange) - getPrice(b.priceRange);
+                          }
                           if (supplierFilters.sortBy === 'moq') return a.moq - b.moq;
                           return 0;
                         })
