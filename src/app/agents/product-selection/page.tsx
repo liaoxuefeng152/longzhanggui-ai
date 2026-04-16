@@ -58,6 +58,7 @@ import {
   PieChart,
   Award,
   ZapOff,
+  Brain,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -76,16 +77,6 @@ interface MarketConfig {
   language: string;
 }
 
-// 类目配置
-interface CategoryConfig {
-  name: string;
-  icon: string;
-  keywords: string[];
-  avgPrice: number;
-  competition: 'low' | 'medium' | 'high';
-  profitMargin: number;
-}
-
 // 选品需求
 interface SelectionRequirement {
   market: string;
@@ -99,7 +90,6 @@ interface SelectionRequirement {
 interface Direction {
   id: string;
   name: string;
-  keywords: string[];
   reason: string;
   marketPotential: number;
   competition: string;
@@ -152,14 +142,13 @@ interface ComplianceResult {
 interface RiskAssessment {
   type: string;
   level: '低' | '中' | '高';
-  probability: number;
-  impact: string;
   suggestion: string;
 }
 
 // 可行性结果
 interface FeasibilityResult {
-  product: HotProduct;
+  productId: string;
+  productName: string;
   profitCalc: ProfitCalc;
   compliance: ComplianceResult;
   risks: RiskAssessment[];
@@ -186,20 +175,6 @@ interface Supplier {
   startYear: number;
 }
 
-// 竞品
-interface Competitor {
-  id: string;
-  name: string;
-  seller: string;
-  price: number;
-  sales: number;
-  rating: number;
-  reviews: number;
-  mainSellingPoint: string;
-  userPainPoints: string[];
-  advantages: string[];
-}
-
 // 选品报告
 interface SelectionReport {
   id: string;
@@ -208,7 +183,6 @@ interface SelectionReport {
   directions: Direction[];
   products: HotProduct[];
   feasibility: FeasibilityResult[];
-  competitors: Competitor[];
   suppliers: Supplier[];
   summary: {
     totalProducts: number;
@@ -218,6 +192,7 @@ interface SelectionReport {
     riskLevel: string;
   };
   recommendations: string[];
+  fullAnalysis?: string;
 }
 
 // ==================== 配置数据 ====================
@@ -231,15 +206,15 @@ const marketConfigs: Record<string, MarketConfig> = {
   my: { code: 'my', name: '马来西亚', flag: '🇲🇾', currency: 'MYR', avgPrice: 35, maxPrice: 500, commission: 10, vat: 6, language: 'ms' },
 };
 
-const categoryConfigs: CategoryConfig[] = [
-  { name: '家居用品', icon: '🏠', keywords: ['收纳', '置物', '清洁', '装饰'], avgPrice: 12, competition: 'medium', profitMargin: 35 },
-  { name: '厨房用品', icon: '🍳', keywords: ['厨具', '餐具', '保鲜', '清洁'], avgPrice: 10, competition: 'high', profitMargin: 30 },
-  { name: '美妆工具', icon: '💄', keywords: ['化妆', '护肤', '美甲', '美容'], avgPrice: 15, competition: 'high', profitMargin: 40 },
-  { name: '宠物用品', icon: '🐾', keywords: ['宠物喂食', '宠物玩具', '宠物清洁', '宠物外出'], avgPrice: 18, competition: 'medium', profitMargin: 38 },
-  { name: '母婴用品', icon: '👶', keywords: ['婴儿用品', '儿童玩具', '妈咪用品', '喂养用品'], avgPrice: 20, competition: 'high', profitMargin: 35 },
-  { name: '运动户外', icon: '🏃', keywords: ['运动装备', '健身器材', '户外用品', '旅行配件'], avgPrice: 25, competition: 'medium', profitMargin: 32 },
-  { name: '3C数码', icon: '📱', keywords: ['手机配件', '电脑配件', '智能设备', '充电设备'], avgPrice: 20, competition: 'high', profitMargin: 25 },
-  { name: '服装配饰', icon: '👗', keywords: ['女装', '配饰', '箱包', '鞋子'], avgPrice: 15, competition: 'high', profitMargin: 40 },
+const categoryConfigs = [
+  { name: '家居用品', icon: '🏠' },
+  { name: '厨房用品', icon: '🍳' },
+  { name: '美妆工具', icon: '💄' },
+  { name: '宠物用品', icon: '🐾' },
+  { name: '母婴用品', icon: '👶' },
+  { name: '运动户外', icon: '🏃' },
+  { name: '3C数码', icon: '📱' },
+  { name: '服装配饰', icon: '👗' },
 ];
 
 const budgetRanges: Record<string, { min: number; max: number; label: string }> = {
@@ -255,369 +230,20 @@ const coreAppeals = [
   { value: 'easy_operation', label: '易操作', desc: '运营简单，门槛低' },
 ];
 
-// 禁售品类
-const bannedKeywords = [
-  '武器', '枪', '刀', '药品', '医疗器械', '赌博', '色情', '成人', '仿牌', 
-  '假货', '电子烟', '烟草', '毒品', '宗教', '政治', '迷信',
-];
+// ==================== API调用函数 ====================
 
-// 认证要求
-const certRequirements: Record<string, string[]> = {
-  '美妆': ['FDA', 'CPNP'],
-  '护肤': ['FDA', 'CPNP'],
-  '食品': ['FDA', 'COA'],
-  '玩具': ['CPC', 'CE', 'ASTM'],
-  '电子': ['CE', 'FCC', 'ROHS'],
-  '电器': ['CE', 'FCC'],
-  '母婴': ['CPC', 'CE', 'EN71'],
-  '宠物': ['检测报告'],
-};
-
-// ==================== 工具函数 ====================
-
-// 生成唯一ID
-const generateId = () => Math.random().toString(36).substr(2, 9);
-
-// 随机数
-const random = (min: number, max: number) => Math.floor(Math.random() * (max - min + 1)) + min;
-const randomFloat = (min: number, max: number, decimals = 2) => 
-  parseFloat((Math.random() * (max - min) + min).toFixed(decimals));
-
-// 打乱数组
-const shuffle = <T>(arr: T[]): T[] => {
-  const result = [...arr];
-  for (let i = result.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [result[i], result[j]] = [result[j], result[i]];
-  }
-  return result;
-};
-
-// ==================== 智能数据生成 ====================
-
-// 生成选品方向
-function generateDirections(requirement: SelectionRequirement, count = 5): Direction[] {
-  const category = categoryConfigs.find(c => c.name === requirement.category) || categoryConfigs[0];
-  const market = marketConfigs[requirement.market] || marketConfigs.id;
-  const budget = budgetRanges[requirement.budget] || budgetRanges.medium;
-  
-  const baseNames = [
-    { name: `${category.name} - 多功能款`, icon: '✨' },
-    { name: `${category.name} - 升级款`, icon: '⬆️' },
-    { name: `${category.name} - 便携款`, icon: '📦' },
-    { name: `${category.name} - 礼品装`, icon: '🎁' },
-    { name: `${category.name} - 简约款`, icon: '💎' },
-    { name: `${category.name} - 创意款`, icon: '💡' },
-    { name: `${category.name} - 迷你款`, icon: '🔮' },
-    { name: `${category.name} - 家用款`, icon: '🏡' },
-  ];
-
-  const directions: Direction[] = [];
-  const shuffled = shuffle(baseNames).slice(0, count);
-
-  shuffled.forEach((base, i) => {
-    const profitRate = requirement.coreAppeal === 'high_profit' 
-      ? random(35, 50) 
-      : requirement.coreAppeal === 'low_competition'
-        ? random(40, 55)
-        : random(25, 40);
-    
-    const competitionLevel = category.competition === 'low' ? '低竞争' 
-      : category.competition === 'high' ? '高竞争' : '中等竞争';
-
-    directions.push({
-      id: `DIR-${i + 1}`,
-      name: base.name,
-      keywords: shuffle(category.keywords).slice(0, 3),
-      reason: getDirectionReason(requirement, category, profitRate),
-      marketPotential: random(70, 95),
-      competition: competitionLevel,
-      avgProfitRate: profitRate,
-      trending: Math.random() > 0.3,
-      icon: base.icon,
-    });
+async function callAISelection(action: string, params: any): Promise<any> {
+  const response = await fetch('/api/ai/product-selection', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action, ...params }),
   });
-
-  return directions.sort((a, b) => b.marketPotential - a.marketPotential);
-}
-
-function getDirectionReason(requirement: SelectionRequirement, category: CategoryConfig, profitRate: number): string {
-  const reasons = [
-    `近30天搜索量增长${random(30, 80)}%，市场需求旺盛`,
-    `该类目在${marketConfigs[requirement.market]?.name || '目标市场'}竞争度适中`,
-    `平均利润率${profitRate}%，符合${coreAppeals.find(c => c.value === requirement.coreAppeal)?.label || '利润优先'}策略`,
-    `同类商品少，适合差异化竞争`,
-    `目标价格区间${budgetRanges[requirement.budget]?.label || '中预算'}，转化率高`,
-  ];
-  return reasons[random(0, reasons.length - 1)];
-}
-
-// 生成爆款商品
-function generateHotProducts(directions: Direction[], requirement: SelectionRequirement): HotProduct[] {
-  const products: HotProduct[] = [];
-  const market = marketConfigs[requirement.market] || marketConfigs.id;
-  const budget = budgetRanges[requirement.budget] || budgetRanges.medium;
-
-  directions.forEach((direction, dIndex) => {
-    const productCount = random(2, 4);
-    for (let i = 0; i < productCount; i++) {
-      const basePrice = randomFloat(budget.min, Math.min(budget.max, market.avgPrice));
-      const costRatio = randomFloat(0.25, 0.45);
-      const costPrice = basePrice * costRatio;
-      
-      const competitionLevel = direction.competition === '低竞争' ? '蓝海' 
-        : direction.competition === '高竞争' ? '红海' : '中等';
-
-      products.push({
-        id: `P-${dIndex + 1}-${i + 1}`,
-        name: `${direction.name.replace(categoryConfigs[0]?.name || '', '').trim()} ${['标准版', 'Pro版', '便携版', '升级版', '豪华版'][i]}`,
-        coreSellingPoint: direction.keywords.join(' + '),
-        price: basePrice,
-        costPrice: costPrice,
-        monthlySales: random(500, 8000),
-        competition: competitionLevel,
-        recommendIndex: random(3, 5),
-        trend: random(20, 85),
-        rating: randomFloat(4.0, 4.9),
-        fulfillmentRate: random(85, 99),
-        returnRate: randomFloat(1, 8),
-      });
-    }
-  });
-
-  return products.sort((a, b) => b.trend - a.trend);
-}
-
-// 利润测算
-function calculateProfit(product: HotProduct, market: MarketConfig, adFeeRate = 10): ProfitCalc {
-  const logistics = market.code === 'us' ? 2.5 : market.code === 'uk' ? 2.0 : 1.5;
-  const platformFee = product.price * 0.02;
   
-  const grossProfit = product.price - product.costPrice - logistics - 
-    (product.price * market.commission / 100) - 
-    (product.price * market.vat / 100) - 
-    platformFee;
+  if (!response.ok) {
+    throw new Error(`API调用失败: ${response.status}`);
+  }
   
-  const grossMargin = (grossProfit / product.price) * 100;
-  
-  const adFee = product.price * (adFeeRate / 100);
-  const netProfit = grossProfit - adFee;
-  const netMargin = (netProfit / product.price) * 100;
-
-  return {
-    cost: product.costPrice,
-    logistics,
-    commission: market.commission,
-    vat: market.vat,
-    adFee,
-    platformFee,
-    sellingPrice: product.price,
-    grossProfit,
-    grossMargin,
-    netProfit,
-    netMargin,
-  };
-}
-
-// 合规检查
-function checkCompliance(product: HotProduct, requirement: SelectionRequirement): ComplianceResult {
-  const issues: string[] = [];
-  const warnings: string[] = [];
-  const requiredCerts: string[] = [];
-
-  // 检查禁售
-  const nameLower = product.name.toLowerCase();
-  for (const banned of bannedKeywords) {
-    if (nameLower.includes(banned.toLowerCase())) {
-      issues.push(`包含禁售关键词: ${banned}`);
-    }
-  }
-
-  // 检查认证要求
-  const category = requirement.category || '家居用品';
-  for (const [key, certs] of Object.entries(certRequirements)) {
-    if (category.includes(key)) {
-      requiredCerts.push(...certs);
-      warnings.push(`该类目建议准备: ${certs.join(', ')}`);
-    }
-  }
-
-  // 检查价格限制
-  const market = marketConfigs[requirement.market];
-  if (market && product.price > market.maxPrice / 100) {
-    issues.push(`价格超过${market.name}站点限额 $${market.maxPrice / 100}`);
-  }
-
-  let status: '合规' | '需认证' | '禁售' = '合规';
-  if (issues.length > 0) {
-    status = '禁售';
-  } else if (requiredCerts.length > 0) {
-    status = '需认证';
-  }
-
-  const riskLevel: '低' | '中' | '高' = 
-    status === '禁售' ? '高' : 
-    requiredCerts.length > 0 ? '中' : '低';
-
-  return { status, issues, warnings, requiredCerts, riskLevel };
-}
-
-// 风险评估
-function assessRisks(product: HotProduct, requirement: SelectionRequirement): RiskAssessment[] {
-  const risks: RiskAssessment[] = [];
-
-  // 退货风险
-  if (product.returnRate > 5) {
-    risks.push({
-      type: '高退货率',
-      level: '高',
-      probability: product.returnRate,
-      impact: '影响店铺评分，增加运营成本',
-      suggestion: '优化产品包装，确保质量，提供详细产品说明',
-    });
-  } else if (product.returnRate > 3) {
-    risks.push({
-      type: '中等退货率',
-      level: '中',
-      probability: product.returnRate,
-      impact: '需关注质量控制',
-      suggestion: '加强发货前质检，提前与供应商沟通质量标准',
-    });
-  }
-
-  // 季节风险
-  risks.push({
-    type: '季节性风险',
-    level: '低',
-    probability: random(10, 30),
-    impact: '淡旺季销量差异大',
-    suggestion: '提前备货，关注节日营销节点',
-  });
-
-  // 竞争风险
-  if (product.competition === '红海') {
-    risks.push({
-      type: '高竞争风险',
-      level: '高',
-      probability: 70,
-      impact: '价格战，利润压缩',
-      suggestion: '寻找差异化卖点，打造产品特色',
-    });
-  }
-
-  // 物流风险
-  const market = marketConfigs[requirement.market];
-  if (market && ['id', 'th', 'vn', 'my'].includes(market.code)) {
-    risks.push({
-      type: '物流风险',
-      level: '中',
-      probability: 40,
-      impact: '清关延误，配送时间长',
-      suggestion: '选择可靠物流商，关注海关政策变化',
-    });
-  }
-
-  // 汇率风险
-  if (market && market.currency !== 'CNY') {
-    risks.push({
-      type: '汇率风险',
-      level: '低',
-      probability: 30,
-      impact: '汇率波动影响利润',
-      suggestion: '预留利润缓冲，关注汇率走势',
-    });
-  }
-
-  return risks;
-}
-
-// 生成供应商
-function generateSuppliers(product: HotProduct, requirement: SelectionRequirement): Supplier[] {
-  const locations = ['浙江义乌', '广东广州', '广东深圳', '广东佛山', '福建泉州', '江苏苏州'];
-  const suppliers: Supplier[] = [];
-
-  const count = random(4, 6);
-  for (let i = 0; i < count; i++) {
-    const priceVariation = randomFloat(0.9, 1.1);
-    const supplierPrice = product.costPrice * priceVariation;
-    
-    suppliers.push({
-      id: `S-${product.id}-${i + 1}`,
-      name: `${locations[i % locations.length]} ${['优品', '宏达', '金源', '雅洁', '荣升', '瑞鑫'][i]} ${['商贸', '实业', '制品', '工贸', '商行'][random(0, 4)]}`,
-      location: locations[i % locations.length],
-      rating: randomFloat(4.3, 4.9),
-      responseTime: ['<30s', '<1min', '<2min', '<5min'][random(0, 3)],
-      moq: [30, 50, 100, 200][random(0, 3)],
-      price: supplierPrice,
-      priceRange: `¥${(supplierPrice * 0.9).toFixed(1)}-${(supplierPrice * 1.2).toFixed(1)}`,
-      deliveryDays: random(2, 7),
-      isDropshipping: Math.random() > 0.4,
-      certifications: shuffle(['ISO9001', 'CE', 'FCC', 'ROHS', 'SGS', 'FDA']).slice(0, random(1, 3)),
-      productUrl: `https://detail.1688.com/offer/${random(620000000000, 630000000000)}.html`,
-      monthlyOrders: random(500, 5000),
-      startYear: random(2015, 2022),
-    });
-  }
-
-  return suppliers.sort((a, b) => b.rating - a.rating);
-}
-
-// 生成竞品
-function generateCompetitors(product: HotProduct, requirement: SelectionRequirement): Competitor[] {
-  const competitors: Competitor[] = [];
-  const count = random(3, 5);
-
-  for (let i = 0; i < count; i++) {
-    const priceDiff = randomFloat(0.7, 1.3);
-    competitors.push({
-      id: `C-${product.id}-${i + 1}`,
-      name: `${product.name} - ${['品牌款', '同款', '升级款', '平价款', '精装款'][i]}`,
-      seller: `${['Global', 'Fashion', 'Home', 'Smart', 'Best'][i]} Store`,
-      price: product.price * priceDiff,
-      sales: random(1000, 15000),
-      rating: randomFloat(4.0, 4.8),
-      reviews: random(50, 500),
-      mainSellingPoint: ['性价比高', '品质优良', '设计独特', '服务好', '发货快'][i],
-      userPainPoints: shuffle(['价格偏高', '质量一般', '包装简陋', '发货慢', '客服响应慢']).slice(0, 2),
-      advantages: shuffle(['价格优势', '评价高', '销量大', '功能全', '外观美']).slice(0, 2),
-    });
-  }
-
-  return competitors.sort((a, b) => b.sales - a.sales);
-}
-
-// 综合可行性分析
-function analyzeFeasibility(product: HotProduct, requirement: SelectionRequirement): FeasibilityResult {
-  const market = marketConfigs[requirement.market] || marketConfigs.id;
-  const profitCalc = calculateProfit(product, market);
-  const compliance = checkCompliance(product, requirement);
-  const risks = assessRisks(product, requirement);
-  const supplyMatch = random(70, 95);
-
-  // 计算综合评分
-  let overallScore = 50;
-  overallScore += profitCalc.grossMargin * 0.5;
-  overallScore += (product.trend / 100) * 20;
-  overallScore += (product.rating / 5) * 15;
-  overallScore += supplyMatch * 0.1;
-  if (compliance.riskLevel === '低') overallScore += 10;
-  if (compliance.riskLevel === '中') overallScore += 5;
-  if (risks.some(r => r.level === '高')) overallScore -= 15;
-  overallScore = Math.min(100, Math.max(0, overallScore));
-
-  let conclusion: '强烈推荐' | '谨慎推荐' | '不推荐' = '谨慎推荐';
-  if (overallScore >= 75 && compliance.status !== '禁售') conclusion = '强烈推荐';
-  if (overallScore < 50 || compliance.status === '禁售') conclusion = '不推荐';
-
-  return {
-    product,
-    profitCalc,
-    compliance,
-    risks,
-    supplyMatch,
-    overallScore,
-    conclusion,
-  };
+  return response.json();
 }
 
 // ==================== 组件 ====================
@@ -627,6 +253,7 @@ export default function ProductSelectionPage() {
   const [user, setUser] = useState<any>(null);
   const [activeTab, setActiveTab] = useState('requirement');
   const [isLoading, setIsLoading] = useState(false);
+  const [aiThinking, setAiThinking] = useState('');
   
   // 选品需求
   const [requirement, setRequirement] = useState<SelectionRequirement>({
@@ -643,7 +270,6 @@ export default function ProductSelectionPage() {
   const [hotProducts, setHotProducts] = useState<HotProduct[]>([]);
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
   const [feasibilityResults, setFeasibilityResults] = useState<FeasibilityResult[]>([]);
-  const [competitors, setCompetitors] = useState<Competitor[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [report, setReport] = useState<SelectionReport | null>(null);
 
@@ -675,23 +301,38 @@ export default function ProductSelectionPage() {
 
   const currentStepIndex = steps.findIndex(s => s.id === activeTab);
 
-  // 处理需求提交
-  const handleRequirementSubmit = () => {
+  // 处理需求提交 - 调用AI分析
+  const handleRequirementSubmit = async () => {
     if (!requirement.market) {
       toast.error('请选择目标市场');
       return;
     }
     setIsLoading(true);
+    setAiThinking('AI正在分析市场趋势和选品方向...');
     
-    // 模拟AI分析
-    setTimeout(() => {
-      const newDirections = generateDirections(requirement);
-      setDirections(newDirections);
-      setSelectedDirections(newDirections.slice(0, 2).map(d => d.id));
-      setActiveTab('direction');
+    try {
+      const result = await callAISelection('directions', {
+        market: requirement.market,
+        category: requirement.category,
+        budget: requirement.budget,
+        coreAppeal: requirement.coreAppeal,
+      });
+
+      if (result.success && result.directions && result.directions.length > 0) {
+        setDirections(result.directions);
+        setSelectedDirections(result.directions.slice(0, 2).map((d: any) => d.id));
+        setActiveTab('direction');
+        toast.success(`AI推荐了 ${result.directions.length} 个选品方向`);
+      } else {
+        toast.error('AI分析失败，请重试');
+      }
+    } catch (error: any) {
+      console.error('AI选品方向分析失败:', error);
+      toast.error(error.message || 'AI分析失败，请重试');
+    } finally {
       setIsLoading(false);
-      toast.success('AI推荐了 ' + newDirections.length + ' 个选品方向');
-    }, 1500);
+      setAiThinking('');
+    }
   };
 
   // 处理方向选择
@@ -701,29 +342,53 @@ export default function ProductSelectionPage() {
     );
   };
 
-  // 生成爆款
-  const handleGenerateProducts = () => {
+  // 生成爆款 - 调用AI分析
+  const handleGenerateProducts = async () => {
     if (selectedDirections.length === 0) {
       toast.error('请至少选择一个选品方向');
       return;
     }
     setIsLoading(true);
-
-    setTimeout(() => {
+    setAiThinking('AI正在挖掘爆款商品...');
+    
+    try {
       const selectedDir = directions.filter(d => selectedDirections.includes(d.id));
-      const products = generateHotProducts(selectedDir, requirement);
-      setHotProducts(products);
-      setSelectedProducts(products.slice(0, 3).map(p => p.id));
-      setActiveTab('products');
+      const result = await callAISelection('products', {
+        directions: selectedDir,
+        market: requirement.market,
+        category: requirement.category,
+        budget: requirement.budget,
+      });
+
+      if (result.success && result.products && result.products.length > 0) {
+        const products = result.products.map((p: any, i: number) => ({
+          ...p,
+          id: p.id || `P-${i + 1}`,
+          competition: (p.competition || '中等') as '蓝海' | '红海' | '中等',
+          recommendIndex: p.recommendIndex || 4,
+          trend: p.trend || 50,
+          monthlySales: p.monthlySales || 3000,
+        }));
+        setHotProducts(products);
+        setSelectedProducts(products.slice(0, 3).map(p => p.id));
+        setActiveTab('products');
+        toast.success('发现 ' + products.length + ' 个潜在爆款商品');
+      } else {
+        toast.error('AI商品分析失败，请重试');
+      }
+    } catch (error: any) {
+      console.error('AI爆款挖掘失败:', error);
+      toast.error(error.message || 'AI分析失败，请重试');
+    } finally {
       setIsLoading(false);
-      toast.success('发现 ' + products.length + ' 个潜在爆款商品');
-    }, 2000);
+      setAiThinking('');
+    }
   };
 
   // 切换商品选择
   const handleProductToggle = (id: string) => {
     setSelectedProducts(prev =>
-      prev.includes(id) ? prev.filter(p => p !== id) : [...prev, id]
+      prev.includes(id) ? prev.filter(p => p !== id) : [...prev, p => p]
     );
   };
 
@@ -736,101 +401,121 @@ export default function ProductSelectionPage() {
     }
   };
 
-  // 开始可行性分析
-  const handleStartAnalysis = () => {
+  // 开始可行性分析 - 调用AI分析
+  const handleStartAnalysis = async () => {
     if (selectedProducts.length === 0) {
       toast.error('请至少选择一个商品进行分析');
       return;
     }
     setIsLoading(true);
-
-    setTimeout(() => {
+    setAiThinking('AI正在进行可行性分析（利润测算、合规检查、风险评估）...');
+    
+    try {
       const selected = hotProducts.filter(p => selectedProducts.includes(p.id));
-      
-      // 生成可行性分析结果
-      const results = selected.map(p => analyzeFeasibility(p, requirement));
-      
-      // 过滤禁售商品
-      const validResults = results.filter(r => r.compliance.status !== '禁售');
-      const bannedCount = results.length - validResults.length;
-      
-      setFeasibilityResults(validResults);
-      
-      // 为第一个商品生成竞品和供应商
-      if (validResults.length > 0) {
-        setCompetitors(generateCompetitors(validResults[0].product, requirement));
-        setSuppliers(generateSuppliers(validResults[0].product, requirement));
-      }
+      const result = await callAISelection('feasibility', {
+        products: selected,
+        market: requirement.market,
+      });
 
-      setActiveTab('feasibility');
-      setIsLoading(false);
-      
-      if (bannedCount > 0) {
-        toast.warning(`已自动过滤 ${bannedCount} 个禁售商品`);
+      if (result.success && result.feasibility && result.feasibility.length > 0) {
+        // 将AI分析结果与商品信息关联
+        const results = result.feasibility.map((f: any, i: number) => ({
+          ...f,
+          productId: selected[i]?.id || f.productId,
+          productName: selected[i]?.name || f.productName,
+        }));
+        
+        // 过滤禁售商品
+        const validResults = results.filter((r: any) => r.compliance?.status !== '禁售');
+        const bannedCount = results.length - validResults.length;
+        
+        setFeasibilityResults(validResults);
+        
+        // 为第一个商品获取供应商推荐
+        if (validResults.length > 0) {
+          const firstProduct = hotProducts.find(p => p.id === validResults[0].productId);
+          try {
+            const supplierResult = await callAISelection('suppliers', { product: firstProduct });
+            if (supplierResult.success && supplierResult.suppliers) {
+              setSuppliers(supplierResult.suppliers);
+            }
+          } catch (e) {
+            console.error('供应商推荐失败:', e);
+          }
+        }
+
+        setActiveTab('feasibility');
+        
+        if (bannedCount > 0) {
+          toast.warning(`已自动过滤 ${bannedCount} 个禁售商品`);
+        }
+        toast.success('可行性分析完成');
+      } else {
+        toast.error('AI可行性分析失败，请重试');
       }
-      toast.success('可行性分析完成');
-    }, 2500);
+    } catch (error: any) {
+      console.error('AI可行性分析失败:', error);
+      toast.error(error.message || 'AI分析失败，请重试');
+    } finally {
+      setIsLoading(false);
+      setAiThinking('');
+    }
   };
 
-  // 生成选品报告
-  const handleGenerateReport = () => {
+  // 生成选品报告 - 调用AI生成
+  const handleGenerateReport = async () => {
     if (feasibilityResults.length === 0) {
       toast.error('请先完成可行性分析');
       return;
     }
     setIsLoading(true);
-
-    setTimeout(() => {
+    setAiThinking('AI正在生成选品报告...');
+    
+    try {
       const selected = hotProducts.filter(p => selectedProducts.includes(p.id));
-      const validResults = feasibilityResults.filter(r => r.compliance.status !== '禁售');
-      
+      const result = await callAISelection('report', {
+        requirements: requirement,
+        directions: directions.filter(d => selectedDirections.includes(d.id)),
+        products: selected,
+        feasibility: feasibilityResults,
+      });
+
       const newReport: SelectionReport = {
-        id: generateId(),
+        id: Math.random().toString(36).substr(2, 9),
         createdAt: new Date().toISOString(),
         requirements: requirement,
         directions: directions.filter(d => selectedDirections.includes(d.id)),
         products: selected,
-        feasibility: validResults,
-        competitors,
+        feasibility: feasibilityResults,
         suppliers,
-        summary: {
+        summary: result.report?.summary || {
           totalProducts: hotProducts.length,
-          recommendedProducts: validResults.filter(r => r.conclusion === '强烈推荐').length,
-          avgProfitRate: Math.round(validResults.reduce((sum, r) => sum + r.profitCalc.grossMargin, 0) / validResults.length),
+          recommendedProducts: feasibilityResults.filter(r => r.conclusion === '强烈推荐').length,
+          avgProfitRate: Math.round(feasibilityResults.reduce((sum, r) => sum + (r.profitCalc?.grossMargin || 0), 0) / feasibilityResults.length),
           topCategory: requirement.category,
-          riskLevel: validResults.some(r => r.risks.some(risk => risk.level === '高')) ? '高' : 
-                     validResults.some(r => r.risks.some(risk => risk.level === '中')) ? '中' : '低',
+          riskLevel: feasibilityResults.some(r => r.risks?.some((risk: any) => risk.level === '高')) ? '高' : 
+                     feasibilityResults.some(r => r.risks?.some((risk: any) => risk.level === '中')) ? '中' : '低',
         },
-        recommendations: generateRecommendations(validResults, requirement),
+        recommendations: result.report?.recommendations || [
+          '优先测试高利润、低竞争商品',
+          '定价参考竞品价格，保持利润空间',
+          '视频创意建议：场景化使用演示',
+          '首批备货控制数量，降低风险',
+        ],
+        fullAnalysis: result.fullAnalysis,
       };
 
       setReport(newReport);
       setActiveTab('report');
+      toast.success('AI选品报告已生成');
+    } catch (error: any) {
+      console.error('AI报告生成失败:', error);
+      toast.error(error.message || 'AI报告生成失败，请重试');
+    } finally {
       setIsLoading(false);
-      toast.success('选品报告已生成');
-    }, 2000);
+      setAiThinking('');
+    }
   };
-
-  // 生成建议
-  function generateRecommendations(results: FeasibilityResult[], req: SelectionRequirement): string[] {
-    const recs: string[] = [];
-    
-    const market = marketConfigs[req.market] || marketConfigs.id;
-    const avgProfit = results.reduce((sum, r) => sum + r.profitCalc.grossMargin, 0) / results.length;
-
-    if (avgProfit > 40) {
-      recs.push('利润空间优秀，建议优先测试');
-    }
-    if (results.some(r => r.compliance.requiredCerts.length > 0)) {
-      recs.push('部分商品需要认证，建议提前准备');
-    }
-    recs.push(`定价参考${market.name}市场同类商品，建议在 $${market.avgPrice} 区间`);
-    recs.push('视频创意建议：场景化使用演示 + 痛点解决方案');
-    recs.push('首批备货建议：每个SKU 50-100件，控制试错成本');
-    recs.push('关注物流时效，建议选择7天内发货的供应商');
-
-    return recs;
-  }
 
   // 导出报告
   const handleExportReport = () => {
@@ -840,6 +525,9 @@ export default function ProductSelectionPage() {
     const content = `# 电商选品报告
 > 生成时间: ${new Date(report.createdAt).toLocaleString('zh-CN')}
 > 目标市场: ${market.name} (${market.flag})
+> AI分析: ✅ 已使用AI大模型进行智能分析
+
+---
 
 ## 一、选品需求
 
@@ -850,82 +538,79 @@ export default function ProductSelectionPage() {
 | 预算范围 | ${budgetRanges[requirement.budget]?.label || requirement.budget} |
 | 核心诉求 | ${coreAppeals.find(c => c.value === requirement.coreAppeal)?.label || requirement.coreAppeal} |
 
-## 二、选品方向
+---
+
+## 二、选品方向分析
 
 ${report.directions.map(d => `
-### ${d.icon} ${d.name}
-- **推荐理由**: ${d.reason}
-- **市场潜力**: ${d.marketPotential}%
-- **竞争度**: ${d.competition}
-- **预估利润率**: ${d.avgProfitRate}%
+### ${d.icon || '📦'} ${d.name}
+- **推荐理由**: ${d.reason || '市场分析推荐'}
+- **市场潜力**: ${d.marketPotential || 75}%
+- **竞争度**: ${d.competition || '中等'}
+- **预估利润率**: ${d.avgProfitRate || 35}%
+${d.trending ? '- 🔥 热门趋势' : ''}
 `).join('\n')}
+
+---
 
 ## 三、候选商品
 
 | 商品名称 | 售价 | 成本 | 月销量 | 竞争度 | 趋势 | 推荐指数 |
 |---------|------|------|--------|--------|------|---------|
-${report.products.map(p => `| ${p.name} | $${p.price} | $${p.costPrice} | ${p.monthlySales}+ | ${p.competition} | +${p.trend}% | ${'⭐'.repeat(p.recommendIndex)} |`).join('\n')}
+${report.products.map(p => `| ${p.name} | $${p.price?.toFixed(2) || '-'} | $${p.costPrice?.toFixed(2) || '-'} | ${p.monthlySales}+ | ${p.competition} | +${p.trend}% | ${'⭐'.repeat(p.recommendIndex || 3)} |`).join('\n')}
+
+---
 
 ## 四、可行性分析
 
 ${report.feasibility.map((f, i) => `
-### ${i + 1}. ${f.product.name}
+### ${i + 1}. ${f.productName || hotProducts.find(p => p.id === f.productId)?.name || '商品'}
 
-**综合评分**: ${f.overallScore.toFixed(0)}/100 | **结论**: ${f.conclusion}
+**综合评分**: ${f.overallScore || 70}/100 | **结论**: ${f.conclusion || '谨慎推荐'}
 
 #### 利润测算
 | 项目 | 金额 |
 |------|------|
-| 售价 | $${f.profitCalc.sellingPrice.toFixed(2)} |
-| 成本 | -$${f.profitCalc.cost.toFixed(2)} |
-| 物流 | -$${f.profitCalc.logistics.toFixed(2)} |
-| 佣金(${f.profitCalc.commission}%) | -$${(f.profitCalc.sellingPrice * f.profitCalc.commission / 100).toFixed(2)} |
-| VAT(${f.profitCalc.vat}%) | -$${(f.profitCalc.sellingPrice * f.profitCalc.vat / 100).toFixed(2)} |
-| **毛利** | **$${f.profitCalc.grossProfit.toFixed(2)} (${f.profitCalc.grossMargin.toFixed(1)}%)** |
-| 广告费 | -$${f.profitCalc.adFee.toFixed(2)} |
-| **净利润** | **$${f.profitCalc.netProfit.toFixed(2)} (${f.profitCalc.netMargin.toFixed(1)}%)** |
+| 售价 | $${f.profitCalc?.sellingPrice?.toFixed(2) || '-'} |
+| 成本 | -$${f.profitCalc?.cost?.toFixed(2) || '-'} |
+| 物流 | -$${f.profitCalc?.logistics?.toFixed(2) || '-'} |
+| 佣金(${f.profitCalc?.commission || 10}%) | -$${(f.profitCalc?.sellingPrice * (f.profitCalc?.commission || 10) / 100).toFixed(2)} |
+| VAT(${f.profitCalc?.vat || 0}%) | -$${(f.profitCalc?.sellingPrice * (f.profitCalc?.vat || 0) / 100).toFixed(2)} |
+| **毛利** | **$${f.profitCalc?.grossProfit?.toFixed(2) || '-'} (${f.profitCalc?.grossMargin?.toFixed(1) || '-'}%)** |
+| 广告费 | -$${f.profitCalc?.adFee?.toFixed(2) || '-'} |
+| **净利润** | **$${f.profitCalc?.netProfit?.toFixed(2) || '-'} (${f.profitCalc?.netMargin?.toFixed(1) || '-'}%)** |
 
 #### 合规状态
-- **状态**: ${f.compliance.status}
-${f.compliance.warnings.map(w => `- ⚠️ ${w}`).join('\n')}
-${f.compliance.issues.map(i => `- ❌ ${i}`).join('\n')}
+- **状态**: ${f.compliance?.status || '合规'}
+${f.compliance?.warnings?.map((w: string) => `- ⚠️ ${w}`).join('\n') || ''}
+${f.compliance?.issues?.map((i: string) => `- ❌ ${i}`).join('\n') || ''}
 
 #### 风险评估
-${f.risks.map(r => `- ${r.level === '高' ? '🔴' : r.level === '中' ? '🟡' : '🟢'} ${r.type}: ${r.suggestion}`).join('\n')}
+${f.risks?.map((r: any) => `- ${r.level === '高' ? '🔴' : r.level === '中' ? '🟡' : '🟢'} ${r.type}: ${r.suggestion || ''}`).join('\n') || '暂无风险数据'}
 `).join('\n')}
 
-## 五、主要竞品
+---
 
-${competitors.map(c => `
-### ${c.name}
-- 卖家: ${c.seller}
-- 价格: $${c.price.toFixed(2)} | 销量: ${c.sales}+ | 评分: ${c.rating}
-- 卖点: ${c.mainSellingPoint}
-- 用户痛点: ${c.userPainPoints.join(', ')}
-`).join('\n')}
-
-## 六、推荐供应商
-
-${suppliers.slice(0, 3).map(s => `
-### ${s.name}
-- 评分: ${s.rating} ⭐ | 起订量: ${s.moq}件 | 价格: ${s.priceRange}
-- 发货: ${s.deliveryDays}天 | ${s.isDropshipping ? '✅支持一件代发' : '❌不支持一件代发'}
-- 认证: ${s.certifications.join(', ') || '无'}
-`).join('\n')}
-
-## 七、综合建议
+## 五、综合建议
 
 ${report.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
 
 ---
-*本报告由龙掌柜智能运营系统生成*
+
+${report.fullAnalysis ? `## 六、AI深度分析
+
+${report.fullAnalysis}
+
+---` : ''}
+
+*本报告由龙掌柜AI智能选品系统生成*` 
 `;
 
     const blob = new Blob([content], { type: 'text/markdown' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `选品报告_${market.name}_${new Date().toISOString().split('T')[0]}.md`;
+    a.download = `AI选品报告_${market.name}_${new Date().toISOString().split('T')[0]}.md`;
     a.click();
     URL.revokeObjectURL(url);
     toast.success('报告已导出');
@@ -941,16 +626,42 @@ ${report.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
       return a.moq - b.moq;
     });
 
+  // 获取可行性对应的商品信息
+  const getProductById = (id: string) => {
+    return hotProducts.find(p => p.id === id) || feasibilityResults.find(f => f.productId === id);
+  };
+
   return (
     <MainLayout>
       <div className="space-y-6">
         {/* 顶部标题 */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-[#1D2129]">选品智能体</h1>
-            <p className="text-[#86909C] mt-1">AI驱动的智能选品分析，发现爆款商品</p>
+            <h1 className="text-2xl font-bold text-[#1D2129]">AI智能选品</h1>
+            <p className="text-[#86909C] mt-1">基于AI大模型的智能选品分析，发现爆款商品</p>
           </div>
+          <Badge className="bg-[#E8F3FF] text-[#165DFF] gap-1">
+            <Brain className="w-3 h-3" />
+            AI驱动
+          </Badge>
         </div>
+
+        {/* AI思考状态 */}
+        {isLoading && aiThinking && (
+          <Card className="card-minimal border-[#165DFF] bg-gradient-to-r from-[#F4F7FF] to-white">
+            <div className="p-4 flex items-center gap-4">
+              <div className="relative">
+                <Brain className="w-8 h-8 text-[#165DFF] animate-pulse" />
+              </div>
+              <div className="flex-1">
+                <p className="text-[#165DFF] font-medium">{aiThinking}</p>
+                <div className="mt-2 h-1 bg-[#E5E6EB] rounded-full overflow-hidden">
+                  <div className="h-full bg-[#165DFF] rounded-full animate-pulse" style={{ width: '60%' }} />
+                </div>
+              </div>
+            </div>
+          </Card>
+        )}
 
         {/* 进度步骤 */}
         <div className="flex items-center justify-between bg-white rounded-lg p-4 border border-[#E5E6EB]">
@@ -997,7 +708,7 @@ ${report.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
                 </div>
                 <div>
                   <h2 className="text-lg font-semibold text-[#1D2129]">选品需求分析</h2>
-                  <p className="text-sm text-[#86909C]">告诉我们您的选品偏好，AI将为您推荐最佳商品</p>
+                  <p className="text-sm text-[#86909C]">告诉AI您的选品偏好，AI将为您智能推荐最佳商品</p>
                 </div>
               </div>
 
@@ -1143,7 +854,7 @@ ${report.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
                     </div>
                     <div>
                       <h2 className="text-lg font-semibold text-[#1D2129]">AI推荐选品方向</h2>
-                      <p className="text-sm text-[#86909C]">基于您的需求，AI推荐了以下选品方向</p>
+                      <p className="text-sm text-[#86909C]">基于您的需求，AI智能推荐了以下选品方向</p>
                     </div>
                   </div>
                   <div className="text-sm text-[#86909C]">
@@ -1166,7 +877,7 @@ ${report.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
                       >
                         <div className="flex items-start justify-between mb-3">
                           <div className="flex items-center gap-2">
-                            <span className="text-2xl">{direction.icon}</span>
+                            <span className="text-2xl">{direction.icon || '📦'}</span>
                             <div>
                               <h3 className="font-medium text-[#1D2129]">{direction.name}</h3>
                               <div className="flex items-center gap-2 mt-1">
@@ -1192,15 +903,15 @@ ${report.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
                             <div className="w-20 h-1.5 bg-[#F2F3F5] rounded-full overflow-hidden">
                               <div 
                                 className="h-full bg-[#165DFF] rounded-full"
-                                style={{ width: `${direction.marketPotential}%` }}
+                                style={{ width: `${direction.marketPotential || 75}%` }}
                               />
                             </div>
-                            <span className="text-[#165DFF] font-medium">{direction.marketPotential}%</span>
+                            <span className="text-[#165DFF] font-medium">{direction.marketPotential || 75}%</span>
                           </div>
                         </div>
                         <div className="flex items-center justify-between text-xs mt-2">
                           <span className="text-[#86909C]">预估利润率</span>
-                          <span className="text-[#00B42A] font-medium">{direction.avgProfitRate}%</span>
+                          <span className="text-[#00B42A] font-medium">{direction.avgProfitRate || 35}%</span>
                         </div>
                       </div>
                     );
@@ -1222,12 +933,12 @@ ${report.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
                 {isLoading ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    挖掘中...
+                    AI挖掘中...
                   </>
                 ) : (
                   <>
                     <TrendingUp className="w-4 h-4 mr-2" />
-                    挖掘爆款商品
+                    AI挖掘爆款商品
                   </>
                 )}
               </Button>
@@ -1247,7 +958,7 @@ ${report.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
                     </div>
                     <div>
                       <h2 className="text-lg font-semibold text-[#1D2129]">爆款候选池</h2>
-                      <p className="text-sm text-[#86909C]">发现 {hotProducts.length} 个潜在爆款商品，请选择要分析的 商品</p>
+                      <p className="text-sm text-[#86909C]">AI发现 {hotProducts.length} 个潜在爆款商品，请选择要分析的商品</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-4">
@@ -1298,8 +1009,8 @@ ${report.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
                               </div>
                             </td>
                             <td className="py-3 px-4">
-                              <span className="text-[#1D2129] font-medium">${product.price.toFixed(2)}</span>
-                              <p className="text-xs text-[#86909C]">成本: ${product.costPrice.toFixed(2)}</p>
+                              <span className="text-[#1D2129] font-medium">${product.price?.toFixed(2) || '-'}</span>
+                              <p className="text-xs text-[#86909C]">成本: ${product.costPrice?.toFixed(2) || '-'}</p>
                             </td>
                             <td className="py-3 px-4">
                               <span className="text-[#1D2129]">{product.monthlySales}+</span>
@@ -1316,7 +1027,7 @@ ${report.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
                             <td className="py-3 px-4">
                               <div className="flex items-center gap-1 text-[#00B42A]">
                                 <TrendingUp className="w-3 h-3" />
-                                <span>{product.trend}%</span>
+                                <span>+{product.trend}%</span>
                               </div>
                             </td>
                             <td className="py-3 px-4">
@@ -1324,7 +1035,7 @@ ${report.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
                                 {Array.from({ length: 5 }).map((_, i) => (
                                   <Star 
                                     key={i} 
-                                    className={`w-4 h-4 ${i < product.recommendIndex ? 'text-[#FF7D00] fill-[#FF7D00]' : 'text-[#E5E6EB]'}`} 
+                                    className={`w-4 h-4 ${i < (product.recommendIndex || 3) ? 'text-[#FF7D00] fill-[#FF7D00]' : 'text-[#E5E6EB]'}`} 
                                   />
                                 ))}
                               </div>
@@ -1351,12 +1062,12 @@ ${report.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
                 {isLoading ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    分析中...
+                    AI分析中...
                   </>
                 ) : (
                   <>
                     <Calculator className="w-4 h-4 mr-2" />
-                    开始可行性分析 ({selectedProducts.length}个)
+                    开始AI可行性分析 ({selectedProducts.length}个)
                   </>
                 )}
               </Button>
@@ -1379,71 +1090,74 @@ ${report.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
               <TabsContent value="profit" className="mt-6">
                 <Card className="card-minimal">
                   <div className="p-6">
-                    <h3 className="text-lg font-semibold text-[#1D2129] mb-6">利润测算结果</h3>
+                    <h3 className="text-lg font-semibold text-[#1D2129] mb-6">AI利润测算结果</h3>
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                      {feasibilityResults.map((result, index) => (
-                        <div key={result.product.id} className="p-4 border border-[#E5E6EB] rounded-lg">
-                          <div className="flex items-center justify-between mb-4">
-                            <div className="flex items-center gap-3">
-                              <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                                result.conclusion === '强烈推荐' ? 'bg-[#E8FFEA]' :
-                                result.conclusion === '谨慎推荐' ? 'bg-[#FFF7E6]' : 'bg-[#FFF2F0]'
-                              }`}>
-                                {result.conclusion === '强烈推荐' ? <CheckCircle className="w-5 h-5 text-[#00B42A]" /> :
-                                 result.conclusion === '谨慎推荐' ? <AlertCircle className="w-5 h-5 text-[#FF7D00]" /> :
-                                 <XCircle className="w-5 h-5 text-[#F53F3F]" />}
+                      {feasibilityResults.map((result) => {
+                        const product = hotProducts.find(p => p.id === result.productId);
+                        return (
+                          <div key={result.productId} className="p-4 border border-[#E5E6EB] rounded-lg">
+                            <div className="flex items-center justify-between mb-4">
+                              <div className="flex items-center gap-3">
+                                <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                                  result.conclusion === '强烈推荐' ? 'bg-[#E8FFEA]' :
+                                  result.conclusion === '谨慎推荐' ? 'bg-[#FFF7E6]' : 'bg-[#FFF2F0]'
+                                }`}>
+                                  {result.conclusion === '强烈推荐' ? <CheckCircle className="w-5 h-5 text-[#00B42A]" /> :
+                                   result.conclusion === '谨慎推荐' ? <AlertCircle className="w-5 h-5 text-[#FF7D00]" /> :
+                                   <XCircle className="w-5 h-5 text-[#F53F3F]" />}
+                                </div>
+                                <div>
+                                  <h4 className="font-medium text-[#1D2129]">{result.productName || product?.name || '商品'}</h4>
+                                  <Badge className={
+                                    result.conclusion === '强烈推荐' ? 'bg-[#E8FFEA] text-[#00B42A]' :
+                                    result.conclusion === '谨慎推荐' ? 'bg-[#FFF7E6] text-[#FF7D00]' :
+                                    'bg-[#FFF2F0] text-[#F53F3F]'
+                                  }>
+                                    {result.conclusion}
+                                  </Badge>
+                                </div>
                               </div>
-                              <div>
-                                <h4 className="font-medium text-[#1D2129]">{result.product.name}</h4>
-                                <Badge className={
-                                  result.conclusion === '强烈推荐' ? 'bg-[#E8FFEA] text-[#00B42A]' :
-                                  result.conclusion === '谨慎推荐' ? 'bg-[#FFF7E6] text-[#FF7D00]' :
-                                  'bg-[#FFF2F0] text-[#F53F3F]'
-                                }>
-                                  {result.conclusion}
-                                </Badge>
+                              <div className="text-right">
+                                <p className="text-2xl font-bold text-[#00B42A]">{result.overallScore || 70}</p>
+                                <p className="text-xs text-[#86909C]">综合评分</p>
                               </div>
                             </div>
-                            <div className="text-right">
-                              <p className="text-2xl font-bold text-[#00B42A]">{result.overallScore.toFixed(0)}</p>
-                              <p className="text-xs text-[#86909C]">综合评分</p>
-                            </div>
-                          </div>
 
-                          <div className="space-y-2">
-                            <div className="flex items-center justify-between py-2 border-b border-[#F2F3F5]">
-                              <span className="text-[#86909C]">售价</span>
-                              <span className="text-[#1D2129] font-medium">${result.profitCalc.sellingPrice.toFixed(2)}</span>
-                            </div>
-                            <div className="flex items-center justify-between py-2 border-b border-[#F2F3F5]">
-                              <span className="text-[#86909C]">成本</span>
-                              <span className="text-[#F53F3F]">-${result.profitCalc.cost.toFixed(2)}</span>
-                            </div>
-                            <div className="flex items-center justify-between py-2 border-b border-[#F2F3F5]">
-                              <span className="text-[#86909C]">物流费</span>
-                              <span className="text-[#F53F3F]">-${result.profitCalc.logistics.toFixed(2)}</span>
-                            </div>
-                            <div className="flex items-center justify-between py-2 border-b border-[#F2F3F5]">
-                              <span className="text-[#86909C]">平台佣金({result.profitCalc.commission}%)</span>
-                              <span className="text-[#F53F3F]">-${(result.profitCalc.sellingPrice * result.profitCalc.commission / 100).toFixed(2)}</span>
-                            </div>
-                            <div className="flex items-center justify-between py-2 border-b border-[#F2F3F5]">
-                              <span className="text-[#86909C]">VAT({result.profitCalc.vat}%)</span>
-                              <span className="text-[#F53F3F]">-${(result.profitCalc.sellingPrice * result.profitCalc.vat / 100).toFixed(2)}</span>
-                            </div>
-                            <div className="flex items-center justify-between py-2 border-b border-[#F2F3F5]">
-                              <span className="text-[#86909C]">广告费(10%)</span>
-                              <span className="text-[#FF7D00]">-${result.profitCalc.adFee.toFixed(2)}</span>
-                            </div>
-                            <div className="flex items-center justify-between py-3 bg-[#E8FFEA] rounded-lg px-3 mt-2">
-                              <span className="text-[#1D2129] font-medium">净利润</span>
-                              <span className="text-[#00B42A] font-bold text-lg">
-                                ${result.profitCalc.netProfit.toFixed(2)} ({result.profitCalc.netMargin.toFixed(1)}%)
-                              </span>
+                            <div className="space-y-2">
+                              <div className="flex items-center justify-between py-2 border-b border-[#F2F3F5]">
+                                <span className="text-[#86909C]">售价</span>
+                                <span className="text-[#1D2129] font-medium">${result.profitCalc?.sellingPrice?.toFixed(2) || '-'}</span>
+                              </div>
+                              <div className="flex items-center justify-between py-2 border-b border-[#F2F3F5]">
+                                <span className="text-[#86909C]">成本</span>
+                                <span className="text-[#F53F3F]">-${result.profitCalc?.cost?.toFixed(2) || '-'}</span>
+                              </div>
+                              <div className="flex items-center justify-between py-2 border-b border-[#F2F3F5]">
+                                <span className="text-[#86909C]">物流费</span>
+                                <span className="text-[#F53F3F]">-${result.profitCalc?.logistics?.toFixed(2) || '-'}</span>
+                              </div>
+                              <div className="flex items-center justify-between py-2 border-b border-[#F2F3F5]">
+                                <span className="text-[#86909C]">平台佣金({result.profitCalc?.commission || 10}%)</span>
+                                <span className="text-[#F53F3F]">-${((result.profitCalc?.sellingPrice || 0) * (result.profitCalc?.commission || 10) / 100).toFixed(2)}</span>
+                              </div>
+                              <div className="flex items-center justify-between py-2 border-b border-[#F2F3F5]">
+                                <span className="text-[#86909C]">VAT({result.profitCalc?.vat || 0}%)</span>
+                                <span className="text-[#F53F3F]">-${((result.profitCalc?.sellingPrice || 0) * (result.profitCalc?.vat || 0) / 100).toFixed(2)}</span>
+                              </div>
+                              <div className="flex items-center justify-between py-2 border-b border-[#F2F3F5]">
+                                <span className="text-[#86909C]">广告费(10%)</span>
+                                <span className="text-[#FF7D00]">-${result.profitCalc?.adFee?.toFixed(2) || '-'}</span>
+                              </div>
+                              <div className="flex items-center justify-between py-3 bg-[#E8FFEA] rounded-lg px-3 mt-2">
+                                <span className="text-[#1D2129] font-medium">净利润</span>
+                                <span className="text-[#00B42A] font-bold text-lg">
+                                  ${result.profitCalc?.netProfit?.toFixed(2) || '-'} ({result.profitCalc?.netMargin?.toFixed(1) || '-'}%)
+                                </span>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 </Card>
@@ -1453,62 +1167,72 @@ ${report.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
               <TabsContent value="compliance" className="mt-6">
                 <Card className="card-minimal">
                   <div className="p-6">
-                    <h3 className="text-lg font-semibold text-[#1D2129] mb-6">合规检查结果</h3>
+                    <h3 className="text-lg font-semibold text-[#1D2129] mb-6">AI合规检查结果</h3>
                     <div className="space-y-4">
-                      {feasibilityResults.map((result) => (
-                        <div key={result.product.id} className="p-4 border border-[#E5E6EB] rounded-lg">
-                          <div className="flex items-center justify-between mb-4">
-                            <h4 className="font-medium text-[#1D2129]">{result.product.name}</h4>
-                            <Badge className={
-                              result.compliance.status === '合规' ? 'bg-[#E8FFEA] text-[#00B42A]' :
-                              result.compliance.status === '需认证' ? 'bg-[#FFF7E6] text-[#FF7D00]' :
-                              'bg-[#FFF2F0] text-[#F53F3F]'
-                            }>
-                              {result.compliance.status === '合规' ? <ShieldCheck className="w-3 h-3 mr-1" /> :
-                               result.compliance.status === '需认证' ? <Shield className="w-3 h-3 mr-1" /> :
-                               <ShieldAlert className="w-3 h-3 mr-1" />}
-                              {result.compliance.status}
-                            </Badge>
-                          </div>
-                          
-                          {result.compliance.issues.length > 0 && (
-                            <div className="mb-4">
-                              <p className="text-sm font-medium text-[#F53F3F] mb-2">存在问题:</p>
-                              {result.compliance.issues.map((issue, i) => (
-                                <div key={i} className="flex items-center gap-2 text-sm text-[#F53F3F] mb-1">
-                                  <XCircle className="w-4 h-4" />
-                                  {issue}
-                                </div>
-                              ))}
+                      {feasibilityResults.map((result) => {
+                        const product = hotProducts.find(p => p.id === result.productId);
+                        return (
+                          <div key={result.productId} className="p-4 border border-[#E5E6EB] rounded-lg">
+                            <div className="flex items-center justify-between mb-4">
+                              <h4 className="font-medium text-[#1D2129]">{result.productName || product?.name || '商品'}</h4>
+                              <Badge className={
+                                result.compliance?.status === '合规' ? 'bg-[#E8FFEA] text-[#00B42A]' :
+                                result.compliance?.status === '需认证' ? 'bg-[#FFF7E6] text-[#FF7D00]' :
+                                'bg-[#FFF2F0] text-[#F53F3F]'
+                              }>
+                                {result.compliance?.status === '合规' ? <ShieldCheck className="w-3 h-3 mr-1" /> :
+                                 result.compliance?.status === '需认证' ? <Shield className="w-3 h-3 mr-1" /> :
+                                 <ShieldAlert className="w-3 h-3 mr-1" />}
+                                {result.compliance?.status || '合规'}
+                              </Badge>
                             </div>
-                          )}
-
-                          {result.compliance.warnings.length > 0 && (
-                            <div>
-                              <p className="text-sm font-medium text-[#FF7D00] mb-2">注意事项:</p>
-                              {result.compliance.warnings.map((warning, i) => (
-                                <div key={i} className="flex items-center gap-2 text-sm text-[#FF7D00] mb-1">
-                                  <AlertTriangle className="w-4 h-4" />
-                                  {warning}
-                                </div>
-                              ))}
-                            </div>
-                          )}
-
-                          {result.compliance.requiredCerts.length > 0 && (
-                            <div className="mt-4 pt-4 border-t border-[#E5E6EB]">
-                              <p className="text-sm font-medium text-[#86909C] mb-2">建议认证:</p>
-                              <div className="flex flex-wrap gap-2">
-                                {result.compliance.requiredCerts.map((cert, i) => (
-                                  <Badge key={i} variant="outline" className="border-[#165DFF] text-[#165DFF]">
-                                    {cert}
-                                  </Badge>
+                            
+                            {result.compliance?.issues && result.compliance.issues.length > 0 && (
+                              <div className="mb-4">
+                                <p className="text-sm font-medium text-[#F53F3F] mb-2">存在问题:</p>
+                                {result.compliance.issues.map((issue, i) => (
+                                  <div key={i} className="flex items-center gap-2 text-sm text-[#F53F3F] mb-1">
+                                    <XCircle className="w-4 h-4" />
+                                    {issue}
+                                  </div>
                                 ))}
                               </div>
-                            </div>
-                          )}
-                        </div>
-                      ))}
+                            )}
+
+                            {result.compliance?.warnings && result.compliance.warnings.length > 0 && (
+                              <div>
+                                <p className="text-sm font-medium text-[#FF7D00] mb-2">注意事项:</p>
+                                {result.compliance.warnings.map((warning, i) => (
+                                  <div key={i} className="flex items-center gap-2 text-sm text-[#FF7D00] mb-1">
+                                    <AlertTriangle className="w-4 h-4" />
+                                    {warning}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+
+                            {result.compliance?.requiredCerts && result.compliance.requiredCerts.length > 0 && (
+                              <div className="mt-4 pt-4 border-t border-[#E5E6EB]">
+                                <p className="text-sm font-medium text-[#86909C] mb-2">建议认证:</p>
+                                <div className="flex flex-wrap gap-2">
+                                  {result.compliance.requiredCerts.map((cert, i) => (
+                                    <Badge key={i} variant="outline" className="border-[#165DFF] text-[#165DFF]">
+                                      {cert}
+                                    </Badge>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {!result.compliance?.issues?.length && !result.compliance?.warnings?.length && (
+                              <div className="flex items-center gap-2 text-[#00B42A]">
+                                <CheckCircle className="w-4 h-4" />
+                                <span>该商品符合平台规范，可以上架销售</span>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 </Card>
@@ -1518,41 +1242,51 @@ ${report.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
               <TabsContent value="risk" className="mt-6">
                 <Card className="card-minimal">
                   <div className="p-6">
-                    <h3 className="text-lg font-semibold text-[#1D2129] mb-6">风险评估结果</h3>
+                    <h3 className="text-lg font-semibold text-[#1D2129] mb-6">AI风险评估结果</h3>
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                      {feasibilityResults.map((result) => (
-                        <div key={result.product.id} className="p-4 border border-[#E5E6EB] rounded-lg">
-                          <h4 className="font-medium text-[#1D2129] mb-4">{result.product.name}</h4>
-                          <div className="space-y-3">
-                            {result.risks.map((risk, i) => (
-                              <div key={i} className={`p-3 rounded-lg ${
-                                risk.level === '高' ? 'bg-[#FFF2F0]' :
-                                risk.level === '中' ? 'bg-[#FFF7E6]' :
-                                'bg-[#E8FFEA]'
-                              }`}>
-                                <div className="flex items-center justify-between mb-2">
-                                  <div className="flex items-center gap-2">
-                                    <span className={`w-2 h-2 rounded-full ${
-                                      risk.level === '高' ? 'bg-[#F53F3F]' :
-                                      risk.level === '中' ? 'bg-[#FF7D00]' :
-                                      'bg-[#00B42A]'
-                                    }`} />
-                                    <span className="font-medium text-[#1D2129]">{risk.type}</span>
+                      {feasibilityResults.map((result) => {
+                        const product = hotProducts.find(p => p.id === result.productId);
+                        return (
+                          <div key={result.productId} className="p-4 border border-[#E5E6EB] rounded-lg">
+                            <h4 className="font-medium text-[#1D2129] mb-4">{result.productName || product?.name || '商品'}</h4>
+                            {result.risks && result.risks.length > 0 ? (
+                              <div className="space-y-3">
+                                {result.risks.map((risk, i) => (
+                                  <div key={i} className={`p-3 rounded-lg ${
+                                    risk.level === '高' ? 'bg-[#FFF2F0]' :
+                                    risk.level === '中' ? 'bg-[#FFF7E6]' :
+                                    'bg-[#E8FFEA]'
+                                  }`}>
+                                    <div className="flex items-center justify-between mb-2">
+                                      <div className="flex items-center gap-2">
+                                        <span className={`w-2 h-2 rounded-full ${
+                                          risk.level === '高' ? 'bg-[#F53F3F]' :
+                                          risk.level === '中' ? 'bg-[#FF7D00]' :
+                                          'bg-[#00B42A]'
+                                        }`} />
+                                        <span className="font-medium text-[#1D2129]">{risk.type}</span>
+                                      </div>
+                                      <Badge className={
+                                        risk.level === '高' ? 'bg-[#F53F3F] text-white' :
+                                        risk.level === '中' ? 'bg-[#FF7D00] text-white' :
+                                        'bg-[#00B42A] text-white'
+                                      }>
+                                        {risk.level}风险
+                                      </Badge>
+                                    </div>
+                                    <p className="text-sm text-[#86909C]">{risk.suggestion}</p>
                                   </div>
-                                  <Badge className={
-                                    risk.level === '高' ? 'bg-[#F53F3F] text-white' :
-                                    risk.level === '中' ? 'bg-[#FF7D00] text-white' :
-                                    'bg-[#00B42A] text-white'
-                                  }>
-                                    {risk.level}风险
-                                  </Badge>
-                                </div>
-                                <p className="text-sm text-[#86909C]">{risk.suggestion}</p>
+                                ))}
                               </div>
-                            ))}
+                            ) : (
+                              <div className="flex items-center gap-2 text-[#00B42A]">
+                                <CheckCircle className="w-4 h-4" />
+                                <span>暂未识别到明显风险</span>
+                              </div>
+                            )}
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 </Card>
@@ -1564,8 +1298,8 @@ ${report.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
                   <div className="p-6">
                     <div className="flex items-center justify-between mb-6">
                       <div>
-                        <h3 className="text-lg font-semibold text-[#1D2129]">1688供应商推荐</h3>
-                        <p className="text-sm text-[#86909C]">基于选品结果匹配优质供应商</p>
+                        <h3 className="text-lg font-semibold text-[#1D2129]">AI供应商推荐</h3>
+                        <p className="text-sm text-[#86909C]">基于选品结果智能匹配优质供应商</p>
                       </div>
                       <div className="flex items-center gap-4">
                         <Select value={supplierFilter.sortBy} onValueChange={(v: any) => setSupplierFilter({ ...supplierFilter, sortBy: v })}>
@@ -1590,63 +1324,70 @@ ${report.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
                       </div>
                     </div>
 
-                    <div className="space-y-4">
-                      {filteredSuppliers.map((supplier) => (
-                        <div key={supplier.id} className="p-4 border border-[#E5E6EB] rounded-lg hover:border-[#BBDCFF] transition-colors">
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-2">
-                                <Building className="w-4 h-4 text-[#86909C]" />
-                                <h4 className="font-medium text-[#1D2129]">{supplier.name}</h4>
-                                <Badge variant="outline" className="text-xs">{supplier.location}</Badge>
+                    {filteredSuppliers.length > 0 ? (
+                      <div className="space-y-4">
+                        {filteredSuppliers.map((supplier) => (
+                          <div key={supplier.id} className="p-4 border border-[#E5E6EB] rounded-lg hover:border-[#BBDCFF] transition-colors">
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <Building className="w-4 h-4 text-[#86909C]" />
+                                  <h4 className="font-medium text-[#1D2129]">{supplier.name}</h4>
+                                  <Badge variant="outline" className="text-xs">{supplier.location}</Badge>
+                                </div>
+                                <div className="flex items-center gap-4 text-sm text-[#86909C]">
+                                  <span className="flex items-center gap-1">
+                                    <Star className="w-3 h-3 text-[#FF7D00] fill-[#FF7D00]" />
+                                    {supplier.rating?.toFixed(1) || '4.5'}
+                                  </span>
+                                  <span>起订量: {supplier.moq || 50}件</span>
+                                  <span>发货: {supplier.deliveryDays || 5}天</span>
+                                  <span>月销: {supplier.monthlyOrders || 1000}+</span>
+                                </div>
                               </div>
-                              <div className="flex items-center gap-4 text-sm text-[#86909C]">
-                                <span className="flex items-center gap-1">
-                                  <Star className="w-3 h-3 text-[#FF7D00] fill-[#FF7D00]" />
-                                  {supplier.rating}
-                                </span>
-                                <span>起订量: {supplier.moq}件</span>
-                                <span>发货: {supplier.deliveryDays}天</span>
-                                <span>月销: {supplier.monthlyOrders}+</span>
+                              <div className="text-right">
+                                <p className="text-lg font-bold text-[#165DFF]">¥{supplier.price?.toFixed(2) || '-'}</p>
+                                <p className="text-xs text-[#86909C]">{supplier.priceRange || ''}</p>
+                                <div className="flex items-center gap-2 mt-2">
+                                  {supplier.isDropshipping && (
+                                    <Badge className="bg-[#E8FFEA] text-[#00B42A] text-xs">一件代发</Badge>
+                                  )}
+                                </div>
                               </div>
                             </div>
-                            <div className="text-right">
-                              <p className="text-lg font-bold text-[#165DFF]">¥{supplier.price.toFixed(2)}</p>
-                              <p className="text-xs text-[#86909C]">{supplier.priceRange}</p>
-                              <div className="flex items-center gap-2 mt-2">
-                                {supplier.isDropshipping && (
-                                  <Badge className="bg-[#E8FFEA] text-[#00B42A] text-xs">一件代发</Badge>
-                                )}
+                            <div className="flex items-center justify-between mt-4 pt-4 border-t border-[#F2F3F5]">
+                              <div className="flex items-center gap-2">
+                                {supplier.certifications?.map((cert, i) => (
+                                  <Badge key={i} variant="outline" className="text-xs border-[#E5E6EB]">
+                                    {cert}
+                                  </Badge>
+                                ))}
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Button variant="outline" size="sm" asChild>
+                                  <a href={supplier.productUrl} target="_blank" rel="noopener noreferrer">
+                                    <ExternalLink className="w-3 h-3 mr-1" />
+                                    查看商品
+                                  </a>
+                                </Button>
+                                <Button variant="outline" size="sm" onClick={() => {
+                                  navigator.clipboard.writeText(supplier.productUrl || '');
+                                  toast.success('链接已复制');
+                                }}>
+                                  <Copy className="w-3 h-3 mr-1" />
+                                  复制链接
+                                </Button>
                               </div>
                             </div>
                           </div>
-                          <div className="flex items-center justify-between mt-4 pt-4 border-t border-[#F2F3F5]">
-                            <div className="flex items-center gap-2">
-                              {supplier.certifications.map((cert, i) => (
-                                <Badge key={i} variant="outline" className="text-xs border-[#E5E6EB]">
-                                  {cert}
-                                </Badge>
-                              ))}
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Button variant="outline" size="sm" asChild>
-                                <a href={supplier.productUrl} target="_blank" rel="noopener noreferrer">
-                                  <ExternalLink className="w-3 h-3 mr-1" />
-                                  查看商品
-                                </a>
-                              </Button>
-                              <Button variant="outline" size="sm" onClick={() => {
-                                navigator.clipboard.writeText(supplier.productUrl);
-                                toast.success('链接已复制');
-                              }}>
-                                <Copy className="w-3 h-3 mr-1" />
-                                复制链接
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-8 text-[#86909CC]">
+                        <Building className="w-12 h-12 mx-auto mb-3 text-[#E5E6EB]" />
+                        <p>暂无供应商数据</p>
+                      </div>
+                    )}
                   </div>
                 </Card>
               </TabsContent>
@@ -1665,12 +1406,12 @@ ${report.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
                 {isLoading ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    生成报告中...
+                    AI生成中...
                   </>
                 ) : (
                   <>
                     <FileText className="w-4 h-4 mr-2" />
-                    生成选品报告
+                    生成AI选品报告
                   </>
                 )}
               </Button>
@@ -1689,7 +1430,7 @@ ${report.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
                       <FileText className="w-6 h-6 text-white" />
                     </div>
                     <div>
-                      <h2 className="text-lg font-semibold text-[#1D2129]">选品报告已生成</h2>
+                      <h2 className="text-lg font-semibold text-[#1D2129]">AI选品报告已生成</h2>
                       <p className="text-sm text-[#86909C]">分析时间: {new Date(report.createdAt).toLocaleString('zh-CN')}</p>
                     </div>
                   </div>
@@ -1723,7 +1464,7 @@ ${report.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
 
                 {/* 推荐建议 */}
                 <div className="p-4 bg-[#F4F7FF] rounded-lg">
-                  <h3 className="font-medium text-[#1D2129] mb-3">综合建议</h3>
+                  <h3 className="font-medium text-[#1D2129] mb-3">AI综合建议</h3>
                   <div className="space-y-2">
                     {report.recommendations.map((rec, i) => (
                       <div key={i} className="flex items-start gap-2">
@@ -1739,48 +1480,58 @@ ${report.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
             {/* 推荐商品 */}
             <Card className="card-minimal">
               <div className="p-6">
-                <h3 className="text-lg font-semibold text-[#1D2129] mb-4">推荐商品详情</h3>
+                <h3 className="text-lg font-semibold text-[#1D2129] mb-4">AI推荐商品详情</h3>
                 <div className="space-y-4">
                   {report.feasibility
                     .filter(r => r.conclusion === '强烈推荐')
-                    .map((result, index) => (
-                      <div key={result.product.id} className="p-4 border border-[#E5E6EB] rounded-lg">
-                        <div className="flex items-start justify-between">
-                          <div>
-                            <div className="flex items-center gap-2 mb-2">
-                              <h4 className="font-medium text-[#1D2129]">{result.product.name}</h4>
-                              <Badge className="bg-[#E8FFEA] text-[#00B42A]">
-                                <Award className="w-3 h-3 mr-1" />
-                                TOP {index + 1}
-                              </Badge>
+                    .map((result, index) => {
+                      const product = hotProducts.find(p => p.id === result.productId);
+                      return (
+                        <div key={result.productId} className="p-4 border border-[#E5E6EB] rounded-lg">
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <div className="flex items-center gap-2 mb-2">
+                                <h4 className="font-medium text-[#1D2129]">{result.productName || product?.name || '商品'}</h4>
+                                <Badge className="bg-[#E8FFEA] text-[#00B42A]">
+                                  <Award className="w-3 h-3 mr-1" />
+                                  TOP {index + 1}
+                                </Badge>
+                              </div>
+                              <p className="text-sm text-[#86909C] mb-3">{product?.coreSellingPoint || ''}</p>
                             </div>
-                            <p className="text-sm text-[#86909C] mb-3">{result.product.coreSellingPoint}</p>
+                            <div className="text-right">
+                              <p className="text-2xl font-bold text-[#00B42A]">{result.overallScore || 70}</p>
+                              <p className="text-xs text-[#86909C]">综合评分</p>
+                            </div>
                           </div>
-                          <div className="text-right">
-                            <p className="text-2xl font-bold text-[#00B42A]">{result.overallScore.toFixed(0)}</p>
-                            <p className="text-xs text-[#86909C]">综合评分</p>
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4 pt-4 border-t border-[#F2F3F5]">
+                            <div>
+                              <p className="text-xs text-[#86909C]">售价</p>
+                              <p className="font-medium">${result.profitCalc?.sellingPrice?.toFixed(2) || '-'}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-[#86909C]">净利润率</p>
+                              <p className="font-medium text-[#00B42A]">{result.profitCalc?.netMargin?.toFixed(1) || '-'}%</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-[#86909C]">月销量</p>
+                              <p className="font-medium">{product?.monthlySales || '-'}+</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-[#86909C]">结论</p>
+                              <p className="font-medium text-[#00B42A]">{result.conclusion}</p>
+                            </div>
                           </div>
                         </div>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4 pt-4 border-t border-[#F2F3F5]">
-                          <div>
-                            <p className="text-xs text-[#86909C]">售价</p>
-                            <p className="font-medium">${result.profitCalc.sellingPrice.toFixed(2)}</p>
-                          </div>
-                          <div>
-                            <p className="text-xs text-[#86909C]">毛利</p>
-                            <p className="font-medium text-[#00B42A]">{result.profitCalc.grossMargin.toFixed(1)}%</p>
-                          </div>
-                          <div>
-                            <p className="text-xs text-[#86909C]">月销量</p>
-                            <p className="font-medium">{result.product.monthlySales}+</p>
-                          </div>
-                          <div>
-                            <p className="text-xs text-[#86909C]">供应商匹配</p>
-                            <p className="font-medium">{result.supplyMatch}%</p>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
+                  
+                  {report.feasibility.filter(r => r.conclusion === '强烈推荐').length === 0 && (
+                    <div className="text-center py-8 text-[#86909C]">
+                      <Lightbulb className="w-12 h-12 mx-auto mb-3 text-[#E5E6EB]" />
+                      <p>暂无强烈推荐商品，请查看谨慎推荐的商品</p>
+                    </div>
+                  )}
                 </div>
               </div>
             </Card>
