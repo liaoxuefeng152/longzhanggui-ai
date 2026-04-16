@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import MainLayout from '@/components/layout/MainLayout';
 import { Shield, Store, CheckCircle, XCircle, ArrowRight, Trash2, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -57,7 +58,8 @@ export default function PlatformAuthPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <MainLayout>
+      <div className="space-y-6">
       {/* 页面标题 */}
       <div className="flex items-center gap-3 mb-8">
         <Shield className="w-8 h-8 text-[#00EEFF]" />
@@ -193,6 +195,7 @@ export default function PlatformAuthPage() {
           </Table>
         </div>
       </Card>
-    </div>
+      </div>
+    </MainLayout>
   );
 }

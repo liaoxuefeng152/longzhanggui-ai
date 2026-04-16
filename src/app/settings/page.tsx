@@ -11,6 +11,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
+import MainLayout from '@/components/layout/MainLayout';
 
 export default function SettingsPage() {
   const [loading, setLoading] = useState(false);
@@ -24,7 +25,8 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <MainLayout>
+      <div className="space-y-6">
       {/* 页面标题 */}
       <div className="flex items-center gap-3 mb-8">
         <Settings className="w-8 h-8 text-[#00EEFF]" />
@@ -217,6 +219,7 @@ export default function SettingsPage() {
           )}
         </Button>
       </div>
-    </div>
+      </div>
+    </MainLayout>
   );
 }

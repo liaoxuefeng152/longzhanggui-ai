@@ -10,6 +10,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { toast } from 'sonner';
+import MainLayout from '@/components/layout/MainLayout';
 
 interface Draft {
   id: string;
@@ -51,7 +52,8 @@ export default function DraftsPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <MainLayout>
+      <div className="space-y-6">
       {/* 页面标题 */}
       <div className="flex items-center gap-3 mb-8">
         <FileText className="w-8 h-8 text-[#00EEFF]" />
@@ -203,6 +205,7 @@ export default function DraftsPage() {
           ))}
         </div>
       </Card>
-    </div>
+      </div>
+    </MainLayout>
   );
 }

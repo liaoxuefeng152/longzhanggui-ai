@@ -1,6 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import MainLayout from '@/components/layout/MainLayout';
 import { Home, Search, ShoppingCart, TrendingUp, FileText, Zap, AlertTriangle, TrendingDown, TrendingUp as TrendingUpIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -23,7 +24,8 @@ export default function HomePage() {
   ];
 
   return (
-    <div className="space-y-6">
+    <MainLayout>
+      <div className="space-y-6">
       {/* 欢迎栏 */}
       <Card className="glass-card p-6">
         <div className="flex items-center justify-between">
@@ -156,6 +158,7 @@ export default function HomePage() {
           ))}
         </div>
       </Card>
-    </div>
+      </div>
+    </MainLayout>
   );
 }

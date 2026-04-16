@@ -2,10 +2,12 @@
 
 import { TrendingUp, BarChart3 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
+import MainLayout from '@/components/layout/MainLayout';
 
 export default function AdsOptimizationPage() {
   return (
-    <div className="space-y-6">
+    <MainLayout>
+      <div className="space-y-6">
       {/* 页面标题 */}
       <div className="flex items-center gap-3 mb-8">
         <TrendingUp className="w-8 h-8 text-[#00EEFF]" />
@@ -41,6 +43,7 @@ export default function AdsOptimizationPage() {
           广告诊断、一键优化等功能即将上线，敬请期待！
         </p>
       </Card>
-    </div>
+      </div>
+    </MainLayout>
   );
 }

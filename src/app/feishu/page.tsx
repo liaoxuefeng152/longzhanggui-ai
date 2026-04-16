@@ -9,6 +9,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
+import MainLayout from '@/components/layout/MainLayout';
 
 export default function FeishuConfigPage() {
   const [bound, setBound] = useState(true);
@@ -41,7 +42,8 @@ export default function FeishuConfigPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <MainLayout>
+      <div className="space-y-6">
       {/* 页面标题 */}
       <div className="flex items-center gap-3 mb-8">
         <MessageSquare className="w-8 h-8 text-[#00EEFF]" />
@@ -196,6 +198,7 @@ export default function FeishuConfigPage() {
           </div>
         </Card>
       </div>
-    </div>
+      </div>
+    </MainLayout>
   );
 }

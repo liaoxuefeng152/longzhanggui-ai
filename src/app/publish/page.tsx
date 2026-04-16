@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
+import MainLayout from '@/components/layout/MainLayout';
 
 export default function PublishPage() {
   const [step, setStep] = useState(1);
@@ -46,7 +47,8 @@ export default function PublishPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <MainLayout>
+      <div className="space-y-6">
       {/* 页面标题 */}
       <div className="flex items-center gap-3 mb-8">
         <ShoppingCart className="w-8 h-8 text-[#00EEFF]" />
@@ -291,6 +293,7 @@ export default function PublishPage() {
           </div>
         </Card>
       )}
-    </div>
+      </div>
+    </MainLayout>
   );
 }
