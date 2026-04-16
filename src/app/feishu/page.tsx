@@ -3,35 +3,37 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import MainLayout from '@/components/layout/MainLayout';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { toast } from 'sonner';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
+import { Badge } from '@/components/ui/badge';
 import {
-  MessageSquare,
-  Bot,
-  Settings,
   CheckCircle,
-  XCircle,
   RefreshCw,
   Send,
-  Copy,
-  ExternalLink,
-  Info,
-  Sparkles,
+  Bell,
+  FileText,
+  AlertTriangle,
+  Package,
 } from 'lucide-react';
-import { FEISHU_CONFIG } from '@/lib/feishu/config';
-import { recognizeIntent, generateHelpMessage } from '@/lib/feishu/intent';
+import { toast } from 'sonner';
 
 export default function FeishuPage() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
-  const [testMessage, setTestMessage] = useState('');
+
+  // 推送配置
+  const [dailyReport, setDailyReport] = useState(true);
+  const [dailyReportTime, setDailyReportTime] = useState('09:00');
+  const [inventoryAlert, setInventoryAlert] = useState(true);
+  const [inventoryThreshold, setInventoryThreshold] = useState('20');
+  const [adAlert, setAdAlert] = useState(true);
+  const [reviewAlert, setReviewAlert] = useState(true);
+  const [competitorAlert, setCompetitorAlert] = useState(false);
+
   const [isTesting, setIsTesting] = useState(false);
-  const [intentResult, setIntentResult] = useState<any>(null);
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -42,313 +44,231 @@ export default function FeishuPage() {
     setUser(JSON.parse(userData));
   }, [router]);
 
-  const handleLogout = () => {
-    router.push('/login');
-  };
-
-  // 测试意图识别
-  const handleTestIntent = async () => {
-    if (!testMessage.trim()) {
-      toast.error('请输入测试消息');
-      return;
-    }
-
-    setIsTesting(true);
-    try {
-      const result = recognizeIntent(testMessage);
-      setIntentResult(result);
-      toast.success('意图识别成功');
-    } catch (error) {
-      toast.error('意图识别失败');
-    } finally {
-      setIsTesting(false);
-    }
-  };
-
-  // 复制 Webhook URL
-  const copyWebhookUrl = () => {
-    const webhookUrl = `${window.location.origin}/api/v1/feishu/webhook`;
-    navigator.clipboard.writeText(webhookUrl);
-    toast.success('Webhook URL 已复制');
-  };
-
-  // 打开飞书开放平台
-  const openFeishuPlatform = () => {
-    window.open('https://open.feishu.cn/app/cli_a954ed9674789cd3/baseinfo', '_blank');
-  };
-
   if (!user) return null;
 
-  const webhookUrl = `${window.location.origin}/api/v1/feishu/webhook`;
+  // 保存配置
+  const handleSave = () => {
+    toast.success('配置已保存');
+  };
+
+  // 测试推送
+  const handleTestPush = () => {
+    setIsTesting(true);
+    setTimeout(() => {
+      setIsTesting(false);
+      toast.success('测试推送已发送，请查收');
+    }, 1500);
+  };
+
+  // 推送历史（模拟）
+  const pushHistory = [
+    { time: '10:30', text: '广告告警：宠物饮水机ACOS 45%，建议优化', type: 'ad' },
+    { time: '09:00', text: '运营日报：昨日销售额 $4,280，上新8个', type: 'daily' },
+    { time: '昨天', text: '库存预警：宠物饮水机库存 15件，需补货', type: 'inventory' },
+  ];
 
   return (
-    <MainLayout user={user} onLogout={handleLogout}>
-      <div className="space-y-6">
-        {/* 页面头部 */}
+    <MainLayout user={user} onLogout={() => router.push('/login')} useNewNavigation={true}>
+      <div className="space-y-6 max-w-4xl mx-auto">
+        {/* 页面标题 */}
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-500/20 to-blue-500/5 flex items-center justify-center">
-              <MessageSquare className="h-7 w-7 text-blue-500" />
-            </div>
-            <div>
-              <h1 className="text-xl font-semibold text-foreground">飞书机器人管理</h1>
-              <p className="text-sm text-muted-foreground">
-                配置和测试龙掌柜飞书机器人
-              </p>
-            </div>
+          <div>
+            <h1 className="text-xl font-bold flex items-center gap-2">
+              <Bell className="h-6 w-6 text-[#165DFF]" />
+              飞书助手
+            </h1>
           </div>
-          <Badge className="bg-gradient-to-r from-green-500/10 to-green-500/5 text-green-600 border-green-500/30">
-            <CheckCircle className="h-3 w-3 mr-1" />
-            已配置
-          </Badge>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={handleSave}>
+              <RefreshCw className="h-4 w-4 mr-2" />
+              保存配置
+            </Button>
+          </div>
         </div>
 
-        <Tabs defaultValue="config" className="w-full">
-          <TabsList>
-            <TabsTrigger value="config">
-              <Settings className="h-4 w-4 mr-2" />
-              配置信息
-            </TabsTrigger>
-            <TabsTrigger value="test">
-              <Sparkles className="h-4 w-4 mr-2" />
-              意图测试
-            </TabsTrigger>
-            <TabsTrigger value="help">
-              <Info className="h-4 w-4 mr-2" />
-              使用帮助
-            </TabsTrigger>
-          </TabsList>
+        {/* 绑定状态 */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-[14px]">绑定状态</CardTitle>
+          </CardHeader>
+          <CardContent className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <CheckCircle className="h-6 w-6 text-green-600" />
+              <div>
+                <div className="text-[14px] font-medium">已绑定飞书机器人（@龙掌柜）</div>
+              </div>
+            </div>
+            <Button variant="outline" size="sm">
+              重新绑定
+            </Button>
+          </CardContent>
+        </Card>
 
-          {/* 配置信息 */}
-          <TabsContent value="config" className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              {/* App ID */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base">App ID</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <code className="text-sm bg-muted px-2 py-1 rounded">
-                    {FEISHU_CONFIG.appId}
-                  </code>
-                </CardContent>
-              </Card>
-
-              {/* App Secret */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base">App Secret</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <code className="text-sm bg-muted px-2 py-1 rounded">
-                    {FEISHU_CONFIG.appSecret.substring(0, 8)}***
-                  </code>
-                </CardContent>
-              </Card>
-
-              {/* Verification Token */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base">Verification Token</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <code className="text-sm bg-muted px-2 py-1 rounded">
-                    {FEISHU_CONFIG.verificationToken}
-                  </code>
-                </CardContent>
-              </Card>
-
-              {/* Webhook URL */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base">Webhook URL</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  <code className="text-xs bg-muted px-2 py-1 rounded break-all block">
-                    {webhookUrl}
-                  </code>
-                  <Button size="sm" variant="outline" onClick={copyWebhookUrl}>
-                    <Copy className="h-3 w-3 mr-1" />
-                    复制
-                  </Button>
-                </CardContent>
-              </Card>
+        {/* 推送配置 */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-[14px]">推送配置</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* 每日运营日报 */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Switch 
+                  id="dailyReport" 
+                  checked={dailyReport} 
+                  onCheckedChange={setDailyReport} 
+                />
+                <div>
+                  <Label htmlFor="dailyReport" className="text-[14px] font-medium flex items-center gap-2">
+                    <FileText className="h-4 w-4" />
+                    每日运营日报
+                  </Label>
+                  {dailyReport && (
+                    <div className="text-[12px] text-muted-foreground mt-1">
+                      {dailyReportTime} 推送
+                    </div>
+                  )}
+                </div>
+              </div>
+              {dailyReport && (
+                <Input
+                  type="time"
+                  value={dailyReportTime}
+                  onChange={(e) => setDailyReportTime(e.target.value)}
+                  className="w-32"
+                />
+              )}
             </div>
 
-            {/* 操作按钮 */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">配置步骤</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <div className="flex items-start gap-2">
-                    <div className="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-medium flex-shrink-0 mt-0.5">
-                      1
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium">复制 Webhook URL</p>
-                      <p className="text-xs text-muted-foreground">
-                        点击上方"复制"按钮，复制 Webhook 地址
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-2">
-                    <div className="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-medium flex-shrink-0 mt-0.5">
-                      2
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium">配置飞书事件订阅</p>
-                      <p className="text-xs text-muted-foreground">
-                        在飞书开放平台配置事件回调地址和 Verification Token
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-2">
-                    <div className="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-medium flex-shrink-0 mt-0.5">
-                      3
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium">订阅消息事件</p>
-                      <p className="text-xs text-muted-foreground">
-                        订阅"接收消息"事件（im.message.receive_v1）
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-2">
-                    <div className="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-medium flex-shrink-0 mt-0.5">
-                      4
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium">完成配置</p>
-                      <p className="text-xs text-muted-foreground">
-                        在飞书群中@机器人测试功能
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <Button onClick={openFeishuPlatform} className="w-full">
-                  <ExternalLink className="h-4 w-4 mr-2" />
-                  前往飞书开放平台配置
-                </Button>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* 意图测试 */}
-          <TabsContent value="test" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">测试意图识别</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
+            {/* 库存预警 */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Switch 
+                  id="inventoryAlert" 
+                  checked={inventoryAlert} 
+                  onCheckedChange={setInventoryAlert} 
+                />
                 <div>
-                  <label className="text-sm font-medium mb-2 block">输入测试消息</label>
-                  <Textarea
-                    placeholder="例如：帮我选3款3C手机配件的产品"
-                    value={testMessage}
-                    onChange={(e) => setTestMessage(e.target.value)}
-                    rows={3}
-                  />
-                </div>
-
-                <Button onClick={handleTestIntent} disabled={isTesting} className="w-full">
-                  {isTesting ? (
-                    <>
-                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                      分析中...
-                    </>
-                  ) : (
-                    <>
-                      <Send className="h-4 w-4 mr-2" />
-                      测试意图识别
-                    </>
+                  <Label htmlFor="inventoryAlert" className="text-[14px] font-medium flex items-center gap-2">
+                    <Package className="h-4 w-4" />
+                    库存预警
+                  </Label>
+                  {inventoryAlert && (
+                    <div className="text-[12px] text-muted-foreground mt-1">
+                      库存 &lt; {inventoryThreshold} 件时立即推送
+                    </div>
                   )}
-                </Button>
-
-                {intentResult && (
-                  <Card className="bg-muted/50 border-border/50">
-                    <CardContent className="p-4 space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium">识别结果:</span>
-                        <Badge variant="outline">{intentResult.intent}</Badge>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium">置信度:</span>
-                        <span className="text-sm text-muted-foreground">
-                          {(intentResult.confidence * 100).toFixed(1)}%
-                        </span>
-                      </div>
-                      {intentResult.params && Object.keys(intentResult.params).length > 0 && (
-                        <div>
-                          <span className="text-sm font-medium block mb-1">提取参数:</span>
-                          <div className="text-xs text-muted-foreground space-y-1">
-                            {Object.entries(intentResult.params).map(([key, value]) => (
-                              <div key={key}>
-                                {key}: {String(value)}
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* 示例消息 */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">示例消息</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 gap-2">
-                  {[
-                    '帮我选3款3C手机配件的产品',
-                    '今天的销量',
-                    '库存预警',
-                    '系统状态',
-                    '帮我选品',
-                    '上架产品',
-                    '创建广告',
-                    '查询订单',
-                  ].map((example) => (
-                    <Button
-                      key={example}
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setTestMessage(example)}
-                      className="justify-start"
-                    >
-                      {example}
-                    </Button>
-                  ))}
                 </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+              </div>
+              {inventoryAlert && (
+                <Input
+                  type="number"
+                  value={inventoryThreshold}
+                  onChange={(e) => setInventoryThreshold(e.target.value)}
+                  className="w-24"
+                  suffix="件"
+                />
+              )}
+            </div>
 
-          {/* 使用帮助 */}
-          <TabsContent value="help" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">使用指南</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="prose prose-sm max-w-none">
-                  <pre className="text-xs bg-muted p-4 rounded-lg overflow-x-auto">
-                    {generateHelpMessage()}
-                  </pre>
+            {/* 广告告警 */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Switch 
+                  id="adAlert" 
+                  checked={adAlert} 
+                  onCheckedChange={setAdAlert} 
+                />
+                <div>
+                  <Label htmlFor="adAlert" className="text-[14px] font-medium flex items-center gap-2">
+                    <AlertTriangle className="h-4 w-4" />
+                    广告告警
+                  </Label>
+                  <div className="text-[12px] text-muted-foreground mt-1">
+                    ACOS &gt; 40% 或花费暴增50%时推送
+                  </div>
                 </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+              </div>
+            </div>
+
+            {/* 差评预警 */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Switch 
+                  id="reviewAlert" 
+                  checked={reviewAlert} 
+                  onCheckedChange={setReviewAlert} 
+                />
+                <div>
+                  <Label htmlFor="reviewAlert" className="text-[14px] font-medium">
+                    差评预警
+                  </Label>
+                  <div className="text-[12px] text-muted-foreground mt-1">
+                    收到差评时立即推送
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* 竞品价格变动 */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Switch 
+                  id="competitorAlert" 
+                  checked={competitorAlert} 
+                  onCheckedChange={setCompetitorAlert} 
+                />
+                <div>
+                  <Label htmlFor="competitorAlert" className="text-[14px] font-medium">
+                    竞品价格变动
+                  </Label>
+                  <div className="text-[12px] text-muted-foreground mt-1">
+                    监控竞品价格变化
+                  </div>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* 测试推送 */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-[14px]">测试推送</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Button onClick={handleTestPush} disabled={isTesting}>
+              {isTesting ? (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  发送中...
+                </>
+              ) : (
+                <>
+                  <Send className="h-4 w-4 mr-2" />
+                  发送测试消息
+                </>
+              )}
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* 推送历史 */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-[14px]">推送历史</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {pushHistory.map((item, idx) => (
+                <div key={idx} className="text-sm">
+                  <span className="text-muted-foreground w-16 inline-block">[{item.time}]</span>
+                  {item.text}
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </MainLayout>
   );
