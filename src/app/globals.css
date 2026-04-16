@@ -55,124 +55,100 @@
 }
 
 :root {
-  /* 圆角 - 更现代 */
-  --radius: 0.625rem;
-  /* 龙掌柜智能运营系统配色 - 深海蓝主题（优化版） */
-  --background: #F8FAFC;
-  --foreground: #0F172A;
+  /* 圆角 - 极简商务风 */
+  --radius: 0.5rem;
+  
+  /* 极简商务风配色 - 龙掌柜 */
+  --background: #F7F8FA;
+  --foreground: #1D2129;
 
-  /* 卡片背景 - 添加渐变支持 */
+  /* 卡片背景 */
   --card: #FFFFFF;
-  --card-foreground: #0F172A;
+  --card-foreground: #1D2129;
   --popover: #FFFFFF;
-  --popover-foreground: #0F172A;
+  --popover-foreground: #1D2129;
 
-  /* 主色 - 更亮的蓝色 */
-  --primary: #1661FF;
+  /* 主色 - 深蓝色 #165DFF */
+  --primary: #165DFF;
   --primary-foreground: #FFFFFF;
-  --primary-gradient: linear-gradient(135deg, #1661FF 0%, #4B7CFF 50%, #7AA0FF 100%);
-  --primary-gradient-hover: linear-gradient(135deg, #0D4ED8 0%, #3866E5 50%, #5B87E8 100%);
+  --primary-hover: #0E42D2;
 
-  /* 次要色 */
-  --secondary: #F1F5F9;
-  --secondary-foreground: #1661FF;
+  /* 辅助色 - 浅绿 #00B42A */
+  --secondary: #F2F3F5;
+  --secondary-foreground: #165DFF;
 
-  /* 静音色 - 提高对比度 */
-  --muted: #F1F5F9;
-  --muted-foreground: #64748B;
+  /* 静音色 */
+  --muted: #F2F3F5;
+  --muted-foreground: #86909C;
 
   /* 强调色 */
-  --accent: #EEF4FF;
-  --accent-foreground: #1661FF;
+  --accent: #E8F3FF;
+  --accent-foreground: #165DFF;
 
   /* 状态色 */
-  --destructive: #EF4444;
+  --destructive: #F53F3F;
   --destructive-foreground: #FFFFFF;
-  --success: #10B981;
+  --success: #00B42A;
   --success-foreground: #FFFFFF;
-  --warning: #F59E0B;
+  --warning: #FF7D00;
   --warning-foreground: #FFFFFF;
-  --info: #3B82F6;
-  --info-foreground: #FFFFFF;
 
   /* 边框和输入 */
-  --border: #E2E8F0;
-  --input: #E2E8F0;
-  --ring: #1661FF;
+  --border: #E5E6EB;
+  --input: #E5E6EB;
+  --ring: #165DFF;
 
-  /* 阴影效果 - 更有层次 */
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
-  --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -1px rgba(0, 0, 0, 0.04);
-  --shadow-md: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04);
-  --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-  --shadow-xl: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
-  --shadow-primary: 0 8px 24px rgba(22, 97, 255, 0.25);
-  --shadow-success: 0 8px 24px rgba(16, 185, 129, 0.25);
-  --shadow-warning: 0 8px 24px rgba(245, 158, 11, 0.25);
-  --shadow-destructive: 0 8px 24px rgba(239, 68, 68, 0.25);
+  /* 阴影效果 - 极简 */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
 
   /* 图表颜色 */
-  --chart-1: #1661FF;
-  --chart-2: #10B981;
-  --chart-3: #F59E0B;
-  --chart-4: #EF4444;
-  --chart-5: #8B5CF6;
+  --chart-1: #165DFF;
+  --chart-2: #00B42A;
+  --chart-3: #FF7D00;
+  --chart-4: #F53F3F;
+  --chart-5: #722ED1;
 
-  /* 侧边栏 - 更深的蓝色 */
-  --sidebar: #0A1628;
-  --sidebar-foreground: #F1F5F9;
-  --sidebar-primary: #1661FF;
+  /* 侧边栏 - 极简商务 */
+  --sidebar: #FFFFFF;
+  --sidebar-foreground: #1D2129;
+  --sidebar-primary: #165DFF;
   --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent: rgba(22, 97, 255, 0.12);
-  --sidebar-accent-foreground: #FFFFFF;
-  --sidebar-border: transparent;
-  --sidebar-ring: #1661FF;
-  --sidebar-gradient: linear-gradient(180deg, #0A1628 0%, #0F2138 100%);
-
-  /* 智能助理配色 - 紫罗兰主题 */
-  --assistant: #7C3AED;
-  --assistant-foreground: #FFFFFF;
-  --assistant-gradient: linear-gradient(135deg, #7C3AED 0%, #A855F7 50%, #C084FC 100%);
-  --assistant-gradient-hover: linear-gradient(135deg, #6D28D9 0%, #9333EA 50%, #A855F7 100%);
-
-  /* 智能分析卡片配色 */
-  --card-report: #165DFF;
-  --card-alert: #EF4444;
-  --card-warning: #F59E0B;
-  --card-success: #10B981;
-  --card-violet: #8B5CF6;
-  --card-orange: #F97316;
+  --sidebar-accent: #E8F3FF;
+  --sidebar-accent-foreground: #165DFF;
+  --sidebar-border: #E5E6EB;
+  --sidebar-ring: #165DFF;
 }
 
 .dark {
-  --background: #0D1117;
-  --foreground: #E6EDF3;
-  --card: #161B22;
-  --card-foreground: #E6EDF3;
-  --popover: #161B22;
-  --popover-foreground: #E6EDF3;
-  --primary: #165DFF;
+  --background: #1D2129;
+  --foreground: #F7F8FA;
+  --card: #272E3B;
+  --card-foreground: #F7F8FA;
+  --popover: #272E3B;
+  --popover-foreground: #F7F8FA;
+  --primary: #4080FF;
   --primary-foreground: #FFFFFF;
-  --secondary: #21262D;
-  --secondary-foreground: #E6EDF3;
-  --muted: #21262D;
-  --muted-foreground: #8B949E;
-  --accent: #165DFF;
+  --secondary: #383E49;
+  --secondary-foreground: #F7F8FA;
+  --muted: #383E49;
+  --muted-foreground: #86909C;
+  --accent: #4080FF;
   --accent-foreground: #FFFFFF;
-  --destructive: #F85149;
-  --success: #00B42A;
-  --warning: #FF7D00;
-  --border: #30363D;
-  --input: #30363D;
-  --ring: #165DFF;
-  --sidebar: #0D1117;
-  --sidebar-foreground: #E6EDF3;
-  --sidebar-primary: #165DFF;
+  --destructive: #F53F3F;
+  --border: #4E5969;
+  --input: #4E5969;
+  --ring: #4080FF;
+  --sidebar: #1D2129;
+  --sidebar-foreground: #F7F8FA;
+  --sidebar-primary: #4080FF;
   --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent: rgba(22, 93, 255, 0.2);
+  --sidebar-accent: rgba(64, 128, 255, 0.2);
   --sidebar-accent-foreground: #FFFFFF;
-  --sidebar-border: #30363D;
-  --sidebar-ring: #165DFF;
+  --sidebar-border: #4E5969;
+  --sidebar-ring: #4080FF;
 }
 
 @layer base {
@@ -188,11 +164,11 @@ body {
   @apply font-sans;
 }
 
-/* 自定义动画 */
+/* 极简商务风自定义动画 */
 @keyframes fadeIn {
   from {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(-8px);
   }
   to {
     opacity: 1;
@@ -203,7 +179,7 @@ body {
 @keyframes slideIn {
   from {
     opacity: 0;
-    transform: translateX(-10px);
+    transform: translateX(-16px);
   }
   to {
     opacity: 1;
@@ -211,41 +187,21 @@ body {
   }
 }
 
-@keyframes scaleIn {
-  from {
-    opacity: 0;
-    transform: scale(0.95);
-  }
-  to {
+@keyframes pulse-soft {
+  0%, 100% {
     opacity: 1;
-    transform: scale(1);
-  }
-}
-
-@keyframes pulse-glow {
-  0%, 100% {
-    box-shadow: 0 0 0 0 rgba(22, 97, 255, 0.4);
   }
   50% {
-    box-shadow: 0 0 0 8px rgba(22, 97, 255, 0);
+    opacity: 0.6;
   }
 }
 
-@keyframes float {
-  0%, 100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-5px);
-  }
-}
-
-@keyframes shimmer {
+@keyframes skeleton-loading {
   0% {
-    background-position: -1000px 0;
+    background-position: -200% 0;
   }
   100% {
-    background-position: 1000px 0;
+    background-position: 200% 0;
   }
 }
 
@@ -258,199 +214,81 @@ body {
   animation: slideIn 0.3s ease-out;
 }
 
-.animate-scale-in {
-  animation: scaleIn 0.2s ease-out;
+.animate-pulse-soft {
+  animation: pulse-soft 2s ease-in-out infinite;
 }
 
-.animate-pulse-glow {
-  animation: pulse-glow 2s infinite;
+/* 极简按钮样式 */
+.btn-primary {
+  @apply bg-[#165DFF] text-white font-medium rounded-md transition-all hover:bg-[#0E42D2] active:scale-[0.98];
 }
 
-.animate-float {
-  animation: float 3s ease-in-out infinite;
+.btn-secondary {
+  @apply bg-white text-[#165DFF] border border-[#165DFF] font-medium rounded-md transition-all hover:bg-[#E8F3FF];
 }
 
-/* 卡片优化 */
-.card-optimized {
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -1px rgba(0, 0, 0, 0.04);
-  border: 1px solid rgba(226, 232, 240, 0.8);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  background: linear-gradient(135deg, #FFFFFF 0%, #FAFBFC 100%);
+.btn-warning {
+  @apply bg-[#F53F3F] text-white font-medium rounded-md transition-all hover:bg-[#D92B2B];
 }
 
-.card-optimized:hover {
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-  transform: translateY(-4px);
-  border-color: rgba(22, 97, 255, 0.2);
+/* 极简输入框样式 */
+.input-minimal {
+  @apply w-full px-4 py-3 border border-[#E5E6EB] rounded-md text-[#1D2129] placeholder:text-[#86909C] transition-all focus:border-[#165DFF] focus:ring-2 focus:ring-[#165DFF]/10 focus:outline-none;
 }
 
-/* 按钮优化 */
-.btn-primary-gradient {
-  background: linear-gradient(135deg, #1661FF 0%, #4B7CFF 50%, #7AA0FF 100%);
-  box-shadow: 0 4px 12px rgba(22, 97, 255, 0.3);
-  transition: all 0.2s ease;
+/* 极简卡片样式 */
+.card-minimal {
+  @apply bg-white border border-[#E5E6EB] rounded-lg shadow-sm hover:shadow-md transition-shadow;
 }
 
-.btn-primary-gradient:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(22, 97, 255, 0.4);
-  background: linear-gradient(135deg, #0D4ED8 0%, #3866E5 50%, #5B87E8 100%);
+/* 骨架屏加载 */
+.skeleton-loading {
+  background: linear-gradient(90deg, #F2F3F5 0%, #E5E6EB 50%, #F2F3F5 100%);
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s ease-in-out infinite;
 }
 
-.btn-primary-gradient:active {
-  transform: translateY(0);
-}
-
-/* 侧边栏优化 */
-.sidebar-gradient {
-  background: linear-gradient(180deg, #0A1628 0%, #0F2138 100%);
-}
-
-.sidebar-item {
-  transition: all 0.2s ease;
-  position: relative;
-  overflow: hidden;
-}
-
-.sidebar-item::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 3px;
-  background: linear-gradient(180deg, #1661FF 0%, #4B7CFF 100%);
-  transform: scaleY(0);
-  transition: transform 0.2s ease;
-}
-
-.sidebar-item:hover::before,
-.sidebar-item.active::before {
-  transform: scaleY(1);
-}
-
-.sidebar-item:hover {
-  background: rgba(22, 97, 255, 0.08);
-  transform: translateX(4px);
-}
-
-/* 状态标签优化 */
+/* 状态标签 */
 .status-badge {
-  padding: 4px 12px;
-  border-radius: 9999px;
-  font-size: 12px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  transition: all 0.2s ease;
+  @apply px-3 py-1 rounded-full text-xs font-medium;
 }
 
-.status-active {
-  background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(16, 185, 129, 0.2) 100%);
-  color: #059669;
-  border: 1px solid rgba(16, 185, 129, 0.3);
-  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.15);
+.status-success {
+  @apply bg-[#E8FFEA] text-[#00B42A];
 }
 
-.status-processing {
-  background: linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(245, 158, 11, 0.2) 100%);
-  color: #D97706;
-  border: 1px solid rgba(245, 158, 11, 0.3);
-  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.15);
-  animation: pulse-glow 2s infinite;
+.status-warning {
+  @apply bg-[#FFECE8] text-[#F53F3F];
 }
 
-.status-offline {
-  background: linear-gradient(135deg, rgba(239, 68, 68, 0.1) 0%, rgba(239, 68, 68, 0.2) 100%);
-  color: #DC2626;
-  border: 1px solid rgba(239, 68, 68, 0.3);
-  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.15);
+.status-info {
+  @apply bg-[#E8F3FF] text-[#165DFF];
 }
 
-/* 数据卡片优化 */
-.data-card {
-  position: relative;
-  overflow: hidden;
+/* 导航项 */
+.nav-item {
+  @apply flex items-center gap-3 px-4 py-3 rounded-md text-[#4E5969] hover:text-[#1D2129] hover:bg-[#F2F3F5] transition-all;
 }
 
-.data-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(255, 255, 255, 0.3),
-    transparent
-  );
-  animation: shimmer 3s infinite;
+.nav-item.active {
+  @apply bg-[#E8F3FF] text-[#165DFF];
 }
 
-/* 智能体卡片颜色 */
-.agent-blue {
-  background: linear-gradient(135deg, rgba(22, 97, 255, 0.05) 0%, rgba(22, 97, 255, 0.1) 100%);
-  border-color: rgba(22, 97, 255, 0.2);
-}
-
-.agent-purple {
-  background: linear-gradient(135deg, rgba(139, 92, 246, 0.05) 0%, rgba(139, 92, 246, 0.1) 100%);
-  border-color: rgba(139, 92, 246, 0.2);
-}
-
-.agent-green {
-  background: linear-gradient(135deg, rgba(16, 185, 129, 0.05) 0%, rgba(16, 185, 129, 0.1) 100%);
-  border-color: rgba(16, 185, 129, 0.2);
-}
-
-.agent-orange {
-  background: linear-gradient(135deg, rgba(245, 158, 11, 0.05) 0%, rgba(245, 158, 11, 0.1) 100%);
-  border-color: rgba(245, 158, 11, 0.2);
-}
-
-/* 平滑滚动 */
-html {
-  scroll-behavior: smooth;
-}
-
-/* 自定义滚动条 */
+/* 滚动条优化 */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #F1F5F9;
-  border-radius: 4px;
+  background: #F2F3F5;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #CBD5E1;
-  border-radius: 4px;
-  transition: background 0.2s ease;
+  background: #C9CDD4;
+  border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #94A3B8;
-}
-
-/* 响应式优化 */
-@media (max-width: 768px) {
-  .card-optimized:hover {
-    transform: none;
-  }
-}
-
-/* 加载状态 */
-.loading-shimmer {
-  background: linear-gradient(
-    90deg,
-    #F1F5F9 0%,
-    #E2E8F0 50%,
-    #F1F5F9 100%
-  );
-  background-size: 1000px 100%;
-  animation: shimmer 2s infinite linear;
+  background: #86909C;
 }
