@@ -163,7 +163,7 @@ export default function SelectPage() {
   const [currentProductForSupplier, setCurrentProductForSupplier] = useState<number | null>(null);
   const [supplierFilters, setSupplierFilters] = useState({
     onePieceDelivery: false,
-    maxMoq: '',
+    maxMoq: 'all',
     sortBy: 'rating',
   });
 
@@ -620,7 +620,7 @@ export default function SelectPage() {
                                 <SelectValue placeholder="不限" />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="">不限</SelectItem>
+                                <SelectItem value="all">不限</SelectItem>
                                 <SelectItem value="20">≤ 20</SelectItem>
                                 <SelectItem value="50">≤ 50</SelectItem>
                                 <SelectItem value="100">≤ 100</SelectItem>
@@ -652,7 +652,7 @@ export default function SelectPage() {
                       {mockSuppliers
                         .filter(s => !currentProductForSupplier || s.productId === currentProductForSupplier)
                         .filter(s => !supplierFilters.onePieceDelivery || s.isOnePieceDelivery)
-                        .filter(s => !supplierFilters.maxMoq || s.moq <= parseInt(supplierFilters.maxMoq || '9999', 10))
+                        .filter(s => supplierFilters.maxMoq === 'all' || s.moq <= parseInt(supplierFilters.maxMoq, 10))
                         .sort((a, b) => {
                           if (supplierFilters.sortBy === 'rating') return b.rating - a.rating;
                           if (supplierFilters.sortBy === 'price') return getMinPrice(a.priceRange) - getMinPrice(b.priceRange);
