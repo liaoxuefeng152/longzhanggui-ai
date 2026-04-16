@@ -1,525 +1,444 @@
 'use client';
 
 import { useState } from 'react';
-import { Search, TrendingUp, DollarSign, AlertTriangle, Target, BarChart3, Zap, CheckCircle2, FileText, ShoppingCart, ArrowRight } from 'lucide-react';
+import { Search, Sparkles, TrendingUp, Filter, Plus, CheckCircle, AlertTriangle, Target, Zap, DollarSign, BarChart3, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Textarea } from '@/components/ui/textarea';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Label } from '@/components/ui/label';
-import { Separator } from '@/components/ui/separator';
-import { toast } from 'sonner';
+import { Progress } from '@/components/ui/progress';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import MainLayout from '@/components/layout/MainLayout';
+import { toast } from 'sonner';
 
-// 竞品数据类型
-interface Competitor {
-  id: number;
-  name: string;
-  image: string;
-  price: string;
-  sales: string;
-  rating: string;
-  keySellingPoints: string[];
-}
+// 模拟选品数据
+const mockProductIdeas = [
+  {
+    id: 1,
+    name: '宠物自动喂食器',
+    category: '宠物用品',
+    score: 95,
+    profitMargin: 45,
+    competition: '中等',
+    trend: '上升',
+    priceRange: '$29.99 - $49.99',
+    features: ['定时喂食', 'APP控制', '大容量'],
+    reasons: ['宠物类目持续增长', '智能化趋势明显', '利润空间大'],
+  },
+  {
+    id: 2,
+    name: 'LED氛围灯串',
+    category: '家居装饰',
+    score: 88,
+    profitMargin: 55,
+    competition: '较低',
+    trend: '稳定',
+    priceRange: '$9.99 - $24.99',
+    features: ['USB供电', '多模式', 'APP控制'],
+    reasons: ['节日季需求大', '轻量化易运输', '复购率高'],
+  },
+  {
+    id: 3,
+    name: '便携手机支架',
+    category: '手机配件',
+    score: 82,
+    profitMargin: 60,
+    competition: '激烈',
+    trend: '下降',
+    priceRange: '$4.99 - $14.99',
+    features: ['折叠便携', '多角度', '防滑设计'],
+    reasons: ['需求稳定', '供应链成熟', '进入门槛低'],
+  },
+];
 
-// 市场分析结果
-interface MarketAnalysis {
-  marketSize: 'large' | 'medium' | 'small';
-  competition: 'high' | 'medium' | 'low';
-  suggestedProfit: number;
-  riskLevel: 'low' | 'medium' | 'high';
-  marketDescription: string;
-}
+export default function SelectPage() {
+  const [activeTab, setActiveTab] = useState('demand');
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [demandForm, setDemandForm] = useState({
+    category: '',
+    budget: '',
+    market: '',
+    requirement: '',
+  });
+  const [selectedProducts, setSelectedProducts] = useState<number[]>([]);
 
-export default function SmartProductSelectionPage() {
-  const [step, setStep] = useState(1); // 1: 输入关键词, 2: 分析结果, 3: 选品报告
-  const [loading, setLoading] = useState(false);
-  const [keyword, setKeyword] = useState('');
-  const [platform, setPlatform] = useState('shopee');
-  const [site, setSite] = useState('my');
-  
-  // 成本计算
-  const [cost, setCost] = useState('');
-  const [shippingFee, setShippingFee] = useState('15');
-  const [commissionRate, setCommissionRate] = useState('6');
-  
-  // 分析结果
-  const [analysis, setAnalysis] = useState<MarketAnalysis | null>(null);
-  const [competitors, setCompetitors] = useState<Competitor[]>([]);
+  const startAnalysis = async () => {
+    setIsAnalyzing(true);
+    
+    await new Promise(resolve => setTimeout(resolve, 3000));
+    
+    setIsAnalyzing(false);
+    setActiveTab('products');
+    toast.success('选品分析完成！');
+  };
 
-  // 模拟竞品数据
-  const mockCompetitors: Competitor[] = [
-    { 
-      id: 1, 
-      name: '无线蓝牙耳机 TWS 入耳式 降噪超长续航', 
-      image: '🎧', 
-      price: 'RM 59.00', 
-      sales: '2.3k', 
-      rating: '4.8',
-      keySellingPoints: ['ANC降噪', '40小时续航', 'IPX5防水', '快充功能']
-    },
-    { 
-      id: 2, 
-      name: '蓝牙耳机 半入耳式 游戏低延迟', 
-      image: '🎧', 
-      price: 'RM 45.00', 
-      sales: '1.8k', 
-      rating: '4.6',
-      keySellingPoints: ['65ms低延迟', 'HiFi音质', 'LED电量显示', '轻量设计']
-    },
-    { 
-      id: 3, 
-      name: '真无线蓝牙耳机 商务款 超长待机', 
-      image: '🎧', 
-      price: 'RM 89.00', 
-      sales: '980', 
-      rating: '4.9',
-      keySellingPoints: ['商务外观', '60小时续航', '双麦降噪', '舒适佩戴']
-    },
-  ];
+  const toggleProductSelection = (id: number) => {
+    setSelectedProducts(prev => 
+      prev.includes(id) 
+        ? prev.filter(p => p !== id)
+        : [...prev, id]
+    );
+  };
 
-  // 开始分析
-  const handleStartAnalysis = () => {
-    if (!keyword) {
-      toast.error('请输入类目或关键词');
+  const addToDraft = () => {
+    if (selectedProducts.length === 0) {
+      toast.error('请先选择商品');
       return;
     }
-    setLoading(true);
-    setStep(2);
-    
-    // 模拟AI分析
-    setTimeout(() => {
-      setAnalysis({
-        marketSize: 'large',
-        competition: 'medium',
-        suggestedProfit: 35,
-        riskLevel: 'low',
-        marketDescription: '无线耳机市场需求旺盛，月搜索量超过50万，竞争适中，建议定价区间 RM 49-89'
-      });
-      setCompetitors(mockCompetitors);
-      setLoading(false);
-      toast.success('AI 分析完成！');
-    }, 2000);
+    toast.success(`已将 ${selectedProducts.length} 个商品加入草稿箱`);
   };
 
-  // 查看选品报告
-  const handleViewReport = () => {
-    setStep(3);
+  const getScoreColor = (score: number) => {
+    if (score >= 90) return 'text-[#00B42A]';
+    if (score >= 80) return 'text-[#FF7D00]';
+    return 'text-[#F53F3F]';
   };
-
-  // 加入上新队列
-  const handleAddToPublishQueue = (product: Competitor) => {
-    toast.success(`已加入上新队列：${product.name}`);
-  };
-
-  // 计算建议售价和利润
-  const calculatePrice = () => {
-    if (!cost) return { suggestedPrice: '-', profitRate: '-' };
-    
-    const costNum = parseFloat(cost);
-    const shippingNum = parseFloat(shippingFee) || 0;
-    const commissionNum = parseFloat(commissionRate) || 0;
-    
-    const totalCost = costNum + shippingNum;
-    const suggestedPrice = Math.round(totalCost * (1 + 0.6) / (1 - commissionNum / 100));
-    const profit = suggestedPrice - totalCost - (suggestedPrice * commissionNum / 100);
-    const profitRate = Math.round((profit / suggestedPrice) * 100);
-    
-    return { 
-      suggestedPrice: `RM ${suggestedPrice.toFixed(2)}`, 
-      profitRate: `${profitRate}%` 
-    };
-  };
-
-  const priceResult = calculatePrice();
 
   return (
     <MainLayout>
       <div className="space-y-6">
-        {/* 页面标题 */}
-        <div className="flex items-center gap-3 mb-8">
-          <Search className="w-8 h-8 text-[#00EEFF]" />
+        {/* 顶部标题栏 */}
+        <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-white">智能选品</h1>
-            <p className="text-[#64748B]">AI 市场分析 · 竞品挖掘 · 利润计算</p>
+            <h1 className="text-2xl font-bold text-[#1D2129]">选品中心</h1>
+            <p className="text-[#86909C] mt-1">AI智能分析，帮您找到爆品</p>
           </div>
+          {selectedProducts.length > 0 && (
+            <Button className="btn-primary" onClick={addToDraft}>
+              加入草稿箱 ({selectedProducts.length})
+            </Button>
+          )}
         </div>
 
-        {/* 步骤指示器 */}
-        <div className="flex items-center justify-center gap-4 mb-8">
-          {[
-            { step: 1, label: '输入关键词', icon: Search },
-            { step: 2, label: 'AI 分析', icon: BarChart3 },
-            { step: 3, label: '选品报告', icon: FileText },
-          ].map((s) => {
-            const Icon = s.icon;
-            const isActive = step >= s.step;
-            const isCurrent = step === s.step;
-            
-            return (
-              <div key={s.step} className="flex items-center gap-3">
-                <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold transition-all ${
-                  isActive 
-                    ? 'bg-[#00EEFF] text-[#0B101A]' 
-                    : 'bg-[#1E293B] text-[#64748B]'
-                } ${isCurrent ? 'animate-neon-pulse' : ''}`}>
-                  <Icon className="w-5 h-5" />
-                </div>
-                <span className={`text-sm ${isActive ? 'text-white' : 'text-[#64748B]'}`}>
-                  {s.label}
-                </span>
-                {s.step < 3 && (
-                  <div className={`w-16 h-0.5 ${isActive ? 'bg-[#00EEFF]' : 'bg-[#1E293B]'}`} />
-                )}
-              </div>
-            );
-          })}
-        </div>
+        {/* 选品流程卡片 */}
+        <Card className="card-minimal">
+          <div className="p-6">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+              <TabsList className="w-full grid grid-cols-4 mb-8 bg-[#F2F3F5]">
+                <TabsTrigger value="demand" className="data-[state=active]:bg-white data-[state=active]:text-[#165DFF]">
+                  1. 需求分析
+                </TabsTrigger>
+                <TabsTrigger value="mining" className="data-[state=active]:bg-white data-[state=active]:text-[#165DFF]" disabled={!isAnalyzing && activeTab !== 'mining' && activeTab !== 'products' && activeTab !== 'report'}>
+                  2. 爆款挖掘
+                </TabsTrigger>
+                <TabsTrigger value="products" className="data-[state=active]:bg-white data-[state=active]:text-[#165DFF]" disabled={!isAnalyzing && activeTab !== 'products' && activeTab !== 'report'}>
+                  3. 可行性分析
+                </TabsTrigger>
+                <TabsTrigger value="report" className="data-[state=active]:bg-white data-[state=active]:text-[#165DFF]" disabled={!isAnalyzing && activeTab !== 'report'}>
+                  4. 生成报告
+                </TabsTrigger>
+              </TabsList>
 
-        {/* 步骤1: 输入关键词 */}
-        {step === 1 && (
-          <Card className="glass-card p-8 max-w-3xl mx-auto">
-            <h3 className="text-xl font-semibold text-white mb-6 text-center">输入类目或关键词</h3>
-            <div className="space-y-6">
-              {/* 关键词输入 */}
-              <div className="space-y-3">
-                <Label className="text-[#94A3B8]">类目/关键词</Label>
-                <Input
-                  placeholder="例如：无线蓝牙耳机、宠物用品、家居收纳"
-                  value={keyword}
-                  onChange={(e) => setKeyword(e.target.value)}
-                  className="h-14 tech-input text-lg"
-                />
-              </div>
+              {/* 需求分析 */}
+              <TabsContent value="demand" className="mt-0">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                  <div className="space-y-6">
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-semibold text-[#1D2129]">告诉我们您的需求</h3>
+                      
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          <label className="text-sm text-[#4E5969]">目标类目</label>
+                          <Select 
+                            value={demandForm.category} 
+                            onValueChange={(v) => setDemandForm({ ...demandForm, category: v })}
+                          >
+                            <SelectTrigger className="input-minimal">
+                              <SelectValue placeholder="请选择类目" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="pet">宠物用品</SelectItem>
+                              <SelectItem value="home">家居装饰</SelectItem>
+                              <SelectItem value="electronics">3C数码</SelectItem>
+                              <SelectItem value="beauty">美妆个护</SelectItem>
+                              <SelectItem value="fashion">时尚服饰</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
 
-              {/* 平台和站点选择 */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-3">
-                  <Label className="text-[#94A3B8]">目标平台</Label>
-                  <Select value={platform} onValueChange={setPlatform}>
-                    <SelectTrigger className="h-12 tech-input">
-                      <SelectValue placeholder="选择平台" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-[#0F1628] border-[#1E293B]">
-                      <SelectItem value="shopee">Shopee</SelectItem>
-                      <SelectItem value="lazada">Lazada</SelectItem>
-                      <SelectItem value="tiktok">TikTok Shop</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-3">
-                  <Label className="text-[#94A3B8]">目标站点</Label>
-                  <Select value={site} onValueChange={setSite}>
-                    <SelectTrigger className="h-12 tech-input">
-                      <SelectValue placeholder="选择站点" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-[#0F1628] border-[#1E293B]">
-                      <SelectItem value="my">马来站</SelectItem>
-                      <SelectItem value="th">泰国站</SelectItem>
-                      <SelectItem value="vn">越南站</SelectItem>
-                      <SelectItem value="id">印尼站</SelectItem>
-                      <SelectItem value="ph">菲律宾站</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
+                        <div className="space-y-2">
+                          <label className="text-sm text-[#4E5969]">目标市场</label>
+                          <Select 
+                            value={demandForm.market} 
+                            onValueChange={(v) => setDemandForm({ ...demandForm, market: v })}
+                          >
+                            <SelectTrigger className="input-minimal">
+                              <SelectValue placeholder="请选择市场" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="us">美国</SelectItem>
+                              <SelectItem value="uk">英国</SelectItem>
+                              <SelectItem value="id">印尼</SelectItem>
+                              <SelectItem value="th">泰国</SelectItem>
+                              <SelectItem value="global">全球市场</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
 
-              <Button 
-                onClick={handleStartAnalysis}
-                disabled={loading}
-                className="w-full h-14 btn-neon-primary text-lg"
-              >
-                {loading ? (
-                  <div className="flex items-center gap-3">
-                    <div className="w-6 h-6 border-2 border-[#0B101A] border-t-transparent rounded-full animate-spin" />
-                    AI 分析中...
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-3">
-                    <Zap className="w-6 h-6" />
-                    开始 AI 分析
-                    <ArrowRight className="w-6 h-6" />
-                  </div>
-                )}
-              </Button>
-            </div>
-          </Card>
-        )}
+                        <div className="space-y-2">
+                          <label className="text-sm text-[#4E5969]">预算范围</label>
+                          <Select 
+                            value={demandForm.budget} 
+                            onValueChange={(v) => setDemandForm({ ...demandForm, budget: v })}
+                          >
+                            <SelectTrigger className="input-minimal">
+                              <SelectValue placeholder="请选择预算" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="low">$1000 以下</SelectItem>
+                              <SelectItem value="medium">$1000 - $5000</SelectItem>
+                              <SelectItem value="high">$5000 - $20000</SelectItem>
+                              <SelectItem value="ultra">$20000 以上</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
 
-        {/* 步骤2: 分析结果 */}
-        {step === 2 && analysis && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* 左侧：市场分析 + 利润计算 */}
-            <div className="lg:col-span-1 space-y-6">
-              {/* AI 市场分析结果 */}
-              <Card className="glass-card p-6">
-                <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                  <BarChart3 className="w-5 h-5 text-[#00EEFF]" />
-                  AI 市场分析
-                </h3>
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center p-4 rounded-xl bg-[rgba(0,238,255,0.1)] border border-[rgba(0,238,255,0.2)]">
-                    <div>
-                      <span className="text-[#94A3B8] text-sm">市场规模</span>
-                      <p className="text-[#00EEFF] font-bold text-xl capitalize">{analysis.marketSize}</p>
-                    </div>
-                    {analysis.marketSize === 'large' && <TrendingUp className="w-6 h-6 text-[#00EEFF]" />}
-                  </div>
-                  <div className="flex justify-between items-center p-4 rounded-xl bg-[rgba(123,97,255,0.1)] border border-[rgba(123,97,255,0.2)]">
-                    <div>
-                      <span className="text-[#94A3B8] text-sm">竞争度</span>
-                      <p className="text-[#7B61FF] font-bold text-xl capitalize">{analysis.competition}</p>
-                    </div>
-                  </div>
-                  <div className="flex justify-between items-center p-4 rounded-xl bg-[rgba(0,230,118,0.1)] border border-[rgba(0,230,118,0.2)]">
-                    <div>
-                      <span className="text-[#94A3B8] text-sm">建议利润率</span>
-                      <p className="text-[#00E676] font-bold text-xl">{analysis.suggestedProfit}%</p>
-                    </div>
-                  </div>
-                  <div className="flex justify-between items-center p-4 rounded-xl bg-[rgba(255,152,0,0.1)] border border-[rgba(255,152,0,0.2)]">
-                    <div>
-                      <span className="text-[#94A3B8] text-sm">风险等级</span>
-                      <p className={`font-bold text-xl capitalize ${
-                        analysis.riskLevel === 'low' ? 'text-[#00E676]' :
-                        analysis.riskLevel === 'medium' ? 'text-[#FF9800]' : 'text-[#FF4081]'
-                      }`}>{analysis.riskLevel}</p>
-                    </div>
-                    {analysis.riskLevel === 'low' && <CheckCircle2 className="w-6 h-6 text-[#00E676]" />}
-                    {analysis.riskLevel !== 'low' && <AlertTriangle className="w-6 h-6 text-[#FF9800]" />}
-                  </div>
-                  
-                  <Separator className="bg-[#1E293B]" />
-                  
-                  <p className="text-[#94A3B8] text-sm leading-relaxed">
-                    {analysis.marketDescription}
-                  </p>
-                </div>
-              </Card>
-
-              {/* 利润计算器 */}
-              <Card className="glass-card p-6">
-                <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                  <DollarSign className="w-5 h-5 text-[#7B61FF]" />
-                  利润计算器
-                </h3>
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label className="text-[#94A3B8]">成本价 (CNY)</Label>
-                    <Input 
-                      type="number" 
-                      placeholder="请输入成本价" 
-                      value={cost}
-                      onChange={(e) => setCost(e.target.value)}
-                      className="h-12 tech-input"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-[#94A3B8]">物流费 (CNY)</Label>
-                    <Input 
-                      type="number" 
-                      placeholder="物流费" 
-                      value={shippingFee}
-                      onChange={(e) => setShippingFee(e.target.value)}
-                      className="h-12 tech-input"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-[#94A3B8]">平台佣金 (%)</Label>
-                    <Input 
-                      type="number" 
-                      placeholder="佣金比例" 
-                      value={commissionRate}
-                      onChange={(e) => setCommissionRate(e.target.value)}
-                      className="h-12 tech-input"
-                    />
-                  </div>
-                  
-                  {cost && (
-                    <div className="pt-4 border-t border-[#1E293B] space-y-3">
-                      <div className="flex justify-between">
-                        <span className="text-[#64748B]">建议售价</span>
-                        <span className="text-[#00EEFF] font-bold text-xl">{priceResult.suggestedPrice}</span>
+                        <div className="space-y-2">
+                          <label className="text-sm text-[#4E5969]">其他需求描述</label>
+                          <Textarea
+                            placeholder="请描述您的特殊需求，比如：避开季节性商品、需要轻小件、利润率要求等..."
+                            value={demandForm.requirement}
+                            onChange={(e) => setDemandForm({ ...demandForm, requirement: e.target.value })}
+                            className="input-minimal min-h-[120px]"
+                          />
+                        </div>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-[#64748B]">预估利润率</span>
-                        <span className={`font-bold text-xl ${
-                          parseFloat(priceResult.profitRate) >= 30 ? 'text-[#00E676]' :
-                          parseFloat(priceResult.profitRate) >= 20 ? 'text-[#FF9800]' : 'text-[#FF4081]'
-                        }`}>{priceResult.profitRate}</span>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </Card>
 
-              <Button 
-                onClick={handleViewReport}
-                className="w-full h-12 bg-[rgba(123,97,255,0.2)] text-[#7B61FF] hover:bg-[rgba(123,97,255,0.3)] border border-[rgba(123,97,255,0.3)]"
-              >
-                <FileText className="w-5 h-5 mr-2" />
-                查看完整选品报告
-              </Button>
-            </div>
-
-            {/* 右侧：竞品挖掘 */}
-            <div className="lg:col-span-2">
-              <Card className="glass-card">
-                <div className="p-6 border-b border-[#1E293B]">
-                  <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-                    <Target className="w-5 h-5 text-[#00EEFF]" />
-                    竞品挖掘
-                    <Badge className="ml-2 bg-[rgba(0,238,255,0.2)] text-[#00EEFF] border-[rgba(0,238,255,0.3)]">
-                      {competitors.length} 个热销竞品
-                    </Badge>
-                  </h3>
-                </div>
-                <div className="p-6">
-                  <div className="space-y-4">
-                    {competitors.map((product) => (
-                      <div 
-                        key={product.id} 
-                        className="p-5 rounded-xl bg-[rgba(255,255,255,0.02)] border border-[#1E293B] hover:border-[rgba(0,238,255,0.3)] transition-all"
+                      <Button 
+                        className="w-full btn-primary h-12 text-base"
+                        onClick={startAnalysis}
+                        disabled={isAnalyzing}
                       >
-                        <div className="flex items-start gap-5">
-                          <div className="w-20 h-20 rounded-xl bg-[#1E293B] flex items-center justify-center text-4xl flex-shrink-0">
-                            {product.image}
+                        {isAnalyzing ? (
+                          <div className="flex items-center gap-2">
+                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                            AI分析中，请稍候...
                           </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-white font-medium text-base mb-3 line-clamp-2">{product.name}</p>
-                            <div className="flex items-center gap-6 mb-3">
-                              <span className="text-[#00EEFF] font-bold text-lg">{product.price}</span>
-                              <span className="text-[#94A3B8] text-sm">销量: {product.sales}</span>
-                              <span className="text-[#FF9800] text-sm">评分: {product.rating}</span>
+                        ) : (
+                          <>
+                            <Sparkles className="w-5 h-5 mr-2" />
+                            开始AI选品分析
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="bg-gradient-to-br from-[#E8F3FF] to-white rounded-lg p-6">
+                    <h3 className="text-lg font-semibold text-[#1D2129] mb-4 flex items-center">
+                      <Sparkles className="w-5 h-5 text-[#165DFF] mr-2" />
+                      AI选品优势
+                    </h3>
+                    <div className="space-y-4">
+                      <div className="flex gap-4">
+                        <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center flex-shrink-0">
+                          <TrendingUp className="w-5 h-5 text-[#165DFF]" />
+                        </div>
+                        <div>
+                          <h4 className="font-medium text-[#1D2129]">趋势分析</h4>
+                          <p className="text-sm text-[#86909C]">基于大数据分析市场趋势，识别潜力商品</p>
+                        </div>
+                      </div>
+                      <div className="flex gap-4">
+                        <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center flex-shrink-0">
+                          <DollarSign className="w-5 h-5 text-[#165DFF]" />
+                        </div>
+                        <div>
+                          <h4 className="font-medium text-[#1D2129]">利润测算</h4>
+                          <p className="text-sm text-[#86909C]">精准计算成本、物流、佣金，预估利润空间</p>
+                        </div>
+                      </div>
+                      <div className="flex gap-4">
+                        <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center flex-shrink-0">
+                          <BarChart3 className="w-5 h-5 text-[#165DFF]" />
+                        </div>
+                        <div>
+                          <h4 className="font-medium text-[#1D2129]">竞品分析</h4>
+                          <p className="text-sm text-[#86909C]">深入分析头部竞品，找出差异化机会</p>
+                        </div>
+                      </div>
+                      <div className="flex gap-4">
+                        <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center flex-shrink-0">
+                          <Zap className="w-5 h-5 text-[#165DFF]" />
+                        </div>
+                        <div>
+                          <h4 className="font-medium text-[#1D2129]">智能推荐</h4>
+                          <p className="text-sm text-[#86909C]">结合您的需求，AI智能推荐最适合的商品</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </TabsContent>
+
+              {/* 爆款挖掘 */}
+              <TabsContent value="mining" className="mt-0">
+                <div className="text-center py-12">
+                  <div className="w-16 h-16 rounded-full bg-[#E8F3FF] flex items-center justify-center mx-auto mb-4">
+                    <Target className="w-8 h-8 text-[#165DFF]" />
+                  </div>
+                  <h3 className="text-xl font-semibold text-[#1D2129] mb-2">选品方向推荐</h3>
+                  <p className="text-[#86909C] mb-6">基于您的需求，AI推荐以下选品方向</p>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-3xl mx-auto">
+                    <Card className="card-minimal p-5 cursor-pointer hover:border-[#165DFF]">
+                      <Badge className="bg-[#E8FFEA] text-[#00B42A] mb-3">推荐指数 ★★★★★</Badge>
+                      <h4 className="font-semibold text-[#1D2129] mb-2">智能宠物用品</h4>
+                      <p className="text-sm text-[#86909C]">持续增长类目，智能化趋势明显，利润空间大</p>
+                    </Card>
+                    <Card className="card-minimal p-5 cursor-pointer hover:border-[#165DFF]">
+                      <Badge className="bg-[#FFF7E8] text-[#FF7D00] mb-3">推荐指数 ★★★★</Badge>
+                      <h4 className="font-semibold text-[#1D2129] mb-2">节日装饰用品</h4>
+                      <p className="text-sm text-[#86909C]">节日季临近，需求激增，轻量化易运输</p>
+                    </Card>
+                    <Card className="card-minimal p-5 cursor-pointer hover:border-[#165DFF]">
+                      <Badge className="bg-[#E8F3FF] text-[#165DFF] mb-3">推荐指数 ★★★★</Badge>
+                      <h4 className="font-semibold text-[#1D2129] mb-2">智能家居配件</h4>
+                      <p className="text-sm text-[#86909C]">智能家居赛道火热，配件类需求稳定增长</p>
+                    </Card>
+                  </div>
+                  <div className="mt-8">
+                    <Button className="btn-primary" onClick={() => setActiveTab('products')}>
+                      查看候选商品
+                    </Button>
+                  </div>
+                </div>
+              </TabsContent>
+
+              {/* 可行性分析 */}
+              <TabsContent value="products" className="mt-0">
+                <div className="space-y-4">
+                  {mockProductIdeas.map((product) => (
+                    <Card 
+                      key={product.id} 
+                      className={`card-minimal cursor-pointer transition-all ${
+                        selectedProducts.includes(product.id) ? 'border-[#165DFF] bg-[#E8F3FF]/30' : ''
+                      }`}
+                      onClick={() => toggleProductSelection(product.id)}
+                    >
+                      <div className="p-6">
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-start gap-4">
+                            <div className="w-16 h-16 rounded-lg bg-[#F2F3F5] flex items-center justify-center flex-shrink-0">
+                              <CheckCircle 
+                                className={`w-8 h-8 ${
+                                  selectedProducts.includes(product.id) ? 'text-[#165DFF]' : 'text-[#C9CDD4]'
+                                }`} 
+                              />
                             </div>
-                            <div className="flex flex-wrap gap-2 mb-4">
-                              {product.keySellingPoints.map((point, i) => (
-                                <Badge 
-                                  key={i}
-                                  className="bg-[rgba(0,238,255,0.1)] text-[#00EEFF] border-[rgba(0,238,255,0.2)]"
-                                >
-                                  {point}
-                                </Badge>
-                              ))}
-                            </div>
-                            <div className="flex gap-3">
-                              <Button
-                                variant="ghost"
-                                onClick={() => handleAddToPublishQueue(product)}
-                                className="bg-[rgba(0,238,255,0.1)] text-[#00EEFF] hover:bg-[rgba(0,238,255,0.2)] border border-[rgba(0,238,255,0.3)]"
-                              >
-                                <ShoppingCart className="w-4 h-4 mr-2" />
-                                加入上新队列
-                              </Button>
+                            <div className="flex-1">
+                              <div className="flex items-center gap-3 mb-2">
+                                <h3 className="text-lg font-semibold text-[#1D2129]">{product.name}</h3>
+                                <Badge className="bg-[#F2F3F5] text-[#4E5969]">{product.category}</Badge>
+                                <div className={`text-2xl font-bold ${getScoreColor(product.score)}`}>
+                                  {product.score}分
+                                </div>
+                              </div>
+                              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                                <div>
+                                  <p className="text-sm text-[#86909C]">利润率</p>
+                                  <p className="text-[#1D2129] font-medium">{product.profitMargin}%</p>
+                                </div>
+                                <div>
+                                  <p className="text-sm text-[#86909C]">竞争度</p>
+                                  <p className="text-[#1D2129] font-medium">{product.competition}</p>
+                                </div>
+                                <div>
+                                  <p className="text-sm text-[#86909C]">价格区间</p>
+                                  <p className="text-[#1D2129] font-medium">{product.priceRange}</p>
+                                </div>
+                                <div>
+                                  <p className="text-sm text-[#86909C]">趋势</p>
+                                  <p className={`font-medium ${product.trend === '上升' ? 'text-[#00B42A]' : product.trend === '下降' ? 'text-[#F53F3F]' : 'text-[#4E5969]'}`}>
+                                    {product.trend}
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="flex gap-6">
+                                <div>
+                                  <p className="text-sm text-[#86909C] mb-2">核心卖点</p>
+                                  <div className="flex flex-wrap gap-2">
+                                    {product.features.map((feature, idx) => (
+                                      <Badge key={idx} className="bg-[#E8F3FF] text-[#165DFF]">
+                                        {feature}
+                                      </Badge>
+                                    ))}
+                                  </div>
+                                </div>
+                                <div>
+                                  <p className="text-sm text-[#86909C] mb-2">推荐理由</p>
+                                  <ul className="text-sm text-[#4E5969] space-y-1">
+                                    {product.reasons.map((reason, idx) => (
+                                      <li key={idx}>• {reason}</li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              </div>
                             </div>
                           </div>
                         </div>
                       </div>
-                    ))}
-                  </div>
+                    </Card>
+                  ))}
                 </div>
-              </Card>
-            </div>
-          </div>
-        )}
+                <div className="mt-6 flex justify-end">
+                  <Button className="btn-primary" onClick={() => setActiveTab('report')}>
+                    生成选品报告
+                  </Button>
+                </div>
+              </TabsContent>
 
-        {/* 步骤3: 选品报告 */}
-        {step === 3 && (
-          <Card className="glass-card p-8 max-w-4xl mx-auto">
-            <div className="text-center mb-8">
-              <div className="w-20 h-20 rounded-full bg-[rgba(0,238,255,0.2)] flex items-center justify-center mx-auto mb-4 animate-neon-pulse">
-                <FileText className="w-10 h-10 text-[#00EEFF]" />
-              </div>
-              <h2 className="text-2xl font-bold text-white mb-2">智能选品报告</h2>
-              <p className="text-[#64748B]">关键词：{keyword}</p>
-            </div>
+              {/* 生成报告 */}
+              <TabsContent value="report" className="mt-0">
+                <Card className="card-minimal">
+                  <div className="p-6">
+                    <div className="text-center mb-8">
+                      <div className="w-16 h-16 rounded-full bg-[#E8FFEA] flex items-center justify-center mx-auto mb-4">
+                        <CheckCircle className="w-8 h-8 text-[#00B42A]" />
+                      </div>
+                      <h3 className="text-xl font-semibold text-[#1D2129] mb-2">选品分析完成</h3>
+                      <p className="text-[#86909C]">AI已为您生成详细的选品分析报告</p>
+                    </div>
+                    
+                    <div className="max-w-2xl mx-auto bg-[#F7F8FA] rounded-lg p-6 mb-6">
+                      <h4 className="font-semibold text-[#1D2129] mb-4">📊 选品分析报告摘要</h4>
+                      <div className="space-y-4">
+                        <div>
+                          <p className="text-sm text-[#86909C]">推荐商品</p>
+                          <p className="text-[#1D2129] font-medium">宠物自动喂食器、LED氛围灯串</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-[#86909C]">预期利润率</p>
+                          <p className="text-[#00B42A] font-medium">45% - 55%</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-[#86909C]">风险评估</p>
+                          <p className="text-[#FF7D00] font-medium">中等风险，建议小批量测试</p>
+                        </div>
+                      </div>
+                    </div>
 
-            <Separator className="bg-[#1E293B] my-8" />
-
-            <div className="space-y-8">
-              {/* 市场分析总结 */}
-              <section>
-                <h3 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
-                  <BarChart3 className="w-6 h-6 text-[#00EEFF]" />
-                  市场分析总结
-                </h3>
-                <Card className="bg-[rgba(0,238,255,0.05)] border-[rgba(0,238,255,0.2)] p-6">
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                    <div className="text-center">
-                      <p className="text-[#64748B] text-sm mb-1">市场规模</p>
-                      <p className="text-[#00EEFF] font-bold text-xl capitalize">Large</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-[#64748B] text-sm mb-1">竞争度</p>
-                      <p className="text-[#7B61FF] font-bold text-xl capitalize">Medium</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-[#64748B] text-sm mb-1">建议利润率</p>
-                      <p className="text-[#00E676] font-bold text-xl">35%</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-[#64748B] text-sm mb-1">风险等级</p>
-                      <p className="text-[#00E676] font-bold text-xl capitalize">Low</p>
+                    <div className="flex justify-center gap-4">
+                      <Button variant="ghost" className="btn-secondary">
+                        下载完整报告
+                      </Button>
+                      <Button className="btn-primary" onClick={addToDraft}>
+                        加入草稿箱
+                      </Button>
                     </div>
                   </div>
-                  <p className="text-[#94A3B8] leading-relaxed">
-                    {analysis?.marketDescription}
-                  </p>
                 </Card>
-              </section>
-
-              {/* 建议操作 */}
-              <section>
-                <h3 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
-                  <CheckCircle2 className="w-6 h-6 text-[#00E676]" />
-                  建议操作
-                </h3>
-                <div className="space-y-3">
-                  <div className="p-4 rounded-xl bg-[rgba(0,230,118,0.1)] border border-[rgba(0,230,118,0.2)] flex items-start gap-3">
-                    <CheckCircle2 className="w-5 h-5 text-[#00E676] flex-shrink-0 mt-0.5" />
-                    <div>
-                      <p className="text-white font-medium">建议进入此品类</p>
-                      <p className="text-[#94A3B8] text-sm">市场需求旺盛，竞争适中，利润空间可观</p>
-                    </div>
-                  </div>
-                  <div className="p-4 rounded-xl bg-[rgba(0,238,255,0.1)] border border-[rgba(0,238,255,0.2)] flex items-start gap-3">
-                    <Target className="w-5 h-5 text-[#00EEFF] flex-shrink-0 mt-0.5" />
-                    <div>
-                      <p className="text-white font-medium">建议定价区间</p>
-                      <p className="text-[#94A3B8] text-sm">RM 49 - RM 89，避开价格战头部区间</p>
-                    </div>
-                  </div>
-                  <div className="p-4 rounded-xl bg-[rgba(123,97,255,0.1)] border border-[rgba(123,97,255,0.2)] flex items-start gap-3">
-                    <ShoppingCart className="w-5 h-5 text-[#7B61FF] flex-shrink-0 mt-0.5" />
-                    <div>
-                      <p className="text-white font-medium">差异化卖点建议</p>
-                      <p className="text-[#94A3B8] text-sm">突出续航、降噪、快充功能，避开单纯价格竞争</p>
-                    </div>
-                  </div>
-                </div>
-              </section>
-            </div>
-
-            <div className="flex justify-center gap-4 mt-10">
-              <Button 
-                variant="ghost"
-                onClick={() => setStep(2)}
-                className="h-12 px-6 bg-[#1E293B] text-white hover:bg-[#2D3748]"
-              >
-                返回分析
-              </Button>
-              <Button 
-                className="h-12 px-8 btn-neon-primary"
-                onClick={() => toast.success('已保存选品报告！')}
-              >
-                <FileText className="w-5 h-5 mr-2" />
-                保存报告
-              </Button>
-            </div>
-          </Card>
-        )}
+              </TabsContent>
+            </Tabs>
+          </div>
+        </Card>
       </div>
     </MainLayout>
   );

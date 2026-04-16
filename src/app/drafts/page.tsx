@@ -1,210 +1,214 @@
 'use client';
 
 import { useState } from 'react';
-import { FileText, Search, Filter, Edit, Send, Trash2, CheckCircle2 } from 'lucide-react';
+import { FileText, Edit, Trash2, Clock, CheckCircle, AlertCircle, ArrowRight, Plus, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Checkbox } from '@/components/ui/checkbox';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { toast } from 'sonner';
+import { Progress } from '@/components/ui/progress';
 import MainLayout from '@/components/layout/MainLayout';
+import { toast } from 'sonner';
+import { useRouter } from 'next/navigation';
 
-interface Draft {
-  id: string;
-  name: string;
-  image: string;
-  platform: string;
-  shop: string;
-  status: 'draft' | 'ready';
-  createdAt: string;
-}
+// 模拟草稿数据
+const mockDrafts = [
+  {
+    id: 1,
+    name: '宠物智能饮水机',
+    category: '宠物用品',
+    status: 'editing',
+    progress: 40,
+    lastEdit: '5分钟前',
+    image: '🐾',
+  },
+  {
+    id: 2,
+    name: 'LED氛围灯串',
+    category: '家居装饰',
+    status: 'pending',
+    progress: 70,
+    lastEdit: '1小时前',
+    image: '💡',
+  },
+  {
+    id: 3,
+    name: '便携手机支架',
+    category: '手机配件',
+    status: 'ready',
+    progress: 100,
+    lastEdit: '2小时前',
+    image: '📱',
+  },
+  {
+    id: 4,
+    name: '无线充电器',
+    category: '3C数码',
+    status: 'editing',
+    progress: 20,
+    lastEdit: '昨天',
+    image: '🔋',
+  },
+];
 
 export default function DraftsPage() {
-  const [selected, setSelected] = useState<string[]>([]);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const router = useRouter();
+  const [activeTab, setActiveTab] = useState('all');
+  const [drafts, setDrafts] = useState(mockDrafts);
 
-  const drafts: Draft[] = [
-    { id: '1', name: '无线蓝牙耳机 TWS 入耳式', image: '🎧', platform: 'Shopee', shop: '深圳数码店', status: 'ready', createdAt: '2024-01-15' },
-    { id: '2', name: '智能手表 运动手环', image: '⌚', platform: 'Shopee', shop: '广州服饰店', status: 'draft', createdAt: '2024-01-14' },
-    { id: '3', name: '便携充电宝 20000mAh', image: '🔋', platform: 'Lazada', shop: '深圳数码店', status: 'ready', createdAt: '2024-01-13' },
-  ];
+  const filteredDrafts = activeTab === 'all' 
+    ? drafts 
+    : drafts.filter(d => d.status === activeTab);
 
-  const toggleSelect = (id: string) => {
-    setSelected(prev => 
-      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
-    );
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'editing':
+        return <Badge className="bg-[#E8F3FF] text-[#165DFF]">编辑中</Badge>;
+      case 'pending':
+        return <Badge className="bg-[#FFF7E8] text-[#FF7D00]">待处理</Badge>;
+      case 'ready':
+        return <Badge className="bg-[#E8FFEA] text-[#00B42A]">待上架</Badge>;
+      default:
+        return null;
+    }
   };
 
-  const toggleSelectAll = () => {
-    setSelected(selected.length === drafts.length ? [] : drafts.map(d => d.id));
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'editing':
+        return <Edit className="w-5 h-5 text-[#165DFF]" />;
+      case 'pending':
+        return <Clock className="w-5 h-5 text-[#FF7D00]" />;
+      case 'ready':
+        return <CheckCircle className="w-5 h-5 text-[#00B42A]" />;
+      default:
+        return null;
+    }
   };
 
-  const handleDelete = (id: string) => {
-    setDeletingId(null);
-    toast.success('已删除草稿');
+  const handleDelete = (id: number) => {
+    setDrafts(drafts.filter(d => d.id !== id));
+    toast.success('草稿已删除');
   };
 
-  const handlePublish = (draft: Draft) => {
-    toast.success(`正在发布：${draft.name}`);
+  const handlePublish = (id: number) => {
+    toast.success('商品已上架！');
+  };
+
+  const handleContinueEdit = (id: number) => {
+    router.push('/publish');
   };
 
   return (
     <MainLayout>
       <div className="space-y-6">
-      {/* 页面标题 */}
-      <div className="flex items-center gap-3 mb-8">
-        <FileText className="w-8 h-8 text-[#00EEFF]" />
-        <div>
-          <h1 className="text-2xl font-bold text-white">草稿箱</h1>
-          <p className="text-[#64748B]">未发布商品管理</p>
-        </div>
-      </div>
-
-      {/* 筛选栏 + 批量操作 */}
-      <Card className="glass-card p-6">
-        <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
-          <div className="flex flex-wrap gap-4 items-center">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#64748B]" />
-              <Input placeholder="搜索草稿" className="pl-10 w-64 h-10 tech-input" />
-            </div>
-            <Select defaultValue="all">
-              <SelectTrigger className="w-32 h-10 tech-input">
-                <SelectValue placeholder="状态" />
-              </SelectTrigger>
-              <SelectContent className="bg-[#0F1628] border-[#1E293B]">
-                <SelectItem value="all">全部</SelectItem>
-                <SelectItem value="draft">草稿中</SelectItem>
-                <SelectItem value="ready">待发布</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select defaultValue="all">
-              <SelectTrigger className="w-32 h-10 tech-input">
-                <SelectValue placeholder="平台" />
-              </SelectTrigger>
-              <SelectContent className="bg-[#0F1628] border-[#1E293B]">
-                <SelectItem value="all">全部</SelectItem>
-                <SelectItem value="shopee">Shopee</SelectItem>
-                <SelectItem value="lazada">Lazada</SelectItem>
-              </SelectContent>
-            </Select>
+        {/* 顶部标题栏 */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-[#1D2129]">草稿箱</h1>
+            <p className="text-[#86909C] mt-1">管理您的商品草稿</p>
           </div>
-          
-          {selected.length > 0 && (
-            <div className="flex items-center gap-2">
-              <span className="text-[#64748B] text-sm">已选 {selected.length} 项</span>
-              <Button variant="ghost" size="sm" className="h-9 bg-[#1E293B] text-white">
-                批量编辑
-              </Button>
-              <Button size="sm" className="h-9 btn-neon-primary">
-                批量发布
-              </Button>
-            </div>
-          )}
+          <Button className="btn-primary" onClick={() => router.push('/publish')}>
+            <Plus className="w-4 h-4 mr-2" />
+            新建草稿
+          </Button>
         </div>
-      </Card>
 
-      {/* 草稿列表 */}
-      <Card className="glass-card">
-        <div className="p-6 border-b border-[#1E293B]">
-          <div className="flex items-center gap-3">
-            <Checkbox 
-              checked={selected.length === drafts.length && drafts.length > 0}
-              onCheckedChange={toggleSelectAll}
-              className="border-[#00EEFF] data-[state=checked]:bg-[#00EEFF] data-[state=checked]:text-[#0B101A]"
-            />
-            <span className="text-[#64748B] text-sm">全选</span>
-          </div>
-        </div>
-        <div className="divide-y divide-[#1E293B]">
-          {drafts.map((draft) => (
-            <div key={draft.id} className="p-6 flex items-center gap-4 hover:bg-[rgba(0,238,255,0.05)] transition-colors">
-              <Checkbox 
-                checked={selected.includes(draft.id)}
-                onCheckedChange={() => toggleSelect(draft.id)}
-                className="border-[#00EEFF] data-[state=checked]:bg-[#00EEFF] data-[state=checked]:text-[#0B101A]"
-              />
-              <div className="w-16 h-16 rounded-xl bg-[#1E293B] flex items-center justify-center text-3xl">
-                {draft.image}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-white font-medium truncate">{draft.name}</p>
-                <div className="flex items-center gap-4 mt-1 text-sm">
-                  <span className="text-[#94A3B8]">{draft.platform}</span>
-                  <span className="text-[#64748B]">·</span>
-                  <span className="text-[#94A3B8]">{draft.shop}</span>
-                  <span className="text-[#64748B]">·</span>
-                  <span className="text-[#64748B]">{draft.createdAt}</span>
-                </div>
-              </div>
-              <Badge className={`
-                ${draft.status === 'ready' ? 'bg-[rgba(0,238,255,0.2)] text-[#00EEFF] border-[rgba(0,238,255,0.3)]' : ''}
-                ${draft.status === 'draft' ? 'bg-[rgba(100,116,139,0.2)] text-[#64748B] border-[rgba(100,116,139,0.3)]' : ''}
-              `}>
-                {draft.status === 'ready' ? '待发布' : '草稿中'}
-              </Badge>
-              <div className="flex items-center gap-2">
-                <Button 
-                  variant="ghost" 
-                  size="sm"
-                  className="h-9 text-[#94A3B8] hover:text-white hover:bg-[rgba(255,255,255,0.05)]"
-                >
-                  <Edit className="w-4 h-4 mr-1" />
-                  编辑
-                </Button>
-                {draft.status === 'ready' && (
-                  <Button 
-                    size="sm"
-                    onClick={() => handlePublish(draft)}
-                    className="h-9 bg-[rgba(0,238,255,0.1)] text-[#00EEFF] hover:bg-[rgba(0,238,255,0.2)] border border-[rgba(0,238,255,0.3)]"
-                  >
-                    <Send className="w-4 h-4 mr-1" />
-                    发布
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="w-full max-w-lg bg-[#F2F3F5]">
+            <TabsTrigger value="all" className="flex-1 data-[state=active]:bg-white data-[state=active]:text-[#165DFF]">
+              全部 ({drafts.length})
+            </TabsTrigger>
+            <TabsTrigger value="editing" className="flex-1 data-[state=active]:bg-white data-[state=active]:text-[#165DFF]">
+              编辑中 ({drafts.filter(d => d.status === 'editing').length})
+            </TabsTrigger>
+            <TabsTrigger value="ready" className="flex-1 data-[state=active]:bg-white data-[state=active]:text-[#165DFF]">
+              待上架 ({drafts.filter(d => d.status === 'ready').length})
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value={activeTab} className="mt-6">
+            {filteredDrafts.length === 0 ? (
+              <Card className="card-minimal">
+                <div className="p-12 text-center">
+                  <FileText className="w-16 h-16 text-[#C9CDD4] mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold text-[#4E5969] mb-2">暂无草稿</h3>
+                  <p className="text-[#86909C] mb-6">开始创建您的第一个商品草稿吧</p>
+                  <Button className="btn-primary" onClick={() => router.push('/publish')}>
+                    <Sparkles className="w-4 h-4 mr-2" />
+                    新建商品
                   </Button>
-                )}
-                <Dialog open={deletingId === draft.id} onOpenChange={(open) => !open && setDeletingId(null)}>
-                  <DialogTrigger asChild>
-                    <Button 
-                      variant="ghost" 
-                      size="sm"
-                      className="h-9 text-[#FF4081] hover:text-[#FF4081] hover:bg-[rgba(255,64,129,0.1)]"
-                      onClick={() => setDeletingId(draft.id)}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="bg-[rgba(15,22,36,0.95)] border-[#1E293B]">
-                    <DialogHeader>
-                      <DialogTitle className="text-white">确认删除</DialogTitle>
-                      <DialogDescription className="text-[#64748B]">
-                        确定要删除草稿「{draft.name}」吗？此操作不可撤销。
-                      </DialogDescription>
-                    </DialogHeader>
-                    <DialogFooter className="gap-3">
-                      <Button 
-                        variant="ghost" 
-                        onClick={() => setDeletingId(null)}
-                        className="text-[#64748B] hover:text-white"
-                      >
-                        取消
-                      </Button>
-                      <Button 
-                        onClick={() => handleDelete(draft.id)}
-                        className="bg-[#FF4081] hover:bg-[#F50057] text-white"
-                      >
-                        确认删除
-                      </Button>
-                    </DialogFooter>
-                  </DialogContent>
-                </Dialog>
+                </div>
+              </Card>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filteredDrafts.map((draft) => (
+                  <Card key={draft.id} className="card-minimal">
+                    <div className="p-5">
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-14 h-14 rounded-lg bg-[#F2F3F5] flex items-center justify-center text-3xl">
+                            {draft.image}
+                          </div>
+                          <div>
+                            <h3 className="font-semibold text-[#1D2129]">{draft.name}</h3>
+                            <p className="text-sm text-[#86909C]">{draft.category}</p>
+                          </div>
+                        </div>
+                        {getStatusBadge(draft.status)}
+                      </div>
+
+                      <div className="mb-4">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-sm text-[#86909C]">完成进度</span>
+                          <span className="text-sm font-medium text-[#1D2129]">{draft.progress}%</span>
+                        </div>
+                        <Progress value={draft.progress} className="h-2" />
+                      </div>
+
+                      <div className="flex items-center justify-between text-sm text-[#86909C] mb-4">
+                        <div className="flex items-center gap-1">
+                          <Clock className="w-4 h-4" />
+                          <span>最后编辑：{draft.lastEdit}</span>
+                        </div>
+                      </div>
+
+                      <div className="flex gap-2">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="flex-1 text-[#165DFF]"
+                          onClick={() => handleContinueEdit(draft.id)}
+                        >
+                          <Edit className="w-4 h-4 mr-1" />
+                          继续编辑
+                        </Button>
+                        {draft.status === 'ready' && (
+                          <Button 
+                            size="sm" 
+                            className="flex-1 btn-primary"
+                            onClick={() => handlePublish(draft.id)}
+                          >
+                            <ArrowRight className="w-4 h-4 mr-1" />
+                            立即上架
+                          </Button>
+                        )}
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="text-[#F53F3F]"
+                          onClick={() => handleDelete(draft.id)}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </Card>
+                ))}
               </div>
-            </div>
-          ))}
-        </div>
-      </Card>
+            )}
+          </TabsContent>
+        </Tabs>
       </div>
     </MainLayout>
   );
