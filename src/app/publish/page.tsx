@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { 
   Plus, 
   Upload, 
@@ -19,8 +19,12 @@ import {
   Save,
   Layers,
   PlayCircle,
-  Edit3
+  Edit3,
+  XCircle,
+  AlertTriangle,
+  Shield
 } from 'lucide-react';
+import { checkProductCompliance, getRiskLevelBadgeClass, getRiskLevelText, ComplianceCheckResult } from '@/lib/compliance';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -95,6 +99,35 @@ export default function PublishPage() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [pricingResult, setPricingResult] = useState<PricingResult | null>(null);
   
+  // 目标地区选项
+  const targetRegions = [
+    { id: '美区', name: '美国市场', note: '需要FDA、CPC、FCC认证' },
+    { id: '欧区', name: '欧洲市场', note: '需要UKCA、CE认证' },
+    { id: '印尼', name: '印尼市场', note: '需要BPOM、HALAL认证' },
+    { id: '泰国', name: '泰国市场', note: '需要Thai FDA、TIS认证' },
+    { id: '越南', name: '越南市场', note: '需要越南FDA、COA认证' },
+    { id: '马来', name: '马来西亚', note: '需要MAL、HALAL认证' }
+  ];
+
+  // 合规检查显示组件
+  function ComplianceBadge({ result }: { result: ComplianceCheckResult }) {
+    return (
+      <div className="flex items-center gap-2">
+        <Badge className={getRiskLevelBadgeClass(result.riskLevel)}>
+          {result.passed ? (
+            <CheckCircle className="w-3 h-3 mr-1" />
+          ) : (
+            <XCircle className="w-3 h-3 mr-1" />
+          )}
+          {getRiskLevelText(result.riskLevel)}
+        </Badge>
+        {result.warnings.length > 0 && (
+          <AlertTriangle className="w-4 h-4 text-[#FF7D00]" />
+        )}
+      </div>
+    );
+  }
+
   // 商品数据
   const [productData, setProductData] = useState({
     sourceType: 'link', // link 或 manual
@@ -103,7 +136,8 @@ export default function PublishPage() {
     category: '',
     description: '',
     costPrice: '',
-    platform: ''
+    platform: '',
+    targetRegion: '美区'
   });
   
   // 处理选项
@@ -399,6 +433,28 @@ export default function PublishPage() {
                           </div>
 
                           <div className="space-y-2">
+                            <label className="text-sm text-[#4E5969]">目标市场</label>
+                            <Select 
+                              value={productData.targetRegion} 
+                              onValueChange={(v) => setProductData({ ...productData, targetRegion: v })}
+                            >
+                              <SelectTrigger className="input-minimal h-12">
+                                <SelectValue placeholder="请选择目标市场" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {targetRegions.map((region) => (
+                                  <SelectItem key={region.id} value={region.id}>
+                                    {region.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <p className="text-xs text-[#86909C]">
+                              {targetRegions.find(r => r.id === productData.targetRegion)?.note}
+                            </p>
+                          </div>
+
+                          <div className="space-y-2">
                             <label className="text-sm text-[#4E5969]">成本价 (¥)</label>
                             <Input
                               type="number"
@@ -682,6 +738,90 @@ export default function PublishPage() {
                       <p className="text-[#86909C]">预览商品信息，选择发布平台</p>
                     </div>
 
+                    {/* 合规检查 */}
+                    {(() => {
+                      const complianceResult = checkProductCompliance({
+                        name: productData.productName || 'Smart Pet Feeder',
+                        category: productData.category,
+                        description: productData.description,
+                        price: pricingResult?.suggestedPrice,
+                        targetRegion: productData.targetRegion,
+                        targetPlatform: productData.platform
+                      });
+
+                      return (
+                        <Card className={`card-minimal mb-6 ${!complianceResult.passed ? 'border-[#F53F3F] bg-[#FFECE8]/20' : ''}`}>
+                          <div className="p-6">
+                            <div className="flex items-center gap-3 mb-4">
+                              <Shield className={`w-6 h-6 ${complianceResult.passed ? 'text-[#00B42A]' : 'text-[#F53F3F]'}`} />
+                              <div>
+                                <h4 className="font-medium text-[#1D2129]">合规检查</h4>
+                                <p className="text-sm text-[#86909C]">目标市场：{productData.targetRegion}</p>
+                              </div>
+                              <div className="ml-auto">
+                                <ComplianceBadge result={complianceResult} />
+                              </div>
+                            </div>
+
+                            {/* 合规检查不通过 */}
+                            {!complianceResult.passed && (
+                              <div className="p-4 bg-[#FFECE8] rounded-lg border border-[#F53F3F]/30 mb-4">
+                                <div className="flex items-start gap-3">
+                                  <XCircle className="w-5 h-5 text-[#F53F3F] flex-shrink-0 mt-0.5" />
+                                  <div>
+                                    <h5 className="font-medium text-[#F53F3F] mb-1">合规检查不通过</h5>
+                                    {complianceResult.forbiddenCategory && (
+                                      <p className="text-sm text-[#F53F3F]">
+                                        禁售品类：{complianceResult.forbiddenCategory}
+                                      </p>
+                                    )}
+                                    {complianceResult.forbiddenKeyword && (
+                                      <p className="text-sm text-[#F53F3F]">
+                                        违禁关键词：{complianceResult.forbiddenKeyword}
+                                      </p>
+                                    )}
+                                    <p className="text-sm text-[#86909C] mt-2">
+                                      该商品存在合规风险，禁止上架销售，请更换商品
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* 合规警告 */}
+                            {complianceResult.passed && complianceResult.warnings.length > 0 && (
+                              <div className="p-4 bg-[#FFF7E8] rounded-lg border border-[#FF7D00]/30 mb-4">
+                                <div className="flex items-start gap-3">
+                                  <AlertTriangle className="w-5 h-5 text-[#FF7D00] flex-shrink-0 mt-0.5" />
+                                  <div>
+                                    <h5 className="font-medium text-[#FF7D00] mb-1">合规注意事项</h5>
+                                    {complianceResult.warnings.map((warning, idx) => (
+                                      <p key={idx} className="text-sm text-[#FF7D00]">
+                                        • {warning}
+                                      </p>
+                                    ))}
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* 认证要求提示 */}
+                            {complianceResult.certRequirements && complianceResult.certRequirements.length > 0 && (
+                              <div className="p-4 bg-[#E8F3FF] rounded-lg border border-[#165DFF]/30">
+                                <h5 className="font-medium text-[#165DFF] mb-2">平台认证要求</h5>
+                                {complianceResult.certRequirements.map((req, idx) => (
+                                  <div key={idx} className="text-sm text-[#4E5969]">
+                                    <p className="mb-1"><strong>{req.region}：</strong>{req.certifications.join('、')}</p>
+                                    <p className="text-xs text-[#86909C]">{req.description}</p>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </Card>
+                      );
+                    })()}
+
                     {/* 商品信息预览 */}
                     <Card className="card-minimal mb-6">
                       <div className="p-6 space-y-4">
@@ -691,10 +831,18 @@ export default function PublishPage() {
                           </div>
                           <div className="flex-1">
                             <h4 className="font-medium text-[#1D2129] mb-1">
-                              Smart Pet Feeder with APP Control - Automatic Dog Cat Food Dispenser 6L Capacity
+                              {productData.productName || 'Smart Pet Feeder with APP Control - Automatic Dog Cat Food Dispenser 6L Capacity'}
                             </h4>
-                            <div className="flex items-center gap-3 text-sm">
-                              <Badge className="bg-[#E8F3FF] text-[#165DFF]">宠物用品</Badge>
+                            <div className="flex items-center gap-3 text-sm flex-wrap">
+                              <Badge className="bg-[#E8F3FF] text-[#165DFF]">
+                                {productData.category === 'pet' ? '宠物用品' : 
+                                 productData.category === 'home' ? '家居装饰' : 
+                                 productData.category === 'electronics' ? '3C数码' : 
+                                 productData.category === 'beauty' ? '美妆个护' : '未分类'}
+                              </Badge>
+                              <Badge className="bg-[#F2F3F5] text-[#4E5969]">
+                                {productData.targetRegion}
+                              </Badge>
                               <span className="text-[#00B42A] font-bold text-lg">${pricingResult?.suggestedPrice.toFixed(2) || '39.99'}</span>
                             </div>
                           </div>
@@ -758,6 +906,17 @@ export default function PublishPage() {
                         variant="ghost" 
                         className="btn-secondary"
                         onClick={handleSaveDraft}
+                        disabled={(() => {
+                          const complianceResult = checkProductCompliance({
+                            name: productData.productName || 'Smart Pet Feeder',
+                            category: productData.category,
+                            description: productData.description,
+                            price: pricingResult?.suggestedPrice,
+                            targetRegion: productData.targetRegion,
+                            targetPlatform: productData.platform
+                          });
+                          return !complianceResult.passed;
+                        })()}
                       >
                         <Save className="w-4 h-4 mr-2" />
                         存入草稿
@@ -765,11 +924,42 @@ export default function PublishPage() {
                       <Button 
                         className="flex-1 btn-primary"
                         onClick={handlePublish}
+                        disabled={(() => {
+                          const complianceResult = checkProductCompliance({
+                            name: productData.productName || 'Smart Pet Feeder',
+                            category: productData.category,
+                            description: productData.description,
+                            price: pricingResult?.suggestedPrice,
+                            targetRegion: productData.targetRegion,
+                            targetPlatform: productData.platform
+                          });
+                          return !complianceResult.passed || !productData.platform;
+                        })()}
                       >
                         <ShoppingCart className="w-4 h-4 mr-2" />
                         立即发布
                       </Button>
                     </div>
+                    
+                    {(() => {
+                      const complianceResult = checkProductCompliance({
+                        name: productData.productName || 'Smart Pet Feeder',
+                        category: productData.category,
+                        description: productData.description,
+                        price: pricingResult?.suggestedPrice,
+                        targetRegion: productData.targetRegion,
+                        targetPlatform: productData.platform
+                      });
+                      
+                      if (!complianceResult.passed) {
+                        return (
+                          <p className="text-center text-sm text-[#F53F3F]">
+                            该商品存在合规风险，无法发布
+                          </p>
+                        );
+                      }
+                      return null;
+                    })()}
                   </div>
                 )}
               </div>

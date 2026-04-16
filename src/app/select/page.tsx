@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
-import { Search, Sparkles, TrendingUp, Filter, Plus, CheckCircle, AlertTriangle, Target, Zap, DollarSign, BarChart3, Clock, Store, Truck, Package, Star, ExternalLink, Copy, Shield, ArrowUp, ArrowDown } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { Search, Sparkles, TrendingUp, Filter, Plus, CheckCircle, AlertTriangle, Target, Zap, DollarSign, BarChart3, Clock, Store, Truck, Package, Star, ExternalLink, Copy, Shield, ArrowUp, ArrowDown, AlertCircle, XCircle } from 'lucide-react';
+import { checkProductCompliance, getRiskLevelBadgeClass, getRiskLevelText, ComplianceCheckResult } from '@/lib/compliance';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -20,6 +21,25 @@ import {
 import MainLayout from '@/components/layout/MainLayout';
 import { toast } from 'sonner';
 
+// 合规检查显示组件
+function ComplianceBadge({ result }: { result: ComplianceCheckResult }) {
+  return (
+    <div className="flex items-center gap-2">
+      <Badge className={getRiskLevelBadgeClass(result.riskLevel)}>
+        {result.passed ? (
+          <CheckCircle className="w-3 h-3 mr-1" />
+        ) : (
+          <XCircle className="w-3 h-3 mr-1" />
+        )}
+        {getRiskLevelText(result.riskLevel)}
+      </Badge>
+      {result.warnings.length > 0 && (
+        <AlertCircle className="w-4 h-4 text-[#FF7D00]" />
+      )}
+    </div>
+  );
+}
+
 // 模拟选品数据
 const mockProductIdeas = [
   {
@@ -33,6 +53,9 @@ const mockProductIdeas = [
     priceRange: '$29.99 - $49.99',
     features: ['定时喂食', 'APP控制', '大容量'],
     reasons: ['宠物类目持续增长', '智能化趋势明显', '利润空间大'],
+    targetRegion: '美区',
+    targetPlatform: 'shopee',
+    price: 39.99,
   },
   {
     id: 2,
@@ -45,6 +68,9 @@ const mockProductIdeas = [
     priceRange: '$9.99 - $24.99',
     features: ['USB供电', '多模式', 'APP控制'],
     reasons: ['节日季需求大', '轻量化易运输', '复购率高'],
+    targetRegion: '欧区',
+    targetPlatform: 'lazada',
+    price: 19.99,
   },
   {
     id: 3,
@@ -57,6 +83,24 @@ const mockProductIdeas = [
     priceRange: '$4.99 - $14.99',
     features: ['折叠便携', '多角度', '防滑设计'],
     reasons: ['需求稳定', '供应链成熟', '进入门槛低'],
+    targetRegion: '印尼',
+    targetPlatform: 'tiktok',
+    price: 9.99,
+  },
+  {
+    id: 4,
+    name: '仿真手枪模型',
+    category: '玩具',
+    score: 45,
+    profitMargin: 50,
+    competition: '中等',
+    trend: '稳定',
+    priceRange: '$19.99 - $39.99',
+    features: ['仿真设计', '可拆卸', '合金材质'],
+    reasons: ['玩具类目需求稳定'],
+    targetRegion: '美区',
+    targetPlatform: 'shopee',
+    price: 29.99,
   },
 ];
 
@@ -613,28 +657,43 @@ export default function SelectPage() {
               {/* 可行性分析 */}
               <TabsContent value="products" className="mt-0">
                 <div className="space-y-4">
-                  {mockProductIdeas.map((product) => (
+                  {mockProductIdeas.map((product) => {
+                    // 进行合规检查
+                    const complianceResult = checkProductCompliance({
+                      name: product.name,
+                      category: product.category,
+                      price: product.price,
+                      targetRegion: product.targetRegion,
+                      targetPlatform: product.targetPlatform
+                    });
+                    
+                    return (
                     <Card 
                       key={product.id} 
                       className={`card-minimal cursor-pointer transition-all ${
                         selectedProducts.includes(product.id) ? 'border-[#165DFF] bg-[#E8F3FF]/30' : ''
-                      }`}
+                      } ${!complianceResult.passed ? 'border-[#F53F3F] bg-[#FFECE8]/20' : ''}`}
                       onClick={() => toggleProductSelection(product.id)}
                     >
                       <div className="p-6">
                         <div className="flex items-start justify-between">
                           <div className="flex items-start gap-4">
                             <div className="w-16 h-16 rounded-lg bg-[#F2F3F5] flex items-center justify-center flex-shrink-0">
-                              <CheckCircle 
-                                className={`w-8 h-8 ${
-                                  selectedProducts.includes(product.id) ? 'text-[#165DFF]' : 'text-[#C9CDD4]'
-                                }`} 
-                              />
+                              {complianceResult.passed ? (
+                                <CheckCircle 
+                                  className={`w-8 h-8 ${
+                                    selectedProducts.includes(product.id) ? 'text-[#165DFF]' : 'text-[#C9CDD4]'
+                                  }`} 
+                                />
+                              ) : (
+                                <XCircle className="w-8 h-8 text-[#F53F3F]" />
+                              )}
                             </div>
                             <div className="flex-1">
-                              <div className="flex items-center gap-3 mb-2">
+                              <div className="flex items-center gap-3 mb-2 flex-wrap">
                                 <h3 className="text-lg font-semibold text-[#1D2129]">{product.name}</h3>
                                 <Badge className="bg-[#F2F3F5] text-[#4E5969]">{product.category}</Badge>
+                                <ComplianceBadge result={complianceResult} />
                                 <div className={`text-2xl font-bold ${getScoreColor(product.score)}`}>
                                   {product.score}分
                                 </div>
@@ -679,6 +738,63 @@ export default function SelectPage() {
                                   </ul>
                                 </div>
                               </div>
+                              {/* 合规警告显示 */}
+                              {!complianceResult.passed && (
+                                <div className="mt-4 p-4 bg-[#FFECE8] rounded-lg border border-[#F53F3F]/30">
+                                  <div className="flex items-start gap-3">
+                                    <AlertCircle className="w-5 h-5 text-[#F53F3F] flex-shrink-0 mt-0.5" />
+                                    <div>
+                                      <h4 className="font-medium text-[#F53F3F] mb-1">合规检查不通过</h4>
+                                      {complianceResult.forbiddenCategory && (
+                                        <p className="text-sm text-[#F53F3F]">
+                                          禁售品类：{complianceResult.forbiddenCategory}
+                                        </p>
+                                      )}
+                                      {complianceResult.forbiddenKeyword && (
+                                        <p className="text-sm text-[#F53F3F]">
+                                          违禁关键词：{complianceResult.forbiddenKeyword}
+                                        </p>
+                                      )}
+                                      <p className="text-sm text-[#86909C] mt-1">
+                                        该商品存在合规风险，禁止上架销售
+                                      </p>
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+                              
+                              {/* 合规提示显示 */}
+                              {complianceResult.passed && complianceResult.warnings.length > 0 && (
+                                <div className="mt-4 p-4 bg-[#FFF7E8] rounded-lg border border-[#FF7D00]/30">
+                                  <div className="flex items-start gap-3">
+                                    <AlertTriangle className="w-5 h-5 text-[#FF7D00] flex-shrink-0 mt-0.5" />
+                                    <div>
+                                      <h4 className="font-medium text-[#FF7D00] mb-1">合规注意事项</h4>
+                                      {complianceResult.warnings.map((warning, idx) => (
+                                        <p key={idx} className="text-sm text-[#FF7D00]">
+                                          • {warning}
+                                        </p>
+                                      ))}
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+                              
+                              {/* 价格限制提示 */}
+                              {complianceResult.passed && complianceResult.priceLimit && (
+                                <div className="mt-4 p-4 bg-[#FFECE8] rounded-lg border border-[#F53F3F]/30">
+                                  <div className="flex items-start gap-3">
+                                    <AlertCircle className="w-5 h-5 text-[#F53F3F] flex-shrink-0 mt-0.5" />
+                                    <div>
+                                      <h4 className="font-medium text-[#F53F3F] mb-1">价格超限提醒</h4>
+                                      <p className="text-sm text-[#F53F3F]">
+                                        当前价格 ${complianceResult.priceLimit.current.toFixed(2)} 超过平台限制 ${complianceResult.priceLimit.max.toFixed(2)}
+                                      </p>
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+                              
                               <div className="mt-4 flex justify-end gap-2 pt-4 border-t border-[#E5E6EB]">
                                 <Button 
                                   variant="ghost" 
@@ -688,6 +804,7 @@ export default function SelectPage() {
                                     e.stopPropagation();
                                     startSupplierMatch(product.id);
                                   }}
+                                  disabled={!complianceResult.passed}
                                 >
                                   <Store className="w-4 h-4 mr-1" />
                                   匹配供应商
@@ -698,7 +815,8 @@ export default function SelectPage() {
                         </div>
                       </div>
                     </Card>
-                  ))}
+                    );
+                  })}
                 </div>
                 <div className="mt-6 flex justify-end">
                   <Button className="btn-primary" onClick={() => setActiveTab('report')}>
