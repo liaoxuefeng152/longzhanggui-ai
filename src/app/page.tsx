@@ -2,19 +2,17 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import MainLayout from '@/components/layout/MainLayout';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import {
   Search,
   Rocket,
   BarChart3,
+  FileText,
   TrendingUp,
   TrendingDown,
   ArrowRight,
-  Clock,
   AlertTriangle,
   Package,
 } from 'lucide-react';
@@ -34,12 +32,12 @@ export default function HomePage() {
 
   if (!user) return null;
 
-  // 模拟数据
   const todayStats = {
     sales: 4280,
     adSpend: 350,
     newProducts: 8,
     pendingItems: 2,
+    roi: 1.8,
   };
 
   const recentActivities = [
@@ -52,71 +50,48 @@ export default function HomePage() {
   const pendingTasks = [
     { id: 1, icon: Package, text: '草稿箱：12个待发布商品', action: '编辑发布', link: '/drafts' },
     { id: 2, icon: AlertTriangle, text: '广告待优化：2项', action: '去优化', link: '/ads' },
-    { id: 3, icon: AlertTriangle, text: '库存预警：3个商品', action: '查看详情', link: '/settings' },
   ];
 
   return (
     <MainLayout user={user} onLogout={() => router.push('/login')} useNewNavigation={true}>
-      <div className="space-y-6 max-w-7xl mx-auto">
+      <div className="space-y-6 max-w-6xl mx-auto">
         {/* 欢迎栏 */}
-        <div>
-          <h1 className="text-[20px] font-bold text-foreground">👋 欢迎回来！</h1>
-          <p className="text-[14px] text-muted-foreground mt-1">
-            今日上新 {todayStats.newProducts} 个，广告花费 ${todayStats.adSpend}
-          </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-bold">👋 欢迎回来！</h1>
+            <p className="text-[14px] text-muted-foreground mt-1">
+              今日上新 {todayStats.newProducts} 个 | 广告花费 ${todayStats.adSpend} | ROI {todayStats.roi}
+            </p>
+          </div>
         </div>
 
-        {/* 核心数据卡片 */}
+        {/* 数据卡片 */}
         <div className="grid grid-cols-4 gap-4">
-          <Card className="hover:shadow-md transition-shadow">
+          <Card className="hover:shadow-md transition-shadow border-[#22C97A]/20">
             <CardContent className="p-5">
-              <p className="text-sm text-muted-foreground mb-1">今日销售额</p>
-              <p className="text-3xl font-bold text-foreground">
-                ${todayStats.sales.toLocaleString()}
-              </p>
-              <p className="text-xs text-green-600 flex items-center gap-1 mt-2">
-                <TrendingUp className="h-3 w-3" />
-                +20%
-              </p>
+              <p className="text-sm text-muted-foreground mb-1">选品</p>
+              <p className="text-3xl font-bold text-[#22C97A]">15个</p>
             </CardContent>
           </Card>
 
           <Card className="hover:shadow-md transition-shadow">
             <CardContent className="p-5">
-              <p className="text-sm text-muted-foreground mb-1">广告花费</p>
-              <p className="text-3xl font-bold text-foreground">
-                ${todayStats.adSpend.toLocaleString()}
-              </p>
-              <p className="text-xs text-green-600 flex items-center gap-1 mt-2">
-                <TrendingDown className="h-3 w-3" />
-                -5%
-              </p>
+              <p className="text-sm text-muted-foreground mb-1">上新</p>
+              <p className="text-3xl font-bold text-foreground">3待发</p>
             </CardContent>
           </Card>
 
           <Card className="hover:shadow-md transition-shadow">
             <CardContent className="p-5">
-              <p className="text-sm text-muted-foreground mb-1">今日上新</p>
-              <p className="text-3xl font-bold text-foreground">
-                {todayStats.newProducts}
-              </p>
-              <p className="text-xs text-muted-foreground flex items-center gap-1 mt-2">
-                <TrendingUp className="h-3 w-3" />
-                +3
-              </p>
+              <p className="text-sm text-muted-foreground mb-1">广告</p>
+              <p className="text-3xl font-bold text-foreground">ROI 1.8</p>
             </CardContent>
           </Card>
 
-          <Card className="hover:shadow-md transition-shadow border-orange-200">
+          <Card className="hover:shadow-md transition-shadow">
             <CardContent className="p-5">
-              <p className="text-sm text-muted-foreground mb-1">待优化项</p>
-              <p className="text-3xl font-bold text-orange-600">
-                {todayStats.pendingItems}
-              </p>
-              <p className="text-xs text-orange-600 flex items-center gap-1 mt-2">
-                <AlertTriangle className="h-3 w-3" />
-                需要关注
-              </p>
+              <p className="text-sm text-muted-foreground mb-1">数据</p>
+              <p className="text-3xl font-bold text-foreground">--</p>
             </CardContent>
           </Card>
         </div>
@@ -127,10 +102,10 @@ export default function HomePage() {
             <CardTitle className="text-[14px]">快捷操作</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-4 gap-4">
               <Button 
                 size="lg" 
-                className="h-24 text-lg bg-[#165DFF] hover:bg-[#0F47D2]"
+                className="h-24 text-lg bg-[#22C97A] hover:bg-[#1EAF6A]"
                 onClick={() => router.push('/select')}
               >
                 <Search className="h-6 w-6 mr-2" />
@@ -154,6 +129,15 @@ export default function HomePage() {
               >
                 <BarChart3 className="h-6 w-6 mr-2" />
                 📊 诊断广告
+              </Button>
+
+              <Button 
+                size="lg" 
+                className="h-24 text-lg"
+                variant="outline"
+              >
+                <FileText className="h-6 w-6 mr-2" />
+                📋 查看日报
               </Button>
             </div>
           </CardContent>
@@ -180,7 +164,7 @@ export default function HomePage() {
                         </span>
                         <span className="text-[14px]">{activity.text}</span>
                       </div>
-                      <Button variant="ghost" size="sm" className="text-[#165DFF]">
+                      <Button variant="ghost" size="sm" className="text-[#22C97A]">
                         {activity.action}
                         <ArrowRight className="h-3 w-3 ml-1" />
                       </Button>
@@ -211,7 +195,7 @@ export default function HomePage() {
                           <Icon className="h-4 w-4 text-orange-500" />
                           <span className="text-[14px]">{task.text}</span>
                         </div>
-                        <span className="text-[12px] text-[#165DFF]">{task.action}</span>
+                        <span className="text-[12px] text-[#22C97A]">{task.action}</span>
                       </button>
                     );
                   })}

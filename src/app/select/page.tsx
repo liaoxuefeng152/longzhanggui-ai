@@ -135,7 +135,7 @@ export default function SelectPage() {
         {/* 页面标题 */}
         <div>
           <h1 className="text-xl font-bold flex items-center gap-2">
-            <Search className="h-6 w-6 text-[#165DFF]" />
+            <Search className="h-6 w-6 text-[#22C97A]" />
             智能选品
           </h1>
         </div>
@@ -211,7 +211,7 @@ export default function SelectPage() {
             <div className="mt-6 text-center">
               <Button
                 size="lg"
-                className="bg-[#165DFF] hover:bg-[#0F47D2] min-w-[200px]"
+                className="bg-[#22C97A] hover:bg-[#1EAF6A] min-w-[200px]"
                 onClick={handleStartAnalysis}
                 disabled={isAnalyzing}
               >

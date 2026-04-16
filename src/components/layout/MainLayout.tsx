@@ -53,7 +53,7 @@ export default function MainLayout({
         <div className="h-full flex items-center justify-between px-6">
           {/* Logo */}
           <div className="flex items-center gap-2">
-            <span className="text-xl font-bold text-[#165DFF]">龙掌柜</span>
+            <span className="text-xl font-bold text-[#22C97A]">龙掌柜</span>
           </div>
 
           {/* 主导航 */}
@@ -65,7 +65,7 @@ export default function MainLayout({
                 className={cn(
                   'px-5 py-2 text-[14px] rounded-full transition-all',
                   pathname === item.href
-                    ? 'bg-[#165DFF] text-white font-medium'
+                    ? 'bg-[#22C97A] text-white font-medium'
                     : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                 )}
               >
