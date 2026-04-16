@@ -242,8 +242,8 @@ export default function SelectPage() {
     await new Promise(resolve => setTimeout(resolve, 3000));
     
     setIsAnalyzing(false);
-    setActiveTab('products');
-    toast.success('选品分析完成！');
+    setActiveTab('mining');
+    toast.success('竞品挖掘完成！');
   };
 
   const startSupplierMatch = async (productId: number) => {
