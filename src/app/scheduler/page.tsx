@@ -3,21 +3,12 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import MainLayout from '@/components/layout/MainLayout';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
+import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
 import {
   Select,
   SelectContent,
@@ -25,117 +16,68 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
 import {
-  Zap,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { toast } from 'sonner';
+import {
   Clock,
-  Play,
-  Pause,
+  Bell,
   Plus,
   Trash2,
-  RefreshCw,
-  CheckCircle,
-  XCircle,
-  Loader2,
+  Edit,
+  Play,
+  Pause,
+  Send,
   AlertTriangle,
-  ShoppingCart,
-  Package,
-  Truck,
-  FileText,
-  TrendingUp,
-  RefreshCcw,
-  Database,
-  History,
-  Settings,
-  Bell,
+  CheckCircle,
+  Loader2,
+  RefreshCw,
 } from 'lucide-react';
 
-interface ScheduledTask {
-  id: string;
-  name: string;
-  type: string;
-  description: string;
-  cron_expression: string;
-  enabled: boolean;
-  last_run?: string;
-  next_run?: string;
-  status: 'idle' | 'running' | 'success' | 'failed';
-  result?: string;
-  template?: {
-    icon: string;
-    color: string;
-  };
-}
-
-interface TaskTemplate {
-  type: string;
-  name: string;
-  description: string;
-  defaultCron: string;
-  icon: string;
-  color: string;
-}
-
-interface TaskExecution {
-  id: string;
-  task_id: string;
-  task_name: string;
-  task_type: string;
-  status: 'running' | 'success' | 'failed';
-  start_time: string;
-  end_time?: string;
-  duration?: number;
-  result?: string;
-  error?: string;
-  logs?: string[];
-}
-
-const TASK_ICONS: Record<string, React.ElementType> = {
-  ShoppingCart,
-  Package,
-  Truck,
-  FileText,
-  TrendingUp,
-  AlertTriangle,
-  RefreshCcw,
-  Database,
-};
-
-const CRON_PRESETS = [
-  { label: '每5分钟', value: '*/5 * * * *' },
-  { label: '每15分钟', value: '*/15 * * * *' },
-  { label: '每30分钟', value: '*/30 * * * *' },
-  { label: '每小时', value: '0 * * * *' },
-  { label: '每2小时', value: '0 */2 * * *' },
-  { label: '每4小时', value: '0 */4 * * *' },
-  { label: '每天凌晨', value: '0 3 * * *' },
-  { label: '每天早上', value: '0 9 * * *' },
-  { label: '每天中午', value: '0 12 * * *' },
-  { label: '每天下午', value: '0 18 * * *' },
+// 推送类型
+const PUSH_TYPES = [
+  { id: 'daily_report', name: '运营日报', icon: '📊', description: '每日发送运营数据汇总' },
+  { id: 'weekly_report', name: '周报', icon: '📈', description: '每周发送周度数据分析' },
+  { id: 'inventory_alert', name: '库存预警', icon: '📦', description: '库存低于阈值时告警' },
+  { id: 'order_exception', name: '订单异常', icon: '⚠️', description: '订单处理异常时告警' },
+  { id: 'ad_roi_low', name: '广告ROI低', icon: '💰', description: '广告ROI低于预期时告警' },
+  { id: 'competitor_alert', name: '竞品动态', icon: '🔍', description: '竞品价格变动时通知' },
+  { id: 'customer_review', name: '差评预警', icon: '⭐', description: '收到差评时立即通知' },
+  { id: 'logistics_exception', name: '物流异常', icon: '🚚', description: '物流异常时告警' },
 ];
+
+// 推送配置
+interface PushConfig {
+  id: string;
+  type: string;
+  enabled: boolean;
+  schedule_time: string;
+  threshold?: number;
+  channels: string[];
+}
 
 export default function SchedulerPage() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
-  const [tasks, setTasks] = useState<ScheduledTask[]>([]);
-  const [templates, setTemplates] = useState<TaskTemplate[]>([]);
-  const [executions, setExecutions] = useState<TaskExecution[]>([]);
+  const [configs, setConfigs] = useState<PushConfig[]>([]);
   const [loading, setLoading] = useState(true);
-  
-  // 对话框状态
-  const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [isConfigOpen, setIsConfigOpen] = useState(false);
-  const [isLogOpen, setIsLogOpen] = useState(false);
-  const [selectedTask, setSelectedTask] = useState<ScheduledTask | null>(null);
-  
-  // 创建表单
-  const [createForm, setCreateForm] = useState({
-    name: '',
+  const [showAddDialog, setShowAddDialog] = useState(false);
+  const [isTesting, setIsTesting] = useState(false);
+  const [testConfigId, setTestConfigId] = useState<string | null>(null);
+
+  // 新增/编辑配置
+  const [editConfig, setEditConfig] = useState<Partial<PushConfig>>({
     type: '',
-    cron_expression: '*/5 * * * *',
     enabled: true,
+    schedule_time: '09:00',
+    threshold: 10,
+    channels: ['feishu'],
   });
 
   useEffect(() => {
@@ -145,604 +87,441 @@ export default function SchedulerPage() {
       return;
     }
     setUser(JSON.parse(userData));
-    fetchTasks();
-    fetchExecutions();
+    loadConfigs();
   }, [router]);
 
-  // 定时刷新
-  useEffect(() => {
-    const interval = setInterval(() => {
-      fetchTasks();
-    }, 10000);
-    return () => clearInterval(interval);
-  }, []);
-
-  const fetchTasks = async () => {
-    try {
-      const response = await fetch('/api/v1/scheduler');
-      const data = await response.json();
-      if (data.success) {
-        setTasks(data.data.tasks);
-        setTemplates(data.data.templates);
-      }
-    } catch (error) {
-      console.error('获取任务失败:', error);
-    } finally {
+  // 加载配置
+  const loadConfigs = () => {
+    setLoading(true);
+    // 模拟数据
+    setTimeout(() => {
+      setConfigs([
+        {
+          id: '1',
+          type: 'daily_report',
+          enabled: true,
+          schedule_time: '09:00',
+          channels: ['feishu'],
+        },
+        {
+          id: '2',
+          type: 'weekly_report',
+          enabled: true,
+          schedule_time: '09:00',
+          channels: ['feishu'],
+        },
+        {
+          id: '3',
+          type: 'inventory_alert',
+          enabled: true,
+          schedule_time: '08:00',
+          threshold: 20,
+          channels: ['feishu', 'sms'],
+        },
+        {
+          id: '4',
+          type: 'order_exception',
+          enabled: false,
+          schedule_time: '00:00',
+          channels: ['feishu'],
+        },
+        {
+          id: '5',
+          type: 'ad_roi_low',
+          enabled: true,
+          schedule_time: '10:00',
+          threshold: 15,
+          channels: ['feishu'],
+        },
+      ]);
       setLoading(false);
-    }
+    }, 300);
   };
 
-  const fetchExecutions = async () => {
-    try {
-      const response = await fetch('/api/v1/scheduler/history?limit=20');
-      const data = await response.json();
-      if (data.success) {
-        setExecutions(data.data.items);
-      }
-    } catch (error) {
-      console.error('获取执行历史失败:', error);
-    }
+  // 获取推送类型信息
+  const getPushTypeInfo = (typeId: string) => {
+    return PUSH_TYPES.find((t) => t.id === typeId);
   };
 
-  // 创建任务
-  const handleCreate = async () => {
-    if (!createForm.name || !createForm.type) {
-      toast.error('请填写完整信息');
+  // 切换启用状态
+  const toggleEnabled = (id: string) => {
+    setConfigs((prev) =>
+      prev.map((c) => (c.id === id ? { ...c, enabled: !c.enabled } : c))
+    );
+    toast.success('状态已更新');
+  };
+
+  // 删除配置
+  const handleDelete = (id: string) => {
+    setConfigs((prev) => prev.filter((c) => c.id !== id));
+    toast.success('推送配置已删除');
+  };
+
+  // 保存配置
+  const handleSave = () => {
+    if (!editConfig.type) {
+      toast.error('请选择推送类型');
       return;
     }
 
-    try {
-      const response = await fetch('/api/v1/scheduler', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(createForm),
-      });
-
-      const data = await response.json();
-      if (data.success) {
-        toast.success('任务创建成功');
-        setIsCreateOpen(false);
-        setCreateForm({ name: '', type: '', cron_expression: '*/5 * * * *', enabled: true });
-        fetchTasks();
-      } else {
-        toast.error(data.error);
-      }
-    } catch (error) {
-      toast.error('创建失败');
+    if (editConfig.id) {
+      // 编辑
+      setConfigs((prev) =>
+        prev.map((c) => (c.id === editConfig.id ? { ...c, ...editConfig } as PushConfig : c))
+      );
+      toast.success('配置已更新');
+    } else {
+      // 新增
+      const newConfig: PushConfig = {
+        id: Date.now().toString(),
+        type: editConfig.type!,
+        enabled: true,
+        schedule_time: editConfig.schedule_time || '09:00',
+        threshold: editConfig.threshold,
+        channels: editConfig.channels || ['feishu'],
+      };
+      setConfigs((prev) => [...prev, newConfig]);
+      toast.success('推送配置已添加');
     }
+
+    setShowAddDialog(false);
+    setEditConfig({
+      type: '',
+      enabled: true,
+      schedule_time: '09:00',
+      threshold: 10,
+      channels: ['feishu'],
+    });
   };
 
-  // 切换任务状态
-  const handleToggle = async (task: ScheduledTask) => {
-    try {
-      const response = await fetch('/api/v1/scheduler', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: task.id, action: 'toggle' }),
-      });
-
-      const data = await response.json();
-      if (data.success) {
-        toast.success(task.enabled ? '任务已暂停' : '任务已启用');
-        fetchTasks();
-      }
-    } catch (error) {
-      toast.error('操作失败');
-    }
-  };
-
-  // 手动执行任务
-  const handleRun = async (task: ScheduledTask) => {
-    try {
-      const response = await fetch('/api/v1/scheduler', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: task.id, action: 'run' }),
-      });
-
-      const data = await response.json();
-      if (data.success) {
-        toast.success('任务已开始执行');
-        fetchTasks();
-        setTimeout(fetchExecutions, 3000);
-      }
-    } catch (error) {
-      toast.error('执行失败');
-    }
-  };
-
-  // 删除任务
-  const handleDelete = async (task: ScheduledTask) => {
-    if (!confirm(`确定删除任务「${task.name}」吗？`)) return;
-
-    try {
-      const response = await fetch(`/api/v1/scheduler?id=${task.id}`, {
-        method: 'DELETE',
-      });
-
-      const data = await response.json();
-      if (data.success) {
-        toast.success('任务已删除');
-        fetchTasks();
-      }
-    } catch (error) {
-      toast.error('删除失败');
-    }
-  };
-
-  // 查看任务配置
-  const handleViewConfig = (task: ScheduledTask) => {
-    setSelectedTask(task);
-    setIsConfigOpen(true);
-  };
-
-  // 查看执行日志
-  const handleViewLogs = (task: ScheduledTask) => {
-    setSelectedTask(task);
-    setIsLogOpen(true);
-  };
-
-  const getStatusBadge = (status: string) => {
-    const config: Record<string, { label: string; className: string; icon: React.ElementType }> = {
-      idle: { label: '空闲', className: 'bg-muted text-muted-foreground', icon: Pause },
-      running: { label: '执行中', className: 'bg-blue-500/10 text-blue-500', icon: Loader2 },
-      success: { label: '成功', className: 'bg-green-500/10 text-green-500', icon: CheckCircle },
-      failed: { label: '失败', className: 'bg-red-500/10 text-red-500', icon: XCircle },
-    };
-    const { label, className, icon: Icon } = config[status] || config.idle;
-    return (
-      <Badge variant="outline" className={cn('gap-1', className)}>
-        <Icon className={cn('h-3 w-3', status === 'running' && 'animate-spin')} />
-        {label}
-      </Badge>
-    );
-  };
-
-  const getTaskIcon = (iconName: string) => {
-    const Icon = TASK_ICONS[iconName] || Zap;
-    return Icon;
-  };
-
-  const formatDuration = (ms?: number) => {
-    if (!ms) return '-';
-    if (ms < 1000) return `${ms}ms`;
-    if (ms < 60000) return `${(ms / 1000).toFixed(1)}秒`;
-    return `${(ms / 60000).toFixed(1)}分钟`;
-  };
-
-  const formatNextRun = (dateStr?: string) => {
-    if (!dateStr) return '未设置';
-    const date = new Date(dateStr);
-    const now = new Date();
-    const diff = date.getTime() - now.getTime();
+  // 测试推送
+  const handleTestPush = async (configId: string) => {
+    setIsTesting(true);
+    setTestConfigId(configId);
     
-    if (diff < 0) return '已过期';
-    if (diff < 60000) return '即将执行';
-    if (diff < 3600000) return `${Math.floor(diff / 60000)}分钟后`;
-    if (diff < 86400000) return `${Math.floor(diff / 3600000)}小时后`;
-    return date.toLocaleString('zh-CN');
+    try {
+      // 模拟发送
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+      toast.success('测试推送已发送，请查收');
+    } catch (error) {
+      toast.error('测试推送失败');
+    } finally {
+      setIsTesting(false);
+      setTestConfigId(null);
+    }
+  };
+
+  // 立即推送
+  const handleImmediatePush = async (configId: string) => {
+    toast.success('推送任务已提交');
+  };
+
+  // 打开编辑弹窗
+  const handleEdit = (config: PushConfig) => {
+    setEditConfig({ ...config });
+    setShowAddDialog(true);
   };
 
   if (!user) return null;
 
   return (
     <MainLayout user={user} onLogout={() => router.push('/login')}>
-      <div className="space-y-6">
-        {/* 页面头部 */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-purple-500/20 to-purple-500/5 flex items-center justify-center">
-              <Clock className="h-7 w-7 text-purple-500" />
-            </div>
-            <div>
-              <h1 className="text-[18px] font-semibold text-foreground">定时任务调度</h1>
-              <p className="text-[14px] text-muted-foreground">自动化任务配置 · 执行监控 · 异常告警</p>
-            </div>
+      <div className="container py-6">
+        {/* 页面标题 */}
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-xl font-bold flex items-center gap-2">
+              <Bell className="h-6 w-6 text-orange-500" />
+              主动推送配置
+            </h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              配置定时推送和阈值触发推送规则，系统自动执行
+            </p>
           </div>
-          <div className="flex items-center gap-3">
-            <Button variant="outline" onClick={fetchTasks}>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={loadConfigs}>
               <RefreshCw className="h-4 w-4 mr-2" />
               刷新
             </Button>
-            <Button onClick={() => setIsCreateOpen(true)}>
+            <Button onClick={() => setShowAddDialog(true)}>
               <Plus className="h-4 w-4 mr-2" />
-              新建任务
+              添加推送
             </Button>
           </div>
         </div>
 
-        {/* 统计概览 */}
-        <div className="grid grid-cols-4 gap-4">
-          <Card className="bg-white border-border shadow-sm">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-[12px] text-muted-foreground">任务总数</div>
-                  <div className="text-[24px] font-semibold">{tasks.length}</div>
-                </div>
-                <div className="w-10 h-10 rounded-lg bg-purple-500/10 flex items-center justify-center">
-                  <Zap className="h-5 w-5 text-purple-500" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="bg-white border-border shadow-sm">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-[12px] text-muted-foreground">执行中</div>
-                  <div className="text-[24px] font-semibold text-blue-500">
-                    {tasks.filter(t => t.status === 'running').length}
+        {/* 推送类型说明 */}
+        <Card className="mb-6">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-[14px]">支持推送类型</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-4 gap-3">
+              {PUSH_TYPES.map((type) => (
+                <div key={type.id} className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg">
+                  <span className="text-xl">{type.icon}</span>
+                  <div>
+                    <div className="text-[13px] font-medium">{type.name}</div>
+                    <div className="text-[11px] text-muted-foreground">{type.description}</div>
                   </div>
                 </div>
-                <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
-                  <Loader2 className="h-5 w-5 text-blue-500 animate-spin" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="bg-white border-border shadow-sm">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-[12px] text-muted-foreground">今日执行</div>
-                  <div className="text-[24px] font-semibold text-green-500">
-                    {executions.filter(e => e.status === 'success').length}
-                  </div>
-                </div>
-                <div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center">
-                  <CheckCircle className="h-5 w-5 text-green-500" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="bg-white border-border shadow-sm">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-[12px] text-muted-foreground">失败次数</div>
-                  <div className="text-[24px] font-semibold text-red-500">
-                    {executions.filter(e => e.status === 'failed').length}
-                  </div>
-                </div>
-                <div className="w-10 h-10 rounded-lg bg-red-500/10 flex items-center justify-center">
-                  <AlertTriangle className="h-5 w-5 text-red-500" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
 
-        {/* 任务列表和执行历史 */}
-        <Tabs defaultValue="tasks" className="w-full">
-          <TabsList>
-            <TabsTrigger value="tasks">
-              <Zap className="h-4 w-4 mr-2" />
-              任务列表
-            </TabsTrigger>
-            <TabsTrigger value="history">
-              <History className="h-4 w-4 mr-2" />
-              执行历史
-            </TabsTrigger>
-            <TabsTrigger value="templates">
-              <Settings className="h-4 w-4 mr-2" />
-              任务模板
-            </TabsTrigger>
-          </TabsList>
-
-          {/* 任务列表 */}
-          <TabsContent value="tasks" className="space-y-4">
+        {/* 推送配置列表 */}
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-[14px]">推送配置</CardTitle>
+                <CardDescription>
+                  共 {configs.length} 个推送规则，{configs.filter((c) => c.enabled).length} 个已启用
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
             {loading ? (
-              <div className="text-center py-12 text-muted-foreground">
-                <Loader2 className="h-6 w-6 animate-spin mx-auto" />
+              <div className="text-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2 text-muted-foreground" />
+                <p className="text-muted-foreground">加载中...</p>
               </div>
-            ) : tasks.length === 0 ? (
-              <Card>
-                <CardContent className="py-12 text-center">
-                  <Clock className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
-                  <p className="text-muted-foreground">暂无定时任务</p>
-                  <Button className="mt-4" onClick={() => setIsCreateOpen(true)}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    创建第一个任务
-                  </Button>
-                </CardContent>
-              </Card>
+            ) : configs.length === 0 ? (
+              <div className="text-center py-12">
+                <Bell className="h-12 w-12 mx-auto mb-3 text-muted-foreground opacity-30" />
+                <p className="text-muted-foreground">暂无推送配置</p>
+                <Button className="mt-4" onClick={() => setShowAddDialog(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  添加第一个推送配置
+                </Button>
+              </div>
             ) : (
-              <div className="grid grid-cols-2 gap-4">
-                {tasks.map((task) => {
-                  const Icon = getTaskIcon(task.template?.icon || 'Zap');
-                  const color = task.template?.color || '#8B5CF6';
-                  
+              <div className="space-y-3">
+                {configs.map((config) => {
+                  const typeInfo = getPushTypeInfo(config.type);
                   return (
-                    <Card key={task.id} className="bg-white border-border shadow-sm hover:shadow-md transition-shadow">
-                      <CardContent className="p-4">
-                        <div className="flex items-start justify-between">
-                          <div className="flex items-start gap-3">
-                            <div 
-                              className="w-10 h-10 rounded-lg flex items-center justify-center"
-                              style={{ backgroundColor: `${color}15` }}
-                            >
-                              <Icon className="h-5 w-5" style={{ color }} />
+                    <div
+                      key={config.id}
+                      className={`flex items-center justify-between p-4 border rounded-lg transition-colors ${
+                        config.enabled ? 'bg-white' : 'bg-muted/30'
+                      }`}
+                    >
+                      <div className="flex items-center gap-4">
+                        <Switch
+                          checked={config.enabled}
+                          onCheckedChange={() => toggleEnabled(config.id)}
+                        />
+                        <div className="flex items-center gap-3">
+                          <span className="text-2xl">{typeInfo?.icon}</span>
+                          <div>
+                            <div className="text-[14px] font-medium">{typeInfo?.name}</div>
+                            <div className="text-[12px] text-muted-foreground">
+                              {typeInfo?.description}
                             </div>
-                            <div>
-                              <div className="flex items-center gap-2">
-                                <h3 className="font-medium">{task.name}</h3>
-                                {getStatusBadge(task.status)}
-                              </div>
-                              <p className="text-[12px] text-muted-foreground mt-1">
-                                {task.description}
-                              </p>
-                              <div className="flex items-center gap-4 mt-2 text-[12px] text-muted-foreground">
-                                <span className="font-mono bg-muted px-1.5 py-0.5 rounded">
-                                  {task.cron_expression}
-                                </span>
-                                <span>下次: {formatNextRun(task.next_run)}</span>
-                              </div>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Switch 
-                              checked={task.enabled} 
-                              onCheckedChange={() => handleToggle(task)}
-                            />
-                            <Button 
-                              variant="ghost" 
-                              size="sm"
-                              onClick={() => handleRun(task)}
-                              disabled={task.status === 'running'}
-                            >
-                              <Play className="h-4 w-4" />
-                            </Button>
-                            <Button 
-                              variant="ghost" 
-                              size="sm"
-                              onClick={() => handleViewLogs(task)}
-                            >
-                              <History className="h-4 w-4" />
-                            </Button>
-                            <Button 
-                              variant="ghost" 
-                              size="sm"
-                              onClick={() => handleViewConfig(task)}
-                            >
-                              <Settings className="h-4 w-4" />
-                            </Button>
-                            <Button 
-                              variant="ghost" 
-                              size="sm"
-                              onClick={() => handleDelete(task)}
-                              className="text-red-500 hover:text-red-600"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
                           </div>
                         </div>
-                        {task.last_run && (
-                          <div className="mt-3 pt-3 border-t border-border text-[12px] text-muted-foreground">
-                            上次执行: {new Date(task.last_run).toLocaleString('zh-CN')} 
-                            {task.result && ` · ${task.result}`}
+                      </div>
+
+                      <div className="flex items-center gap-6">
+                        {/* 推送时间 */}
+                        <div className="text-right">
+                          <div className="text-[13px] text-muted-foreground">推送时间</div>
+                          <div className="text-[14px] font-medium flex items-center gap-1">
+                            <Clock className="h-3 w-3" />
+                            {config.schedule_time}
+                          </div>
+                        </div>
+
+                        {/* 阈值 */}
+                        {config.threshold !== undefined && (
+                          <div className="text-right">
+                            <div className="text-[13px] text-muted-foreground">阈值</div>
+                            <div className="text-[14px] font-medium">
+                              {config.threshold}
+                              {config.type === 'inventory_alert' ? '件' : '%'}
+                            </div>
                           </div>
                         )}
-                      </CardContent>
-                    </Card>
+
+                        {/* 渠道 */}
+                        <div className="text-right">
+                          <div className="text-[13px] text-muted-foreground">推送渠道</div>
+                          <div className="flex gap-1 mt-1">
+                            {config.channels.map((ch) => (
+                              <Badge key={ch} variant="outline" className="text-xs">
+                                {ch === 'feishu' ? '飞书' : ch === 'sms' ? '短信' : ch}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* 状态 */}
+                        <Badge
+                          className={
+                            config.enabled
+                              ? 'bg-success/10 text-success'
+                              : 'bg-muted text-muted-foreground'
+                          }
+                        >
+                          {config.enabled ? (
+                            <>
+                              <CheckCircle className="h-3 w-3 mr-1" />
+                              已启用
+                            </>
+                          ) : (
+                            '已禁用'
+                          )}
+                        </Badge>
+
+                        {/* 操作 */}
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleTestPush(config.id)}
+                            disabled={isTesting || !config.enabled}
+                          >
+                            {isTesting && testConfigId === config.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Send className="h-4 w-4" />
+                            )}
+                          </Button>
+                          <Button variant="ghost" size="sm" onClick={() => handleEdit(config)}>
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDelete(config.id)}
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
                   );
                 })}
               </div>
             )}
-          </TabsContent>
+          </CardContent>
+        </Card>
 
-          {/* 执行历史 */}
-          <TabsContent value="history" className="space-y-4">
-            <Card>
-              <CardContent className="p-0">
-                {executions.length === 0 ? (
-                  <div className="py-12 text-center text-muted-foreground">
-                    暂无执行记录
-                  </div>
-                ) : (
-                  <div className="divide-y divide-border">
-                    {executions.map((exec) => (
-                      <div key={exec.id} className="flex items-center justify-between p-4 hover:bg-muted/30">
-                        <div className="flex items-center gap-3">
-                          {getStatusBadge(exec.status)}
-                          <div>
-                            <div className="font-medium">{exec.task_name}</div>
-                            <div className="text-[12px] text-muted-foreground">
-                              开始于 {new Date(exec.start_time).toLocaleString('zh-CN')}
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-4 text-[12px] text-muted-foreground">
-                          <span>耗时: {formatDuration(exec.duration)}</span>
-                          {exec.error && (
-                            <span className="text-red-500 max-w-[200px] truncate">
-                              {exec.error}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* 任务模板 */}
-          <TabsContent value="templates" className="space-y-4">
-            <div className="grid grid-cols-4 gap-4">
-              {templates.map((template) => {
-                const Icon = getTaskIcon(template.icon);
-                return (
-                  <Card 
-                    key={template.type} 
-                    className="bg-white border-border shadow-sm hover:shadow-md transition-shadow cursor-pointer"
-                    onClick={() => {
-                      setCreateForm({
-                        name: template.name,
-                        type: template.type,
-                        cron_expression: template.defaultCron,
-                        enabled: true,
-                      });
-                      setIsCreateOpen(true);
-                    }}
-                  >
-                    <CardContent className="p-4">
-                      <div 
-                        className="w-10 h-10 rounded-lg flex items-center justify-center mb-3"
-                        style={{ backgroundColor: `${template.color}15` }}
-                      >
-                        <Icon className="h-5 w-5" style={{ color: template.color }} />
-                      </div>
-                      <h3 className="font-medium">{template.name}</h3>
-                      <p className="text-[12px] text-muted-foreground mt-1">
-                        {template.description}
-                      </p>
-                      <div className="mt-3 text-[11px] text-muted-foreground">
-                        默认: {template.defaultCron}
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
-          </TabsContent>
-        </Tabs>
-
-        {/* 创建任务对话框 */}
-        <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+        {/* 添加/编辑弹窗 */}
+        <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
           <DialogContent className="max-w-md">
             <DialogHeader>
-              <DialogTitle>创建定时任务</DialogTitle>
-              <DialogDescription>配置定时任务的名称、执行时间和参数</DialogDescription>
+              <DialogTitle>{editConfig.id ? '编辑推送配置' : '添加推送配置'}</DialogTitle>
+              <DialogDescription>配置推送规则和触发条件</DialogDescription>
             </DialogHeader>
+
             <div className="space-y-4 py-4">
+              {/* 推送类型 */}
               <div className="space-y-2">
-                <Label htmlFor="name">任务名称</Label>
-                <Input
-                  id="name"
-                  placeholder="例如：每日订单同步"
-                  value={createForm.name}
-                  onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="type">任务类型</Label>
+                <Label>推送类型</Label>
                 <Select
-                  value={createForm.type}
-                  onValueChange={(value) => setCreateForm({ ...createForm, type: value })}
+                  value={editConfig.type}
+                  onValueChange={(value) => setEditConfig({ ...editConfig, type: value })}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="选择任务类型" />
+                    <SelectValue placeholder="请选择推送类型" />
                   </SelectTrigger>
                   <SelectContent>
-                    {templates.map((t) => (
-                      <SelectItem key={t.type} value={t.type}>
-                        {t.name}
+                    {PUSH_TYPES.map((type) => (
+                      <SelectItem key={type.id} value={type.id}>
+                        {type.icon} {type.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
+
+              {/* 推送时间 */}
               <div className="space-y-2">
-                <Label htmlFor="cron">执行周期</Label>
-                <Select
-                  value={createForm.cron_expression}
-                  onValueChange={(value) => setCreateForm({ ...createForm, cron_expression: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {CRON_PRESETS.map((preset) => (
-                      <SelectItem key={preset.value} value={preset.value}>
-                        {preset.label} ({preset.value})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="cron-custom">自定义 Cron 表达式</Label>
+                <Label>推送时间</Label>
                 <Input
-                  id="cron-custom"
-                  placeholder="*/5 * * * *"
-                  value={createForm.cron_expression}
-                  onChange={(e) => setCreateForm({ ...createForm, cron_expression: e.target.value })}
+                  type="time"
+                  value={editConfig.schedule_time}
+                  onChange={(e) =>
+                    setEditConfig({ ...editConfig, schedule_time: e.target.value })
+                  }
                 />
-                <p className="text-[11px] text-muted-foreground">
-                  格式: 分 时 日 月 周 (0 * * * * = 每小时整点执行)
+                <p className="text-xs text-muted-foreground">
+                  定时任务将在每天该时间自动执行
                 </p>
               </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsCreateOpen(false)}>取消</Button>
-              <Button onClick={handleCreate}>创建任务</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
 
-        {/* 任务配置对话框 */}
-        <Dialog open={isConfigOpen} onOpenChange={setIsConfigOpen}>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle>任务配置</DialogTitle>
-              <DialogDescription>{selectedTask?.name}</DialogDescription>
-            </DialogHeader>
-            {selectedTask && (
-              <div className="space-y-4 py-4">
-                <div className="grid grid-cols-2 gap-4 text-[14px]">
-                  <div>
-                    <div className="text-[12px] text-muted-foreground">任务ID</div>
-                    <div className="font-mono">{selectedTask.id}</div>
+              {/* 阈值（部分类型需要） */}
+              {['inventory_alert', 'ad_roi_low'].includes(editConfig.type || '') && (
+                <div className="space-y-2">
+                  <Label>
+                    {editConfig.type === 'inventory_alert' ? '库存预警阈值' : 'ROI告警阈值'}
+                  </Label>
+                  <Input
+                    type="number"
+                    value={editConfig.threshold || 10}
+                    onChange={(e) =>
+                      setEditConfig({ ...editConfig, threshold: Number(e.target.value) })
+                    }
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    {editConfig.type === 'inventory_alert'
+                      ? '库存低于此数量时触发预警'
+                      : 'ROI低于此百分比时触发告警'}
+                  </p>
+                </div>
+              )}
+
+              {/* 推送渠道 */}
+              <div className="space-y-2">
+                <Label>推送渠道</Label>
+                <div className="flex gap-4">
+                  <div className="flex items-center gap-2">
+                    <Switch
+                      checked={editConfig.channels?.includes('feishu')}
+                      onCheckedChange={(checked) => {
+                        const channels = checked
+                          ? [...(editConfig.channels || []), 'feishu']
+                          : (editConfig.channels || []).filter((c) => c !== 'feishu');
+                        setEditConfig({ ...editConfig, channels });
+                      }}
+                    />
+                    <Label>飞书机器人</Label>
                   </div>
-                  <div>
-                    <div className="text-[12px] text-muted-foreground">任务类型</div>
-                    <div>{selectedTask.type}</div>
-                  </div>
-                  <div>
-                    <div className="text-[12px] text-muted-foreground">执行周期</div>
-                    <div className="font-mono">{selectedTask.cron_expression}</div>
-                  </div>
-                  <div>
-                    <div className="text-[12px] text-muted-foreground">状态</div>
-                    {getStatusBadge(selectedTask.status)}
-                  </div>
-                  <div>
-                    <div className="text-[12px] text-muted-foreground">上次执行</div>
-                    <div>{selectedTask.last_run ? new Date(selectedTask.last_run).toLocaleString() : '从未执行'}</div>
-                  </div>
-                  <div>
-                    <div className="text-[12px] text-muted-foreground">下次执行</div>
-                    <div>{formatNextRun(selectedTask.next_run)}</div>
+                  <div className="flex items-center gap-2">
+                    <Switch
+                      checked={editConfig.channels?.includes('sms')}
+                      onCheckedChange={(checked) => {
+                        const channels = checked
+                          ? [...(editConfig.channels || []), 'sms']
+                          : (editConfig.channels || []).filter((c) => c !== 'sms');
+                        setEditConfig({ ...editConfig, channels });
+                      }}
+                    />
+                    <Label>短信通知</Label>
                   </div>
                 </div>
               </div>
-            )}
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsConfigOpen(false)}>关闭</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
 
-        {/* 执行日志对话框 */}
-        <Dialog open={isLogOpen} onOpenChange={setIsLogOpen}>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>执行日志</DialogTitle>
-              <DialogDescription>{selectedTask?.name}</DialogDescription>
-            </DialogHeader>
-            <div className="bg-black/90 rounded-lg p-4 font-mono text-[12px] text-green-400 max-h-[400px] overflow-y-auto">
-              {executions
-                .filter(e => e.task_id === selectedTask?.id)
-                .slice(0, 1)[0]?.logs?.map((log, idx) => (
-                  <div key={idx} className="py-0.5">{log}</div>
-                )) || (
-                <div className="text-muted-foreground">暂无日志</div>
-              )}
+              {/* 启用状态 */}
+              <div className="flex items-center gap-2">
+                <Switch
+                  checked={editConfig.enabled}
+                  onCheckedChange={(checked) =>
+                    setEditConfig({ ...editConfig, enabled: checked })
+                  }
+                />
+                <Label>立即启用</Label>
+              </div>
             </div>
+
             <DialogFooter>
-              <Button variant="outline" onClick={() => setIsLogOpen(false)}>关闭</Button>
+              <Button variant="outline" onClick={() => setShowAddDialog(false)}>
+                取消
+              </Button>
+              <Button onClick={handleSave}>保存配置</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>

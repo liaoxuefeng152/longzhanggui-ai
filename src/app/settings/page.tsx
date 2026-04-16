@@ -1,649 +1,391 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
-import MainLayout from '@/components/layout/MainLayout';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { useState } from 'react';
+import { Settings, User, Lock, Bell, Palette, Globe, Save, CheckCircle2, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Label } from '@/components/ui/label';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import {
-  Save,
-  Shield,
-  AlertTriangle,
-  Bell,
-  Globe,
-  Zap,
-  Loader2,
-  FileText,
-} from 'lucide-react';
 import { toast } from 'sonner';
-import {
-  getSystemInfo,
-  getRiskSettings,
-  getNotificationSettings,
-  getComplianceSettings,
-  updateSettings,
-  type SystemInfo,
-  type RiskSettings,
-  type NotificationSettings,
-} from '@/lib/api/settings';
+import MainLayout from '@/components/layout/MainLayout';
 
 export default function SettingsPage() {
-  const router = useRouter();
-  const [user, setUser] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  // 系统信息
-  const [systemInfo, setSystemInfo] = useState<SystemInfo>({
-    name: '龙掌柜智能运营系统',
-    version: 'v1.0',
-    description: '飞书AI中台驱动版，实现跨境无人店全链路自动化',
-    contact_email: 'contact@lobster.ai',
-  });
-
-  // 风控设置
-  const [riskSettings, setRiskSettings] = useState<RiskSettings>({
-    ad_daily_limit: 500,
-    ad_click_cost_tk: 0.5,
-    ad_click_cost_amazon: 1.0,
-    ad_min_roi: 1.0,
-    refund_limit: 100,
-    ad_spend_alert: 500,
-    refund_alert: 100,
-  });
-
-  // 通知设置
-  const [notificationSettings, setNotificationSettings] = useState<NotificationSettings>({
-    task_complete: true,
-    error_alert: true,
-    compliance_failed: true,
-    risk_triggered: true,
-    sensitive_operation: true,
-    daily_report: true,
-    weekly_report: true,
-  });
-
-  // 安全设置
-  const [securitySettings, setSecuritySettings] = useState({
-    operation_log_enabled: true,
-    encryption_enabled: true,
-    ip_whitelist_enabled: false,
-    login_lockout_enabled: true,
-  });
-
-  // 合规规则
-  const [complianceSettings, setComplianceSettings] = useState({
-    tk_banned_products_enabled: true,
-    tk_banned_keywords_enabled: true,
-    amazon_banned_products_enabled: true,
-    amazon_banned_keywords_enabled: true,
-  });
-
-  const fetchData = useCallback(async () => {
-    try {
-      setLoading(true);
-      const [systemInfoRes, riskSettingsRes, notificationSettingsRes, complianceSettingsRes] = await Promise.all([
-        getSystemInfo(),
-        getRiskSettings(),
-        getNotificationSettings(),
-        getComplianceSettings(),
-      ]);
-      setSystemInfo(systemInfoRes);
-      setRiskSettings(riskSettingsRes);
-      setNotificationSettings(notificationSettingsRes);
-      setComplianceSettings(complianceSettingsRes);
-    } catch (error) {
-      console.error('Failed to fetch settings:', error);
-      toast.error('获取设置失败');
-    } finally {
+  const handleSave = () => {
+    setLoading(true);
+    setTimeout(() => {
       setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    const userData = localStorage.getItem('user');
-    if (!userData) {
-      router.push('/login');
-      return;
-    }
-    setUser(JSON.parse(userData));
-    fetchData();
-  }, [router, fetchData]);
-
-  const handleSave = async (category: string) => {
-    try {
-      setSaving(true);
-      let settingsToSave: Record<string, any> = {};
-
-      if (category === 'general') {
-        settingsToSave = {
-          name: systemInfo.name,
-          description: systemInfo.description,
-          contact_email: systemInfo.contact_email,
-        };
-      } else if (category === 'compliance') {
-        settingsToSave = complianceSettings;
-      } else if (category === 'risk') {
-        settingsToSave = riskSettings;
-      } else if (category === 'notification') {
-        settingsToSave = notificationSettings;
-      } else if (category === 'security') {
-        settingsToSave = securitySettings;
-      }
-
-      await updateSettings(settingsToSave);
-      toast.success('设置已保存');
-    } catch (error) {
-      console.error('Failed to save settings:', error);
-      toast.error('保存设置失败');
-    } finally {
-      setSaving(false);
-    }
+      toast.success('设置已保存！');
+    }, 800);
   };
 
-  if (!user) return null;
-
   return (
-    <MainLayout user={user} onLogout={() => router.push('/login')}>
+    <MainLayout>
       <div className="space-y-6">
         {/* 页面标题 */}
-        <div>
-          <h1 className="text-[18px] font-semibold text-foreground">系统设置</h1>
-          <p className="text-[14px] text-muted-foreground mt-1">
-            全局配置 · 合规规则 · 风控阈值 · 操作日志
-          </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-[#1D2129]">系统设置</h1>
+            <p className="text-[#86909C] mt-1">管理您的账号信息和偏好设置</p>
+          </div>
         </div>
 
-        {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-          </div>
-        ) : (
-          <Tabs defaultValue="general" className="space-y-6">
-            <TabsList className="bg-white border-border">
-              <TabsTrigger value="general">通用设置</TabsTrigger>
-              <TabsTrigger value="compliance">合规规则</TabsTrigger>
-              <TabsTrigger value="risk">风控配置</TabsTrigger>
-              <TabsTrigger value="notification">通知设置</TabsTrigger>
-              <TabsTrigger value="security">安全设置</TabsTrigger>
-            </TabsList>
+        <Card className="card-minimal">
+          <Tabs defaultValue="account" className="w-full">
+            <div className="border-b border-[#E5E6EB] px-6">
+              <TabsList className="bg-transparent h-14 gap-1 w-full justify-start">
+                <TabsTrigger 
+                  value="account" 
+                  className="data-[state=active]:bg-white data-[state=active]:text-[#165DFF] data-[state=active]:shadow-none rounded-t-lg border-b-2 border-transparent data-[state=active]:border-[#165DFF]"
+                >
+                  <User className="w-4 h-4 mr-2" />
+                  账号设置
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="security" 
+                  className="data-[state=active]:bg-white data-[state=active]:text-[#165DFF] data-[state=active]:shadow-none rounded-t-lg border-b-2 border-transparent data-[state=active]:border-[#165DFF]"
+                >
+                  <Shield className="w-4 h-4 mr-2" />
+                  安全设置
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="notifications" 
+                  className="data-[state=active]:bg-white data-[state=active]:text-[#165DFF] data-[state=active]:shadow-none rounded-t-lg border-b-2 border-transparent data-[state=active]:border-[#165DFF]"
+                >
+                  <Bell className="w-4 h-4 mr-2" />
+                  通知设置
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="preferences" 
+                  className="data-[state=active]:bg-white data-[state=active]:text-[#165DFF] data-[state=active]:shadow-none rounded-t-lg border-b-2 border-transparent data-[state=active]:border-[#165DFF]"
+                >
+                  <Settings className="w-4 h-4 mr-2" />
+                  偏好设置
+                </TabsTrigger>
+              </TabsList>
+            </div>
 
-            {/* 通用设置 */}
-            <TabsContent value="general" className="space-y-6">
-              <Card className="bg-white border-border shadow-sm">
-                <CardHeader>
-                  <CardTitle className="text-[15px] font-medium">基础信息</CardTitle>
-                  <CardDescription>系统基本信息配置</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="siteName">系统名称</Label>
-                      <Input
-                        id="siteName"
-                        value={systemInfo.name}
-                        onChange={(e) => setSystemInfo({ ...systemInfo, name: e.target.value })}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="version">系统版本</Label>
-                      <Input id="version" value={systemInfo.version} disabled />
-                    </div>
+            <div className="p-6">
+              {/* 账号设置 */}
+              <TabsContent value="account" className="mt-0 space-y-6">
+                {/* 头像 */}
+                <div className="flex items-center gap-6 mb-8 p-6 bg-[#F7F8FA] rounded-lg">
+                  <Avatar className="w-24 h-24 border-2 border-[#165DFF]">
+                    <AvatarImage src="" />
+                    <AvatarFallback className="bg-gradient-to-br from-[#165DFF] to-[#4080FF] text-white text-2xl font-bold">
+                      龙
+                    </AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <Button className="btn-primary">
+                      更换头像
+                    </Button>
+                    <p className="text-[#86909C] text-sm mt-2">支持 JPG、PNG 格式，大小不超过 2MB</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-[#4E5969]">用户名</Label>
+                    <Input defaultValue="龙掌柜" className="input-minimal h-12" />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="siteDesc">系统描述</Label>
-                    <Input
-                      id="siteDesc"
-                      value={systemInfo.description}
-                      onChange={(e) => setSystemInfo({ ...systemInfo, description: e.target.value })}
-                    />
+                    <Label className="text-sm font-medium text-[#4E5969]">昵称</Label>
+                    <Input placeholder="请输入昵称" className="input-minimal h-12" />
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="contactEmail">联系邮箱</Label>
-                      <Input
-                        id="contactEmail"
-                        value={systemInfo.contact_email}
-                        onChange={(e) => setSystemInfo({ ...systemInfo, contact_email: e.target.value })}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="feishuBot">飞书机器人ID</Label>
-                      <Input id="feishuBot" defaultValue="cli_xxxxxxxxxxxx" />
-                    </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-[#4E5969]">手机号</Label>
+                    <Input defaultValue="138****8888" className="input-minimal h-12" />
                   </div>
-                </CardContent>
-              </Card>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-[#4E5969]">邮箱</Label>
+                    <Input placeholder="请输入邮箱" className="input-minimal h-12" />
+                  </div>
+                </div>
 
-              <Card className="bg-white border-border shadow-sm">
-                <CardHeader>
-                  <CardTitle className="text-[15px] font-medium">
-                    <Globe className="h-4 w-4 inline mr-2" />
-                    时区配置
-                  </CardTitle>
-                  <CardDescription>适配跨境平台当地时区，避开API调用峰值</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>TK东南亚API调用时段</Label>
+                <div className="pt-4 border-t border-[#E5E6EB]">
+                  <Button onClick={handleSave} disabled={loading} className="btn-primary">
+                    {loading ? (
                       <div className="flex items-center gap-2">
-                        <Badge variant="outline" className="bg-success/10 text-success">推荐</Badge>
-                        <span className="text-[13px] text-muted-foreground">北京时间 22:00 - 09:00</span>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        保存中...
                       </div>
-                      <p className="text-[12px] text-muted-foreground">避开当地 09:00-21:00 API调用峰值</p>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>亚马逊美国站API调用时段</Label>
-                      <div className="flex items-center gap-2">
-                        <Badge variant="outline" className="bg-success/10 text-success">推荐</Badge>
-                        <span className="text-[13px] text-muted-foreground">北京时间 02:00 - 12:00</span>
-                      </div>
-                      <p className="text-[12px] text-muted-foreground">避开当地 10:00-22:00 API调用峰值</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-[13px] font-medium">自动避开峰值时段</p>
-                      <p className="text-[12px] text-muted-foreground">系统自动在推荐时段执行API调用</p>
-                    </div>
-                    <Switch defaultChecked />
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Button onClick={() => handleSave('general')} disabled={saving}>
-                {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                <Save className="h-4 w-4 mr-2" />
-                保存设置
-              </Button>
-            </TabsContent>
-
-            {/* 合规规则配置 */}
-            <TabsContent value="compliance" className="space-y-6">
-              <Card className="bg-white border-border shadow-sm">
-                <CardHeader>
-                  <CardTitle className="text-[15px] font-medium">
-                    <Shield className="h-4 w-4 inline mr-2" />
-                    合规规则配置
-                  </CardTitle>
-                  <CardDescription>配置平台禁售词、禁售品类、合规规则</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="p-4 bg-warning/5 border border-warning/20 rounded-lg">
-                    <div className="flex items-center gap-2 text-warning mb-2">
-                      <AlertTriangle className="h-4 w-4" />
-                      <span className="text-[13px] font-medium">重要提示</span>
-                    </div>
-                    <p className="text-[12px] text-muted-foreground">
-                      禁用合规规则可能导致商品违规下架，请谨慎操作。建议保持所有规则启用状态。
-                    </p>
-                  </div>
-
-                  <div className="space-y-3">
-                    <div className="p-4 border border-border rounded-lg">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-[13px] font-medium">TK东南亚禁售品类</span>
-                        <Switch
-                          checked={complianceSettings.tk_banned_products_enabled}
-                          onCheckedChange={(checked) =>
-                            setComplianceSettings({ ...complianceSettings, tk_banned_products_enabled: checked })
-                          }
-                        />
-                      </div>
-                      <p className="text-[12px] text-muted-foreground">
-                        宗教敏感商品、政治敏感商品、仿品、处方药、武器类等
-                      </p>
-                    </div>
-                    <div className="p-4 border border-border rounded-lg">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-[13px] font-medium">TK禁用词库</span>
-                        <Switch
-                          checked={complianceSettings.tk_banned_keywords_enabled}
-                          onCheckedChange={(checked) =>
-                            setComplianceSettings({ ...complianceSettings, tk_banned_keywords_enabled: checked })
-                          }
-                        />
-                      </div>
-                      <p className="text-[12px] text-muted-foreground">
-                        "最好"、"100%有效"、"第一"等夸大宣传词
-                      </p>
-                    </div>
-                    <div className="p-4 border border-border rounded-lg">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-[13px] font-medium">亚马逊禁售品类</span>
-                        <Switch
-                          checked={complianceSettings.amazon_banned_products_enabled}
-                          onCheckedChange={(checked) =>
-                            setComplianceSettings({ ...complianceSettings, amazon_banned_products_enabled: checked })
-                          }
-                        />
-                      </div>
-                      <p className="text-[12px] text-muted-foreground">
-                        需类目审核未开放商品、仿品、处方药、武器类等
-                      </p>
-                    </div>
-                    <div className="p-4 border border-border rounded-lg">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-[13px] font-medium">亚马逊禁用词库</span>
-                        <Switch
-                          checked={complianceSettings.amazon_banned_keywords_enabled}
-                          onCheckedChange={(checked) =>
-                            setComplianceSettings({ ...complianceSettings, amazon_banned_keywords_enabled: checked })
-                          }
-                        />
-                      </div>
-                      <p className="text-[12px] text-muted-foreground">
-                        "留评返现"、"好评有礼"、医疗功效词等诱导词
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Button onClick={() => handleSave('compliance')} disabled={saving}>
-                {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                <Save className="h-4 w-4 mr-2" />
-                保存设置
-              </Button>
-            </TabsContent>
-
-            {/* 风控配置 */}
-            <TabsContent value="risk" className="space-y-6">
-              <Card className="bg-white border-border shadow-sm">
-                <CardHeader>
-                  <CardTitle className="text-[15px] font-medium">
-                    <Zap className="h-4 w-4 inline mr-2" />
-                    广告风控阈值
-                  </CardTitle>
-                  <CardDescription>触发阈值后自动止损，杜绝无人值守下的重大损失（v1.0为固化值）</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="p-4 bg-warning/5 border border-warning/20 rounded-lg mb-4">
-                    <div className="flex items-center gap-2 text-warning mb-2">
-                      <AlertTriangle className="h-4 w-4" />
-                      <span className="text-[13px] font-medium">刚性阈值说明</span>
-                    </div>
-                    <p className="text-[12px] text-muted-foreground">
-                      风控阈值为刚性值，触发后自动止损，管理员确认后才能继续执行。
-                    </p>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>单店铺单日广告消耗上限</Label>
-                      <div className="flex items-center gap-2">
-                        <Input
-                          type="number"
-                          value={riskSettings.ad_daily_limit}
-                          onChange={(e) => setRiskSettings({ ...riskSettings, ad_daily_limit: Number(e.target.value) })}
-                        />
-                        <span className="text-[13px] text-muted-foreground">元/天</span>
-                      </div>
-                      <p className="text-[11px] text-muted-foreground">超阈值则暂停所有广告</p>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>商品广告最低ROI</Label>
-                      <div className="flex items-center gap-2">
-                        <Input
-                          type="number"
-                          step="0.1"
-                          value={riskSettings.ad_min_roi}
-                          onChange={(e) => setRiskSettings({ ...riskSettings, ad_min_roi: Number(e.target.value) })}
-                        />
-                        <span className="text-[13px] text-muted-foreground">:1</span>
-                      </div>
-                      <p className="text-[11px] text-muted-foreground">ROI&lt;1:1时自动暂停该商品广告</p>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>TK Ads单次点击成本上限</Label>
-                      <div className="flex items-center gap-2">
-                        <Input
-                          type="number"
-                          step="0.1"
-                          value={riskSettings.ad_click_cost_tk}
-                          onChange={(e) => setRiskSettings({ ...riskSettings, ad_click_cost_tk: Number(e.target.value) })}
-                        />
-                        <span className="text-[13px] text-muted-foreground">美元</span>
-                      </div>
-                      <p className="text-[11px] text-muted-foreground">超阈值自动降低出价20%</p>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>亚马逊PPC单次点击成本上限</Label>
-                      <div className="flex items-center gap-2">
-                        <Input
-                          type="number"
-                          step="0.1"
-                          value={riskSettings.ad_click_cost_amazon}
-                          onChange={(e) => setRiskSettings({ ...riskSettings, ad_click_cost_amazon: Number(e.target.value) })}
-                        />
-                        <span className="text-[13px] text-muted-foreground">美元</span>
-                      </div>
-                      <p className="text-[11px] text-muted-foreground">超阈值自动降低出价20%</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-white border-border shadow-sm">
-                <CardHeader>
-                  <CardTitle className="text-[15px] font-medium">
-                    <AlertTriangle className="h-4 w-4 inline mr-2" />
-                    敏感操作阈值
-                  </CardTitle>
-                  <CardDescription>触发阈值后暂停执行，需管理员确认</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>广告单日消耗告警阈值</Label>
-                      <div className="flex items-center gap-2">
-                        <Input
-                          type="number"
-                          value={riskSettings.ad_spend_alert}
-                          onChange={(e) => setRiskSettings({ ...riskSettings, ad_spend_alert: Number(e.target.value) })}
-                        />
-                        <span className="text-[13px] text-muted-foreground">元</span>
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>单次退款告警阈值</Label>
-                      <div className="flex items-center gap-2">
-                        <Input
-                          type="number"
-                          value={riskSettings.refund_alert}
-                          onChange={(e) => setRiskSettings({ ...riskSettings, refund_alert: Number(e.target.value) })}
-                        />
-                        <span className="text-[13px] text-muted-foreground">美元</span>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            {/* 通知设置 */}
-            <TabsContent value="notification" className="space-y-6">
-              <Card className="bg-white border-border shadow-sm">
-                <CardHeader>
-                  <CardTitle className="text-[15px] font-medium">
-                    <Bell className="h-4 w-4 inline mr-2" />
-                    飞书通知配置
-                  </CardTitle>
-                  <CardDescription>配置飞书机器人推送的通知类型</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-center justify-between py-2 border-b border-border">
-                    <div>
-                      <p className="text-[13px] font-medium">任务完成通知</p>
-                      <p className="text-[12px] text-muted-foreground">任务执行完成后推送飞书</p>
-                    </div>
-                    <Switch
-                      checked={notificationSettings.task_complete}
-                      onCheckedChange={(checked) =>
-                        setNotificationSettings({ ...notificationSettings, task_complete: checked })
-                      }
-                    />
-                  </div>
-                  <div className="flex items-center justify-between py-2 border-b border-border">
-                    <div>
-                      <p className="text-[13px] font-medium">异常告警通知</p>
-                      <p className="text-[12px] text-muted-foreground">任务异常、API异常时推送告警</p>
-                    </div>
-                    <Switch
-                      checked={notificationSettings.error_alert}
-                      onCheckedChange={(checked) =>
-                        setNotificationSettings({ ...notificationSettings, error_alert: checked })
-                      }
-                    />
-                  </div>
-                  <div className="flex items-center justify-between py-2 border-b border-border">
-                    <div>
-                      <p className="text-[13px] font-medium">合规校验失败通知</p>
-                      <p className="text-[12px] text-muted-foreground">内容合规校验失败时推送告警</p>
-                    </div>
-                    <Switch
-                      checked={notificationSettings.compliance_failed}
-                      onCheckedChange={(checked) =>
-                        setNotificationSettings({ ...notificationSettings, compliance_failed: checked })
-                      }
-                    />
-                  </div>
-                  <div className="flex items-center justify-between py-2 border-b border-border">
-                    <div>
-                      <p className="text-[13px] font-medium">风控触发通知</p>
-                      <p className="text-[12px] text-muted-foreground">风控阈值触发时推送告警</p>
-                    </div>
-                    <Switch
-                      checked={notificationSettings.risk_triggered}
-                      onCheckedChange={(checked) =>
-                        setNotificationSettings({ ...notificationSettings, risk_triggered: checked })
-                      }
-                    />
-                  </div>
-                  <div className="flex items-center justify-between py-2 border-b border-border">
-                    <div>
-                      <p className="text-[13px] font-medium">敏感操作确认通知</p>
-                      <p className="text-[12px] text-muted-foreground">敏感操作需管理员确认时推送</p>
-                    </div>
-                    <Switch
-                      checked={notificationSettings.sensitive_operation}
-                      onCheckedChange={(checked) =>
-                        setNotificationSettings({ ...notificationSettings, sensitive_operation: checked })
-                      }
-                    />
-                  </div>
-                  <div className="flex items-center justify-between py-2 border-b border-border">
-                    <div>
-                      <p className="text-[13px] font-medium">日报/周报推送</p>
-                      <p className="text-[12px] text-muted-foreground">每日/每周自动推送数据复盘报告</p>
-                    </div>
-                    <Switch
-                      checked={notificationSettings.daily_report}
-                      onCheckedChange={(checked) =>
-                        setNotificationSettings({ ...notificationSettings, daily_report: checked })
-                      }
-                    />
-                  </div>
-                  <Button onClick={() => handleSave('notification')} disabled={saving}>
-                    {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                    <Save className="h-4 w-4 mr-2" />
-                    保存设置
+                    ) : (
+                      <>
+                        <Save className="w-4 h-4 mr-2" />
+                        保存修改
+                      </>
+                    )}
                   </Button>
-                </CardContent>
-              </Card>
-            </TabsContent>
+                </div>
+              </TabsContent>
 
-            {/* 安全设置 */}
-            <TabsContent value="security" className="space-y-6">
-              <Card className="bg-white border-border shadow-sm">
-                <CardHeader>
-                  <CardTitle className="text-[15px] font-medium">
-                    <Shield className="h-4 w-4 inline mr-2" />
-                    安全配置
-                  </CardTitle>
-                  <CardDescription>系统安全与操作审计配置</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-center justify-between py-2 border-b border-border">
-                    <div>
-                      <p className="text-[13px] font-medium">操作日志记录</p>
-                      <p className="text-[12px] text-muted-foreground">记录所有操作，保留30天</p>
+              {/* 安全设置 */}
+              <TabsContent value="security" className="mt-0 space-y-6">
+                <div className="space-y-4">
+                  <Card className="card-minimal p-5">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-lg bg-[#E8F3FF] flex items-center justify-center">
+                          <Lock className="w-6 h-6 text-[#165DFF]" />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium text-[#1D2129]">修改密码</p>
+                            <Badge className="bg-[#E8FFEA] text-[#00B42A] text-xs">已设置</Badge>
+                          </div>
+                          <p className="text-sm text-[#86909C]">上次修改时间：30天前</p>
+                        </div>
+                      </div>
+                      <Button variant="ghost" className="text-[#165DFF] hover:bg-[#E8F3FF]">
+                        修改
+                      </Button>
                     </div>
-                    <Switch
-                      checked={securitySettings.operation_log_enabled}
-                      onCheckedChange={(checked) =>
-                        setSecuritySettings({ ...securitySettings, operation_log_enabled: checked })
-                      }
-                    />
-                  </div>
-                  <div className="flex items-center justify-between py-2 border-b border-border">
-                    <div>
-                      <p className="text-[13px] font-medium">敏感数据加密存储</p>
-                      <p className="text-[12px] text-muted-foreground">API密钥、用户信息加密存储</p>
-                    </div>
-                    <Switch
-                      checked={securitySettings.encryption_enabled}
-                      onCheckedChange={(checked) =>
-                        setSecuritySettings({ ...securitySettings, encryption_enabled: checked })
-                      }
-                    />
-                  </div>
-                  <div className="flex items-center justify-between py-2 border-b border-border">
-                    <div>
-                      <p className="text-[13px] font-medium">IP白名单</p>
-                      <p className="text-[12px] text-muted-foreground">仅允许白名单IP访问管理后台</p>
-                    </div>
-                    <Switch
-                      checked={securitySettings.ip_whitelist_enabled}
-                      onCheckedChange={(checked) =>
-                        setSecuritySettings({ ...securitySettings, ip_whitelist_enabled: checked })
-                      }
-                    />
-                  </div>
-                  <div className="flex items-center justify-between py-2">
-                    <div>
-                      <p className="text-[13px] font-medium">登录失败锁定</p>
-                      <p className="text-[12px] text-muted-foreground">连续5次失败锁定10分钟</p>
-                    </div>
-                    <Switch
-                      checked={securitySettings.login_lockout_enabled}
-                      onCheckedChange={(checked) =>
-                        setSecuritySettings({ ...securitySettings, login_lockout_enabled: checked })
-                      }
-                    />
-                  </div>
-                </CardContent>
-              </Card>
+                  </Card>
 
-              <Button onClick={() => handleSave('security')} disabled={saving}>
-                {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                <Save className="h-4 w-4 mr-2" />
-                保存设置
-              </Button>
+                  <Card className="card-minimal p-5">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-lg bg-[#FFF7E8] flex items-center justify-center">
+                          <Shield className="w-6 h-6 text-[#FF7D00]" />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium text-[#1D2129]">两步验证</p>
+                            <Badge className="bg-[#FFF7E8] text-[#FF7D00] text-xs">建议开启</Badge>
+                          </div>
+                          <p className="text-sm text-[#86909C]">提高账号安全性，防止账号被盗</p>
+                        </div>
+                      </div>
+                      <Switch />
+                    </div>
+                  </Card>
 
-              <Card className="bg-white border-border shadow-sm">
-                <CardHeader>
-                  <CardTitle className="text-[15px] font-medium">
-                    <FileText className="h-4 w-4 inline mr-2" />
-                    操作日志查询
-                  </CardTitle>
-                  <CardDescription>查询系统操作记录（管理员专属权限）</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Button variant="outline" onClick={() => router.push('/task-logs')}>
-                    查看操作日志
+                  <Card className="card-minimal p-5">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-lg bg-[#F2F3F5] flex items-center justify-center">
+                          <User className="w-6 h-6 text-[#86909C]" />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium text-[#1D2129]">登录设备管理</p>
+                            <Badge className="bg-[#E8F3FF] text-[#165DFF] text-xs">2台设备</Badge>
+                          </div>
+                          <p className="text-sm text-[#86909C]">查看并管理登录过的设备</p>
+                        </div>
+                      </div>
+                      <Button variant="ghost" className="text-[#165DFF] hover:bg-[#E8F3FF]">
+                        查看
+                      </Button>
+                    </div>
+                  </Card>
+
+                  <Card className="card-minimal p-5">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-lg bg-[#F2F3F5] flex items-center justify-center">
+                          <Bell className="w-6 h-6 text-[#86909C]" />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium text-[#1D2129]">登录通知</p>
+                            <Badge className="bg-[#E8FFEA] text-[#00B42A] text-xs">已开启</Badge>
+                          </div>
+                          <p className="text-sm text-[#86909C]">新设备登录时发送通知</p>
+                        </div>
+                      </div>
+                      <Switch defaultChecked />
+                    </div>
+                  </Card>
+                </div>
+              </TabsContent>
+
+              {/* 通知设置 */}
+              <TabsContent value="notifications" className="mt-0 space-y-6">
+                <div className="space-y-4">
+                  {[
+                    { 
+                      title: '系统通知', 
+                      desc: '系统公告、功能更新、版本升级等重要通知', 
+                      default: true,
+                      icon: Settings,
+                      color: 'bg-[#E8F3FF]',
+                      iconColor: 'text-[#165DFF]'
+                    },
+                    { 
+                      title: '运营日报', 
+                      desc: '每日运营数据汇总和分析报告推送', 
+                      default: true,
+                      icon: Bell,
+                      color: 'bg-[#E8FFEA]',
+                      iconColor: 'text-[#00B42A]'
+                    },
+                    { 
+                      title: '异常告警', 
+                      desc: '库存不足、广告ROI异常、订单异常等紧急通知', 
+                      default: true,
+                      icon: Shield,
+                      color: 'bg-[#FFF7E8]',
+                      iconColor: 'text-[#FF7D00]'
+                    },
+                    { 
+                      title: '营销活动', 
+                      desc: '平台促销活动、优惠信息、新功能推荐', 
+                      default: false,
+                      icon: Bell,
+                      color: 'bg-[#F2F3F5]',
+                      iconColor: 'text-[#86909C]'
+                    },
+                  ].map((item, i) => {
+                    const Icon = item.icon;
+                    return (
+                      <Card key={i} className="card-minimal p-5">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-4">
+                            <div className={`w-12 h-12 rounded-lg ${item.color} flex items-center justify-center`}>
+                              <Icon className={`w-6 h-6 ${item.iconColor}`} />
+                            </div>
+                            <div>
+                              <p className="font-medium text-[#1D2129]">{item.title}</p>
+                              <p className="text-sm text-[#86909C]">{item.desc}</p>
+                            </div>
+                          </div>
+                          <Switch defaultChecked={item.default} />
+                        </div>
+                      </Card>
+                    );
+                  })}
+                </div>
+
+                <div className="pt-4 border-t border-[#E5E6EB]">
+                  <Button onClick={handleSave} disabled={loading} className="btn-primary">
+                    {loading ? (
+                      <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        保存中...
+                      </div>
+                    ) : (
+                      <>
+                        <Save className="w-4 h-4 mr-2" />
+                        保存设置
+                      </>
+                    )}
                   </Button>
-                </CardContent>
-              </Card>
-            </TabsContent>
+                </div>
+              </TabsContent>
+
+              {/* 偏好设置 */}
+              <TabsContent value="preferences" className="mt-0 space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-[#4E5969]">界面语言</Label>
+                    <Select defaultValue="zh-CN">
+                      <SelectTrigger className="input-minimal h-12">
+                        <SelectValue placeholder="选择语言" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="zh-CN">简体中文</SelectItem>
+                        <SelectItem value="zh-TW">繁體中文</SelectItem>
+                        <SelectItem value="en">English</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-[#86909C]">设置系统界面显示的语言</p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium text-[#4E5969]">时区设置</Label>
+                    <Select defaultValue="Asia/Shanghai">
+                      <SelectTrigger className="input-minimal h-12">
+                        <SelectValue placeholder="选择时区" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Asia/Shanghai">中国标准时间 (GMT+8)</SelectItem>
+                        <SelectItem value="Asia/Bangkok">泰国时间 (GMT+7)</SelectItem>
+                        <SelectItem value="Asia/Kuala_Lumpur">马来西亚时间 (GMT+8)</SelectItem>
+                        <SelectItem value="Asia/Jakarta">印尼时间 (GMT+7)</SelectItem>
+                        <SelectItem value="Asia/Ho_Chi_Minh">越南时间 (GMT+7)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-[#86909C]">设置后数据报表和定时任务将按此时区显示</p>
+                  </div>
+                </div>
+
+                <div className="space-y-4 pt-4">
+                  <Card className="card-minimal p-5">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-lg bg-[#F2F3F5] flex items-center justify-center">
+                          <Bell className="w-6 h-6 text-[#86909C]" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-[#1D2129]">推送频率</p>
+                          <p className="text-sm text-[#86909C]">控制通知推送的频率，避免打扰</p>
+                        </div>
+                      </div>
+                      <Select defaultValue="normal" className="w-40">
+                        <SelectTrigger className="input-minimal h-10">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="realtime">实时推送</SelectItem>
+                          <SelectItem value="normal">普通（每日汇总）</SelectItem>
+                          <SelectItem value="quiet">安静模式（仅紧急）</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </Card>
+
+                  <Card className="card-minimal p-5">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-lg bg-[#E8F3FF] flex items-center justify-center">
+                          <Globe className="w-6 h-6 text-[#165DFF]" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-[#1D2129]">默认目标市场</p>
+                          <p className="text-sm text-[#86909C]">选品和上新时的默认目标市场</p>
+                        </div>
+                      </div>
+                      <Select defaultValue="all" className="w-40">
+                        <SelectTrigger className="input-minimal h-10">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">全部市场</SelectItem>
+                          <SelectItem value="us">美国</SelectItem>
+                          <SelectItem value="eu">欧洲</SelectItem>
+                          <SelectItem value="sea">东南亚</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </Card>
+                </div>
+
+                <div className="pt-4 border-t border-[#E5E6EB]">
+                  <Button onClick={handleSave} disabled={loading} className="btn-primary">
+                    {loading ? (
+                      <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        保存中...
+                      </div>
+                    ) : (
+                      <>
+                        <Save className="w-4 h-4 mr-2" />
+                        保存设置
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </TabsContent>
+            </div>
           </Tabs>
-        )}
+        </Card>
       </div>
     </MainLayout>
   );

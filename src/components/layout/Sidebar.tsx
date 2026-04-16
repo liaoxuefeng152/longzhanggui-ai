@@ -71,7 +71,7 @@ const menuItems: MenuItem[] = [
       { title: '图片智能体', href: '/agents/image-design' },
       { title: '视频生成智能体', href: '/agents/video-generation' },
       { title: 'Listing优化', href: '/agents/listing-optimization' },
-      { title: '广告投放智能体', href: '/agents/advertising' },
+      // { title: '广告投放智能体', href: '/agents/advertising' },  // V1.1版本开放
       { title: 'AI客服智能体', href: '/agents/customer-service' },
       { title: '数据复盘智能体', href: '/agents/data-review' },
     ],
@@ -91,7 +91,9 @@ const menuItems: MenuItem[] = [
     href: '/erp',
     icon: Package,
     submenu: [
-      { title: '1688采集', href: '/erp/collection' },
+      { title: '一键发布', href: '/erp/one-click-publish', highlight: true },
+      { title: '批量处理', href: '/erp/batch-process' },
+      { title: '采集中心', href: '/erp/collection' },
       { title: '商品管理', href: '/erp/products' },
       { title: '库存管理', href: '/erp/inventory' },
       { title: '采购管理', href: '/erp/purchase' },
@@ -134,17 +136,18 @@ const menuItems: MenuItem[] = [
     href: '/reports',
     icon: BarChart3,
   },
-  {
-    title: '飞书机器人',
-    href: '/feishu',
-    icon: MessageSquare,
-    submenu: [
-      { title: '机器人管理', href: '/feishu' },
-      { title: '配置管理', href: '/feishu/settings' },
-      { title: '推送日志', href: '/feishu/logs' },
-      { title: 'Webhook测试', href: '/feishu/test' },
-    ],
-  },
+  // 飞书机器人 - V1.1版本开放
+  // {
+  //   title: '飞书机器人',
+  //   href: '/feishu',
+  //   icon: MessageSquare,
+  //   submenu: [
+  //     { title: '机器人管理', href: '/feishu' },
+  //     { title: '配置管理', href: '/feishu/settings' },
+  //     { title: '推送日志', href: '/feishu/logs' },
+  //     { title: 'Webhook测试', href: '/feishu/test' },
+  //   ],
+  // },
   {
     title: '系统设置',
     href: '/settings',
