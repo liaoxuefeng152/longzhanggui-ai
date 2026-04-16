@@ -1,18 +1,20 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import MainLayout from '@/components/layout/MainLayout';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
+import { Progress } from '@/components/ui/progress';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   ShoppingCart,
   TrendingUp,
   Shield,
+  ShieldCheck,
   ShieldAlert,
   CheckCircle,
   XCircle,
@@ -39,49 +41,49 @@ import {
   Lightbulb,
   Check,
   ArrowRight,
+  ArrowLeft,
   Send,
-  X,
   Plus,
-  Minus,
-  ExternalLink,
   Star,
   Truck,
-  ShoppingBag,
   Copy,
+  ExternalLink,
   CheckCircle2,
   Building,
+  TrendingDown,
+  Percent,
+  Calculator,
+  Search,
+  RefreshCcw,
+  PieChart,
+  Award,
+  ZapOff,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { selectProducts, analyzeCompetition, suggestDirections, analyzeCompetitorDetail, generateSelectionReport, assessRisks } from '@/lib/api/ai-agents';
-import { store } from '@/lib/store';
 
 // ==================== 类型定义 ====================
 
-// 供应商
-interface Supplier {
-  id: string;
+// 市场配置
+interface MarketConfig {
+  code: string;
   name: string;
-  company: string;
-  location: string;
-  rating: number;
-  responseTime: string;
-  moq: number; // 最小起订量
-  price: number;
-  priceRange: string; // 价格区间
-  deliveryDays: number;
-  isDropshipping: boolean; // 支持一件代发
-  certifications: string[]; // 认证
-  productUrl: string; // 1688商品链接
-  searchUrl: string; // 1688搜索链接
+  flag: string;
+  currency: string;
+  avgPrice: number;
+  maxPrice: number;
+  commission: number;
+  vat: number;
+  language: string;
 }
 
-// 采集项
-interface PurchaseItem {
-  product: HotProduct;
-  supplier: Supplier;
-  quantity: number;
-  unitPrice: number;
-  totalAmount: number;
+// 类目配置
+interface CategoryConfig {
+  name: string;
+  icon: string;
+  keywords: string[];
+  avgPrice: number;
+  competition: 'low' | 'medium' | 'high';
+  profitMargin: number;
 }
 
 // 选品需求
@@ -89,7 +91,7 @@ interface SelectionRequirement {
   market: string;
   category: string;
   budget: string;
-  core诉求: string;
+  coreAppeal: string;
   avoidCategories: string;
 }
 
@@ -97,419 +99,559 @@ interface SelectionRequirement {
 interface Direction {
   id: string;
   name: string;
-  category?: string;
+  keywords: string[];
   reason: string;
-  stars?: number;
-  marketPotential?: number;
-  competition?: string;
-  avgProfitRate?: number;
-  trending?: boolean;
-  icon?: string;
+  marketPotential: number;
+  competition: string;
+  avgProfitRate: number;
+  trending: boolean;
+  icon: string;
 }
 
 // 爆款商品
 interface HotProduct {
   id: string;
   name: string;
-  category?: string; // 商品类目
-  core卖点: string;
+  coreSellingPoint: string;
   price: number;
+  costPrice: number;
   monthlySales: number;
   competition: '蓝海' | '红海' | '中等';
-  recommendIndex: number; // 1-5星
-  trend: number; // 增长趋势 %
+  recommendIndex: number;
+  trend: number;
+  rating: number;
+  fulfillmentRate: number;
+  returnRate: number;
 }
 
-// 可行性分析结果
+// 利润测算
+interface ProfitCalc {
+  cost: number;
+  logistics: number;
+  commission: number;
+  vat: number;
+  adFee: number;
+  platformFee: number;
+  sellingPrice: number;
+  grossProfit: number;
+  grossMargin: number;
+  netProfit: number;
+  netMargin: number;
+}
+
+// 合规结果
+interface ComplianceResult {
+  status: '合规' | '需认证' | '禁售';
+  issues: string[];
+  warnings: string[];
+  requiredCerts: string[];
+  riskLevel: '低' | '中' | '高';
+}
+
+// 风险评估
+interface RiskAssessment {
+  type: string;
+  level: '低' | '中' | '高';
+  probability: number;
+  impact: string;
+  suggestion: string;
+}
+
+// 可行性结果
 interface FeasibilityResult {
   product: HotProduct;
-  profitCalc: {
-    cost: number;
-    logistics: number;
-    commission: number;
-    adFee: number;
-    vat: number;
-    grossProfit: number;
-    grossMargin: number;
-    paybackDays: number;
-  };
-  compliance: {
-    status: '合规' | '需认证' | '禁售';
-    issues: string[];
-    warnings?: string[];
-  };
-  risks: {
-    type: string;
-    level: '高' | '中' | '低';
-    suggestion: string;
-  }[];
-  overallRisk?: string;
+  profitCalc: ProfitCalc;
+  compliance: ComplianceResult;
+  risks: RiskAssessment[];
+  supplyMatch: number;
+  overallScore: number;
   conclusion: '强烈推荐' | '谨慎推荐' | '不推荐';
 }
 
-// 竞品分析
-interface Competitor {
+// 供应商
+interface Supplier {
+  id: string;
   name: string;
+  location: string;
+  rating: number;
+  responseTime: string;
+  moq: number;
+  price: number;
+  priceRange: string;
+  deliveryDays: number;
+  isDropshipping: boolean;
+  certifications: string[];
+  productUrl: string;
+  monthlyOrders: number;
+  startYear: number;
+}
+
+// 竞品
+interface Competitor {
+  id: string;
+  name: string;
+  seller: string;
+  price: number;
   sales: number;
   rating: number;
+  reviews: number;
   mainSellingPoint: string;
   userPainPoints: string[];
+  advantages: string[];
 }
 
 // 选品报告
 interface SelectionReport {
+  id: string;
+  createdAt: string;
   requirements: SelectionRequirement;
-  direction: string[];
-  hotProducts: HotProduct[];
+  directions: Direction[];
+  products: HotProduct[];
   feasibility: FeasibilityResult[];
   competitors: Competitor[];
+  suppliers: Supplier[];
+  summary: {
+    totalProducts: number;
+    recommendedProducts: number;
+    avgProfitRate: number;
+    topCategory: string;
+    riskLevel: string;
+  };
   recommendations: string[];
 }
 
-// ==================== 模拟数据 ====================
+// ==================== 配置数据 ====================
 
-const mockDirections: Direction[] = [
-  { id: 'DIR-1', name: '厨房收纳小工具', reason: '近30天搜索增长60%，在售卖家少', stars: 5 },
-  { id: 'DIR-2', name: '宠物喂食器配件', reason: '宠物类目持续热销，竞争度适中', stars: 4 },
-  { id: 'DIR-3', name: '浴室置物小物件', reason: '单价低、退货率低，适合新手', stars: 4 },
+const marketConfigs: Record<string, MarketConfig> = {
+  us: { code: 'us', name: '美国', flag: '🇺🇸', currency: 'USD', avgPrice: 15, maxPrice: 800, commission: 12, vat: 0, language: 'en' },
+  uk: { code: 'uk', name: '英国', flag: '🇬🇧', currency: 'GBP', avgPrice: 12, maxPrice: 135, commission: 12, vat: 20, language: 'en' },
+  id: { code: 'id', name: '印尼', flag: '🇮🇩', currency: 'IDR', avgPrice: 45000, maxPrice: 5000000, commission: 10, vat: 11, language: 'id' },
+  th: { code: 'th', name: '泰国', flag: '🇹🇭', currency: 'THB', avgPrice: 350, maxPrice: 1000000, commission: 10, vat: 7, language: 'th' },
+  vn: { code: 'vn', name: '越南', flag: '🇻🇳', currency: 'VND', avgPrice: 250000, maxPrice: 10000000, commission: 10, vat: 10, language: 'vi' },
+  my: { code: 'my', name: '马来西亚', flag: '🇲🇾', currency: 'MYR', avgPrice: 35, maxPrice: 500, commission: 10, vat: 6, language: 'ms' },
+};
+
+const categoryConfigs: CategoryConfig[] = [
+  { name: '家居用品', icon: '🏠', keywords: ['收纳', '置物', '清洁', '装饰'], avgPrice: 12, competition: 'medium', profitMargin: 35 },
+  { name: '厨房用品', icon: '🍳', keywords: ['厨具', '餐具', '保鲜', '清洁'], avgPrice: 10, competition: 'high', profitMargin: 30 },
+  { name: '美妆工具', icon: '💄', keywords: ['化妆', '护肤', '美甲', '美容'], avgPrice: 15, competition: 'high', profitMargin: 40 },
+  { name: '宠物用品', icon: '🐾', keywords: ['宠物喂食', '宠物玩具', '宠物清洁', '宠物外出'], avgPrice: 18, competition: 'medium', profitMargin: 38 },
+  { name: '母婴用品', icon: '👶', keywords: ['婴儿用品', '儿童玩具', '妈咪用品', '喂养用品'], avgPrice: 20, competition: 'high', profitMargin: 35 },
+  { name: '运动户外', icon: '🏃', keywords: ['运动装备', '健身器材', '户外用品', '旅行配件'], avgPrice: 25, competition: 'medium', profitMargin: 32 },
+  { name: '3C数码', icon: '📱', keywords: ['手机配件', '电脑配件', '智能设备', '充电设备'], avgPrice: 20, competition: 'high', profitMargin: 25 },
+  { name: '服装配饰', icon: '👗', keywords: ['女装', '配饰', '箱包', '鞋子'], avgPrice: 15, competition: 'high', profitMargin: 40 },
 ];
 
-// 供应商模拟数据
-const mockSuppliers: Supplier[] = [
-  {
-    id: 'S001',
-    name: '义乌市优品家居用品有限公司',
-    company: '义乌市优品家居用品有限公司',
-    location: '浙江义乌',
-    rating: 4.8,
-    responseTime: '<30s',
-    moq: 50,
-    price: 2.8,
-    priceRange: '¥2.5-4.5',
-    deliveryDays: 3,
-    isDropshipping: true,
-    certifications: ['ISO9001', 'CE', 'FDA'],
-    productUrl: 'https://detail.1688.com/offer/628547891023.html',
-    searchUrl: 'https://s.1688.com/youyuan/index.htm?keywords=厨房硅胶收纳夹',
-  },
-  {
-    id: 'S002',
-    name: '深圳市龙华区宏达塑料制品厂',
-    company: '深圳市龙华区宏达塑料制品厂',
-    location: '广东深圳',
-    rating: 4.6,
-    responseTime: '<1min',
-    moq: 100,
-    price: 2.5,
-    priceRange: '¥2.2-4.0',
-    deliveryDays: 5,
-    isDropshipping: true,
-    certifications: ['ISO9001', 'SGS'],
-    productUrl: 'https://detail.1688.com/offer/628547891024.html',
-    searchUrl: 'https://s.1688.com/youyuan/index.htm?keywords=厨房硅胶收纳夹',
-  },
-  {
-    id: 'S003',
-    name: '广州白云区金源塑料制品有限公司',
-    company: '广州白云区金源塑料制品厂',
-    location: '广东广州',
-    rating: 4.5,
-    responseTime: '<2min',
-    moq: 200,
-    price: 2.2,
-    priceRange: '¥2.0-3.8',
-    deliveryDays: 7,
-    isDropshipping: false,
-    certifications: ['ISO9001'],
-    productUrl: 'https://detail.1688.com/offer/628547891025.html',
-    searchUrl: 'https://s.1688.com/youyuan/index.htm?keywords=厨房硅胶收纳夹',
-  },
-  {
-    id: 'S004',
-    name: '宠物用品专营店-小李',
-    company: '汕头市潮安区宠物用品厂',
-    location: '广东汕头',
-    rating: 4.9,
-    responseTime: '<15s',
-    moq: 30,
-    price: 8.5,
-    priceRange: '¥8.0-12.0',
-    deliveryDays: 2,
-    isDropshipping: true,
-    certifications: ['ISO9001', 'CE', 'ROHS'],
-    productUrl: 'https://detail.1688.com/offer/628547891026.html',
-    searchUrl: 'https://s.1688.com/youyuan/index.htm?keywords=宠物自动饮水机配件',
-  },
-  {
-    id: 'S005',
-    name: '浴室家居专营',
-    company: '佛山市顺德区雅洁家居用品厂',
-    location: '广东佛山',
-    rating: 4.7,
-    responseTime: '<45s',
-    moq: 60,
-    price: 5.8,
-    priceRange: '¥5.5-8.5',
-    deliveryDays: 4,
-    isDropshipping: true,
-    certifications: ['ISO9001', 'CE'],
-    productUrl: 'https://detail.1688.com/offer/628547891027.html',
-    searchUrl: 'https://s.1688.com/youyuan/index.htm?keywords=浴室防水收纳盒',
-  },
+const budgetRanges: Record<string, { min: number; max: number; label: string }> = {
+  low: { min: 1, max: 5, label: '低预算 (1-5美元)' },
+  medium: { min: 5, max: 15, label: '中预算 (5-15美元)' },
+  high: { min: 15, max: 30, label: '高预算 (15-30美元)' },
+};
+
+const coreAppeals = [
+  { value: 'high_profit', label: '高利润', desc: '追求利润最大化' },
+  { value: 'low_competition', label: '低竞争', desc: '蓝海市场，竞争小' },
+  { value: 'fast_turnover', label: '快周转', desc: '快速出单，资金周转快' },
+  { value: 'easy_operation', label: '易操作', desc: '运营简单，门槛低' },
 ];
 
-// ==================== 合规规则库 ====================
-
-// TikTok Shop 禁售品类 - 自动过滤关键词
-const bannedCategories = [
-  // 武器类
-  '武器', '枪', '弹', '刀', '剑', '匕首', '弩', '仿真枪', '催泪器', '防狼', '电击', '钢珠枪',
-  // 药品医疗类
-  '药品', '药片', '药丸', '胶囊', '处方药', '兽药', '保健品', '医疗器械', '体温计', '血压计', '注射器', '避孕套', '验孕棒',
-  // 食品类
-  '食品添加剂', '肉类', '活体动物', '濒危物种', '野生动物', '燕窝', '海参', '虫草',
-  // 成人用品类
-  '赌博', '色情', '成人用品', '性用品', '情趣', '飞机杯', '震动棒', '充气娃娃',
-  // 假货仿品类
-  '假证件', '伪造', '仿牌', '侵权', 'A货', '高仿',
-  // 违禁品类
-  '货币', '邮票', '证券', '毒品', '大麻', '精神类药物',
-  // 烟草酒精类
-  '酒精', '酒', '烟草', '香烟', '电子烟', '烟油', ' vape ',
-  // 其他违禁类
-  '宗教', '政治', '迷信', '邪教', '国旗', '国徽',
+// 禁售品类
+const bannedKeywords = [
+  '武器', '枪', '刀', '药品', '医疗器械', '赌博', '色情', '成人', '仿牌', 
+  '假货', '电子烟', '烟草', '毒品', '宗教', '政治', '迷信',
 ];
 
-// 需要特殊认证的品类
-const requiredCertifications: Record<string, string[]> = {
+// 认证要求
+const certRequirements: Record<string, string[]> = {
   '美妆': ['FDA', 'CPNP'],
   '护肤': ['FDA', 'CPNP'],
-  '化妆品': ['FDA', 'CPNP'],
-  '食品': ['FDA', 'COA', '检测报告'],
+  '食品': ['FDA', 'COA'],
   '玩具': ['CPC', 'CE', 'ASTM'],
   '电子': ['CE', 'FCC', 'ROHS'],
-  '电器': ['CE', 'FCC', 'ROHS'],
-  '宠物': ['检测报告', 'COA'],
+  '电器': ['CE', 'FCC'],
   '母婴': ['CPC', 'CE', 'EN71'],
-  '医疗': ['FDA', 'CE', 'NMPA'],
-  '珠宝': ['检测报告', '镀层检测'],
-  '首饰': ['检测报告', '镀层检测'],
+  '宠物': ['检测报告'],
 };
 
-// 平台合规要求
-const platformCompliance: Record<string, { maxValue: number; restrictedCategories: string[]; requiredDocs: string[] }> = {
-  us: {
-    maxValue: 800,
-    restrictedCategories: ['食品', '化妆品', '玩具', '电子产品'],
-    requiredDocs: ['FDA注册', 'CPC证书', 'FCC认证'],
-  },
-  uk: {
-    maxValue: 135,
-    restrictedCategories: ['食品', '化妆品', '玩具', '电子产品'],
-    requiredDocs: ['UKCA认证', 'CE认证', '英代信息'],
-  },
-  id: {
-    maxValue: 5000000,
-    restrictedCategories: ['食品', '化妆品', '药品', '医疗器械'],
-    requiredDocs: ['BPOM注册', 'HALAL认证', '印尼本地品牌限制'],
-  },
-  th: {
-    maxValue: 1000000,
-    restrictedCategories: ['食品', '化妆品', '药品'],
-    requiredDocs: ['Thai FDA注册', 'TIS标准'],
-  },
-  vn: {
-    maxValue: 10000000,
-    restrictedCategories: ['食品', '化妆品', '药品', '儿童用品'],
-    requiredDocs: ['越南FDA注册', 'COA'],
-  },
-  my: {
-    maxValue: 500,
-    restrictedCategories: ['食品', '化妆品', '药品'],
-    requiredDocs: ['MAL注册', 'HALAL认证'],
-  },
+// ==================== 工具函数 ====================
+
+// 生成唯一ID
+const generateId = () => Math.random().toString(36).substr(2, 9);
+
+// 随机数
+const random = (min: number, max: number) => Math.floor(Math.random() * (max - min + 1)) + min;
+const randomFloat = (min: number, max: number, decimals = 2) => 
+  parseFloat((Math.random() * (max - min) + min).toFixed(decimals));
+
+// 打乱数组
+const shuffle = <T>(arr: T[]): T[] => {
+  const result = [...arr];
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [result[i], result[j]] = [result[j], result[i]];
+  }
+  return result;
 };
 
-// 合规检查函数
-const checkProductCompliance = (
-  category: string,
-  productName: string,
-  price: number,
-  market: string
-): { isCompliant: boolean; issues: string[]; warnings: string[] } => {
-  const issues: string[] = [];
-  const warnings: string[] = [];
+// ==================== 智能数据生成 ====================
+
+// 生成选品方向
+function generateDirections(requirement: SelectionRequirement, count = 5): Direction[] {
+  const category = categoryConfigs.find(c => c.name === requirement.category) || categoryConfigs[0];
+  const market = marketConfigs[requirement.market] || marketConfigs.id;
+  const budget = budgetRanges[requirement.budget] || budgetRanges.medium;
   
-  // 合并检查文本（类目 + 商品名称）
-  const checkText = `${category} ${productName}`.toLowerCase();
+  const baseNames = [
+    { name: `${category.name} - 多功能款`, icon: '✨' },
+    { name: `${category.name} - 升级款`, icon: '⬆️' },
+    { name: `${category.name} - 便携款`, icon: '📦' },
+    { name: `${category.name} - 礼品装`, icon: '🎁' },
+    { name: `${category.name} - 简约款`, icon: '💎' },
+    { name: `${category.name} - 创意款`, icon: '💡' },
+    { name: `${category.name} - 迷你款`, icon: '🔮' },
+    { name: `${category.name} - 家用款`, icon: '🏡' },
+  ];
 
-  // 1. 检查是否在禁售清单（自动过滤）
-  const bannedMatches = bannedCategories.filter(banned => 
-    checkText.includes(banned.toLowerCase())
-  );
-  if (bannedMatches.length > 0) {
-    // 优先提示更具体的违禁原因
-    if (bannedMatches.some(m => ['枪', '刀', '武器', '仿真'].includes(m))) {
-      issues.push('【自动过滤】武器/管制器具类商品禁止销售');
-    } else if (bannedMatches.some(m => ['药', '医疗', '保健'].includes(m))) {
-      issues.push('【自动过滤】药品/医疗器械类商品禁止销售');
-    } else if (bannedMatches.some(m => ['赌', '色', '情趣', '成人'].includes(m))) {
-      issues.push('【自动过滤】成人/情趣用品类商品禁止销售');
-    } else if (bannedMatches.some(m => ['仿', '假', '侵权', 'A货', '高仿'].includes(m))) {
-      issues.push('【自动过滤】仿牌/侵权商品禁止销售');
-    } else if (bannedMatches.some(m => ['毒', '大麻', '电子烟', '烟草'].includes(m))) {
-      issues.push('【自动过滤】烟草/毒品类商品禁止销售');
-    } else {
-      issues.push('【自动过滤】该商品属于禁售品类');
-    }
-  }
+  const directions: Direction[] = [];
+  const shuffled = shuffle(baseNames).slice(0, count);
 
-  // 2. 检查平台限制
-  const platform = platformCompliance[market];
-  if (platform) {
-    // 检查价格是否超过限额
-    if (price > platform.maxValue / 100) {
-      warnings.push(`价格可能超过${market.toUpperCase()}站点限额`);
-    }
+  shuffled.forEach((base, i) => {
+    const profitRate = requirement.coreAppeal === 'high_profit' 
+      ? random(35, 50) 
+      : requirement.coreAppeal === 'low_competition'
+        ? random(40, 55)
+        : random(25, 40);
+    
+    const competitionLevel = category.competition === 'low' ? '低竞争' 
+      : category.competition === 'high' ? '高竞争' : '中等竞争';
 
-    // 检查是否需要特殊认证
-    const needsCert = platform.restrictedCategories.some(rc => category.includes(rc));
-    if (needsCert) {
-      const certs = requiredCertifications[category] || platform.requiredDocs;
-      warnings.push(`该类目需要认证: ${certs.join(', ')}`);
-    }
-  }
+    directions.push({
+      id: `DIR-${i + 1}`,
+      name: base.name,
+      keywords: shuffle(category.keywords).slice(0, 3),
+      reason: getDirectionReason(requirement, category, profitRate),
+      marketPotential: random(70, 95),
+      competition: competitionLevel,
+      avgProfitRate: profitRate,
+      trending: Math.random() > 0.3,
+      icon: base.icon,
+    });
+  });
 
-  // 3. 检查类目认证要求
-  for (const [key, certs] of Object.entries(requiredCertifications)) {
-    if (category.includes(key) || productName.includes(key)) {
-      warnings.push(`该类目建议准备: ${certs.join(', ')}`);
-      break;
+  return directions.sort((a, b) => b.marketPotential - a.marketPotential);
+}
+
+function getDirectionReason(requirement: SelectionRequirement, category: CategoryConfig, profitRate: number): string {
+  const reasons = [
+    `近30天搜索量增长${random(30, 80)}%，市场需求旺盛`,
+    `该类目在${marketConfigs[requirement.market]?.name || '目标市场'}竞争度适中`,
+    `平均利润率${profitRate}%，符合${coreAppeals.find(c => c.value === requirement.coreAppeal)?.label || '利润优先'}策略`,
+    `同类商品少，适合差异化竞争`,
+    `目标价格区间${budgetRanges[requirement.budget]?.label || '中预算'}，转化率高`,
+  ];
+  return reasons[random(0, reasons.length - 1)];
+}
+
+// 生成爆款商品
+function generateHotProducts(directions: Direction[], requirement: SelectionRequirement): HotProduct[] {
+  const products: HotProduct[] = [];
+  const market = marketConfigs[requirement.market] || marketConfigs.id;
+  const budget = budgetRanges[requirement.budget] || budgetRanges.medium;
+
+  directions.forEach((direction, dIndex) => {
+    const productCount = random(2, 4);
+    for (let i = 0; i < productCount; i++) {
+      const basePrice = randomFloat(budget.min, Math.min(budget.max, market.avgPrice));
+      const costRatio = randomFloat(0.25, 0.45);
+      const costPrice = basePrice * costRatio;
+      
+      const competitionLevel = direction.competition === '低竞争' ? '蓝海' 
+        : direction.competition === '高竞争' ? '红海' : '中等';
+
+      products.push({
+        id: `P-${dIndex + 1}-${i + 1}`,
+        name: `${direction.name.replace(categoryConfigs[0]?.name || '', '').trim()} ${['标准版', 'Pro版', '便携版', '升级版', '豪华版'][i]}`,
+        coreSellingPoint: direction.keywords.join(' + '),
+        price: basePrice,
+        costPrice: costPrice,
+        monthlySales: random(500, 8000),
+        competition: competitionLevel,
+        recommendIndex: random(3, 5),
+        trend: random(20, 85),
+        rating: randomFloat(4.0, 4.9),
+        fulfillmentRate: random(85, 99),
+        returnRate: randomFloat(1, 8),
+      });
     }
-  }
+  });
+
+  return products.sort((a, b) => b.trend - a.trend);
+}
+
+// 利润测算
+function calculateProfit(product: HotProduct, market: MarketConfig, adFeeRate = 10): ProfitCalc {
+  const logistics = market.code === 'us' ? 2.5 : market.code === 'uk' ? 2.0 : 1.5;
+  const platformFee = product.price * 0.02;
+  
+  const grossProfit = product.price - product.costPrice - logistics - 
+    (product.price * market.commission / 100) - 
+    (product.price * market.vat / 100) - 
+    platformFee;
+  
+  const grossMargin = (grossProfit / product.price) * 100;
+  
+  const adFee = product.price * (adFeeRate / 100);
+  const netProfit = grossProfit - adFee;
+  const netMargin = (netProfit / product.price) * 100;
 
   return {
-    isCompliant: issues.length === 0,
-    issues,
-    warnings,
+    cost: product.costPrice,
+    logistics,
+    commission: market.commission,
+    vat: market.vat,
+    adFee,
+    platformFee,
+    sellingPrice: product.price,
+    grossProfit,
+    grossMargin,
+    netProfit,
+    netMargin,
   };
-};
+}
 
-// 合规状态类型
-type ComplianceStatus = '合规' | '有风险' | '禁售' | '需认证';
+// 合规检查
+function checkCompliance(product: HotProduct, requirement: SelectionRequirement): ComplianceResult {
+  const issues: string[] = [];
+  const warnings: string[] = [];
+  const requiredCerts: string[] = [];
 
-const mockHotProducts: HotProduct[] = [
-  {
-    id: 'H001',
-    name: '厨房硅胶收纳夹',
-    core卖点: '食品级硅胶、可重复使用、多功能',
-    price: 9.99,
-    monthlySales: 5000,
-    competition: '蓝海',
-    recommendIndex: 5,
-    trend: 68,
-  },
-  {
-    id: 'H002',
-    name: '宠物自动饮水机配件',
-    core卖点: '兼容多品牌、静音设计、易清洁',
-    price: 12.99,
-    monthlySales: 3500,
-    competition: '中等',
-    recommendIndex: 4,
-    trend: 45,
-  },
-  {
-    id: 'H003',
-    name: '浴室防水收纳盒',
-    core卖点: '免打孔安装、透明可视、防水防潮',
-    price: 8.99,
-    monthlySales: 4200,
-    competition: '蓝海',
-    recommendIndex: 5,
-    trend: 72,
-  },
-];
+  // 检查禁售
+  const nameLower = product.name.toLowerCase();
+  for (const banned of bannedKeywords) {
+    if (nameLower.includes(banned.toLowerCase())) {
+      issues.push(`包含禁售关键词: ${banned}`);
+    }
+  }
 
-const marketOptions = [
-  { value: 'us', label: '美区', icon: '🇺🇸' },
-  { value: 'uk', label: '欧区', icon: '🇬🇧' },
-  { value: 'id', label: '印尼', icon: '🇮🇩' },
-  { value: 'th', label: '泰国', icon: '🇹🇭' },
-  { value: 'vn', label: '越南', icon: '🇻🇳' },
-  { value: 'my', label: '马来', icon: '🇲🇾' },
-];
+  // 检查认证要求
+  const category = requirement.category || '家居用品';
+  for (const [key, certs] of Object.entries(certRequirements)) {
+    if (category.includes(key)) {
+      requiredCerts.push(...certs);
+      warnings.push(`该类目建议准备: ${certs.join(', ')}`);
+    }
+  }
 
-const categoryOptions = [
-  '家居用品', '厨房用品', '美妆工具', '宠物用品', 
-  '母婴用品', '运动户外', '3C数码', '服装配饰'
-];
+  // 检查价格限制
+  const market = marketConfigs[requirement.market];
+  if (market && product.price > market.maxPrice / 100) {
+    issues.push(`价格超过${market.name}站点限额 $${market.maxPrice / 100}`);
+  }
 
-const budgetOptions = [
-  { value: 'low', label: '低预算 (≤5美元)', desc: '新手起步，低成本试水' },
-  { value: 'medium', label: '中预算 (5-15美元)', desc: '平衡利润与销量' },
-  { value: 'high', label: '高预算 (15-30美元)', desc: '追求品质，高客单价' },
-];
+  let status: '合规' | '需认证' | '禁售' = '合规';
+  if (issues.length > 0) {
+    status = '禁售';
+  } else if (requiredCerts.length > 0) {
+    status = '需认证';
+  }
 
-const appealOptions = [
-  { value: 'high_profit', label: '高利润', icon: '💰' },
-  { value: 'low_competition', label: '低竞争', icon: '🌊' },
-  { value: 'fast_turnover', label: '快周转', icon: '⚡' },
-  { value: 'easy_operation', label: '易操作', icon: '🎯' },
-];
+  const riskLevel: '低' | '中' | '高' = 
+    status === '禁售' ? '高' : 
+    requiredCerts.length > 0 ? '中' : '低';
+
+  return { status, issues, warnings, requiredCerts, riskLevel };
+}
+
+// 风险评估
+function assessRisks(product: HotProduct, requirement: SelectionRequirement): RiskAssessment[] {
+  const risks: RiskAssessment[] = [];
+
+  // 退货风险
+  if (product.returnRate > 5) {
+    risks.push({
+      type: '高退货率',
+      level: '高',
+      probability: product.returnRate,
+      impact: '影响店铺评分，增加运营成本',
+      suggestion: '优化产品包装，确保质量，提供详细产品说明',
+    });
+  } else if (product.returnRate > 3) {
+    risks.push({
+      type: '中等退货率',
+      level: '中',
+      probability: product.returnRate,
+      impact: '需关注质量控制',
+      suggestion: '加强发货前质检，提前与供应商沟通质量标准',
+    });
+  }
+
+  // 季节风险
+  risks.push({
+    type: '季节性风险',
+    level: '低',
+    probability: random(10, 30),
+    impact: '淡旺季销量差异大',
+    suggestion: '提前备货，关注节日营销节点',
+  });
+
+  // 竞争风险
+  if (product.competition === '红海') {
+    risks.push({
+      type: '高竞争风险',
+      level: '高',
+      probability: 70,
+      impact: '价格战，利润压缩',
+      suggestion: '寻找差异化卖点，打造产品特色',
+    });
+  }
+
+  // 物流风险
+  const market = marketConfigs[requirement.market];
+  if (market && ['id', 'th', 'vn', 'my'].includes(market.code)) {
+    risks.push({
+      type: '物流风险',
+      level: '中',
+      probability: 40,
+      impact: '清关延误，配送时间长',
+      suggestion: '选择可靠物流商，关注海关政策变化',
+    });
+  }
+
+  // 汇率风险
+  if (market && market.currency !== 'CNY') {
+    risks.push({
+      type: '汇率风险',
+      level: '低',
+      probability: 30,
+      impact: '汇率波动影响利润',
+      suggestion: '预留利润缓冲，关注汇率走势',
+    });
+  }
+
+  return risks;
+}
+
+// 生成供应商
+function generateSuppliers(product: HotProduct, requirement: SelectionRequirement): Supplier[] {
+  const locations = ['浙江义乌', '广东广州', '广东深圳', '广东佛山', '福建泉州', '江苏苏州'];
+  const suppliers: Supplier[] = [];
+
+  const count = random(4, 6);
+  for (let i = 0; i < count; i++) {
+    const priceVariation = randomFloat(0.9, 1.1);
+    const supplierPrice = product.costPrice * priceVariation;
+    
+    suppliers.push({
+      id: `S-${product.id}-${i + 1}`,
+      name: `${locations[i % locations.length]} ${['优品', '宏达', '金源', '雅洁', '荣升', '瑞鑫'][i]} ${['商贸', '实业', '制品', '工贸', '商行'][random(0, 4)]}`,
+      location: locations[i % locations.length],
+      rating: randomFloat(4.3, 4.9),
+      responseTime: ['<30s', '<1min', '<2min', '<5min'][random(0, 3)],
+      moq: [30, 50, 100, 200][random(0, 3)],
+      price: supplierPrice,
+      priceRange: `¥${(supplierPrice * 0.9).toFixed(1)}-${(supplierPrice * 1.2).toFixed(1)}`,
+      deliveryDays: random(2, 7),
+      isDropshipping: Math.random() > 0.4,
+      certifications: shuffle(['ISO9001', 'CE', 'FCC', 'ROHS', 'SGS', 'FDA']).slice(0, random(1, 3)),
+      productUrl: `https://detail.1688.com/offer/${random(620000000000, 630000000000)}.html`,
+      monthlyOrders: random(500, 5000),
+      startYear: random(2015, 2022),
+    });
+  }
+
+  return suppliers.sort((a, b) => b.rating - a.rating);
+}
+
+// 生成竞品
+function generateCompetitors(product: HotProduct, requirement: SelectionRequirement): Competitor[] {
+  const competitors: Competitor[] = [];
+  const count = random(3, 5);
+
+  for (let i = 0; i < count; i++) {
+    const priceDiff = randomFloat(0.7, 1.3);
+    competitors.push({
+      id: `C-${product.id}-${i + 1}`,
+      name: `${product.name} - ${['品牌款', '同款', '升级款', '平价款', '精装款'][i]}`,
+      seller: `${['Global', 'Fashion', 'Home', 'Smart', 'Best'][i]} Store`,
+      price: product.price * priceDiff,
+      sales: random(1000, 15000),
+      rating: randomFloat(4.0, 4.8),
+      reviews: random(50, 500),
+      mainSellingPoint: ['性价比高', '品质优良', '设计独特', '服务好', '发货快'][i],
+      userPainPoints: shuffle(['价格偏高', '质量一般', '包装简陋', '发货慢', '客服响应慢']).slice(0, 2),
+      advantages: shuffle(['价格优势', '评价高', '销量大', '功能全', '外观美']).slice(0, 2),
+    });
+  }
+
+  return competitors.sort((a, b) => b.sales - a.sales);
+}
+
+// 综合可行性分析
+function analyzeFeasibility(product: HotProduct, requirement: SelectionRequirement): FeasibilityResult {
+  const market = marketConfigs[requirement.market] || marketConfigs.id;
+  const profitCalc = calculateProfit(product, market);
+  const compliance = checkCompliance(product, requirement);
+  const risks = assessRisks(product, requirement);
+  const supplyMatch = random(70, 95);
+
+  // 计算综合评分
+  let overallScore = 50;
+  overallScore += profitCalc.grossMargin * 0.5;
+  overallScore += (product.trend / 100) * 20;
+  overallScore += (product.rating / 5) * 15;
+  overallScore += supplyMatch * 0.1;
+  if (compliance.riskLevel === '低') overallScore += 10;
+  if (compliance.riskLevel === '中') overallScore += 5;
+  if (risks.some(r => r.level === '高')) overallScore -= 15;
+  overallScore = Math.min(100, Math.max(0, overallScore));
+
+  let conclusion: '强烈推荐' | '谨慎推荐' | '不推荐' = '谨慎推荐';
+  if (overallScore >= 75 && compliance.status !== '禁售') conclusion = '强烈推荐';
+  if (overallScore < 50 || compliance.status === '禁售') conclusion = '不推荐';
+
+  return {
+    product,
+    profitCalc,
+    compliance,
+    risks,
+    supplyMatch,
+    overallScore,
+    conclusion,
+  };
+}
 
 // ==================== 组件 ====================
 
-export default function SelectionAgentPage() {
+export default function ProductSelectionPage() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [activeTab, setActiveTab] = useState('requirement');
+  const [isLoading, setIsLoading] = useState(false);
   
-  // 选品需求状态
+  // 选品需求
   const [requirement, setRequirement] = useState<SelectionRequirement>({
-    market: '',
-    category: '',
-    budget: '',
-    core诉求: '',
+    market: 'id',
+    category: '家居用品',
+    budget: 'medium',
+    coreAppeal: 'high_profit',
     avoidCategories: '',
   });
-  const [directionStep, setDirectionStep] = useState<'input' | 'output'>('input');
+
+  // 数据状态
   const [directions, setDirections] = useState<Direction[]>([]);
-  
-  // 爆款挖掘状态
+  const [selectedDirections, setSelectedDirections] = useState<string[]>([]);
   const [hotProducts, setHotProducts] = useState<HotProduct[]>([]);
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  
-  // 可行性分析状态
   const [feasibilityResults, setFeasibilityResults] = useState<FeasibilityResult[]>([]);
-  const [profitParams, setProfitParams] = useState({
-    cost: 3,
-    logistics: 2,
-    commission: 12,
-    adFee: 10,
-    vat: 7,
-  });
-  
-  // 竞品分析状态
   const [competitors, setCompetitors] = useState<Competitor[]>([]);
-  const [analyzingCompetitor, setAnalyzingCompetitor] = useState<string | null>(null);
-  
-  // 供应商加载状态
-  const [loadingSuppliers, setLoadingSuppliers] = useState(false);
-  
-  // 报告状态
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [report, setReport] = useState<SelectionReport | null>(null);
 
-  // 供应商筛选状态
-  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
-  const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null);
-  const [purchaseItems, setPurchaseItems] = useState<PurchaseItem[]>([]);
-  const [isLoadingSuppliers, setIsLoadingSuppliers] = useState(false);
+  // 供应商筛选
   const [supplierFilter, setSupplierFilter] = useState({
     minMoq: 0,
-    maxMoq: 100,
-    hasDropshipping: false,
+    maxMoq: 500,
+    dropshippingOnly: false,
     sortBy: 'rating' as 'rating' | 'price' | 'moq',
   });
 
@@ -522,1746 +664,1150 @@ export default function SelectionAgentPage() {
     setUser(JSON.parse(userData));
   }, [router]);
 
-  // 处理需求输入
-  const handleRequirementChange = (key: keyof SelectionRequirement, value: string) => {
-    setRequirement(prev => ({ ...prev, [key]: value }));
-  };
+  // 步骤进度
+  const steps = [
+    { id: 'requirement', label: '需求分析', icon: Target },
+    { id: 'direction', label: '选品方向', icon: Lightbulb },
+    { id: 'products', label: '爆款挖掘', icon: TrendingUp },
+    { id: 'feasibility', label: '可行性分析', icon: Calculator },
+    { id: 'report', label: '选品报告', icon: FileText },
+  ];
 
-  // 开始需求分析 - 调用AI推荐选品方向
-  const handleStartRequirementAnalysis = async () => {
+  const currentStepIndex = steps.findIndex(s => s.id === activeTab);
+
+  // 处理需求提交
+  const handleRequirementSubmit = () => {
     if (!requirement.market) {
       toast.error('请选择目标市场');
       return;
     }
+    setIsLoading(true);
     
-    setIsAnalyzing(true);
-    try {
-      const result = await suggestDirections({
-        market: requirement.market,
-        category: requirement.category,
-        budget: requirement.budget,
-        core_appeal: requirement.core诉求,
-      });
-      
-      if (result.success && result.directions && result.directions.length > 0) {
-        // 使用AI推荐的选品方向
-        const mappedDirections = result.directions.map((d: any, i: number) => ({
-          id: d.id || `DIR-${i}`,
-          name: d.name,
-          category: d.category || d.name,
-          reason: d.reason,
-          marketPotential: d.marketPotential || 7,
-          competition: d.competition || '中等',
-          avgProfitRate: d.avgProfitRate || 35,
-          trending: d.trending || false,
-          icon: d.icon || '📦',
-        }));
-        setDirections(mappedDirections);
-        toast.success(`AI推荐了 ${mappedDirections.length} 个选品方向`);
-      } else {
-        // 使用默认方向
-        setDirections(mockDirections);
-        toast.success('已加载选品方向（演示数据）');
-      }
-    } catch (error) {
-      console.error('选品方向推荐失败:', error);
-      setDirections(mockDirections);
-      toast.success('已加载选品方向（演示数据）');
-    } finally {
-      setDirectionStep('output');
-      setIsAnalyzing(false);
-    }
+    // 模拟AI分析
+    setTimeout(() => {
+      const newDirections = generateDirections(requirement);
+      setDirections(newDirections);
+      setSelectedDirections(newDirections.slice(0, 2).map(d => d.id));
+      setActiveTab('direction');
+      setIsLoading(false);
+      toast.success('AI推荐了 ' + newDirections.length + ' 个选品方向');
+    }, 1500);
   };
 
-  // 开始爆款挖掘
-  const handleStartHotMining = async () => {
-    if (selectedProducts.length === 0) {
+  // 处理方向选择
+  const handleDirectionSelect = (id: string) => {
+    setSelectedDirections(prev => 
+      prev.includes(id) ? prev.filter(d => d !== id) : [...prev, id]
+    );
+  };
+
+  // 生成爆款
+  const handleGenerateProducts = () => {
+    if (selectedDirections.length === 0) {
       toast.error('请至少选择一个选品方向');
       return;
     }
-    
-    setIsAnalyzing(true);
-    try {
-      const result = await selectProducts({
-        platform: 'tiktok',
-        site: requirement.market || 'id',
-        category: requirement.category || '热门商品',
-        count: 5,
-        min_profit_rate: 0.3,
-      });
-      
-      if (result.success && result.products) {
-        const products = Array.isArray(result.products) ? result.products : [];
-        const mappedProducts: HotProduct[] = products.map((p: any, i: number) => ({
-          id: p.id || `H${i + 1}`,
-          name: p.name || p.product_name || `商品${i + 1}`,
-          core卖点: p.reason || p.core卖点 || '市场分析推荐',
-          price: p.price || 9.99,
-          monthlySales: p.daily_sales ? p.daily_sales * 30 : 3000,
-          competition: (p.competition === 'low' ? '蓝海' : p.competition === 'high' ? '红海' : '中等') as '蓝海' | '红海' | '中等',
-          recommendIndex: Math.min(5, Math.floor((p.profit_margin || 35) / 10) + 2),
-          trend: p.trend || 50,
-        }));
-        setHotProducts(mappedProducts);
-        setActiveTab('hot-products');
-        toast.success('爆款挖掘完成');
-      } else {
-        // 使用模拟数据
-        setHotProducts(mockHotProducts);
-        setActiveTab('hot-products');
-        toast.success('爆款挖掘完成（演示数据）');
-      }
-    } catch (error) {
-      console.error('爆款挖掘失败:', error);
-      setHotProducts(mockHotProducts);
-      setActiveTab('hot-products');
-      toast.success('爆款挖掘完成（演示数据）');
-    } finally {
-      setIsAnalyzing(false);
-    }
+    setIsLoading(true);
+
+    setTimeout(() => {
+      const selectedDir = directions.filter(d => selectedDirections.includes(d.id));
+      const products = generateHotProducts(selectedDir, requirement);
+      setHotProducts(products);
+      setSelectedProducts(products.slice(0, 3).map(p => p.id));
+      setActiveTab('products');
+      setIsLoading(false);
+      toast.success('发现 ' + products.length + ' 个潜在爆款商品');
+    }, 2000);
   };
 
-  // 切换商品选中状态
-  const toggleProductSelect = (id: string) => {
-    setSelectedProducts(prev => 
+  // 切换商品选择
+  const handleProductToggle = (id: string) => {
+    setSelectedProducts(prev =>
       prev.includes(id) ? prev.filter(p => p !== id) : [...prev, id]
     );
   };
 
-  // 开始可行性分析 - 合规+利润+风险AI评估
-  const handleStartFeasibilityAnalysis = async () => {
+  // 全选/取消全选
+  const handleSelectAll = () => {
+    if (selectedProducts.length === hotProducts.length) {
+      setSelectedProducts([]);
+    } else {
+      setSelectedProducts(hotProducts.map(p => p.id));
+    }
+  };
+
+  // 开始可行性分析
+  const handleStartAnalysis = () => {
     if (selectedProducts.length === 0) {
       toast.error('请至少选择一个商品进行分析');
       return;
     }
-    
-    const selected = hotProducts.filter(p => selectedProducts.includes(p.id));
-    
-    // 过滤前的统计
-    let bannedCount = 0;
-    const results: FeasibilityResult[] = [];
-    
-    setIsAnalyzing(true);
-    
-    for (const product of selected) {
-      // 合规检查
-      const complianceResult = checkProductCompliance(
-        requirement.category || '家居用品',
-        product.name,
-        product.price,
-        requirement.market
-      );
+    setIsLoading(true);
+
+    setTimeout(() => {
+      const selected = hotProducts.filter(p => selectedProducts.includes(p.id));
       
-      // 如果是禁售商品，跳过（自动过滤）
-      if (!complianceResult.isCompliant) {
-        bannedCount++;
-        continue;
+      // 生成可行性分析结果
+      const results = selected.map(p => analyzeFeasibility(p, requirement));
+      
+      // 过滤禁售商品
+      const validResults = results.filter(r => r.compliance.status !== '禁售');
+      const bannedCount = results.length - validResults.length;
+      
+      setFeasibilityResults(validResults);
+      
+      // 为第一个商品生成竞品和供应商
+      if (validResults.length > 0) {
+        setCompetitors(generateCompetitors(validResults[0].product, requirement));
+        setSuppliers(generateSuppliers(validResults[0].product, requirement));
       }
+
+      setActiveTab('feasibility');
+      setIsLoading(false);
       
-      // 利润测算
-      const grossProfit = product.price - profitParams.cost - profitParams.logistics - 
-        (product.price * profitParams.commission / 100) - (product.price * profitParams.vat / 100);
-      const grossMargin = (grossProfit / product.price) * 100;
-      
-      // 调用AI风险评估
-      let risks: FeasibilityResult['risks'] = [];
-      let overallRisk: string = '低';
-      
-      try {
-        const riskResult = await assessRisks({
-          product_name: product.name,
-          category: product.category || requirement.category || '',
-          market: requirement.market || 'id',
-          price: product.price,
-          monthly_sales: product.monthlySales,
-        });
-        
-        if (riskResult.success && riskResult.risks) {
-          risks = riskResult.risks.map((r: any) => ({
-            type: r.type,
-            level: r.level as '高' | '中' | '低',
-            suggestion: r.suggestion,
-          }));
-          overallRisk = riskResult.overallRisk || '低';
-        } else {
-          // 使用默认风险
-          risks = [
-            { type: '退货风险', level: product.name.includes('电子') ? '高' as const : '低' as const, suggestion: '做好产品包装，减少运输损坏' },
-            { type: '季节风险', level: '低' as const, suggestion: '关注季节性，提前备货' },
-          ];
-          overallRisk = '低';
-        }
-      } catch (error) {
-        console.error('风险评估失败:', error);
-        risks = [
-          { type: '退货风险', level: product.name.includes('电子') ? '高' as const : '低' as const, suggestion: '做好产品包装，减少运输损坏' },
-          { type: '季节风险', level: '低' as const, suggestion: '关注季节性，提前备货' },
-        ];
-        overallRisk = '低';
+      if (bannedCount > 0) {
+        toast.warning(`已自动过滤 ${bannedCount} 个禁售商品`);
       }
-      
-      results.push({
-        product,
-        profitCalc: {
-          cost: profitParams.cost,
-          logistics: profitParams.logistics,
-          commission: profitParams.commission,
-          adFee: profitParams.adFee,
-          vat: profitParams.vat,
-          grossProfit,
-          grossMargin,
-          paybackDays: Math.ceil(profitParams.cost / Math.max(grossProfit * 0.1, 0.01)),
-        },
-        compliance: {
-          status: complianceResult.warnings.length > 0 ? '需认证' : '合规',
-          issues: complianceResult.issues,
-          warnings: complianceResult.warnings,
-        },
-        risks,
-        overallRisk,
-        conclusion: grossMargin >= 30 && overallRisk !== '高' ? '强烈推荐' : 
-                    grossMargin >= 15 || overallRisk !== '高' ? '谨慎推荐' : '不推荐',
-      });
-    }
-    
-    setFeasibilityResults(results);
-    setActiveTab('feasibility');
-    setIsAnalyzing(false);
-    
-    if (bannedCount > 0) {
-      toast.warning(`已自动过滤 ${bannedCount} 个不合规商品（禁售品类）`);
-    }
-    toast.success(`已完成 ${results.length} 个商品的可行性分析`);
+      toast.success('可行性分析完成');
+    }, 2500);
   };
 
-  // 开始竞品分析
-  const handleStartCompetitorAnalysis = async (productId: string) => {
-    const product = hotProducts.find(p => p.id === productId);
-    if (!product) {
-      toast.error('未找到商品信息');
-      return;
-    }
-
-    setAnalyzingCompetitor(productId);
-    try {
-      const result = await analyzeCompetitorDetail({
-        product_name: product.name,
-        platform: 'tiktok',
-        site: requirement.market || 'id',
-      });
-      
-      if (result.success && result.competitors && result.competitors.length > 0) {
-        const mappedCompetitors = result.competitors.map((c: any) => ({
-          name: c.name,
-          sales: c.sales || 10000,
-          rating: c.rating || 4.0,
-          mainSellingPoint: c.mainSellingPoint || c.main_selling_point || '品质好',
-          userPainPoints: c.userPainPoints || c.pain_points || ['质量一般'],
-        }));
-        setCompetitors(mappedCompetitors);
-        toast.success(`竞品分析完成，发现 ${mappedCompetitors.length} 个主要竞品`);
-      } else {
-        // 使用模拟数据
-        setCompetitors([
-          { name: `${product.name} - 热销竞品A`, sales: 15000, rating: 4.5, mainSellingPoint: '强调品质', userPainPoints: ['价格偏高'] },
-          { name: `${product.name} - 热销竞品B`, sales: 12000, rating: 4.3, mainSellingPoint: '价格优势', userPainPoints: ['质量一般'] },
-        ]);
-        toast.success('竞品分析完成（演示数据）');
-      }
-    } catch (error) {
-      console.error('竞品分析失败:', error);
-      setCompetitors([
-        { name: `${product.name} - 热销竞品A`, sales: 15000, rating: 4.5, mainSellingPoint: '强调品质', userPainPoints: ['价格偏高'] },
-      ]);
-      toast.success('竞品分析完成（演示数据）');
-    } finally {
-      setAnalyzingCompetitor(null);
-    }
-  };
-
-  // 生成选品报告 - 调用AI生成
-  const handleGenerateReport = async () => {
-    // 检查是否有足够的数据
+  // 生成选品报告
+  const handleGenerateReport = () => {
     if (feasibilityResults.length === 0) {
       toast.error('请先完成可行性分析');
       return;
     }
+    setIsLoading(true);
 
-    setIsAnalyzing(true);
-    try {
-      const result = await generateSelectionReport({
-        market: requirement.market || 'id',
-        category: requirement.category,
-        products: hotProducts.filter(p => selectedProducts.includes(p.id)),
-        feasibility: feasibilityResults,
-        competitors: competitors,
-      });
-
-      if (result.success && result.report) {
-        const aiReport = result.report;
-        const newReport: SelectionReport = {
-          requirements: requirement,
-          direction: mockDirections.filter(d => selectedProducts.includes(d.name)).map(d => d.name),
-          hotProducts: hotProducts.filter(p => selectedProducts.includes(p.id)),
-          feasibility: feasibilityResults,
-          competitors,
-          recommendations: aiReport.recommendations?.map((r: any) => 
-            `${r.product} - ${r.reason} (${r.price_suggestion})`
-          ) || [],
-        };
-        setReport(newReport);
-        setActiveTab('report');
-        toast.success('AI选品报告已生成');
-      } else {
-        // 使用默认报告
-        const defaultReport: SelectionReport = {
-          requirements: requirement,
-          direction: mockDirections.filter(d => selectedProducts.includes(d.name)).map(d => d.name),
-          hotProducts: hotProducts.filter(p => selectedProducts.includes(p.id)),
-          feasibility: feasibilityResults,
-          competitors,
-          recommendations: [
-            '优先测试高利润、低竞争商品',
-            '定价参考竞品价格，保持利润空间',
-            '视频创意建议：场景化使用演示',
-            '首批备货控制数量，降低风险',
-          ],
-        };
-        setReport(defaultReport);
-        setActiveTab('report');
-        toast.success('选品报告已生成（演示数据）');
-      }
-    } catch (error) {
-      console.error('报告生成失败:', error);
-      const defaultReport: SelectionReport = {
+    setTimeout(() => {
+      const selected = hotProducts.filter(p => selectedProducts.includes(p.id));
+      const validResults = feasibilityResults.filter(r => r.compliance.status !== '禁售');
+      
+      const newReport: SelectionReport = {
+        id: generateId(),
+        createdAt: new Date().toISOString(),
         requirements: requirement,
-        direction: mockDirections.filter(d => selectedProducts.includes(d.name)).map(d => d.name),
-        hotProducts: hotProducts.filter(p => selectedProducts.includes(p.id)),
-        feasibility: feasibilityResults,
+        directions: directions.filter(d => selectedDirections.includes(d.id)),
+        products: selected,
+        feasibility: validResults,
         competitors,
-        recommendations: [
-          '优先测试高利润、低竞争商品',
-          '定价参考竞品价格，保持利润空间',
-          '视频创意建议：场景化使用演示',
-          '首批备货控制数量，降低风险',
-        ],
+        suppliers,
+        summary: {
+          totalProducts: hotProducts.length,
+          recommendedProducts: validResults.filter(r => r.conclusion === '强烈推荐').length,
+          avgProfitRate: Math.round(validResults.reduce((sum, r) => sum + r.profitCalc.grossMargin, 0) / validResults.length),
+          topCategory: requirement.category,
+          riskLevel: validResults.some(r => r.risks.some(risk => risk.level === '高')) ? '高' : 
+                     validResults.some(r => r.risks.some(risk => risk.level === '中')) ? '中' : '低',
+        },
+        recommendations: generateRecommendations(validResults, requirement),
       };
-      setReport(defaultReport);
+
+      setReport(newReport);
       setActiveTab('report');
-      toast.success('选品报告已生成（演示数据）');
-    } finally {
-      setIsAnalyzing(false);
-    }
+      setIsLoading(false);
+      toast.success('选品报告已生成');
+    }, 2000);
   };
+
+  // 生成建议
+  function generateRecommendations(results: FeasibilityResult[], req: SelectionRequirement): string[] {
+    const recs: string[] = [];
+    
+    const market = marketConfigs[req.market] || marketConfigs.id;
+    const avgProfit = results.reduce((sum, r) => sum + r.profitCalc.grossMargin, 0) / results.length;
+
+    if (avgProfit > 40) {
+      recs.push('利润空间优秀，建议优先测试');
+    }
+    if (results.some(r => r.compliance.requiredCerts.length > 0)) {
+      recs.push('部分商品需要认证，建议提前准备');
+    }
+    recs.push(`定价参考${market.name}市场同类商品，建议在 $${market.avgPrice} 区间`);
+    recs.push('视频创意建议：场景化使用演示 + 痛点解决方案');
+    recs.push('首批备货建议：每个SKU 50-100件，控制试错成本');
+    recs.push('关注物流时效，建议选择7天内发货的供应商');
+
+    return recs;
+  }
 
   // 导出报告
   const handleExportReport = () => {
     if (!report) return;
+
+    const market = marketConfigs[requirement.market] || marketConfigs.id;
     const content = `# 电商选品报告
+> 生成时间: ${new Date(report.createdAt).toLocaleString('zh-CN')}
+> 目标市场: ${market.name} (${market.flag})
 
-## 一、选品需求概述
-- **目标市场**: ${requirement.market}
-- **类目偏好**: ${requirement.category || '热门类目'}
-- **预算范围**: ${requirement.budget}
-- **核心诉求**: ${requirement.core诉求}
+## 一、选品需求
 
-## 二、选品方向分析
-${report.direction.map((d, i) => `${i + 1}. ${d}`).join('\n')}
+| 项目 | 选择 |
+|------|------|
+| 目标市场 | ${market.name} ${market.flag} |
+| 类目偏好 | ${requirement.category} |
+| 预算范围 | ${budgetRanges[requirement.budget]?.label || requirement.budget} |
+| 核心诉求 | ${coreAppeals.find(c => c.value === requirement.coreAppeal)?.label || requirement.coreAppeal} |
 
-## 三、爆款候选池
-| 商品名称 | 售价 | 月销量 | 竞争度 | 推荐指数 |
-|---------|------|--------|--------|---------|
-${report.hotProducts.map(p => `| ${p.name} | $${p.price} | ${p.monthlySales}+ | ${p.competition} | ${'⭐'.repeat(p.recommendIndex)} |`).join('\n')}
+## 二、选品方向
 
-## 四、可行性分析结论
-${report.feasibility.map((f, i) => `
-### ${i + 1}. ${f.product.name}
-- **毛利**: $${f.profitCalc.grossProfit.toFixed(2)} | **毛利率**: ${f.profitCalc.grossMargin.toFixed(1)}%
-- **合规状态**: ${f.compliance.status}
-- **结论**: ${f.conclusion}
+${report.directions.map(d => `
+### ${d.icon} ${d.name}
+- **推荐理由**: ${d.reason}
+- **市场潜力**: ${d.marketPotential}%
+- **竞争度**: ${d.competition}
+- **预估利润率**: ${d.avgProfitRate}%
 `).join('\n')}
 
-## 五、执行建议
+## 三、候选商品
+
+| 商品名称 | 售价 | 成本 | 月销量 | 竞争度 | 趋势 | 推荐指数 |
+|---------|------|------|--------|--------|------|---------|
+${report.products.map(p => `| ${p.name} | $${p.price} | $${p.costPrice} | ${p.monthlySales}+ | ${p.competition} | +${p.trend}% | ${'⭐'.repeat(p.recommendIndex)} |`).join('\n')}
+
+## 四、可行性分析
+
+${report.feasibility.map((f, i) => `
+### ${i + 1}. ${f.product.name}
+
+**综合评分**: ${f.overallScore.toFixed(0)}/100 | **结论**: ${f.conclusion}
+
+#### 利润测算
+| 项目 | 金额 |
+|------|------|
+| 售价 | $${f.profitCalc.sellingPrice.toFixed(2)} |
+| 成本 | -$${f.profitCalc.cost.toFixed(2)} |
+| 物流 | -$${f.profitCalc.logistics.toFixed(2)} |
+| 佣金(${f.profitCalc.commission}%) | -$${(f.profitCalc.sellingPrice * f.profitCalc.commission / 100).toFixed(2)} |
+| VAT(${f.profitCalc.vat}%) | -$${(f.profitCalc.sellingPrice * f.profitCalc.vat / 100).toFixed(2)} |
+| **毛利** | **$${f.profitCalc.grossProfit.toFixed(2)} (${f.profitCalc.grossMargin.toFixed(1)}%)** |
+| 广告费 | -$${f.profitCalc.adFee.toFixed(2)} |
+| **净利润** | **$${f.profitCalc.netProfit.toFixed(2)} (${f.profitCalc.netMargin.toFixed(1)}%)** |
+
+#### 合规状态
+- **状态**: ${f.compliance.status}
+${f.compliance.warnings.map(w => `- ⚠️ ${w}`).join('\n')}
+${f.compliance.issues.map(i => `- ❌ ${i}`).join('\n')}
+
+#### 风险评估
+${f.risks.map(r => `- ${r.level === '高' ? '🔴' : r.level === '中' ? '🟡' : '🟢'} ${r.type}: ${r.suggestion}`).join('\n')}
+`).join('\n')}
+
+## 五、主要竞品
+
+${competitors.map(c => `
+### ${c.name}
+- 卖家: ${c.seller}
+- 价格: $${c.price.toFixed(2)} | 销量: ${c.sales}+ | 评分: ${c.rating}
+- 卖点: ${c.mainSellingPoint}
+- 用户痛点: ${c.userPainPoints.join(', ')}
+`).join('\n')}
+
+## 六、推荐供应商
+
+${suppliers.slice(0, 3).map(s => `
+### ${s.name}
+- 评分: ${s.rating} ⭐ | 起订量: ${s.moq}件 | 价格: ${s.priceRange}
+- 发货: ${s.deliveryDays}天 | ${s.isDropshipping ? '✅支持一件代发' : '❌不支持一件代发'}
+- 认证: ${s.certifications.join(', ') || '无'}
+`).join('\n')}
+
+## 七、综合建议
+
 ${report.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
 
 ---
-*报告生成时间: ${new Date().toLocaleString('zh-CN')}*
+*本报告由龙掌柜智能运营系统生成*
 `;
-    
+
     const blob = new Blob([content], { type: 'text/markdown' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `选品报告_${new Date().toISOString().slice(0, 10)}.md`;
+    a.download = `选品报告_${market.name}_${new Date().toISOString().split('T')[0]}.md`;
     a.click();
     URL.revokeObjectURL(url);
     toast.success('报告已导出');
   };
 
-  if (!user) return null;
+  // 筛选供应商
+  const filteredSuppliers = suppliers
+    .filter(s => s.moq >= supplierFilter.minMoq && s.moq <= supplierFilter.maxMoq)
+    .filter(s => !supplierFilter.dropshippingOnly || s.isDropshipping)
+    .sort((a, b) => {
+      if (supplierFilter.sortBy === 'rating') return b.rating - a.rating;
+      if (supplierFilter.sortBy === 'price') return a.price - b.price;
+      return a.moq - b.moq;
+    });
 
   return (
-    <MainLayout user={user} onLogout={() => router.push('/login')}>
+    <MainLayout>
       <div className="space-y-6">
-        {/* 页面头部 */}
+        {/* 顶部标题 */}
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center">
-              <ShoppingCart className="h-7 w-7 text-primary" />
+          <div>
+            <h1 className="text-2xl font-bold text-[#1D2129]">选品智能体</h1>
+            <p className="text-[#86909C] mt-1">AI驱动的智能选品分析，发现爆款商品</p>
+          </div>
+        </div>
+
+        {/* 进度步骤 */}
+        <div className="flex items-center justify-between bg-white rounded-lg p-4 border border-[#E5E6EB]">
+          {steps.map((step, index) => {
+            const Icon = step.icon;
+            const isActive = step.id === activeTab;
+            const isCompleted = currentStepIndex > index;
+            
+            return (
+              <div key={step.id} className="flex items-center">
+                <div 
+                  className={`flex items-center gap-2 cursor-pointer transition-colors ${
+                    isActive ? 'text-[#165DFF]' : isCompleted ? 'text-[#00B42A]' : 'text-[#86909C]'
+                  }`}
+                  onClick={() => {
+                    if (isCompleted || step.id === 'requirement') {
+                      setActiveTab(step.id);
+                    }
+                  }}
+                >
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                    isActive ? 'bg-[#165DFF] text-white' : 
+                    isCompleted ? 'bg-[#00B42A] text-white' : 'bg-[#F2F3F5]'
+                  }`}>
+                    {isCompleted ? <Check className="w-4 h-4" /> : <Icon className="w-4 h-4" />}
+                  </div>
+                  <span className="text-sm font-medium hidden md:inline">{step.label}</span>
+                </div>
+                {index < steps.length - 1 && (
+                  <div className={`w-8 md:w-16 h-0.5 mx-2 ${isCompleted ? 'bg-[#00B42A]' : 'bg-[#E5E6EB]'}`} />
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* 步骤1: 需求分析 */}
+        {activeTab === 'requirement' && (
+          <Card className="card-minimal">
+            <div className="p-6">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-12 h-12 rounded-full bg-[#E8F3FF] flex items-center justify-center">
+                  <Target className="w-6 h-6 text-[#165DFF]" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-semibold text-[#1D2129]">选品需求分析</h2>
+                  <p className="text-sm text-[#86909C]">告诉我们您的选品偏好，AI将为您推荐最佳商品</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* 目标市场 */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-[#1D2129]">目标市场 *</label>
+                  <Select value={requirement.market} onValueChange={(v) => setRequirement({ ...requirement, market: v })}>
+                    <SelectTrigger className="input-minimal h-12">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(marketConfigs).map(([code, config]) => (
+                        <SelectItem key={code} value={code}>
+                          {config.flag} {config.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* 类目偏好 */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-[#1D2129]">类目偏好</label>
+                  <Select value={requirement.category} onValueChange={(v) => setRequirement({ ...requirement, category: v })}>
+                    <SelectTrigger className="input-minimal h-12">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categoryConfigs.map((cat) => (
+                        <SelectItem key={cat.name} value={cat.name}>
+                          {cat.icon} {cat.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* 预算范围 */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-[#1D2129]">预算范围</label>
+                  <Select value={requirement.budget} onValueChange={(v) => setRequirement({ ...requirement, budget: v })}>
+                    <SelectTrigger className="input-minimal h-12">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(budgetRanges).map(([key, range]) => (
+                        <SelectItem key={key} value={key}>
+                          {range.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* 核心诉求 */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-[#1D2129]">核心诉求</label>
+                  <Select value={requirement.coreAppeal} onValueChange={(v) => setRequirement({ ...requirement, coreAppeal: v })}>
+                    <SelectTrigger className="input-minimal h-12">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {coreAppeals.map((appeal) => (
+                        <SelectItem key={appeal.value} value={appeal.value}>
+                          {appeal.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* 规避类目 */}
+                <div className="space-y-2 md:col-span-2">
+                  <label className="text-sm font-medium text-[#1D2129]">规避类目（选填）</label>
+                  <Input
+                    placeholder="输入不想涉及的类目，多个用逗号分隔"
+                    value={requirement.avoidCategories}
+                    onChange={(e) => setRequirement({ ...requirement, avoidCategories: e.target.value })}
+                    className="input-minimal h-12"
+                  />
+                </div>
+              </div>
+
+              {/* 需求确认 */}
+              <div className="mt-6 p-4 bg-[#F4F7FF] rounded-lg">
+                <div className="flex items-center gap-2 mb-3">
+                  <CheckCircle2 className="w-4 h-4 text-[#165DFF]" />
+                  <span className="text-sm font-medium text-[#165DFF]">当前选品需求</span>
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div>
+                    <p className="text-xs text-[#86909C]">目标市场</p>
+                    <p className="text-sm font-medium">{marketConfigs[requirement.market]?.flag} {marketConfigs[requirement.market]?.name}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-[#86909C]">类目偏好</p>
+                    <p className="text-sm font-medium">{requirement.category || '不限'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-[#86909C]">预算范围</p>
+                    <p className="text-sm font-medium">{budgetRanges[requirement.budget]?.label}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-[#86909C]">核心诉求</p>
+                    <p className="text-sm font-medium">{coreAppeals.find(c => c.value === requirement.coreAppeal)?.label}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-6 flex justify-end">
+                <Button 
+                  className="btn-primary px-8 h-12" 
+                  onClick={handleRequirementSubmit}
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      AI分析中...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-4 h-4 mr-2" />
+                      开始AI分析
+                    </>
+                  )}
+                </Button>
+              </div>
             </div>
-            <div>
-              <h1 className="text-[18px] font-semibold text-foreground">选品智能体</h1>
-              <p className="text-[14px] text-muted-foreground">基于合规的智能选品决策辅助工具</p>
+          </Card>
+        )}
+
+        {/* 步骤2: 选品方向 */}
+        {activeTab === 'direction' && (
+          <div className="space-y-6">
+            <Card className="card-minimal">
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-full bg-[#FFF7E6] flex items-center justify-center">
+                      <Lightbulb className="w-6 h-6 text-[#FF7D00]" />
+                    </div>
+                    <div>
+                      <h2 className="text-lg font-semibold text-[#1D2129]">AI推荐选品方向</h2>
+                      <p className="text-sm text-[#86909C]">基于您的需求，AI推荐了以下选品方向</p>
+                    </div>
+                  </div>
+                  <div className="text-sm text-[#86909C]">
+                    已选择 <span className="text-[#165DFF] font-medium">{selectedDirections.length}</span> / {directions.length} 个方向
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {directions.map((direction) => {
+                    const isSelected = selectedDirections.includes(direction.id);
+                    return (
+                      <div
+                        key={direction.id}
+                        className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                          isSelected 
+                            ? 'border-[#165DFF] bg-[#F4F7FF]' 
+                            : 'border-[#E5E6EB] hover:border-[#BBDCFF]'
+                        }`}
+                        onClick={() => handleDirectionSelect(direction.id)}
+                      >
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex items-center gap-2">
+                            <span className="text-2xl">{direction.icon}</span>
+                            <div>
+                              <h3 className="font-medium text-[#1D2129]">{direction.name}</h3>
+                              <div className="flex items-center gap-2 mt-1">
+                                {direction.trending && (
+                                  <Badge className="bg-[#FFF7E6] text-[#FF7D00] text-xs">热门</Badge>
+                                )}
+                                <Badge className={direction.competition === '低竞争' ? 'bg-[#E8FFEA] text-[#00B42A]' : 'bg-[#F2F3F5] text-[#86909C]'}>
+                                  {direction.competition}
+                                </Badge>
+                              </div>
+                            </div>
+                          </div>
+                          <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
+                            isSelected ? 'bg-[#165DFF] border-[#165DFF]' : 'border-[#E5E6EB]'
+                          }`}>
+                            {isSelected && <Check className="w-4 h-4 text-white" />}
+                          </div>
+                        </div>
+                        <p className="text-sm text-[#86909C] mb-3">{direction.reason}</p>
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-[#86909C]">市场潜力</span>
+                          <div className="flex items-center gap-2">
+                            <div className="w-20 h-1.5 bg-[#F2F3F5] rounded-full overflow-hidden">
+                              <div 
+                                className="h-full bg-[#165DFF] rounded-full"
+                                style={{ width: `${direction.marketPotential}%` }}
+                              />
+                            </div>
+                            <span className="text-[#165DFF] font-medium">{direction.marketPotential}%</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between text-xs mt-2">
+                          <span className="text-[#86909C]">预估利润率</span>
+                          <span className="text-[#00B42A] font-medium">{direction.avgProfitRate}%</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </Card>
+
+            <div className="flex justify-between">
+              <Button variant="outline" className="btn-secondary" onClick={() => setActiveTab('requirement')}>
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                上一步
+              </Button>
+              <Button 
+                className="btn-primary px-8" 
+                onClick={handleGenerateProducts}
+                disabled={isLoading || selectedDirections.length === 0}
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    挖掘中...
+                  </>
+                ) : (
+                  <>
+                    <TrendingUp className="w-4 h-4 mr-2" />
+                    挖掘爆款商品
+                  </>
+                )}
+              </Button>
             </div>
           </div>
-          <Badge className="bg-success text-white">
-            在线运行
-          </Badge>
-        </div>
+        )}
 
-        {/* 核心能力标签 */}
-        <div className="flex items-center gap-2 flex-wrap">
-          <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
-            <MessageSquare className="h-3 w-3 mr-1" />
-            需求分析
-          </Badge>
-          <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
-            <TrendingUp className="h-3 w-3 mr-1" />
-            爆款挖掘
-          </Badge>
-          <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
-            <BarChart3 className="h-3 w-3 mr-1" />
-            可行性分析
-          </Badge>
-          <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
-            <Users className="h-3 w-3 mr-1" />
-            竞品分析
-          </Badge>
-          <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
-            <FileText className="h-3 w-3 mr-1" />
-            报告生成
-          </Badge>
-          <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
-            <Building className="h-3 w-3 mr-1" />
-            供应商筛选
-          </Badge>
-        </div>
-
-        {/* 流程指引 */}
-        <Card className="bg-gradient-to-r from-primary/5 to-primary/10 border-primary/20">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between gap-1 overflow-x-auto">
-              <div className="flex items-center gap-2 min-w-fit">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${activeTab === 'requirement' ? 'bg-primary text-white' : 'bg-primary/20 text-primary'}`}>
-                  {directionStep === 'output' ? <Check className="h-4 w-4" /> : <span className="text-[14px] font-medium">1</span>}
-                </div>
-                <span className={`text-[13px] ${activeTab === 'requirement' ? 'font-medium text-primary' : 'text-muted-foreground'}`}>需求分析</span>
-              </div>
-              <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-              <div className="flex items-center gap-2 min-w-fit">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${activeTab === 'hot-products' ? 'bg-primary text-white' : 'bg-primary/20 text-primary'}`}>
-                  {hotProducts.length > 0 ? <Check className="h-4 w-4" /> : <span className="text-[14px] font-medium">2</span>}
-                </div>
-                <span className={`text-[13px] ${activeTab === 'hot-products' ? 'font-medium text-primary' : 'text-muted-foreground'}`}>爆款挖掘</span>
-              </div>
-              <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-              <div className="flex items-center gap-2 min-w-fit">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${activeTab === 'feasibility' ? 'bg-primary text-white' : 'bg-primary/20 text-primary'}`}>
-                  {feasibilityResults.length > 0 ? <Check className="h-4 w-4" /> : <span className="text-[14px] font-medium">3</span>}
-                </div>
-                <span className={`text-[13px] ${activeTab === 'feasibility' ? 'font-medium text-primary' : 'text-muted-foreground'}`}>可行性分析</span>
-              </div>
-              <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-              <div className="flex items-center gap-2 min-w-fit">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${activeTab === 'competitor' ? 'bg-primary text-white' : 'bg-primary/20 text-primary'}`}>
-                  {competitors.length > 0 ? <Check className="h-4 w-4" /> : <span className="text-[14px] font-medium">4</span>}
-                </div>
-                <span className={`text-[13px] ${activeTab === 'competitor' ? 'font-medium text-primary' : 'text-muted-foreground'}`}>竞品分析</span>
-              </div>
-              <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-              <div className="flex items-center gap-2 min-w-fit">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${activeTab === 'report' ? 'bg-primary text-white' : 'bg-primary/20 text-primary'}`}>
-                  {report ? <Check className="h-4 w-4" /> : <span className="text-[14px] font-medium">5</span>}
-                </div>
-                <span className={`text-[13px] ${activeTab === 'report' ? 'font-medium text-primary' : 'text-muted-foreground'}`}>报告生成</span>
-              </div>
-              <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-              <div className="flex items-center gap-2 min-w-fit">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${activeTab === 'suppliers' ? 'bg-primary text-white' : 'bg-primary/20 text-primary'}`}>
-                  {suppliers.length > 0 ? <Check className="h-4 w-4" /> : <span className="text-[14px] font-medium">6</span>}
-                </div>
-                <span className={`text-[13px] ${activeTab === 'suppliers' ? 'font-medium text-primary' : 'text-muted-foreground'}`}>供应商筛选</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* 主要内容区 */}
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="bg-muted/50">
-            <TabsTrigger value="requirement">📝 需求分析</TabsTrigger>
-            <TabsTrigger value="hot-products">🔥 爆款挖掘</TabsTrigger>
-            <TabsTrigger value="feasibility">📊 可行性分析</TabsTrigger>
-            <TabsTrigger value="competitor">👥 竞品分析</TabsTrigger>
-            <TabsTrigger value="report">📄 选品报告</TabsTrigger>
-            <TabsTrigger value="suppliers" disabled={!report}>🏭 供应商筛选</TabsTrigger>
-          </TabsList>
-
-          {/* ==================== 模块1: 需求分析 ==================== */}
-          <TabsContent value="requirement" className="space-y-4">
-            {directionStep === 'input' ? (
-              // 引导式提问
-              <Card className="bg-white border-border shadow-sm">
-                <CardHeader>
-                  <CardTitle className="text-[15px] flex items-center gap-2">
-                    <MessageSquare className="h-5 w-5 text-primary" />
-                    选品需求分析
-                  </CardTitle>
-                  <CardDescription>请告诉我您的选品需求，我会为您推荐最适合的方向</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  {/* 目标市场 */}
-                  <div className="space-y-3">
-                    <label className="text-[13px] font-medium text-foreground">
-                      1️⃣ 目标市场 <span className="text-destructive">*</span>
-                    </label>
-                    <div className="flex flex-wrap gap-2">
-                      {marketOptions.map(opt => (
-                        <button
-                          key={opt.value}
-                          onClick={() => handleRequirementChange('market', opt.value)}
-                          className={`px-4 py-2 rounded-lg border text-[13px] transition-colors ${
-                            requirement.market === opt.value 
-                              ? 'bg-primary text-white border-primary' 
-                              : 'bg-white border-border hover:border-primary/50'
-                          }`}
-                        >
-                          {opt.icon} {opt.label}
-                        </button>
-                      ))}
+        {/* 步骤3: 爆款挖掘 */}
+        {activeTab === 'products' && (
+          <div className="space-y-6">
+            <Card className="card-minimal">
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-full bg-[#E8FFEA] flex items-center justify-center">
+                      <TrendingUp className="w-6 h-6 text-[#00B42A]" />
+                    </div>
+                    <div>
+                      <h2 className="text-lg font-semibold text-[#1D2129]">爆款候选池</h2>
+                      <p className="text-sm text-[#86909C]">发现 {hotProducts.length} 个潜在爆款商品，请选择要分析的 商品</p>
                     </div>
                   </div>
-
-                  {/* 类目偏好 */}
-                  <div className="space-y-3">
-                    <label className="text-[13px] font-medium text-foreground">
-                      2️⃣ 类目偏好
-                    </label>
-                    <div className="flex flex-wrap gap-2">
-                      {categoryOptions.map(cat => (
-                        <button
-                          key={cat}
-                          onClick={() => handleRequirementChange('category', cat)}
-                          className={`px-4 py-2 rounded-lg border text-[13px] transition-colors ${
-                            requirement.category === cat 
-                              ? 'bg-primary text-white border-primary' 
-                              : 'bg-white border-border hover:border-primary/50'
-                          }`}
-                        >
-                          {cat}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* 成本预算 */}
-                  <div className="space-y-3">
-                    <label className="text-[13px] font-medium text-foreground">
-                      3️⃣ 成本预算（拿货价）
-                    </label>
-                    <div className="grid grid-cols-3 gap-3">
-                      {budgetOptions.map(opt => (
-                        <button
-                          key={opt.value}
-                          onClick={() => handleRequirementChange('budget', opt.value)}
-                          className={`p-3 rounded-lg border text-left transition-colors ${
-                            requirement.budget === opt.value 
-                              ? 'bg-primary/10 border-primary' 
-                              : 'bg-white border-border hover:border-primary/50'
-                          }`}
-                        >
-                          <div className={`text-[13px] font-medium ${requirement.budget === opt.value ? 'text-primary' : 'text-foreground'}`}>
-                            {opt.label}
-                          </div>
-                          <div className="text-[11px] text-muted-foreground">{opt.desc}</div>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* 核心诉求 */}
-                  <div className="space-y-3">
-                    <label className="text-[13px] font-medium text-foreground">
-                      4️⃣ 核心诉求
-                    </label>
-                    <div className="flex flex-wrap gap-2">
-                      {appealOptions.map(opt => (
-                        <button
-                          key={opt.value}
-                          onClick={() => handleRequirementChange('core诉求', opt.value)}
-                          className={`px-4 py-2 rounded-lg border text-[13px] transition-colors ${
-                            requirement.core诉求 === opt.value 
-                              ? 'bg-primary text-white border-primary' 
-                              : 'bg-white border-border hover:border-primary/50'
-                          }`}
-                        >
-                          {opt.icon} {opt.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* 规避类目 */}
-                  <div className="space-y-3">
-                    <label className="text-[13px] font-medium text-foreground">
-                      5️⃣ 规避类目（可选）
-                    </label>
-                    <Input 
-                      placeholder="例如：电子烟、医疗用品..."
-                      value={requirement.avoidCategories}
-                      onChange={(e) => handleRequirementChange('avoidCategories', e.target.value)}
-                      className="max-w-md"
-                    />
-                  </div>
-
-                  {/* 合规风险提示 */}
-                  <div className="p-4 bg-warning/5 border border-warning/20 rounded-lg space-y-3">
-                    <div className="flex items-center gap-2">
-                      <AlertTriangle className="h-4 w-4 text-warning" />
-                      <span className="text-[13px] font-medium text-warning">合规风险提示</span>
-                    </div>
-                    <div className="text-[12px] text-muted-foreground space-y-2">
-                      <p>根据目标市场 <strong>{marketOptions.find(m => m.value === requirement.market)?.label || '未选择'}</strong> 的合规要求：</p>
-                      <ul className="list-disc list-inside space-y-1 pl-2">
-                        {requirement.market && platformCompliance[requirement.market] ? (
-                          <>
-                            <li>禁售品类：武器、食品、药品、医疗器械、仿真枪、濒危物种等</li>
-                            <li>需要认证：{platformCompliance[requirement.market].requiredDocs.join('、')}</li>
-                            <li>价格限制：单件不超过 ¥{platformCompliance[requirement.market].maxValue / 100}</li>
-                          </>
-                        ) : (
-                          <li>请先选择目标市场查看具体合规要求</li>
-                        )}
-                      </ul>
-                      <p className="text-warning/80">系统将在后续分析中自动检查合规性</p>
-                    </div>
-                  </div>
-
-                  <Button 
-                    onClick={handleStartRequirementAnalysis}
-                    disabled={!requirement.market || isAnalyzing}
-                    className="mt-4"
-                  >
-                    {isAnalyzing ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        AI分析中...
-                      </>
-                    ) : (
-                      <>
-                        <Sparkles className="h-4 w-4 mr-2" />
-                        开始分析选品方向
-                      </>
-                    )}
-                  </Button>
-                </CardContent>
-              </Card>
-            ) : (
-              // 输出选品方向
-              <Card className="bg-white border-border shadow-sm">
-                <CardHeader>
-                  <CardTitle className="text-[15px] flex items-center gap-2">
-                    <Target className="h-5 w-5 text-success" />
-                    选品方向推荐
-                  </CardTitle>
-                  <CardDescription>
-                    根据您的需求（{marketOptions.find(m => m.value === requirement.market)?.label || ''}
-                    {requirement.category && ` + ${requirement.category}`}
-                    {requirement.budget && ` + ${budgetOptions.find(b => b.value === requirement.budget)?.label}`}）
-                    为您推荐以下方向：
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {directions.length === 0 ? (
-                    <div className="text-center py-8 text-muted-foreground">
-                      <Target className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                      <p>暂无选品方向数据，请先进行需求分析</p>
-                    </div>
-                  ) : (
-                    directions.map((direction, index) => (
-                      <div 
-                        key={direction.id || index}
-                        className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
-                          selectedProducts.includes(direction.name) 
-                            ? 'border-primary bg-primary/5' 
-                            : 'border-border hover:border-primary/50'
-                        }`}
-                        onClick={() => toggleProductSelect(direction.name)}
-                      >
-                        <div className="flex items-start justify-between">
-                          <div className="flex items-start gap-3">
-                            <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
-                              selectedProducts.includes(direction.name) 
-                                ? 'bg-primary border-primary' 
-                                : 'border-muted-foreground'
-                            }`}>
-                              {selectedProducts.includes(direction.name) && (
-                                <Check className="h-4 w-4 text-white" />
-                              )}
-                            </div>
-                            <div>
-                              <div className="text-[14px] font-medium text-foreground">
-                                {direction.icon || '📦'} {direction.name}
-                              </div>
-                              <div className="text-[12px] text-muted-foreground mt-1">
-                                {direction.reason}
-                              </div>
-                              {direction.avgProfitRate && (
-                                <Badge variant="outline" className="mt-1 text-[10px]">
-                                  预估利润率: {direction.avgProfitRate}%
-                                </Badge>
-                              )}
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            {Array.from({ length: 5 }).map((_, i) => (
-                              <span key={i} className={i < (direction.stars || Math.floor((direction.marketPotential || 7) / 2)) ? 'text-warning' : 'text-muted'}>
-                                ★
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    ))
-                  )}
-
-                  <div className="flex items-center justify-between pt-4 border-t">
-                    <div className="text-[13px] text-muted-foreground">
-                      已选择 {selectedProducts.length} 个方向
-                    </div>
-                    <div className="flex gap-2">
-                      <Button variant="outline" onClick={() => setDirectionStep('input')}>
-                        重新选择
-                      </Button>
-                      <Button 
-                        onClick={handleStartHotMining}
-                        disabled={selectedProducts.length === 0 || isAnalyzing}
-                      >
-                        {isAnalyzing ? (
-                          <>
-                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                            挖掘中...
-                          </>
-                        ) : (
-                          <>
-                            <TrendingUp className="h-4 w-4 mr-2" />
-                            开始挖掘爆款
-                          </>
-                        )}
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-          </TabsContent>
-
-          {/* ==================== 模块2: 爆款挖掘 ==================== */}
-          <TabsContent value="hot-products" className="space-y-4">
-            {/* 合规预警提示 */}
-            {hotProducts.length > 0 && (
-              <Card className="bg-warning/5 border-warning/20">
-                <CardContent className="py-3 px-4">
-                  <div className="flex items-center gap-2 text-warning text-[13px]">
-                    <ShieldAlert className="h-4 w-4" />
-                    <span>温馨提示：以下商品将自动进行合规校验，禁售品类商品（如武器、药品、食品、医疗器械等）将在可行性分析阶段被自动过滤</span>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-            <Card className="bg-white border-border shadow-sm">
-              <CardHeader>
-                <CardTitle className="text-[15px] flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5 text-primary" />
-                  爆款候选池
-                </CardTitle>
-                <CardDescription>
-                  基于您的选品方向，挖掘出的潜力商品候选池
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {hotProducts.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <TrendingUp className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                    <p>暂无爆款数据，请先进行需求分析</p>
-                    <Button variant="outline" className="mt-4" onClick={() => setActiveTab('requirement')}>
-                      去需求分析
+                  <div className="flex items-center gap-4">
+                    <Button variant="outline" size="sm" onClick={handleSelectAll}>
+                      {selectedProducts.length === hotProducts.length ? '取消全选' : '全选'}
                     </Button>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {hotProducts.map(product => (
-                      <div 
-                        key={product.id}
-                        className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
-                          selectedProducts.includes(product.id) 
-                            ? 'border-primary bg-primary/5' 
-                            : 'border-border hover:border-primary/50'
-                        }`}
-                        onClick={() => toggleProductSelect(product.id)}
-                      >
-                        <div className="flex items-start justify-between">
-                          <div className="flex items-start gap-4">
-                            <div className="w-16 h-16 bg-muted rounded-lg flex items-center justify-center">
-                              <Package className="h-8 w-8 text-muted-foreground" />
-                            </div>
-                            <div className="space-y-2">
-                              <div className="flex items-center gap-2">
-                                <span className="text-[14px] font-medium text-foreground">{product.name}</span>
-                                <Badge variant="outline" className={
-                                  product.competition === '蓝海' ? 'bg-success/10 text-success border-success/20' :
-                                  product.competition === '红海' ? 'bg-destructive/10 text-destructive border-destructive/20' :
-                                  'bg-warning/10 text-warning border-warning/20'
-                                }>
-                                  {product.competition}
-                                </Badge>
-                              </div>
-                              <div className="text-[12px] text-muted-foreground">
-                                核心卖点：{product.core卖点}
-                              </div>
-                              <div className="flex items-center gap-4 text-[12px]">
-                                <span className="text-foreground">
-                                  售价：<span className="font-medium text-success">${product.price}</span>
-                                </span>
-                                <span className="text-foreground">
-                                  月销量：<span className="font-medium">{product.monthlySales}+</span>
-                                </span>
-                                <span className="text-foreground">
-                                  趋势：<span className="font-medium text-success">↑{product.trend}%</span>
-                                </span>
-                              </div>
-                              {/* 合规风险提示 */}
-                              {(() => {
-                                const compliance = checkProductCompliance(
-                                  requirement.category || '家居用品',
-                                  product.name,
-                                  product.price,
-                                  requirement.market
-                                );
-                                if (!compliance.isCompliant) {
-                                  return (
-                                    <div className="flex items-center gap-1 text-destructive text-[12px]">
-                                      <ShieldAlert className="h-3 w-3" />
-                                      <span>{compliance.issues[0]}</span>
-                                    </div>
-                                  );
-                                }
-                                if (compliance.warnings.length > 0) {
-                                  return (
-                                    <div className="flex items-center gap-1 text-warning text-[12px]">
-                                      <AlertCircle className="h-3 w-3" />
-                                      <span>{compliance.warnings[0]}</span>
-                                    </div>
-                                  );
-                                }
-                                return null;
-                              })()}
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <div className="flex items-center gap-1 mb-2">
-                              {Array.from({ length: 5 }).map((_, i) => (
-                                <span key={i} className={`text-[16px] ${i < product.recommendIndex ? 'text-warning' : 'text-muted'}`}>
-                                  ★
-                                </span>
-                              ))}
-                            </div>
-                            <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
-                              selectedProducts.includes(product.id) 
-                                ? 'bg-primary border-primary' 
-                                : 'border-muted-foreground'
-                            }`}>
-                              {selectedProducts.includes(product.id) && (
-                                <Check className="h-4 w-4 text-white" />
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-
-                    <div className="flex items-center justify-between pt-4 border-t">
-                      <div className="text-[13px] text-muted-foreground">
-                        已选择 {selectedProducts.length} 个商品
-                      </div>
-                      <Button 
-                        onClick={handleStartFeasibilityAnalysis}
-                        disabled={selectedProducts.length === 0 || isAnalyzing}
-                      >
-                        {isAnalyzing ? (
-                          <>
-                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                            分析中...
-                          </>
-                        ) : (
-                          <>
-                            <ArrowRight className="h-4 w-4 mr-2" />
-                            开始可行性分析
-                          </>
-                        )}
-                      </Button>
+                    <div className="text-sm text-[#86909C]">
+                      已选 <span className="text-[#165DFF] font-medium">{selectedProducts.length}</span> 个
                     </div>
                   </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* ==================== 模块3: 可行性分析 ==================== */}
-          <TabsContent value="feasibility" className="space-y-4">
-            {/* 利润测算参数 */}
-            <Card className="bg-white border-border shadow-sm">
-              <CardHeader>
-                <CardTitle className="text-[15px]">利润测算参数</CardTitle>
-                <CardDescription>调整以下参数，系统将自动计算每个商品的利润情况</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-5 gap-4">
-                  <div className="space-y-2">
-                    <label className="text-[12px] text-muted-foreground">拿货价 ($)</label>
-                    <Input 
-                      type="number" 
-                      value={profitParams.cost}
-                      onChange={(e) => setProfitParams(p => ({...p, cost: Number(e.target.value)}))}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-[12px] text-muted-foreground">物流费 ($)</label>
-                    <Input 
-                      type="number" 
-                      value={profitParams.logistics}
-                      onChange={(e) => setProfitParams(p => ({...p, logistics: Number(e.target.value)}))}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-[12px] text-muted-foreground">平台佣金 (%)</label>
-                    <Input 
-                      type="number" 
-                      value={profitParams.commission}
-                      onChange={(e) => setProfitParams(p => ({...p, commission: Number(e.target.value)}))}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-[12px] text-muted-foreground">广告费 (%)</label>
-                    <Input 
-                      type="number" 
-                      value={profitParams.adFee}
-                      onChange={(e) => setProfitParams(p => ({...p, adFee: Number(e.target.value)}))}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-[12px] text-muted-foreground">VAT税率 (%)</label>
-                    <Input 
-                      type="number" 
-                      value={profitParams.vat}
-                      onChange={(e) => setProfitParams(p => ({...p, vat: Number(e.target.value)}))}
-                    />
-                  </div>
                 </div>
-              </CardContent>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-[#E5E6EB]">
+                        <th className="text-left py-3 px-4 text-sm font-medium text-[#86909C]">选择</th>
+                        <th className="text-left py-3 px-4 text-sm font-medium text-[#86909C]">商品信息</th>
+                        <th className="text-left py-3 px-4 text-sm font-medium text-[#86909C]">售价</th>
+                        <th className="text-left py-3 px-4 text-sm font-medium text-[#86909C]">月销量</th>
+                        <th className="text-left py-3 px-4 text-sm font-medium text-[#86909C]">竞争度</th>
+                        <th className="text-left py-3 px-4 text-sm font-medium text-[#86909C]">趋势</th>
+                        <th className="text-left py-3 px-4 text-sm font-medium text-[#86909C]">推荐指数</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {hotProducts.map((product) => {
+                        const isSelected = selectedProducts.includes(product.id);
+                        return (
+                          <tr 
+                            key={product.id} 
+                            className={`border-b border-[#F2F3F5] cursor-pointer transition-colors ${
+                              isSelected ? 'bg-[#F4F7FF]' : 'hover:bg-[#FAFAFA]'
+                            }`}
+                            onClick={() => handleProductToggle(product.id)}
+                          >
+                            <td className="py-3 px-4">
+                              <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
+                                isSelected ? 'bg-[#165DFF] border-[#165DFF]' : 'border-[#E5E6EB]'
+                              }`}>
+                                {isSelected && <Check className="w-3 h-3 text-white" />}
+                              </div>
+                            </td>
+                            <td className="py-3 px-4">
+                              <div>
+                                <p className="font-medium text-[#1D2129]">{product.name}</p>
+                                <p className="text-xs text-[#86909C] mt-1">{product.coreSellingPoint}</p>
+                              </div>
+                            </td>
+                            <td className="py-3 px-4">
+                              <span className="text-[#1D2129] font-medium">${product.price.toFixed(2)}</span>
+                              <p className="text-xs text-[#86909C]">成本: ${product.costPrice.toFixed(2)}</p>
+                            </td>
+                            <td className="py-3 px-4">
+                              <span className="text-[#1D2129]">{product.monthlySales}+</span>
+                            </td>
+                            <td className="py-3 px-4">
+                              <Badge className={
+                                product.competition === '蓝海' ? 'bg-[#E8FFEA] text-[#00B42A]' :
+                                product.competition === '红海' ? 'bg-[#FFF2F0] text-[#F53F3F]' :
+                                'bg-[#F2F3F5] text-[#86909C]'
+                              }>
+                                {product.competition}
+                              </Badge>
+                            </td>
+                            <td className="py-3 px-4">
+                              <div className="flex items-center gap-1 text-[#00B42A]">
+                                <TrendingUp className="w-3 h-3" />
+                                <span>{product.trend}%</span>
+                              </div>
+                            </td>
+                            <td className="py-3 px-4">
+                              <div className="flex items-center gap-0.5">
+                                {Array.from({ length: 5 }).map((_, i) => (
+                                  <Star 
+                                    key={i} 
+                                    className={`w-4 h-4 ${i < product.recommendIndex ? 'text-[#FF7D00] fill-[#FF7D00]' : 'text-[#E5E6EB]'}`} 
+                                  />
+                                ))}
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             </Card>
 
-            {/* 分析结果 */}
-            {feasibilityResults.length === 0 ? (
-              <Card className="bg-white border-border shadow-sm">
-                <CardContent className="py-12 text-center text-muted-foreground">
-                  <BarChart3 className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                  <p>暂无分析结果，请先选择商品进行可行性分析</p>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="space-y-4">
-                {feasibilityResults.map((result, index) => (
-                  <Card key={index} className="bg-white border-border shadow-sm">
-                    <CardHeader className="pb-2">
-                      <div className="flex items-center justify-between">
-                        <CardTitle className="text-[15px]">{result.product.name}</CardTitle>
-                        <Badge className={
-                          result.conclusion === '强烈推荐' ? 'bg-success text-white' :
-                          result.conclusion === '谨慎推荐' ? 'bg-warning text-white' :
-                          'bg-destructive text-white'
-                        }>
-                          {result.conclusion}
-                        </Badge>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      {/* 合规状态突出显示 */}
-                      <div className={`p-4 rounded-lg border-2 ${
-                        result.compliance.status === '合规' ? 'bg-success/5 border-success/30' :
-                        result.compliance.status === '禁售' ? 'bg-destructive/5 border-destructive/30' :
-                        'bg-warning/5 border-warning/30'
-                      }`}>
-                        <div className="flex items-center justify-between mb-3">
-                          <div className="flex items-center gap-2">
-                            {result.compliance.status === '合规' ? (
-                              <Shield className="h-5 w-5 text-success" />
-                            ) : result.compliance.status === '禁售' ? (
-                              <ShieldAlert className="h-5 w-5 text-destructive" />
-                            ) : (
-                              <AlertCircle className="h-5 w-5 text-warning" />
-                            )}
-                            <span className="text-[14px] font-semibold">合规校验</span>
-                          </div>
-                          <Badge className={`text-[12px] px-3 py-1 ${
-                            result.compliance.status === '合规' ? 'bg-success text-white' :
-                            result.compliance.status === '禁售' ? 'bg-destructive text-white' :
-                            'bg-warning text-white'
-                          }`}>
-                            {result.compliance.status === '合规' ? '✓ 审核通过' :
-                             result.compliance.status === '禁售' ? '✗ 禁止销售' :
-                             '⚠ 需认证'}
-                          </Badge>
-                        </div>
-                        
-                        {/* 禁售原因 */}
-                        {result.compliance.issues.length > 0 ? (
-                          <div className="bg-destructive/10 rounded-lg p-3 mb-2">
-                            <div className="flex items-center gap-2 text-destructive text-[13px] font-medium mb-1">
-                              <XCircle className="h-4 w-4" />
-                              禁售原因
-                            </div>
-                            <ul className="text-[12px] text-destructive/80 space-y-1">
-                              {result.compliance.issues.map((issue, i) => (
-                                <li key={i}>• {issue}</li>
-                              ))}
-                            </ul>
-                          </div>
-                        ) : (
-                          <div className="flex items-center gap-2 text-success text-[12px]">
-                            <CheckCircle className="h-4 w-4" />
-                            通过平台合规审核，可正常销售
-                          </div>
-                        )}
-                        
-                        {/* 注意事项/认证要求 */}
-                        {result.compliance.warnings && result.compliance.warnings.length > 0 && (
-                          <div className="bg-warning/10 rounded-lg p-3 mt-2">
-                            <div className="flex items-center gap-2 text-warning text-[13px] font-medium mb-1">
-                              <AlertTriangle className="h-4 w-4" />
-                              认证要求
-                            </div>
-                            <ul className="text-[12px] text-warning/80 space-y-1">
-                              {result.compliance.warnings.map((warning, i) => (
-                                <li key={i}>• {warning}</li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-                      </div>
+            <div className="flex justify-between">
+              <Button variant="outline" className="btn-secondary" onClick={() => setActiveTab('direction')}>
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                上一步
+              </Button>
+              <Button 
+                className="btn-primary px-8" 
+                onClick={handleStartAnalysis}
+                disabled={isLoading || selectedProducts.length === 0}
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    分析中...
+                  </>
+                ) : (
+                  <>
+                    <Calculator className="w-4 h-4 mr-2" />
+                    开始可行性分析 ({selectedProducts.length}个)
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        )}
 
-                      {/* 利润 & 风险评估 */}
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="p-3 border rounded-lg">
-                          <div className="flex items-center gap-2 mb-2">
-                            <DollarSign className="h-4 w-4 text-primary" />
-                            <span className="text-[13px] font-medium">利润测算</span>
+        {/* 步骤4: 可行性分析 */}
+        {activeTab === 'feasibility' && (
+          <div className="space-y-6">
+            <Tabs defaultValue="profit" className="w-full">
+              <TabsList className="bg-[#F2F3F5]">
+                <TabsTrigger value="profit" className="data-[state=active]:bg-white">利润测算</TabsTrigger>
+                <TabsTrigger value="compliance" className="data-[state=active]:bg-white">合规检查</TabsTrigger>
+                <TabsTrigger value="risk" className="data-[state=active]:bg-white">风险评估</TabsTrigger>
+                <TabsTrigger value="supplier" className="data-[state=active]:bg-white">供应商匹配</TabsTrigger>
+              </TabsList>
+
+              {/* 利润测算 */}
+              <TabsContent value="profit" className="mt-6">
+                <Card className="card-minimal">
+                  <div className="p-6">
+                    <h3 className="text-lg font-semibold text-[#1D2129] mb-6">利润测算结果</h3>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                      {feasibilityResults.map((result, index) => (
+                        <div key={result.product.id} className="p-4 border border-[#E5E6EB] rounded-lg">
+                          <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center gap-3">
+                              <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                                result.conclusion === '强烈推荐' ? 'bg-[#E8FFEA]' :
+                                result.conclusion === '谨慎推荐' ? 'bg-[#FFF7E6]' : 'bg-[#FFF2F0]'
+                              }`}>
+                                {result.conclusion === '强烈推荐' ? <CheckCircle className="w-5 h-5 text-[#00B42A]" /> :
+                                 result.conclusion === '谨慎推荐' ? <AlertCircle className="w-5 h-5 text-[#FF7D00]" /> :
+                                 <XCircle className="w-5 h-5 text-[#F53F3F]" />}
+                              </div>
+                              <div>
+                                <h4 className="font-medium text-[#1D2129]">{result.product.name}</h4>
+                                <Badge className={
+                                  result.conclusion === '强烈推荐' ? 'bg-[#E8FFEA] text-[#00B42A]' :
+                                  result.conclusion === '谨慎推荐' ? 'bg-[#FFF7E6] text-[#FF7D00]' :
+                                  'bg-[#FFF2F0] text-[#F53F3F]'
+                                }>
+                                  {result.conclusion}
+                                </Badge>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-2xl font-bold text-[#00B42A]">{result.overallScore.toFixed(0)}</p>
+                              <p className="text-xs text-[#86909C]">综合评分</p>
+                            </div>
                           </div>
-                          <div className="grid grid-cols-2 gap-2 text-[12px]">
-                            <div>
-                              <span className="text-muted-foreground">毛利:</span>
-                              <span className="ml-1 font-medium text-success">${result.profitCalc.grossProfit.toFixed(2)}</span>
+
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between py-2 border-b border-[#F2F3F5]">
+                              <span className="text-[#86909C]">售价</span>
+                              <span className="text-[#1D2129] font-medium">${result.profitCalc.sellingPrice.toFixed(2)}</span>
                             </div>
-                            <div>
-                              <span className="text-muted-foreground">毛利率:</span>
-                              <span className="ml-1 font-medium text-success">{result.profitCalc.grossMargin.toFixed(1)}%</span>
+                            <div className="flex items-center justify-between py-2 border-b border-[#F2F3F5]">
+                              <span className="text-[#86909C]">成本</span>
+                              <span className="text-[#F53F3F]">-${result.profitCalc.cost.toFixed(2)}</span>
                             </div>
-                            <div>
-                              <span className="text-muted-foreground">回本周期:</span>
-                              <span className="ml-1 font-medium">{result.profitCalc.paybackDays}天</span>
+                            <div className="flex items-center justify-between py-2 border-b border-[#F2F3F5]">
+                              <span className="text-[#86909C]">物流费</span>
+                              <span className="text-[#F53F3F]">-${result.profitCalc.logistics.toFixed(2)}</span>
                             </div>
-                            <div>
-                              <span className="text-muted-foreground">售价:</span>
-                              <span className="ml-1 font-medium">${result.product.price}</span>
+                            <div className="flex items-center justify-between py-2 border-b border-[#F2F3F5]">
+                              <span className="text-[#86909C]">平台佣金({result.profitCalc.commission}%)</span>
+                              <span className="text-[#F53F3F]">-${(result.profitCalc.sellingPrice * result.profitCalc.commission / 100).toFixed(2)}</span>
+                            </div>
+                            <div className="flex items-center justify-between py-2 border-b border-[#F2F3F5]">
+                              <span className="text-[#86909C]">VAT({result.profitCalc.vat}%)</span>
+                              <span className="text-[#F53F3F]">-${(result.profitCalc.sellingPrice * result.profitCalc.vat / 100).toFixed(2)}</span>
+                            </div>
+                            <div className="flex items-center justify-between py-2 border-b border-[#F2F3F5]">
+                              <span className="text-[#86909C]">广告费(10%)</span>
+                              <span className="text-[#FF7D00]">-${result.profitCalc.adFee.toFixed(2)}</span>
+                            </div>
+                            <div className="flex items-center justify-between py-3 bg-[#E8FFEA] rounded-lg px-3 mt-2">
+                              <span className="text-[#1D2129] font-medium">净利润</span>
+                              <span className="text-[#00B42A] font-bold text-lg">
+                                ${result.profitCalc.netProfit.toFixed(2)} ({result.profitCalc.netMargin.toFixed(1)}%)
+                              </span>
                             </div>
                           </div>
                         </div>
-                        <div className={`p-3 border rounded-lg ${
-                          result.overallRisk === '高' ? 'bg-destructive/5 border-destructive/30' :
-                          result.overallRisk === '中' ? 'bg-warning/5 border-warning/30' :
-                          'bg-success/5 border-success/30'
-                        }`}>
-                          <div className="flex items-center gap-2 mb-2">
-                            <AlertTriangle className={`h-4 w-4 ${
-                              result.overallRisk === '高' ? 'text-destructive' :
-                              result.overallRisk === '中' ? 'text-warning' :
-                              'text-success'
-                            }`} />
-                            <span className="text-[13px] font-medium">风险评估</span>
-                            <Badge variant="outline" className={
-                              result.overallRisk === '高' ? 'bg-destructive/10 text-destructive border-destructive/20' :
-                              result.overallRisk === '中' ? 'bg-warning/10 text-warning border-warning/20' :
-                              'bg-success/10 text-success border-success/20'
+                      ))}
+                    </div>
+                  </div>
+                </Card>
+              </TabsContent>
+
+              {/* 合规检查 */}
+              <TabsContent value="compliance" className="mt-6">
+                <Card className="card-minimal">
+                  <div className="p-6">
+                    <h3 className="text-lg font-semibold text-[#1D2129] mb-6">合规检查结果</h3>
+                    <div className="space-y-4">
+                      {feasibilityResults.map((result) => (
+                        <div key={result.product.id} className="p-4 border border-[#E5E6EB] rounded-lg">
+                          <div className="flex items-center justify-between mb-4">
+                            <h4 className="font-medium text-[#1D2129]">{result.product.name}</h4>
+                            <Badge className={
+                              result.compliance.status === '合规' ? 'bg-[#E8FFEA] text-[#00B42A]' :
+                              result.compliance.status === '需认证' ? 'bg-[#FFF7E6] text-[#FF7D00]' :
+                              'bg-[#FFF2F0] text-[#F53F3F]'
                             }>
-                              整体{result.overallRisk || '低'}风险
+                              {result.compliance.status === '合规' ? <ShieldCheck className="w-3 h-3 mr-1" /> :
+                               result.compliance.status === '需认证' ? <Shield className="w-3 h-3 mr-1" /> :
+                               <ShieldAlert className="w-3 h-3 mr-1" />}
+                              {result.compliance.status}
                             </Badge>
                           </div>
-                          <div className="space-y-1 text-[11px]">
-                            {result.risks.slice(0, 3).map((risk, i) => (
-                              <div key={i} className="flex items-center gap-2">
-                                <span className={`px-1.5 py-0.5 rounded text-[10px] ${
-                                  risk.level === '高' ? 'bg-destructive/20 text-destructive' :
-                                  risk.level === '中' ? 'bg-warning/20 text-warning' :
-                                  'bg-success/20 text-success'
-                                }`}>
-                                  {risk.level}
-                                </span>
-                                <span className="text-muted-foreground">{risk.type}</span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* 风险详情 */}
-                      {result.risks.length > 0 && (
-                        <div className={`p-3 rounded-lg border ${
-                          result.overallRisk === '高' ? 'bg-destructive/5 border-destructive/20' :
-                          result.overallRisk === '中' ? 'bg-warning/5 border-warning/20' :
-                          'bg-success/5 border-success/20'
-                        }`}>
-                          <div className="flex items-center gap-2 mb-2">
-                            <AlertTriangle className={`h-4 w-4 ${
-                              result.overallRisk === '高' ? 'text-destructive' :
-                              result.overallRisk === '中' ? 'text-warning' :
-                              'text-success'
-                            }`} />
-                            <span className="text-[13px] font-medium">风险详情与建议</span>
-                          </div>
-                          <div className="space-y-2">
-                            {result.risks.map((risk, i) => (
-                              <div key={i} className="flex items-start gap-2 text-[12px]">
-                                <span className={`px-1.5 py-0.5 rounded text-[10px] mt-0.5 ${
-                                  risk.level === '高' ? 'bg-destructive/20 text-destructive' :
-                                  risk.level === '中' ? 'bg-warning/20 text-warning' :
-                                  'bg-success/20 text-success'
-                                }`}>
-                                  {risk.level}
-                                </span>
-                                <div>
-                                  <span className="font-medium">{risk.type}: </span>
-                                  <span className="text-muted-foreground">{risk.suggestion}</span>
+                          
+                          {result.compliance.issues.length > 0 && (
+                            <div className="mb-4">
+                              <p className="text-sm font-medium text-[#F53F3F] mb-2">存在问题:</p>
+                              {result.compliance.issues.map((issue, i) => (
+                                <div key={i} className="flex items-center gap-2 text-sm text-[#F53F3F] mb-1">
+                                  <XCircle className="w-4 h-4" />
+                                  {issue}
                                 </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                ))}
-
-                <div className="flex justify-end">
-                  <Button onClick={() => setActiveTab('competitor')}>
-                    <Users className="h-4 w-4 mr-2" />
-                    进行竞品分析
-                  </Button>
-                </div>
-              </div>
-            )}
-          </TabsContent>
-
-          {/* ==================== 模块4: 竞品分析 ==================== */}
-          <TabsContent value="competitor" className="space-y-4">
-            <Card className="bg-white border-border shadow-sm">
-              <CardHeader>
-                <CardTitle className="text-[15px] flex items-center gap-2">
-                  <Users className="h-5 w-5 text-primary" />
-                  竞品拆解
-                </CardTitle>
-                <CardDescription>
-                  分析头部竞品的运营策略，为差异化选品提供参考
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {competitors.length === 0 ? (
-                  <div className="text-center py-8">
-                    <Users className="h-12 w-12 mx-auto mb-3 text-muted-foreground opacity-50" />
-                    <p className="text-muted-foreground mb-4">暂无竞品数据</p>
-                    <Button 
-                      onClick={() => handleStartCompetitorAnalysis(hotProducts[0]?.id || '')}
-                      disabled={analyzingCompetitor !== null || hotProducts.length === 0}
-                    >
-                      {analyzingCompetitor ? (
-                        <>
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          分析中...
-                        </>
-                      ) : (
-                        <>
-                          <Lightbulb className="h-4 w-4 mr-2" />
-                          开始竞品分析
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {competitors.map((comp, index) => (
-                      <div key={index} className="p-4 border rounded-lg space-y-3">
-                        <div className="flex items-center justify-between">
-                          <div className="font-medium">{comp.name}</div>
-                          <div className="flex items-center gap-4 text-[12px]">
-                            <span>销量: <span className="font-medium">{comp.sales.toLocaleString()}</span></span>
-                            <span>评分: <span className="font-medium text-warning">{comp.rating}★</span></span>
-                          </div>
-                        </div>
-                        <div className="text-[13px]">
-                          <span className="text-muted-foreground">核心卖点：</span>
-                          <span className="ml-2">{comp.mainSellingPoint}</span>
-                        </div>
-                        {comp.userPainPoints.length > 0 && (
-                          <div className="text-[13px]">
-                            <span className="text-muted-foreground">用户痛点：</span>
-                            <div className="flex flex-wrap gap-2 mt-1">
-                              {comp.userPainPoints.map((point, i) => (
-                                <Badge key={i} variant="outline" className="text-[11px] bg-destructive/10 text-destructive border-destructive/20">
-                                  {point}
-                                </Badge>
                               ))}
                             </div>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-
-                    {/* 差异化建议 */}
-                    <div className="p-4 bg-primary/5 border border-primary/20 rounded-lg">
-                      <div className="flex items-center gap-2 mb-3">
-                        <Lightbulb className="h-5 w-5 text-primary" />
-                        <span className="font-medium">差异化建议</span>
-                      </div>
-                      <ul className="text-[13px] space-y-2 text-muted-foreground">
-                        <li>1. <strong className="text-foreground">卖点优化：</strong>结合竞品痛点，建议突出"续航+便携"双重卖点</li>
-                        <li>2. <strong className="text-foreground">定价策略：</strong>建议9.99美元，略低于竞品但保持利润空间</li>
-                        <li>3. <strong className="text-foreground">视频创意：</strong>参考竞品爆款视频，建议做场景化使用演示</li>
-                        <li>4. <strong className="text-foreground">评价优化：</strong>针对竞品用户痛点，在详情页提前规避</li>
-                      </ul>
-                    </div>
-
-                    <div className="flex justify-end">
-                      <Button onClick={handleGenerateReport} disabled={isAnalyzing}>
-                        {isAnalyzing ? (
-                          <>
-                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                            生成中...
-                          </>
-                        ) : (
-                          <>
-                            <FileText className="h-4 w-4 mr-2" />
-                            生成选品报告
-                          </>
-                        )}
-                      </Button>
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* ==================== 模块5: 选品报告 ==================== */}
-          <TabsContent value="report" className="space-y-4">
-            <Card className="bg-white border-border shadow-sm">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="text-[15px] flex items-center gap-2">
-                      <FileText className="h-5 w-5 text-primary" />
-                      选品报告
-                    </CardTitle>
-                    <CardDescription>
-                      整合所有分析数据，生成结构化选品报告
-                    </CardDescription>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button variant="outline" onClick={handleExportReport} disabled={!report}>
-                      <Download className="h-4 w-4 mr-2" />
-                      导出报告
-                    </Button>
-                    {report && (
-                      <Button variant="default" onClick={() => setActiveTab('suppliers')}>
-                        <ShoppingBag className="h-4 w-4 mr-2" />
-                        筛选供应商
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {!report ? (
-                  <div className="text-center py-12 text-muted-foreground">
-                    <FileText className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                    <p>暂无报告数据，请先完成前面的选品分析步骤</p>
-                  </div>
-                ) : (
-                  <div className="space-y-6">
-                    {/* 报告预览 */}
-                    <div className="p-4 bg-muted/30 rounded-lg space-y-4 text-[13px]">
-                      <div>
-                        <h3 className="font-medium mb-2">一、选品需求概述</h3>
-                        <p className="text-muted-foreground">
-                          目标市场: {marketOptions.find(m => m.value === report.requirements.market)?.label} | 
-                          类目偏好: {report.requirements.category || '热门类目'} | 
-                          预算: {report.requirements.budget ? budgetOptions.find(b => b.value === report.requirements.budget)?.label : '未指定'}
-                        </p>
-                      </div>
-                      <div>
-                        <h3 className="font-medium mb-2">二、选品方向</h3>
-                        <ul className="text-muted-foreground space-y-1">
-                          {report.direction.map((d, i) => <li key={i}>{i + 1}. {d}</li>)}
-                        </ul>
-                      </div>
-                      <div>
-                        <h3 className="font-medium mb-2">三、爆款候选池 ({report.hotProducts.length}个)</h3>
-                        <div className="grid grid-cols-3 gap-2">
-                          {report.hotProducts.map(p => (
-                            <div key={p.id} className="p-2 bg-white rounded border text-center">
-                              <div className="font-medium truncate">{p.name}</div>
-                              <div className="text-[11px] text-success">${p.price} | {p.competition}</div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                      <div>
-                        <h3 className="font-medium mb-2">四、执行建议</h3>
-                        <ul className="text-muted-foreground space-y-1">
-                          {report.recommendations.map((r, i) => <li key={i}>{i + 1}. {r}</li>)}
-                        </ul>
-                      </div>
-                    </div>
-
-                    {/* 操作按钮 */}
-                    <div className="flex justify-between">
-                      <Button variant="outline" onClick={() => setActiveTab('competitor')}>
-                        返回竞品分析
-                      </Button>
-                      <div className="flex gap-2">
-                        <Button variant="outline" onClick={() => setActiveTab('requirement')} disabled={isAnalyzing}>
-                          重新选品
-                        </Button>
-                        <Button onClick={handleGenerateReport} disabled={isAnalyzing}>
-                          {isAnalyzing ? (
-                            <>
-                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                              生成中...
-                            </>
-                          ) : (
-                            <>
-                              <RefreshCw className="h-4 w-4 mr-2" />
-                              刷新报告
-                            </>
                           )}
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
 
-          {/* ==================== 模块6: 供应商筛选 ==================== */}
-          <TabsContent value="suppliers" className="space-y-4">
-            <Card className="bg-white border-border shadow-sm">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="text-[15px] flex items-center gap-2">
-                      <ShoppingBag className="h-5 w-5 text-primary" />
-                      供应商筛选
-                    </CardTitle>
-                    <CardDescription>
-                      根据选品报告推荐商品，匹配合适的1688供应商
-                    </CardDescription>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {/* 合规认证提示 */}
-                <div className="mb-4 p-3 bg-primary/5 border border-primary/20 rounded-lg">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Shield className="h-4 w-4 text-primary" />
-                    <span className="text-[13px] font-medium text-primary">供应商合规认证要求</span>
-                  </div>
-                  <div className="text-[12px] text-muted-foreground">
-                    <p className="mb-1">目标市场: <strong>{marketOptions.find(m => m.value === requirement.market)?.label || '美区'}</strong></p>
-                    <p>建议选择具备以下认证的供应商：</p>
-                    <div className="flex flex-wrap gap-1 mt-2">
-                      {requirement.market && platformCompliance[requirement.market] ? (
-                        platformCompliance[requirement.market].requiredDocs.map((cert) => (
-                          <Badge key={cert} variant="outline" className="text-[11px] bg-primary/10">
-                            {cert}
-                          </Badge>
-                        ))
-                      ) : (
-                        <Badge variant="outline" className="text-[11px]">ISO9001</Badge>
-                      )}
-                    </div>
-                    <p className="mt-2 text-warning text-[11px]">注意：认证不全的供应商可能导致商品被平台下架</p>
-                  </div>
-                </div>
+                          {result.compliance.warnings.length > 0 && (
+                            <div>
+                              <p className="text-sm font-medium text-[#FF7D00] mb-2">注意事项:</p>
+                              {result.compliance.warnings.map((warning, i) => (
+                                <div key={i} className="flex items-center gap-2 text-sm text-[#FF7D00] mb-1">
+                                  <AlertTriangle className="w-4 h-4" />
+                                  {warning}
+                                </div>
+                              ))}
+                            </div>
+                          )}
 
-                {/* 筛选条件 */}
-                <div className="flex flex-wrap gap-4 mb-6 p-4 bg-muted/30 rounded-lg">
-                  <div className="flex items-center gap-2">
-                    <Filter className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-[13px]">筛选条件:</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <label className="text-[13px]">支持一件代发</label>
-                    <input 
-                      type="checkbox" 
-                      checked={supplierFilter.hasDropshipping}
-                      onChange={(e) => setSupplierFilter(prev => ({ ...prev, hasDropshipping: e.target.checked }))}
-                      className="w-4 h-4"
-                    />
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <label className="text-[13px]">MOQ≤</label>
-                    <Input 
-                      type="number" 
-                      className="w-20 h-8 text-[13px]"
-                      value={supplierFilter.maxMoq}
-                      onChange={(e) => setSupplierFilter(prev => ({ ...prev, maxMoq: parseInt(e.target.value) || 0 }))}
-                    />
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <label className="text-[13px]">排序:</label>
-                    <select 
-                      className="h-8 px-2 border rounded text-[13px]"
-                      value={supplierFilter.sortBy}
-                      onChange={(e) => setSupplierFilter(prev => ({ ...prev, sortBy: e.target.value as any }))}
-                    >
-                      <option value="rating">评分最高</option>
-                      <option value="price">价格最低</option>
-                      <option value="moq">MOQ最低</option>
-                    </select>
-                  </div>
-                </div>
-
-                {/* 供应商列表 */}
-                {isLoadingSuppliers ? (
-                  <div className="text-center py-12">
-                    <Loader2 className="h-8 w-8 mx-auto mb-3 animate-spin text-primary" />
-                    <p className="text-muted-foreground">正在搜索1688供应商...</p>
-                  </div>
-                ) : suppliers.length === 0 ? (
-                  <div className="text-center py-12">
-                    <ShoppingBag className="h-12 w-12 mx-auto mb-3 text-muted-foreground opacity-50" />
-                    <p className="text-muted-foreground mb-4">点击"刷新供应商"加载推荐供应商</p>
-                    <Button 
-                      onClick={async () => {
-                        setLoadingSuppliers(true);
-                        // 模拟加载延迟
-                        await new Promise(resolve => setTimeout(resolve, 1500));
-                        setSuppliers(mockSuppliers);
-                        setLoadingSuppliers(false);
-                        toast.success('已加载5个推荐供应商');
-                      }}
-                      disabled={loadingSuppliers}
-                    >
-                      {loadingSuppliers ? (
-                        <>
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          加载中...
-                        </>
-                      ) : (
-                        <>
-                          <RefreshCw className="h-4 w-4 mr-2" />
-                          加载供应商
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {suppliers
-                      .filter(s => 
-                        (!supplierFilter.hasDropshipping || s.isDropshipping) &&
-                        s.moq <= supplierFilter.maxMoq
-                      )
-                      .sort((a, b) => {
-                        if (supplierFilter.sortBy === 'rating') return b.rating - a.rating;
-                        if (supplierFilter.sortBy === 'price') return a.price - b.price;
-                        return a.moq - b.moq;
-                      })
-                      .map((supplier) => (
-                        <div 
-                          key={supplier.id}
-                          className={`p-4 border-2 rounded-lg transition-all cursor-pointer ${
-                            selectedSupplier?.id === supplier.id 
-                              ? 'border-primary bg-primary/5' 
-                              : 'border-border hover:border-primary/50'
-                          }`}
-                          onClick={() => setSelectedSupplier(supplier)}
-                        >
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-3 mb-2">
-                                <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
-                                  selectedSupplier?.id === supplier.id 
-                                    ? 'bg-primary border-primary' 
-                                    : 'border-muted-foreground'
-                                }`}>
-                                  {selectedSupplier?.id === supplier.id && (
-                                    <Check className="h-4 w-4 text-white" />
-                                  )}
-                                </div>
-                                <div>
-                                  <div className="font-medium text-[14px]">{supplier.name}</div>
-                                  <div className="text-[12px] text-muted-foreground">{supplier.company}</div>
-                                </div>
-                              </div>
-                              
-                              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-3">
-                                <div>
-                                  <div className="text-[11px] text-muted-foreground">供应商评分</div>
-                                  <div className="flex items-center gap-1">
-                                    <Star className="h-3 w-3 text-warning fill-warning" />
-                                    <span className="text-[13px] font-medium">{supplier.rating}</span>
-                                  </div>
-                                </div>
-                                <div>
-                                  <div className="text-[11px] text-muted-foreground">响应速度</div>
-                                  <div className="text-[13px] font-medium">{supplier.responseTime}</div>
-                                </div>
-                                <div>
-                                  <div className="text-[11px] text-muted-foreground">最小起订量</div>
-                                  <div className="text-[13px] font-medium">{supplier.moq}件</div>
-                                </div>
-                                <div>
-                                  <div className="text-[11px] text-muted-foreground">单价</div>
-                                  <div className="text-[13px] font-medium text-primary">¥{supplier.price.toFixed(2)}</div>
-                                </div>
-                              </div>
-
-                              <div className="flex flex-wrap items-center gap-2 mt-3">
-                                <Badge variant="outline" className="text-[11px]">
-                                  <Truck className="h-3 w-3 mr-1" />
-                                  {supplier.location}
-                                </Badge>
-                                {supplier.isDropshipping && (
-                                  <Badge variant="outline" className="bg-success/10 text-success border-success/20 text-[11px]">
-                                    <CheckCircle2 className="h-3 w-3 mr-1" />
-                                    支持一件代发
-                                  </Badge>
-                                )}
-                                <Badge variant="outline" className="text-[11px]">
-                                  <Clock className="h-3 w-3 mr-1" />
-                                  {supplier.deliveryDays}天发货
-                                </Badge>
-                                {supplier.certifications.map((cert) => (
-                                  <Badge key={cert} variant="outline" className="text-[11px]">
+                          {result.compliance.requiredCerts.length > 0 && (
+                            <div className="mt-4 pt-4 border-t border-[#E5E6EB]">
+                              <p className="text-sm font-medium text-[#86909C] mb-2">建议认证:</p>
+                              <div className="flex flex-wrap gap-2">
+                                {result.compliance.requiredCerts.map((cert, i) => (
+                                  <Badge key={i} variant="outline" className="border-[#165DFF] text-[#165DFF]">
                                     {cert}
                                   </Badge>
                                 ))}
                               </div>
                             </div>
-
-                            <div className="flex flex-col gap-2 ml-4">
-                              <Button 
-                                size="sm" 
-                                variant="outline"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  window.open(supplier.productUrl, '_blank');
-                                }}
-                              >
-                                <ExternalLink className="h-3 w-3 mr-1" />
-                                商品链接
-                              </Button>
-                              <Button 
-                                size="sm" 
-                                variant="outline"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  window.open(supplier.searchUrl, '_blank');
-                                }}
-                              >
-                                <ExternalLink className="h-3 w-3 mr-1" />
-                                1688搜索
-                              </Button>
-                            </div>
-                          </div>
-
-                          {/* 选中后显示采集操作 */}
-                          {selectedSupplier?.id === supplier.id && (
-                            <div className="mt-4 pt-4 border-t space-y-3">
-                              <div className="flex items-center gap-4">
-                                <div className="flex items-center gap-2">
-                                  <span className="text-[13px]">采集数量:</span>
-                                  <div className="flex items-center gap-1">
-                                    <Button 
-                                      size="sm" 
-                                      variant="outline" 
-                                      className="h-8 w-8 p-0"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        const qty = purchaseItems.find(p => p.supplier.id === supplier.id)?.quantity || supplier.moq;
-                                        if (qty > supplier.moq) {
-                                          setPurchaseItems(prev => prev.map(p => 
-                                            p.supplier.id === supplier.id 
-                                              ? { ...p, quantity: p.quantity - 10 }
-                                              : p
-                                          ));
-                                        }
-                                      }}
-                                    >
-                                      <Minus className="h-3 w-3" />
-                                    </Button>
-                                    <Input 
-                                      className="w-20 h-8 text-center text-[13px]"
-                                      value={purchaseItems.find(p => p.supplier.id === supplier.id)?.quantity || supplier.moq}
-                                      onChange={(e) => {
-                                        e.stopPropagation();
-                                        const qty = parseInt(e.target.value) || supplier.moq;
-                                        setPurchaseItems(prev => {
-                                          const existing = prev.find(p => p.supplier.id === supplier.id);
-                                          if (existing) {
-                                            return prev.map(p => 
-                                              p.supplier.id === supplier.id 
-                                                ? { ...p, quantity: qty, totalAmount: qty * p.unitPrice }
-                                                : p
-                                            );
-                                          } else {
-                                            return [...prev, {
-                                              product: hotProducts[0] || mockHotProducts[0],
-                                              supplier,
-                                              quantity: qty,
-                                              unitPrice: supplier.price,
-                                              totalAmount: qty * supplier.price,
-                                            }];
-                                          }
-                                        });
-                                      }}
-                                      onClick={(e) => e.stopPropagation()}
-                                    />
-                                    <Button 
-                                      size="sm" 
-                                      variant="outline" 
-                                      className="h-8 w-8 p-0"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        const qty = purchaseItems.find(p => p.supplier.id === supplier.id)?.quantity || supplier.moq;
-                                        setPurchaseItems(prev => prev.map(p => 
-                                          p.supplier.id === supplier.id 
-                                            ? { ...p, quantity: p.quantity + 10, totalAmount: (p.quantity + 10) * p.unitPrice }
-                                            : p
-                                        ));
-                                      }}
-                                    >
-                                      <Plus className="h-3 w-3" />
-                                    </Button>
-                                  </div>
-                                </div>
-                                <div className="text-[13px]">
-                                  <span className="text-muted-foreground">价格区间:</span>
-                                  <span className="ml-1 font-medium">{supplier.priceRange}</span>
-                                </div>
-                                <div className="text-[13px]">
-                                  <span className="text-muted-foreground">预计总价:</span>
-                                  <span className="ml-1 font-medium text-primary">
-                                    ¥{((purchaseItems.find(p => p.supplier.id === supplier.id)?.quantity || supplier.moq) * supplier.price).toFixed(2)}
-                                  </span>
-                                </div>
-                              </div>
-                              <div className="flex gap-2">
-                                <Button 
-                                  size="sm"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    // 添加到待采集清单
-                                    store.addToPendingCollection({
-                                      source: '1688',
-                                      source_url: supplier.productUrl,
-                                      source_id: supplier.id,
-                                      product_name: supplier.name,
-                                      keyword: hotProducts[0]?.name || mockHotProducts[0]?.name,
-                                      added_from: 'selection_agent',
-                                    });
-                                    toast.success('已加入待采集清单，可在1688采集中心查看', {
-                                      action: {
-                                        label: '去采集',
-                                        onClick: () => router.push('/erp/collection'),
-                                      },
-                                    });
-                                  }}
-                                >
-                                  <ShoppingCart className="h-3 w-3 mr-1" />
-                                  加入采集单
-                                </Button>
-                                <Button 
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    navigator.clipboard.writeText(supplier.productUrl);
-                                    toast.success('链接已复制');
-                                  }}
-                                >
-                                  <Copy className="h-3 w-3 mr-1" />
-                                  复制链接
-                                </Button>
-                              </div>
-                            </div>
                           )}
                         </div>
                       ))}
-                  </div>
-                )}
-
-                {/* 采集清单汇总 */}
-                {purchaseItems.length > 0 && (
-                  <div className="mt-6 p-4 bg-primary/5 border border-primary/20 rounded-lg">
-                    <div className="flex items-center justify-between mb-3">
-                      <h4 className="font-medium text-[14px] flex items-center gap-2">
-                        <ShoppingCart className="h-4 w-4" />
-                        采集清单汇总
-                      </h4>
-                      <span className="text-[13px] text-muted-foreground">
-                        共 {purchaseItems.length} 个供应商
-                      </span>
                     </div>
-                    <div className="space-y-2">
-                      {purchaseItems.map((item, index) => (
-                        <div key={index} className="flex items-center justify-between text-[13px]">
-                          <span>{item.supplier.name}</span>
-                          <span>{item.quantity}件 × ¥{item.unitPrice.toFixed(2)} = ¥{item.totalAmount.toFixed(2)}</span>
+                  </div>
+                </Card>
+              </TabsContent>
+
+              {/* 风险评估 */}
+              <TabsContent value="risk" className="mt-6">
+                <Card className="card-minimal">
+                  <div className="p-6">
+                    <h3 className="text-lg font-semibold text-[#1D2129] mb-6">风险评估结果</h3>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                      {feasibilityResults.map((result) => (
+                        <div key={result.product.id} className="p-4 border border-[#E5E6EB] rounded-lg">
+                          <h4 className="font-medium text-[#1D2129] mb-4">{result.product.name}</h4>
+                          <div className="space-y-3">
+                            {result.risks.map((risk, i) => (
+                              <div key={i} className={`p-3 rounded-lg ${
+                                risk.level === '高' ? 'bg-[#FFF2F0]' :
+                                risk.level === '中' ? 'bg-[#FFF7E6]' :
+                                'bg-[#E8FFEA]'
+                              }`}>
+                                <div className="flex items-center justify-between mb-2">
+                                  <div className="flex items-center gap-2">
+                                    <span className={`w-2 h-2 rounded-full ${
+                                      risk.level === '高' ? 'bg-[#F53F3F]' :
+                                      risk.level === '中' ? 'bg-[#FF7D00]' :
+                                      'bg-[#00B42A]'
+                                    }`} />
+                                    <span className="font-medium text-[#1D2129]">{risk.type}</span>
+                                  </div>
+                                  <Badge className={
+                                    risk.level === '高' ? 'bg-[#F53F3F] text-white' :
+                                    risk.level === '中' ? 'bg-[#FF7D00] text-white' :
+                                    'bg-[#00B42A] text-white'
+                                  }>
+                                    {risk.level}风险
+                                  </Badge>
+                                </div>
+                                <p className="text-sm text-[#86909C]">{risk.suggestion}</p>
+                              </div>
+                            ))}
+                          </div>
                         </div>
                       ))}
                     </div>
-                    <div className="flex items-center justify-between mt-3 pt-3 border-t">
-                      <span className="font-medium">预计采集总额</span>
-                      <span className="text-lg font-bold text-primary">
-                        ¥{purchaseItems.reduce((sum, item) => sum + item.totalAmount, 0).toFixed(2)}
-                      </span>
+                  </div>
+                </Card>
+              </TabsContent>
+
+              {/* 供应商匹配 */}
+              <TabsContent value="supplier" className="mt-6">
+                <Card className="card-minimal">
+                  <div className="p-6">
+                    <div className="flex items-center justify-between mb-6">
+                      <div>
+                        <h3 className="text-lg font-semibold text-[#1D2129]">1688供应商推荐</h3>
+                        <p className="text-sm text-[#86909C]">基于选品结果匹配优质供应商</p>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <Select value={supplierFilter.sortBy} onValueChange={(v: any) => setSupplierFilter({ ...supplierFilter, sortBy: v })}>
+                          <SelectTrigger className="w-40 h-9">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="rating">按评分</SelectItem>
+                            <SelectItem value="price">按价格</SelectItem>
+                            <SelectItem value="moq">按起订量</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <label className="flex items-center gap-2 text-sm">
+                          <input 
+                            type="checkbox" 
+                            checked={supplierFilter.dropshippingOnly}
+                            onChange={(e) => setSupplierFilter({ ...supplierFilter, dropshippingOnly: e.target.checked })}
+                            className="w-4 h-4"
+                          />
+                          仅一件代发
+                        </label>
+                      </div>
                     </div>
-                    <div className="flex gap-2 mt-4">
-                      <Button className="flex-1">
-                        <ShoppingCart className="h-4 w-4 mr-2" />
-                        提交采集单
-                      </Button>
-                      <Button variant="outline" onClick={() => setPurchaseItems([])}>
-                        清空清单
-                      </Button>
+
+                    <div className="space-y-4">
+                      {filteredSuppliers.map((supplier) => (
+                        <div key={supplier.id} className="p-4 border border-[#E5E6EB] rounded-lg hover:border-[#BBDCFF] transition-colors">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-2">
+                                <Building className="w-4 h-4 text-[#86909C]" />
+                                <h4 className="font-medium text-[#1D2129]">{supplier.name}</h4>
+                                <Badge variant="outline" className="text-xs">{supplier.location}</Badge>
+                              </div>
+                              <div className="flex items-center gap-4 text-sm text-[#86909C]">
+                                <span className="flex items-center gap-1">
+                                  <Star className="w-3 h-3 text-[#FF7D00] fill-[#FF7D00]" />
+                                  {supplier.rating}
+                                </span>
+                                <span>起订量: {supplier.moq}件</span>
+                                <span>发货: {supplier.deliveryDays}天</span>
+                                <span>月销: {supplier.monthlyOrders}+</span>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-lg font-bold text-[#165DFF]">¥{supplier.price.toFixed(2)}</p>
+                              <p className="text-xs text-[#86909C]">{supplier.priceRange}</p>
+                              <div className="flex items-center gap-2 mt-2">
+                                {supplier.isDropshipping && (
+                                  <Badge className="bg-[#E8FFEA] text-[#00B42A] text-xs">一件代发</Badge>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex items-center justify-between mt-4 pt-4 border-t border-[#F2F3F5]">
+                            <div className="flex items-center gap-2">
+                              {supplier.certifications.map((cert, i) => (
+                                <Badge key={i} variant="outline" className="text-xs border-[#E5E6EB]">
+                                  {cert}
+                                </Badge>
+                              ))}
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Button variant="outline" size="sm" asChild>
+                                <a href={supplier.productUrl} target="_blank" rel="noopener noreferrer">
+                                  <ExternalLink className="w-3 h-3 mr-1" />
+                                  查看商品
+                                </a>
+                              </Button>
+                              <Button variant="outline" size="sm" onClick={() => {
+                                navigator.clipboard.writeText(supplier.productUrl);
+                                toast.success('链接已复制');
+                              }}>
+                                <Copy className="w-3 h-3 mr-1" />
+                                复制链接
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
+                </Card>
+              </TabsContent>
+            </Tabs>
+
+            <div className="flex justify-between">
+              <Button variant="outline" className="btn-secondary" onClick={() => setActiveTab('products')}>
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                上一步
+              </Button>
+              <Button 
+                className="btn-primary px-8" 
+                onClick={handleGenerateReport}
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    生成报告中...
+                  </>
+                ) : (
+                  <>
+                    <FileText className="w-4 h-4 mr-2" />
+                    生成选品报告
+                  </>
                 )}
-              </CardContent>
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* 步骤5: 选品报告 */}
+        {activeTab === 'report' && report && (
+          <div className="space-y-6">
+            <Card className="card-minimal">
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-full bg-[#165DFF] flex items-center justify-center">
+                      <FileText className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <h2 className="text-lg font-semibold text-[#1D2129]">选品报告已生成</h2>
+                      <p className="text-sm text-[#86909C]">分析时间: {new Date(report.createdAt).toLocaleString('zh-CN')}</p>
+                    </div>
+                  </div>
+                  <Button className="btn-primary" onClick={handleExportReport}>
+                    <Download className="w-4 h-4 mr-2" />
+                    导出报告
+                  </Button>
+                </div>
+
+                {/* 统计概览 */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                  <div className="p-4 bg-[#F4F7FF] rounded-lg">
+                    <p className="text-sm text-[#86909C]">候选商品</p>
+                    <p className="text-2xl font-bold text-[#165DFF]">{report.summary.totalProducts}</p>
+                  </div>
+                  <div className="p-4 bg-[#E8FFEA] rounded-lg">
+                    <p className="text-sm text-[#86909C]">推荐商品</p>
+                    <p className="text-2xl font-bold text-[#00B42A]">{report.summary.recommendedProducts}</p>
+                  </div>
+                  <div className="p-4 bg-[#FFF7E6] rounded-lg">
+                    <p className="text-sm text-[#86909C]">平均利润率</p>
+                    <p className="text-2xl font-bold text-[#FF7D00]">{report.summary.avgProfitRate}%</p>
+                  </div>
+                  <div className="p-4 bg-[#FFF2F0] rounded-lg">
+                    <p className="text-sm text-[#86909C]">风险等级</p>
+                    <p className={`text-2xl font-bold ${report.summary.riskLevel === '高' ? 'text-[#F53F3F]' : report.summary.riskLevel === '中' ? 'text-[#FF7D00]' : 'text-[#00B42A]'}`}>
+                      {report.summary.riskLevel}
+                    </p>
+                  </div>
+                </div>
+
+                {/* 推荐建议 */}
+                <div className="p-4 bg-[#F4F7FF] rounded-lg">
+                  <h3 className="font-medium text-[#1D2129] mb-3">综合建议</h3>
+                  <div className="space-y-2">
+                    {report.recommendations.map((rec, i) => (
+                      <div key={i} className="flex items-start gap-2">
+                        <CheckCircle2 className="w-4 h-4 text-[#165DFF] mt-0.5" />
+                        <span className="text-sm text-[#4E5969]">{rec}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
             </Card>
-          </TabsContent>
-        </Tabs>
+
+            {/* 推荐商品 */}
+            <Card className="card-minimal">
+              <div className="p-6">
+                <h3 className="text-lg font-semibold text-[#1D2129] mb-4">推荐商品详情</h3>
+                <div className="space-y-4">
+                  {report.feasibility
+                    .filter(r => r.conclusion === '强烈推荐')
+                    .map((result, index) => (
+                      <div key={result.product.id} className="p-4 border border-[#E5E6EB] rounded-lg">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <div className="flex items-center gap-2 mb-2">
+                              <h4 className="font-medium text-[#1D2129]">{result.product.name}</h4>
+                              <Badge className="bg-[#E8FFEA] text-[#00B42A]">
+                                <Award className="w-3 h-3 mr-1" />
+                                TOP {index + 1}
+                              </Badge>
+                            </div>
+                            <p className="text-sm text-[#86909C] mb-3">{result.product.coreSellingPoint}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-2xl font-bold text-[#00B42A]">{result.overallScore.toFixed(0)}</p>
+                            <p className="text-xs text-[#86909C]">综合评分</p>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4 pt-4 border-t border-[#F2F3F5]">
+                          <div>
+                            <p className="text-xs text-[#86909C]">售价</p>
+                            <p className="font-medium">${result.profitCalc.sellingPrice.toFixed(2)}</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-[#86909C]">毛利</p>
+                            <p className="font-medium text-[#00B42A]">{result.profitCalc.grossMargin.toFixed(1)}%</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-[#86909C]">月销量</p>
+                            <p className="font-medium">{result.product.monthlySales}+</p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-[#86909C]">供应商匹配</p>
+                            <p className="font-medium">{result.supplyMatch}%</p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            </Card>
+
+            <div className="flex justify-between">
+              <Button variant="outline" className="btn-secondary" onClick={() => setActiveTab('feasibility')}>
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                返回分析
+              </Button>
+              <Button 
+                variant="outline" 
+                className="btn-secondary"
+                onClick={() => {
+                  setActiveTab('requirement');
+                  setRequirement({ market: '', category: '', budget: '', coreAppeal: '', avoidCategories: '' });
+                  setDirections([]);
+                  setHotProducts([]);
+                  setFeasibilityResults([]);
+                  setReport(null);
+                }}
+              >
+                <RefreshCw className="w-4 h-4 mr-2" />
+                重新选品
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
     </MainLayout>
   );
