@@ -1,119 +1,138 @@
 'use client';
 
-import { ReactNode, useState } from 'react';
-import Link from 'next/link';
-import { useRouter, usePathname } from 'next/navigation';
-import { cn } from '@/lib/utils';
-import { Settings, LogOut, User } from 'lucide-react';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+import { usePathname, useRouter } from 'next/navigation';
+import { Home, Search, ShoppingCart, FileText, TrendingUp, Settings, Shield, LogOut, User, Store } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
-interface MainLayoutProps {
-  children: ReactNode;
-  user?: {
-    nickname: string;
-    avatar?: string;
-    role: 'user' | 'admin';
-  };
-  onLogout?: () => void;
-}
-
-export default function MainLayout({ children, user, onLogout }: MainLayoutProps) {
+export default function MainLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
 
   const navItems = [
-    { label: '数据', href: '/', icon: '📊' },
-    { label: '选品', href: '/select', icon: '🔍' },
-    { label: '上新', href: '/publish', icon: '🚀' },
-    { label: '广告', href: '/ads', icon: '📈' },
+    { path: '/', label: '首页', icon: Home },
+    { path: '/select', label: '选品中心', icon: Search },
+    { path: '/publish', label: '上新中心', icon: ShoppingCart },
+    { path: '/drafts', label: '草稿箱', icon: FileText },
+    { path: '/ads', label: '广告优化', icon: TrendingUp },
+    { path: '/platforms', label: '平台授权', icon: Shield },
+    { path: '/settings', label: '设置', icon: Settings },
   ];
 
   const handleLogout = () => {
     localStorage.removeItem('user');
     localStorage.removeItem('token');
-    if (onLogout) {
-      onLogout();
-    }
     router.push('/login');
   };
 
   return (
-    <div className="min-h-screen bg-[#F5F7FA]">
-      {/* 顶部导航栏 - 深绿 #1D2129 */}
-      <header className="fixed top-0 left-0 right-0 h-[60px] bg-[#1D2129] z-50">
-        <div className="h-full flex items-center justify-between px-6">
-          {/* Logo */}
-          <div className="flex items-center gap-2">
-            <span className="text-xl font-bold text-white">龙掌柜</span>
+    <div className="flex h-screen w-full bg-[#0B101A] tech-grid-bg">
+      {/* 左侧固定导航栏 */}
+      <aside className="w-64 h-full flex flex-col border-r border-[#1E293B] bg-gradient-to-b from-[#0B101A] to-[#0F1628]">
+        {/* Logo区 */}
+        <div className="p-6 border-b border-[#1E293B]">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#00EEFF] to-[#7B61FF] flex items-center justify-center animate-neon-pulse">
+              <span className="text-[#0B101A] font-bold text-xl">龙</span>
+            </div>
+            <div>
+              <h1 className="text-white font-bold text-lg">龙掌柜</h1>
+              <p className="text-[#00EEFF] text-xs">AI 跨境运营中枢</p>
+            </div>
+          </div>
+        </div>
+
+        {/* 导航菜单 */}
+        <nav className="flex-1 py-6 px-4 space-y-1 overflow-y-auto">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = pathname === item.path;
+            
+            return (
+              <Button
+                key={item.path}
+                variant="ghost"
+                onClick={() => router.push(item.path)}
+                className={`w-full justify-start gap-3 px-4 py-6 h-auto text-left transition-all ${
+                  isActive 
+                    ? 'bg-[rgba(0,238,255,0.15)] text-[#00EEFF] border border-[rgba(0,238,255,0.3)]' 
+                    : 'text-[#94A3B8] hover:text-white hover:bg-[rgba(255,255,255,0.05)]'
+                }`}
+              >
+                <Icon className="w-5 h-5" />
+                <span className="font-medium">{item.label}</span>
+                {isActive && (
+                  <div className="ml-auto w-1.5 h-1.5 rounded-full bg-[#00EEFF] animate-neon-pulse" />
+                )}
+              </Button>
+            );
+          })}
+        </nav>
+      </aside>
+
+      {/* 右侧主内容区 */}
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* 顶部信息栏 */}
+        <header className="h-16 border-b border-[#1E293B] bg-[#0B101A]/80 backdrop-blur flex items-center justify-between px-6">
+          {/* 左侧：当前绑定店铺 */}
+          <div className="flex items-center gap-6">
+            <div className="flex items-center gap-3">
+              <Store className="w-5 h-5 text-[#00EEFF]" />
+              <span className="text-[#94A3B8] text-sm">当前绑定：</span>
+              <span className="text-white font-medium">Shopee 深圳店</span>
+              <span className="status-indicator status-online" />
+            </div>
           </div>
 
-          {/* 主导航 */}
-          <nav className="flex items-center gap-1">
-            {navItems.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={cn(
-                  'px-5 py-2 text-[14px] rounded-full transition-all',
-                  pathname === item.href
-                    ? 'bg-[#22C97A] text-white font-medium'
-                    : 'text-white/70 hover:bg-white/10 hover:text-white'
-                )}
-              >
-                <span className="mr-1.5">{item.icon}</span>
-                {item.label}
-              </Link>
-            ))}
-          </nav>
-
-          {/* 右侧操作 */}
+          {/* 右侧：用户信息 */}
           <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2 text-sm">
-              <div className="w-2 h-2 rounded-full bg-[#22C97A]" />
-              <span className="text-white/80">飞书已绑定</span>
+            <div className="flex items-center gap-2">
+              <span className="status-indicator status-online" />
+              <span className="text-[#94A3B8] text-sm">在线</span>
             </div>
             
-            {/* 用户菜单 */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="text-white/70 hover:text-white hover:bg-white/10">
-                  <User className="h-5 w-5" />
+                <Button variant="ghost" className="gap-2 hover:bg-[rgba(255,255,255,0.05)]">
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#00EEFF] to-[#7B61FF] flex items-center justify-center">
+                    <User className="w-4 h-4 text-[#0B101A]" />
+                  </div>
+                  <span className="text-white text-sm">龙掌柜</span>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuContent align="end" className="w-56 bg-[rgba(15,22,36,0.95)] border-[#1E293B]">
                 <div className="px-3 py-2">
-                  <p className="text-sm font-medium">{user?.nickname || '用户'}</p>
-                  <p className="text-xs text-muted-foreground">{user?.role === 'admin' ? '管理员' : '普通用户'}</p>
+                  <p className="text-white font-medium">龙掌柜</p>
+                  <p className="text-[#64748B] text-xs">admin@longzhanggui.com</p>
                 </div>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <Link href="/settings" className="cursor-pointer">
-                    <Settings className="h-4 w-4 mr-2" />
-                    设置
-                  </Link>
+                <DropdownMenuSeparator className="bg-[#1E293B]" />
+                <DropdownMenuItem 
+                  onClick={() => router.push('/settings')}
+                  className="text-[#94A3B8] hover:text-white hover:bg-[rgba(0,238,255,0.1)] cursor-pointer"
+                >
+                  <Settings className="w-4 h-4 mr-2" />
+                  设置
                 </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleLogout} className="text-destructive cursor-pointer">
-                  <LogOut className="h-4 w-4 mr-2" />
+                <DropdownMenuSeparator className="bg-[#1E293B]" />
+                <DropdownMenuItem 
+                  onClick={handleLogout}
+                  className="text-[#FF4081] hover:text-[#FF4081] hover:bg-[rgba(255,64,129,0.1)] cursor-pointer"
+                >
+                  <LogOut className="w-4 h-4 mr-2" />
                   退出登录
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
-        </div>
-      </header>
+        </header>
 
-      {/* 内容区 */}
-      <main className="pt-[60px]">
-        <div className="p-6">{children}</div>
-      </main>
+        {/* 内容区 */}
+        <main className="flex-1 overflow-auto p-6">
+          <div className="max-w-7xl mx-auto">
+            {children}
+          </div>
+        </main>
+      </div>
     </div>
   );
 }

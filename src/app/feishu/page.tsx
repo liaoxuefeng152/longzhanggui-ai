@@ -1,275 +1,201 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import MainLayout from '@/components/layout/MainLayout';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { useState } from 'react';
+import { MessageSquare, Key, Lock, Bell, Send, CheckCircle2, AlertTriangle, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import {
-  CheckCircle,
-  RefreshCw,
-  Send,
-  Bell,
-  FileText,
-  AlertTriangle,
-  Package,
-} from 'lucide-react';
 import { toast } from 'sonner';
 
-export default function FeishuPage() {
-  const router = useRouter();
-  const [user, setUser] = useState<any>(null);
+export default function FeishuConfigPage() {
+  const [bound, setBound] = useState(true);
+  const [showSecret, setShowSecret] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  // 推送配置
-  const [dailyReport, setDailyReport] = useState(true);
-  const [dailyReportTime, setDailyReportTime] = useState('09:00');
-  const [inventoryAlert, setInventoryAlert] = useState(true);
-  const [inventoryThreshold, setInventoryThreshold] = useState('20');
-  const [adAlert, setAdAlert] = useState(true);
-  const [reviewAlert, setReviewAlert] = useState(true);
-  const [competitorAlert, setCompetitorAlert] = useState(false);
+  const [alerts, setAlerts] = useState({
+    roi: true,
+    spend: true,
+    inventory: true,
+    review: false,
+  });
 
-  const [isTesting, setIsTesting] = useState(false);
-
-  useEffect(() => {
-    const userData = localStorage.getItem('user');
-    if (!userData) {
-      router.push('/login');
-      return;
-    }
-    setUser(JSON.parse(userData));
-  }, [router]);
-
-  if (!user) return null;
-
-  // 保存配置
-  const handleSave = () => {
-    toast.success('配置已保存');
-  };
-
-  // 测试推送
-  const handleTestPush = () => {
-    setIsTesting(true);
+  const handleBind = () => {
+    setLoading(true);
     setTimeout(() => {
-      setIsTesting(false);
-      toast.success('测试推送已发送，请查收');
+      setBound(true);
+      setLoading(false);
+      toast.success('飞书绑定成功！');
     }, 1500);
   };
 
-  // 推送历史（模拟）
-  const pushHistory = [
-    { time: '10:30', text: '广告告警：宠物饮水机ACOS 45%，建议优化', type: 'ad' },
-    { time: '09:00', text: '运营日报：昨日销售额 $4,280，上新8个', type: 'daily' },
-    { time: '昨天', text: '库存预警：宠物饮水机库存 15件，需补货', type: 'inventory' },
-  ];
+  const handleUnbind = () => {
+    setBound(false);
+    toast.success('已解绑飞书');
+  };
+
+  const handleTestSend = () => {
+    toast.success('测试消息已发送，请检查飞书');
+  };
 
   return (
-    <MainLayout user={user} onLogout={() => router.push('/login')}>
-      <div className="space-y-6 max-w-4xl mx-auto">
-        {/* 页面标题 */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-bold flex items-center gap-2">
-              <Bell className="h-6 w-6 text-[#165DFF]" />
-              飞书助手
-            </h1>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={handleSave}>
-              <RefreshCw className="h-4 w-4 mr-2" />
-              保存配置
-            </Button>
-          </div>
+    <div className="space-y-6">
+      {/* 页面标题 */}
+      <div className="flex items-center gap-3 mb-8">
+        <MessageSquare className="w-8 h-8 text-[#00EEFF]" />
+        <div>
+          <h1 className="text-2xl font-bold text-white">飞书配置</h1>
+          <p className="text-[#64748B]">消息推送 · 告警设置</p>
         </div>
+      </div>
 
-        {/* 绑定状态 */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-[14px]">绑定状态</CardTitle>
-          </CardHeader>
-          <CardContent className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <CheckCircle className="h-6 w-6 text-green-600" />
-              <div>
-                <div className="text-[14px] font-medium">已绑定飞书机器人（@龙掌柜）</div>
-              </div>
-            </div>
-            <Button variant="outline" size="sm">
-              重新绑定
-            </Button>
-          </CardContent>
-        </Card>
-
-        {/* 推送配置 */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-[14px]">推送配置</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {/* 每日运营日报 */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Switch 
-                  id="dailyReport" 
-                  checked={dailyReport} 
-                  onCheckedChange={setDailyReport} 
-                />
-                <div>
-                  <Label htmlFor="dailyReport" className="text-[14px] font-medium flex items-center gap-2">
-                    <FileText className="h-4 w-4" />
-                    每日运营日报
-                  </Label>
-                  {dailyReport && (
-                    <div className="text-[12px] text-muted-foreground mt-1">
-                      {dailyReportTime} 推送
-                    </div>
-                  )}
-                </div>
-              </div>
-              {dailyReport && (
-                <Input
-                  type="time"
-                  value={dailyReportTime}
-                  onChange={(e) => setDailyReportTime(e.target.value)}
-                  className="w-32"
-                />
-              )}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* 绑定卡片 */}
+        <Card className="glass-card p-6">
+          <h3 className="text-lg font-semibold text-white mb-6 flex items-center gap-2">
+            <Key className="w-5 h-5 text-[#7B61FF]" />
+            绑定飞书
+          </h3>
+          
+          <div className="space-y-4 mb-6">
+            <div className="flex items-center gap-2 mb-4">
+              <span className={`status-indicator ${bound ? 'status-online' : ''}`} style={{ backgroundColor: bound ? undefined : '#64748B', boxShadow: bound ? undefined : 'none' }} />
+              <span className={bound ? 'text-[#00EEFF]' : 'text-[#64748B]'}>
+                {bound ? '已绑定' : '未绑定'}
+              </span>
             </div>
 
-            {/* 库存预警 */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Switch 
-                  id="inventoryAlert" 
-                  checked={inventoryAlert} 
-                  onCheckedChange={setInventoryAlert} 
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label className="text-[#94A3B8]">App ID</Label>
+                <Input 
+                  placeholder="请输入 App ID" 
+                  className="h-12 tech-input"
+                  defaultValue={bound ? 'cli_a954ed9674789cd3' : ''}
+                  disabled={bound}
                 />
-                <div>
-                  <Label htmlFor="inventoryAlert" className="text-[14px] font-medium flex items-center gap-2">
-                    <Package className="h-4 w-4" />
-                    库存预警
-                  </Label>
-                  {inventoryAlert && (
-                    <div className="text-[12px] text-muted-foreground mt-1">
-                      库存 &lt; {inventoryThreshold} 件时立即推送
-                    </div>
-                  )}
-                </div>
               </div>
-              {inventoryAlert && (
-                <Input
-                  type="number"
-                  value={inventoryThreshold}
-                  onChange={(e) => setInventoryThreshold(e.target.value)}
-                  className="w-24"
-                  suffix="件"
-                />
-              )}
-            </div>
-
-            {/* 广告告警 */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Switch 
-                  id="adAlert" 
-                  checked={adAlert} 
-                  onCheckedChange={setAdAlert} 
-                />
-                <div>
-                  <Label htmlFor="adAlert" className="text-[14px] font-medium flex items-center gap-2">
-                    <AlertTriangle className="h-4 w-4" />
-                    广告告警
-                  </Label>
-                  <div className="text-[12px] text-muted-foreground mt-1">
-                    ACOS &gt; 40% 或花费暴增50%时推送
-                  </div>
+              <div className="space-y-2">
+                <Label className="text-[#94A3B8]">App Secret</Label>
+                <div className="relative">
+                  <Input 
+                    type={showSecret ? 'text' : 'password'}
+                    placeholder="请输入 App Secret" 
+                    className="h-12 tech-input pr-10"
+                    defaultValue={bound ? '****************' : ''}
+                    disabled={bound}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowSecret(!showSecret)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#64748B] hover:text-white"
+                  >
+                    {showSecret ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  </button>
                 </div>
               </div>
             </div>
+          </div>
 
-            {/* 差评预警 */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Switch 
-                  id="reviewAlert" 
-                  checked={reviewAlert} 
-                  onCheckedChange={setReviewAlert} 
-                />
-                <div>
-                  <Label htmlFor="reviewAlert" className="text-[14px] font-medium">
-                    差评预警
-                  </Label>
-                  <div className="text-[12px] text-muted-foreground mt-1">
-                    收到差评时立即推送
-                  </div>
-                </div>
-              </div>
+          {bound ? (
+            <div className="flex gap-4">
+              <Button 
+                variant="ghost" 
+                onClick={handleTestSend}
+                className="flex-1 h-12 bg-[rgba(0,238,255,0.1)] text-[#00EEFF] hover:bg-[rgba(0,238,255,0.2)] border border-[rgba(0,238,255,0.3)]"
+              >
+                <Send className="w-5 h-5 mr-2" />
+                发送测试消息
+              </Button>
+              <Button 
+                variant="ghost"
+                onClick={handleUnbind}
+                className="h-12 text-[#FF4081] hover:text-[#FF4081] hover:bg-[rgba(255,64,129,0.1)]"
+              >
+                解绑
+              </Button>
             </div>
-
-            {/* 竞品价格变动 */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Switch 
-                  id="competitorAlert" 
-                  checked={competitorAlert} 
-                  onCheckedChange={setCompetitorAlert} 
-                />
-                <div>
-                  <Label htmlFor="competitorAlert" className="text-[14px] font-medium">
-                    竞品价格变动
-                  </Label>
-                  <div className="text-[12px] text-muted-foreground mt-1">
-                    监控竞品价格变化
-                  </div>
+          ) : (
+            <Button 
+              onClick={handleBind}
+              disabled={loading}
+              className="w-full h-12 btn-neon-primary"
+            >
+              {loading ? (
+                <div className="flex items-center gap-2">
+                  <div className="w-5 h-5 border-2 border-[#0B101A] border-t-transparent rounded-full animate-spin" />
+                  绑定中...
                 </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* 测试推送 */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-[14px]">测试推送</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Button onClick={handleTestPush} disabled={isTesting}>
-              {isTesting ? (
-                <>
-                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                  发送中...
-                </>
               ) : (
-                <>
-                  <Send className="h-4 w-4 mr-2" />
-                  发送测试消息
-                </>
+                <div className="flex items-center gap-2">
+                  <Lock className="w-5 h-5" />
+                  绑定飞书
+                </div>
               )}
             </Button>
-          </CardContent>
+          )}
         </Card>
 
-        {/* 推送历史 */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-[14px]">推送历史</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {pushHistory.map((item, idx) => (
-                <div key={idx} className="text-sm">
-                  <span className="text-muted-foreground w-16 inline-block">[{item.time}]</span>
-                  {item.text}
-                </div>
-              ))}
+        {/* 告警开关 */}
+        <Card className="glass-card p-6">
+          <h3 className="text-lg font-semibold text-white mb-6 flex items-center gap-2">
+            <Bell className="w-5 h-5 text-[#FF9800]" />
+            告警开关
+          </h3>
+          
+          <div className="space-y-6">
+            <div className="flex items-center justify-between p-4 rounded-xl bg-[rgba(255,255,255,0.02)] border border-[#1E293B]">
+              <div>
+                <p className="text-white font-medium">广告 ROI 低</p>
+                <p className="text-[#64748B] text-sm">当 ROI 低于 2.0 时推送</p>
+              </div>
+              <Switch 
+                checked={alerts.roi}
+                onCheckedChange={(c) => setAlerts({...alerts, roi: c})}
+                className="data-[state=checked]:bg-[#00EEFF]"
+              />
             </div>
-          </CardContent>
+
+            <div className="flex items-center justify-between p-4 rounded-xl bg-[rgba(255,255,255,0.02)] border border-[#1E293B]">
+              <div>
+                <p className="text-white font-medium">花费暴增</p>
+                <p className="text-[#64748B] text-sm">当日花费超过昨日 50% 时推送</p>
+              </div>
+              <Switch 
+                checked={alerts.spend}
+                onCheckedChange={(c) => setAlerts({...alerts, spend: c})}
+                className="data-[state=checked]:bg-[#00EEFF]"
+              />
+            </div>
+
+            <div className="flex items-center justify-between p-4 rounded-xl bg-[rgba(255,255,255,0.02)] border border-[#1E293B]">
+              <div>
+                <p className="text-white font-medium">库存不足</p>
+                <p className="text-[#64748B] text-sm">当库存低于 50 件时推送</p>
+              </div>
+              <Switch 
+                checked={alerts.inventory}
+                onCheckedChange={(c) => setAlerts({...alerts, inventory: c})}
+                className="data-[state=checked]:bg-[#00EEFF]"
+              />
+            </div>
+
+            <div className="flex items-center justify-between p-4 rounded-xl bg-[rgba(255,255,255,0.02)] border border-[#1E293B]">
+              <div>
+                <p className="text-white font-medium">差评预警</p>
+                <p className="text-[#64748B] text-sm">当收到 3 星以下评价时推送</p>
+              </div>
+              <Switch 
+                checked={alerts.review}
+                onCheckedChange={(c) => setAlerts({...alerts, review: c})}
+                className="data-[state=checked]:bg-[#00EEFF]"
+              />
+            </div>
+          </div>
         </Card>
       </div>
-    </MainLayout>
+    </div>
   );
 }

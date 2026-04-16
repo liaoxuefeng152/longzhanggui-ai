@@ -2,206 +2,213 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Lock, User, ShieldCheck } from 'lucide-react';
+import { Eye, EyeOff, Smartphone, Lock, MessageSquare, ShieldCheck, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { login } from '@/lib/api/auth';
-import { useAuth } from '@/contexts/AuthContext';
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login: setAuth } = useAuth();
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [captcha, setCaptcha] = useState('');
-  const [captchaCode, setCaptchaCode] = useState('ABCD');
-  const [isLoading, setIsLoading] = useState(false);
+  const [loginType, setLoginType] = useState<'password' | 'sms'>('password');
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [countdown, setCountdown] = useState(0);
 
-  // 生成随机验证码
-  const generateCaptcha = () => {
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-    let code = '';
-    for (let i = 0; i < 4; i++) {
-      code += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    setCaptchaCode(code);
-  };
-
-  // 初始化验证码
-  useState(() => {
-    generateCaptcha();
+  const [formData, setFormData] = useState({
+    phone: '',
+    password: '',
+    code: '',
   });
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!username || !password) {
-      toast.error('请输入账号和密码');
+  const handleGetCode = () => {
+    if (!formData.phone) {
+      toast.error('请输入手机号');
       return;
     }
-
-    if (captcha.toUpperCase() !== captchaCode) {
-      toast.error('验证码错误，请重新输入');
-      generateCaptcha();
-      setCaptcha('');
-      return;
-    }
-
-    setIsLoading(true);
-
-    try {
-      // 调用真实登录API
-      const response = await login({
-        phone: username, // 使用输入的用户名作为手机号
-        password: password,
+    setCountdown(60);
+    const timer = setInterval(() => {
+      setCountdown((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          return 0;
+        }
+        return prev - 1;
       });
+    }, 1000);
+    toast.success('验证码已发送');
+  };
 
-      // 使用AuthProvider的login方法保存登录状态
-      setAuth(response.access_token, response.user);
-      
-      toast.success('登录成功');
-      router.push('/');
-    } catch (error: any) {
-      console.error('登录失败:', error);
-      toast.error(error.message || '账号或密码错误');
-      generateCaptcha();
-      setCaptcha('');
-    } finally {
-      setIsLoading(false);
+  const handleLogin = async () => {
+    if (!formData.phone) {
+      toast.error('请输入手机号');
+      return;
     }
+    if (loginType === 'password' && !formData.password) {
+      toast.error('请输入密码');
+      return;
+    }
+    if (loginType === 'sms' && !formData.code) {
+      toast.error('请输入验证码');
+      return;
+    }
+
+    setLoading(true);
+    
+    // 模拟登录
+    await new Promise(resolve => setTimeout(resolve, 1500));
+
+    localStorage.setItem('user', JSON.stringify({ name: '龙掌柜', phone: formData.phone }));
+    localStorage.setItem('token', 'mock-jwt-token');
+    
+    toast.success('登录成功');
+    
+    // 光效扩散后跳转
+    setTimeout(() => {
+      router.push('/platforms');
+    }, 500);
+    
+    setLoading(false);
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#E8F7EE] via-[#F0F9F4] to-[#E6F4ED]">
-      <div className="w-full max-w-md">
-        {/* 顶部品牌区 */}
+    <div className="min-h-screen w-full flex items-center justify-center bg-[#0B101A] tech-grid-bg animate-grid-flow relative overflow-hidden">
+      {/* 科技装饰元素 */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-[#00EEFF]/10 rounded-full blur-3xl animate-float" />
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-[#7B61FF]/10 rounded-full blur-3xl animate-float" style={{ animationDelay: '2s' }} />
+      </div>
+
+      {/* 登录卡片 */}
+      <Card className="w-full max-w-md p-8 glass-card relative z-10">
+        {/* Logo区 */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-[#22C97A] rounded-2xl mb-4 shadow-lg">
-            <span className="text-3xl">🦞</span>
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-[#00EEFF] to-[#7B61FF] mb-4 animate-neon-pulse">
+            <span className="text-[#0B101A] font-bold text-3xl">龙</span>
           </div>
-          <h1 className="text-[20px] font-semibold text-foreground mb-2">
-            龙掌柜
-          </h1>
-          <p className="text-[14px] text-muted-foreground">
-            跨境电商AI运营助手
-          </p>
+          <h1 className="text-2xl font-bold text-white mb-2">龙掌柜</h1>
+          <p className="text-[#00EEFF]">AI 跨境运营中枢</p>
         </div>
 
-        {/* 登录表单卡片 */}
-        <Card className="shadow-xl border-0 rounded-lg">
-          <CardHeader className="text-center pb-2">
-            <CardTitle className="text-[16px] font-medium">登录</CardTitle>
-            <CardDescription className="text-[13px]">
-              AI驱动的跨境电商运营助手
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="pt-4">
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="username" className="text-[14px]">账号</Label>
-                <div className="relative">
-                  <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="username"
-                    type="text"
-                    placeholder="请输入账号"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    className="pl-10 h-10"
-                  />
-                </div>
-              </div>
+        {/* 登录方式切换 */}
+        <Tabs 
+          defaultValue="password" 
+          value={loginType}
+          onValueChange={(v) => setLoginType(v as 'password' | 'sms')}
+          className="w-full mb-6"
+        >
+          <TabsList className="w-full bg-[#1E293B] p-1">
+            <TabsTrigger 
+              value="password" 
+              className="flex-1 data-[state=active]:bg-[rgba(0,238,255,0.2)] data-[state=active]:text-[#00EEFF]"
+            >
+              <Lock className="w-4 h-4 mr-2" />
+              密码登录
+            </TabsTrigger>
+            <TabsTrigger 
+              value="sms" 
+              className="flex-1 data-[state=active]:bg-[rgba(0,238,255,0.2)] data-[state=active]:text-[#00EEFF]"
+            >
+              <MessageSquare className="w-4 h-4 mr-2" />
+              验证码登录
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
 
-              <div className="space-y-2">
-                <Label htmlFor="password" className="text-[14px]">密码</Label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="password"
-                    type="password"
-                    placeholder="请输入密码"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="pl-10 h-10"
-                  />
-                </div>
-              </div>
+        {/* 表单 */}
+        <div className="space-y-4">
+          {/* 手机号 */}
+          <div className="space-y-2">
+            <div className="relative">
+              <Smartphone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#64748B]" />
+              <Input
+                type="tel"
+                placeholder="请输入手机号"
+                value={formData.phone}
+                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                className="pl-10 h-12 tech-input"
+              />
+            </div>
+          </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="captcha" className="text-[14px]">验证码</Label>
-                <div className="flex gap-3">
-                  <div className="relative flex-1">
-                    <ShieldCheck className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="captcha"
-                      type="text"
-                      placeholder="请输入验证码"
-                      value={captcha}
-                      onChange={(e) => setCaptcha(e.target.value)}
-                      className="pl-10 h-10"
-                      maxLength={4}
-                    />
-                  </div>
-                  <div
-                    className="w-[100px] h-10 bg-muted rounded-md flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity"
-                    onClick={generateCaptcha}
-                    title="点击刷新验证码"
-                  >
-                    <span className="text-[18px] font-bold tracking-[4px] text-primary select-none">
-                      {captchaCode}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <Button
-                type="submit"
-                className="w-full h-10 bg-[#22C97A] hover:bg-[#1EAF6A] text-[14px] font-medium"
-                disabled={isLoading}
-              >
-                {isLoading ? '登录中...' : '登录'}
-              </Button>
-            </form>
-
-            <div className="mt-6 pt-4 border-t border-border">
-              <div className="text-center text-[12px] text-muted-foreground">
-                安全登录
+          {/* 密码/验证码 */}
+          {loginType === 'password' ? (
+            <div className="space-y-2">
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#64748B]" />
+                <Input
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="请输入密码"
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  className="pl-10 pr-10 h-12 tech-input"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#64748B] hover:text-white"
+                >
+                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
               </div>
             </div>
-          </CardContent>
-        </Card>
+          ) : (
+            <div className="space-y-2">
+              <div className="flex gap-3">
+                <div className="relative flex-1">
+                  <MessageSquare className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#64748B]" />
+                  <Input
+                    type="text"
+                    placeholder="请输入验证码"
+                    value={formData.code}
+                    onChange={(e) => setFormData({ ...formData, code: e.target.value })}
+                    className="pl-10 h-12 tech-input"
+                  />
+                </div>
+                <Button
+                  variant="ghost"
+                  onClick={handleGetCode}
+                  disabled={countdown > 0}
+                  className="h-12 px-4 bg-gradient-to-r from-[#7B61FF] to-[#6349E3] text-white hover:opacity-90 disabled:opacity-50"
+                >
+                  {countdown > 0 ? `${countdown}s` : '获取验证码'}
+                </Button>
+              </div>
+            </div>
+          )}
 
-        {/* 底部信息 */}
-        <div className="text-center mt-6 space-y-2">
-          <p className="text-[12px] text-muted-foreground">
-            © 2024 龙掌柜智能运营系统 · 版权所有
-          </p>
-          <div className="flex items-center justify-center gap-4 text-[12px]">
-            <a href="#" className="text-muted-foreground hover:text-primary transition-colors">
-              帮助中心
-            </a>
-            <span className="text-muted-foreground/50">|</span>
-            <a href="#" className="text-muted-foreground hover:text-primary transition-colors">
-              联系阿峰
-            </a>
-            <span className="text-muted-foreground/50">|</span>
-            <a href="#" className="text-muted-foreground hover:text-primary transition-colors">
-              忘记密码
-            </a>
-          </div>
+          {/* 登录按钮 */}
+          <Button
+            onClick={handleLogin}
+            disabled={loading}
+            className="w-full h-12 btn-neon-primary mt-6"
+          >
+            {loading ? (
+              <div className="flex items-center gap-2">
+                <div className="w-5 h-5 border-2 border-[#0B101A] border-t-transparent rounded-full animate-spin" />
+                <span>登录中...</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="w-5 h-5" />
+                <span>登录</span>
+                <ArrowRight className="w-5 h-5" />
+              </div>
+            )}
+          </Button>
         </div>
 
-        {/* 提示信息 */}
-        <div className="mt-8 p-4 bg-[#22C97A]/5 rounded-lg border border-[#22C97A]/10">
-          <p className="text-[12px] text-muted-foreground text-center mb-2">
-            <span className="text-[#22C97A] font-medium">测试账号：</span>
-            13800138000 / 123456
-          </p>
+        {/* 底部链接 */}
+        <div className="flex justify-between mt-6 text-sm">
+          <button className="text-[#64748B] hover:text-[#00EEFF] transition-colors">
+            注册账号
+          </button>
+          <button className="text-[#64748B] hover:text-[#00EEFF] transition-colors">
+            忘记密码
+          </button>
         </div>
-      </div>
+      </Card>
     </div>
   );
 }
