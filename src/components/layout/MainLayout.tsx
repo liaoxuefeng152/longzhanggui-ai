@@ -28,6 +28,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     { path: '/publish', label: '上新中心', icon: ShoppingCart },
     { path: '/ads', label: '广告优化', icon: TrendingUp },
     { path: '/feishu', label: '飞书配置', icon: MessageSquare },
+    { path: '/settings', label: '系统设置', icon: Settings },
   ];
 
   const handleLogout = () => {
