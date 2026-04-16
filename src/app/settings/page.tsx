@@ -67,7 +67,7 @@ export default function SettingsPage() {
   };
 
   return (
-    <MainLayout user={user} onLogout={() => router.push('/login')} useNewNavigation={true}>
+    <MainLayout user={user} onLogout={() => router.push('/login')}>
       <div className="space-y-6 max-w-3xl mx-auto">
         {/* 页面标题 */}
         <div className="flex items-center justify-between">
