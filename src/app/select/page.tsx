@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Search, Sparkles, TrendingUp, Filter, Plus, CheckCircle, AlertTriangle, Target, Zap, DollarSign, BarChart3, Clock, Store, Truck, Package, Star, ExternalLink, Copy, Shield } from 'lucide-react';
+import { Search, Sparkles, TrendingUp, Filter, Plus, CheckCircle, AlertTriangle, Target, Zap, DollarSign, BarChart3, Clock, Store, Truck, Package, Star, ExternalLink, Copy, Shield, ArrowUp, ArrowDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -139,6 +139,75 @@ const mockSuppliers = [
   },
 ];
 
+// 模拟竞品数据
+const mockCompetitors = [
+  {
+    id: 1,
+    productId: 1,
+    name: '智能宠物喂食器 Pro',
+    platform: 'TikTok Shop',
+    price: '$39.99',
+    rating: 4.8,
+    reviews: 2847,
+    sales: '月销 1.2K',
+    mainImage: '🐾',
+    coreSellingPoints: ['1080P摄像头', '语音对讲', '5L大容量'],
+    priceTrend: 'stable',
+  },
+  {
+    id: 2,
+    productId: 1,
+    name: '自动喂食器 WiFi版',
+    platform: 'Shopee',
+    price: '$34.99',
+    rating: 4.6,
+    reviews: 1523,
+    sales: '月销 856',
+    mainImage: '🐕',
+    coreSellingPoints: ['APP远程控制', '定时喂食', '防卡死设计'],
+    priceTrend: 'down',
+  },
+  {
+    id: 3,
+    productId: 1,
+    name: '宠物智能投喂器',
+    platform: 'Lazada',
+    price: '$45.99',
+    rating: 4.9,
+    reviews: 956,
+    sales: '月销 432',
+    mainImage: '🐱',
+    coreSellingPoints: ['双食碗设计', '冻干零食盒', '不锈钢碗'],
+    priceTrend: 'up',
+  },
+  {
+    id: 4,
+    productId: 2,
+    name: 'LED灯串 遥控版',
+    platform: 'TikTok Shop',
+    price: '$19.99',
+    rating: 4.7,
+    reviews: 5632,
+    sales: '月销 3.5K',
+    mainImage: '💡',
+    coreSellingPoints: ['16种颜色', '音乐同步', 'IP65防水'],
+    priceTrend: 'stable',
+  },
+  {
+    id: 5,
+    productId: 2,
+    name: '氛围灯串 USB款',
+    platform: 'Shopee',
+    price: '$14.99',
+    rating: 4.5,
+    reviews: 3241,
+    sales: '月销 2.1K',
+    mainImage: '✨',
+    coreSellingPoints: ['8种模式', 'USB供电', '可裁剪'],
+    priceTrend: 'down',
+  },
+];
+
 // 辅助函数：从价格区间提取最低价格
 const getMinPrice = (priceStr: string) => {
   try {
@@ -244,7 +313,7 @@ export default function SelectPage() {
                   1. 需求分析
                 </TabsTrigger>
                 <TabsTrigger value="mining" className="data-[state=active]:bg-white data-[state=active]:text-[#165DFF]" disabled={!isAnalyzing && activeTab !== 'mining' && activeTab !== 'products' && activeTab !== 'report' && activeTab !== 'suppliers'}>
-                  2. 爆款挖掘
+                  2. 竞品挖掘
                 </TabsTrigger>
                 <TabsTrigger value="products" className="data-[state=active]:bg-white data-[state=active]:text-[#165DFF]" disabled={!isAnalyzing && activeTab !== 'products' && activeTab !== 'report' && activeTab !== 'suppliers'}>
                   3. 可行性分析
@@ -399,34 +468,143 @@ export default function SelectPage() {
                 </div>
               </TabsContent>
 
-              {/* 爆款挖掘 */}
+              {/* 竞品挖掘 */}
               <TabsContent value="mining" className="mt-0">
-                <div className="text-center py-12">
-                  <div className="w-16 h-16 rounded-full bg-[#E8F3FF] flex items-center justify-center mx-auto mb-4">
-                    <Target className="w-8 h-8 text-[#165DFF]" />
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-xl font-semibold text-[#1D2129]">热销竞品分析</h3>
+                      <p className="text-[#86909C] mt-1">AI抓取平台热销竞品，分析价格、评分、销量数据</p>
+                    </div>
+                    <Select defaultValue="1">
+                      <SelectTrigger className="w-48 input-minimal h-9">
+                        <SelectValue placeholder="选择商品" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="1">宠物自动喂食器</SelectItem>
+                        <SelectItem value="2">LED氛围灯串</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
-                  <h3 className="text-xl font-semibold text-[#1D2129] mb-2">选品方向推荐</h3>
-                  <p className="text-[#86909C] mb-6">基于您的需求，AI推荐以下选品方向</p>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-3xl mx-auto">
-                    <Card className="card-minimal p-5 cursor-pointer hover:border-[#165DFF]">
-                      <Badge className="bg-[#E8FFEA] text-[#00B42A] mb-3">推荐指数 ★★★★★</Badge>
-                      <h4 className="font-semibold text-[#1D2129] mb-2">智能宠物用品</h4>
-                      <p className="text-sm text-[#86909C]">持续增长类目，智能化趋势明显，利润空间大</p>
+
+                  {/* 竞品统计卡片 */}
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <Card className="card-minimal p-5">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-[#E8F3FF] flex items-center justify-center">
+                          <DollarSign className="w-5 h-5 text-[#165DFF]" />
+                        </div>
+                        <div>
+                          <p className="text-sm text-[#86909C]">价格区间</p>
+                          <p className="text-lg font-bold text-[#1D2129]">$34.99 - $45.99</p>
+                        </div>
+                      </div>
                     </Card>
-                    <Card className="card-minimal p-5 cursor-pointer hover:border-[#165DFF]">
-                      <Badge className="bg-[#FFF7E8] text-[#FF7D00] mb-3">推荐指数 ★★★★</Badge>
-                      <h4 className="font-semibold text-[#1D2129] mb-2">节日装饰用品</h4>
-                      <p className="text-sm text-[#86909C]">节日季临近，需求激增，轻量化易运输</p>
+                    <Card className="card-minimal p-5">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-[#E8FFEA] flex items-center justify-center">
+                          <Star className="w-5 h-5 text-[#00B42A] fill-[#00B42A]" />
+                        </div>
+                        <div>
+                          <p className="text-sm text-[#86909C]">平均评分</p>
+                          <p className="text-lg font-bold text-[#1D2129]">4.7 / 5.0</p>
+                        </div>
+                      </div>
                     </Card>
-                    <Card className="card-minimal p-5 cursor-pointer hover:border-[#165DFF]">
-                      <Badge className="bg-[#E8F3FF] text-[#165DFF] mb-3">推荐指数 ★★★★</Badge>
-                      <h4 className="font-semibold text-[#1D2129] mb-2">智能家居配件</h4>
-                      <p className="text-sm text-[#86909C]">智能家居赛道火热，配件类需求稳定增长</p>
+                    <Card className="card-minimal p-5">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-[#FFF7E8] flex items-center justify-center">
+                          <TrendingUp className="w-5 h-5 text-[#FF7D00]" />
+                        </div>
+                        <div>
+                          <p className="text-sm text-[#86909C]">总销量</p>
+                          <p className="text-lg font-bold text-[#1D2129]">5.9K+</p>
+                        </div>
+                      </div>
+                    </Card>
+                    <Card className="card-minimal p-5">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-[#F2F3F5] flex items-center justify-center">
+                          <BarChart3 className="w-5 h-5 text-[#4E5969]" />
+                        </div>
+                        <div>
+                          <p className="text-sm text-[#86909C]">竞品数量</p>
+                          <p className="text-lg font-bold text-[#1D2129]">3 个</p>
+                        </div>
+                      </div>
                     </Card>
                   </div>
-                  <div className="mt-8">
+
+                  {/* 竞品列表 */}
+                  <div className="space-y-4">
+                    {mockCompetitors
+                      .filter(c => !currentProductForSupplier || c.productId === currentProductForSupplier || c.productId === 1)
+                      .map((competitor) => (
+                        <Card key={competitor.id} className="card-minimal">
+                          <div className="p-6">
+                            <div className="flex items-start gap-4">
+                              <div className="w-20 h-20 rounded-lg bg-[#F2F3F5] flex items-center justify-center text-4xl flex-shrink-0">
+                                {competitor.mainImage}
+                              </div>
+                              <div className="flex-1">
+                                <div className="flex items-start justify-between mb-3">
+                                  <div>
+                                    <h4 className="text-lg font-semibold text-[#1D2129]">{competitor.name}</h4>
+                                    <div className="flex items-center gap-2 mt-1">
+                                      <Badge className="bg-[#F2F3F5] text-[#4E5969]">{competitor.platform}</Badge>
+                                      {competitor.priceTrend === 'up' && (
+                                        <Badge className="bg-[#FFECE8] text-[#F53F3F]">
+                                          <ArrowUp className="w-3 h-3 mr-1" />
+                                          价格上涨
+                                        </Badge>
+                                      )}
+                                      {competitor.priceTrend === 'down' && (
+                                        <Badge className="bg-[#E8FFEA] text-[#00B42A]">
+                                          <ArrowDown className="w-3 h-3 mr-1" />
+                                          价格下降
+                                        </Badge>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <div className="text-right">
+                                    <p className="text-2xl font-bold text-[#165DFF]">{competitor.price}</p>
+                                    <p className="text-sm text-[#86909C]">{competitor.sales}</p>
+                                  </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                                  <div>
+                                    <p className="text-sm text-[#86909C]">评分</p>
+                                    <div className="flex items-center gap-1">
+                                      <Star className="w-4 h-4 text-[#FF7D00] fill-[#FF7D00]" />
+                                      <span className="text-[#1D2129] font-medium">{competitor.rating}</span>
+                                    </div>
+                                  </div>
+                                  <div>
+                                    <p className="text-sm text-[#86909C]">评论数</p>
+                                    <p className="text-[#1D2129] font-medium">{competitor.reviews.toLocaleString()}</p>
+                                  </div>
+                                  <div className="md:col-span-2">
+                                    <p className="text-sm text-[#86909C] mb-2">核心卖点</p>
+                                    <div className="flex flex-wrap gap-2">
+                                      {competitor.coreSellingPoints.map((point, idx) => (
+                                        <Badge key={idx} className="bg-[#E8F3FF] text-[#165DFF]">
+                                          {point}
+                                        </Badge>
+                                      ))}
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </Card>
+                      ))}
+                  </div>
+
+                  <div className="flex justify-center mt-6">
                     <Button className="btn-primary" onClick={() => setActiveTab('products')}>
-                      查看候选商品
+                      继续下一步：可行性分析
                     </Button>
                   </div>
                 </div>
