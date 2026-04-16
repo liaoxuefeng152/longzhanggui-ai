@@ -1,7 +1,7 @@
 'use client';
 
 import { usePathname, useRouter } from 'next/navigation';
-import { Home, Search, ShoppingCart, FileText, TrendingUp, Settings, Shield, LogOut, User, Store } from 'lucide-react';
+import { Home, Search, ShoppingCart, FileText, TrendingUp, Settings, LogOut, User, Store, MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
@@ -11,11 +11,11 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
 
   const navItems = [
     { path: '/', label: '首页', icon: Home },
-    { path: '/select', label: '选品中心', icon: Search },
-    { path: '/publish', label: '上新中心', icon: ShoppingCart },
+    { path: '/select', label: '智能选品', icon: Search },
+    { path: '/publish', label: '快速上新', icon: ShoppingCart },
     { path: '/drafts', label: '草稿箱', icon: FileText },
     { path: '/ads', label: '广告优化', icon: TrendingUp },
-    { path: '/platforms', label: '平台授权', icon: Shield },
+    { path: '/feishu', label: '飞书配置', icon: MessageSquare },
     { path: '/settings', label: '设置', icon: Settings },
   ];
 
