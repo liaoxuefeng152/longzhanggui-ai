@@ -272,8 +272,8 @@ export default function AdCampaignsPage() {
   const getPlatformBadge = (platform: string) => {
     const config: Record<string, { label: string; className: string }> = {
       tiktok: { label: 'TikTok Ads', className: 'bg-pink-500/10 text-pink-500' },
-      amazon: { label: 'Amazon Ads', className: 'bg-orange-500/10 text-orange-500' },
-      google: { label: 'Google Ads', className: 'bg-blue-500/10 text-blue-500' },
+      amazon: { label: 'Amazon Ads', className: 'bg-[#FF7D00]500/10 text-[#FF7D00]500' },
+      google: { label: 'Google Ads', className: 'bg-[#165DFF]500/10 text-[#165DFF]500' },
     };
     const { label, className } = config[platform] || { label: platform, className: 'bg-muted text-muted-foreground' };
     return <Badge variant="outline" className={className}>{label}</Badge>;

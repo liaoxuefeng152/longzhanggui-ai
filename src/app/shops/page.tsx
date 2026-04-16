@@ -372,9 +372,9 @@ export default function ShopsPage() {
 
   const getStatusBadge = (status: string) => {
     const config: Record<string, { label: string; className: string }> = {
-      active: { label: '已启用', className: 'bg-green-500/10 text-green-500' },
+      active: { label: '已启用', className: 'bg-[#00B42A]500/10 text-[#00B42A]500' },
       inactive: { label: '已停用', className: 'bg-muted text-muted-foreground' },
-      suspended: { label: '已封禁', className: 'bg-red-500/10 text-red-500' },
+      suspended: { label: '已封禁', className: 'bg-[#F53F3F]500/10 text-[#F53F3F]500' },
       pending: { label: '待配置', className: 'bg-yellow-500/10 text-yellow-500' },
     };
     const { label, className } = config[status] || config.pending;
@@ -385,7 +385,7 @@ export default function ShopsPage() {
     const config: Record<string, { label: string; className: string; icon: React.ReactNode }> = {
       authorized: { 
         label: '已授权', 
-        className: 'bg-green-500/10 text-green-500',
+        className: 'bg-[#00B42A]500/10 text-[#00B42A]500',
         icon: <CheckCircle className="h-3 w-3" />
       },
       unauthorized: { 
@@ -395,7 +395,7 @@ export default function ShopsPage() {
       },
       expired: { 
         label: '授权过期', 
-        className: 'bg-red-500/10 text-red-500',
+        className: 'bg-[#F53F3F]500/10 text-[#F53F3F]500',
         icon: <XCircle className="h-3 w-3" />
       },
     };
@@ -431,7 +431,7 @@ export default function ShopsPage() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-orange-500/20 to-orange-500/5 flex items-center justify-center">
-              <Store className="h-7 w-7 text-orange-500" />
+              <Store className="h-7 w-7 text-[#FF7D00]500" />
             </div>
             <div>
               <h1 className="text-[18px] font-semibold text-foreground">店铺管理</h1>
@@ -451,10 +451,10 @@ export default function ShopsPage() {
         </div>
 
         {/* 说明卡片 */}
-        <Card className="bg-blue-500/5 border-blue-500/20">
+        <Card className="bg-[#165DFF]500/5 border-blue-500/20">
           <CardContent className="p-4">
             <div className="flex items-start gap-3">
-              <UserIcon className="h-5 w-5 text-blue-500 mt-0.5" />
+              <UserIcon className="h-5 w-5 text-[#165DFF]500 mt-0.5" />
               <div className="text-[13px]">
                 <p className="font-medium text-foreground mb-1">简化授权流程</p>
                 <p className="text-muted-foreground">
@@ -475,8 +475,8 @@ export default function ShopsPage() {
                   <div className="text-[12px] text-muted-foreground">店铺总数</div>
                   <div className="text-[24px] font-semibold">{shops.length}</div>
                 </div>
-                <div className="w-10 h-10 rounded-lg bg-orange-500/10 flex items-center justify-center">
-                  <Store className="h-5 w-5 text-orange-500" />
+                <div className="w-10 h-10 rounded-lg bg-[#FF7D00]500/10 flex items-center justify-center">
+                  <Store className="h-5 w-5 text-[#FF7D00]500" />
                 </div>
               </div>
             </CardContent>
@@ -486,10 +486,10 @@ export default function ShopsPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <div className="text-[12px] text-muted-foreground">已授权</div>
-                  <div className="text-[24px] font-semibold text-green-500">{authorizedShops}</div>
+                  <div className="text-[24px] font-semibold text-[#00B42A]500">{authorizedShops}</div>
                 </div>
-                <div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center">
-                  <CheckCircle className="h-5 w-5 text-green-500" />
+                <div className="w-10 h-10 rounded-lg bg-[#00B42A]500/10 flex items-center justify-center">
+                  <CheckCircle className="h-5 w-5 text-[#00B42A]500" />
                 </div>
               </div>
             </CardContent>
@@ -499,10 +499,10 @@ export default function ShopsPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <div className="text-[12px] text-muted-foreground">启用店铺</div>
-                  <div className="text-[24px] font-semibold text-blue-500">{activeShops}</div>
+                  <div className="text-[24px] font-semibold text-[#165DFF]500">{activeShops}</div>
                 </div>
-                <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
-                  <Link2 className="h-5 w-5 text-blue-500" />
+                <div className="w-10 h-10 rounded-lg bg-[#165DFF]500/10 flex items-center justify-center">
+                  <Link2 className="h-5 w-5 text-[#165DFF]500" />
                 </div>
               </div>
             </CardContent>
@@ -514,8 +514,8 @@ export default function ShopsPage() {
                   <div className="text-[12px] text-muted-foreground">累计订单</div>
                   <div className="text-[24px] font-semibold">{totalOrders}</div>
                 </div>
-                <div className="w-10 h-10 rounded-lg bg-purple-500/10 flex items-center justify-center">
-                  <ShoppingCart className="h-5 w-5 text-purple-500" />
+                <div className="w-10 h-10 rounded-lg bg-[#165DFF]500/10 flex items-center justify-center">
+                  <ShoppingCart className="h-5 w-5 text-[#165DFF]500" />
                 </div>
               </div>
             </CardContent>
@@ -629,7 +629,7 @@ export default function ShopsPage() {
                               <Button 
                                 variant="default"
                                 size="sm" 
-                                className="flex-1 bg-green-500 hover:bg-green-600"
+                                className="flex-1 bg-[#00B42A]500 hover:bg-[#00B42A]600"
                                 onClick={() => handleAuthorize(shop)}
                               >
                                 <Key className="h-4 w-4 mr-1" />
@@ -676,7 +676,7 @@ export default function ShopsPage() {
                               variant="outline" 
                               size="sm"
                               onClick={() => handleDelete(shop)}
-                              className="text-red-500 hover:text-red-600"
+                              className="text-[#F53F3F]500 hover:text-[#F53F3F]600"
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
@@ -798,11 +798,11 @@ export default function ShopsPage() {
                   </div>
                 </div>
               ) : (
-                <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-3 text-[12px]">
+                <div className="bg-[#00B42A]500/10 border border-green-500/20 rounded-lg p-3 text-[12px]">
                   <div className="flex items-start gap-2">
-                    <CheckCircle className="h-4 w-4 text-green-500 mt-0.5" />
+                    <CheckCircle className="h-4 w-4 text-[#00B42A]500 mt-0.5" />
                     <div>
-                      <p className="font-medium text-green-600 mb-1">平台已配置 API 凭证</p>
+                      <p className="font-medium text-[#00B42A]600 mb-1">平台已配置 API 凭证</p>
                       <p className="text-muted-foreground">
                         添加店铺后，点击「去授权」按钮即可完成店铺绑定。
                       </p>
@@ -869,8 +869,8 @@ export default function ShopsPage() {
               <div className="space-y-4 py-4">
                 {selectedShop.authorization_status === 'authorized' ? (
                   <div className="text-center py-6">
-                    <div className="w-16 h-16 rounded-full bg-green-500/10 flex items-center justify-center mx-auto mb-4">
-                      <CheckCircle className="h-8 w-8 text-green-500" />
+                    <div className="w-16 h-16 rounded-full bg-[#00B42A]500/10 flex items-center justify-center mx-auto mb-4">
+                      <CheckCircle className="h-8 w-8 text-[#00B42A]500" />
                     </div>
                     <h3 className="text-[16px] font-medium mb-2">店铺已授权</h3>
                     <p className="text-[13px] text-muted-foreground">
@@ -889,9 +889,9 @@ export default function ShopsPage() {
                   </div>
                 ) : (
                   <>
-                    <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 text-[13px]">
+                    <div className="bg-[#165DFF]500/10 border border-blue-500/20 rounded-lg p-4 text-[13px]">
                       <div className="flex items-start gap-3">
-                        <Key className="h-5 w-5 text-blue-500 mt-0.5" />
+                        <Key className="h-5 w-5 text-[#165DFF]500 mt-0.5" />
                         <div>
                           <p className="font-medium text-foreground mb-2">如何完成授权？</p>
                           <ol className="list-decimal list-inside space-y-1 text-muted-foreground">
@@ -919,11 +919,11 @@ export default function ShopsPage() {
 
                     {/* 平台凭证状态 */}
                     {!isPlatformConfigured(selectedShop.platform) && (
-                      <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 text-[12px]">
+                      <div className="bg-[#F53F3F]500/10 border border-red-500/20 rounded-lg p-3 text-[12px]">
                         <div className="flex items-start gap-2">
-                          <AlertCircle className="h-4 w-4 text-red-500 mt-0.5" />
+                          <AlertCircle className="h-4 w-4 text-[#F53F3F]500 mt-0.5" />
                           <div>
-                            <p className="font-medium text-red-600 mb-1">平台未配置 API 凭证</p>
+                            <p className="font-medium text-[#F53F3F]600 mb-1">平台未配置 API 凭证</p>
                             <p className="text-muted-foreground">
                               该平台的 API 凭证尚未配置，无法进行授权。
                               请先让管理员在「平台配置」页面配置 {PLATFORMS[selectedShop.platform]?.name} 的 API 凭证。

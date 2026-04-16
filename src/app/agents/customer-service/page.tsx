@@ -537,7 +537,7 @@ export default function CustomerServicePage() {
       pending: { label: '待处理', className: 'bg-warning/10 text-warning' },
       processing: { label: '处理中', className: 'bg-primary/10 text-primary' },
       resolved: { label: '已解决', className: 'bg-success/10 text-success' },
-      escalated: { label: '已转人工', className: 'bg-blue-500/10 text-blue-500' },
+      escalated: { label: '已转人工', className: 'bg-[#165DFF]500/10 text-[#165DFF]500' },
     };
     const { label, className } = config[status] || config.pending;
     return <Badge variant="outline" className={className}>{label}</Badge>;
@@ -545,10 +545,10 @@ export default function CustomerServicePage() {
 
   const getTypeBadge = (type: string) => {
     const config: Record<string, { label: string; className: string }> = {
-      inquiry: { label: '咨询', className: 'bg-blue-500/10 text-blue-500' },
+      inquiry: { label: '咨询', className: 'bg-[#165DFF]500/10 text-[#165DFF]500' },
       dispute: { label: '纠纷', className: 'bg-destructive/10 text-destructive' },
       refund: { label: '退款', className: 'bg-warning/10 text-warning' },
-      shipping: { label: '物流', className: 'bg-purple-500/10 text-purple-500' },
+      shipping: { label: '物流', className: 'bg-[#165DFF]500/10 text-[#165DFF]500' },
     };
     const { label, className } = config[type] || config.inquiry;
     return <Badge variant="outline" className={className}>{label}</Badge>;
@@ -557,7 +557,7 @@ export default function CustomerServicePage() {
   const getPlatformBadge = (platform: string) => {
     const config: Record<string, { label: string; className: string }> = {
       TK: { label: 'TikTok', className: 'bg-pink-500/10 text-pink-500' },
-      Amazon: { label: 'Amazon', className: 'bg-orange-500/10 text-orange-500' },
+      Amazon: { label: 'Amazon', className: 'bg-[#FF7D00]500/10 text-[#FF7D00]500' },
     };
     const { label, className } = config[platform] || { label: platform, className: 'bg-muted text-muted-foreground' };
     return <Badge variant="outline" className={className}>{label}</Badge>;
@@ -729,7 +729,7 @@ export default function CustomerServicePage() {
                           <div className="flex items-start gap-4">
                             <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
                               ticket.status === 'resolved' ? 'bg-success/10' : 
-                              ticket.status === 'escalated' ? 'bg-blue-500/10' : 'bg-warning/10'
+                              ticket.status === 'escalated' ? 'bg-[#165DFF]500/10' : 'bg-warning/10'
                             }`}>
                               {ticket.aiHandled ? (
                                 <Bot className="h-5 w-5 text-primary" />
@@ -854,9 +854,9 @@ export default function CustomerServicePage() {
                                 纠纷原因: {dispute.reason}
                               </div>
                               {dispute.aiSuggestion && (
-                                <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                                  <div className="text-[12px] font-medium text-blue-700 mb-1">AI 解决方案:</div>
-                                  <div className="text-[12px] text-blue-600 whitespace-pre-line">
+                                <div className="p-3 bg-[#165DFF]50 border border-blue-200 rounded-lg">
+                                  <div className="text-[12px] font-medium text-[#165DFF]700 mb-1">AI 解决方案:</div>
+                                  <div className="text-[12px] text-[#165DFF]600 whitespace-pre-line">
                                     {dispute.aiSuggestion}
                                   </div>
                                 </div>

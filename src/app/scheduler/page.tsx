@@ -231,7 +231,7 @@ export default function SchedulerPage() {
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-xl font-bold flex items-center gap-2">
-              <Bell className="h-6 w-6 text-orange-500" />
+              <Bell className="h-6 w-6 text-[#FF7D00]500" />
               主动推送配置
             </h1>
             <p className="text-sm text-muted-foreground mt-1">

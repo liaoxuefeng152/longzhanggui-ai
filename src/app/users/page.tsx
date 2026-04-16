@@ -207,9 +207,9 @@ export default function UsersPage() {
 
   const getStatusBadge = (status: string) => {
     const config: Record<string, { label: string; className: string; icon: React.ElementType }> = {
-      active: { label: '已启用', className: 'bg-green-500/10 text-green-500', icon: CheckCircle },
+      active: { label: '已启用', className: 'bg-[#00B42A]500/10 text-[#00B42A]500', icon: CheckCircle },
       inactive: { label: '已停用', className: 'bg-muted text-muted-foreground', icon: XCircle },
-      locked: { label: '已锁定', className: 'bg-red-500/10 text-red-500', icon: Lock },
+      locked: { label: '已锁定', className: 'bg-[#F53F3F]500/10 text-[#F53F3F]500', icon: Lock },
     };
     const { label, className, icon: Icon } = config[status] || config.inactive;
     return (
@@ -221,8 +221,8 @@ export default function UsersPage() {
   };
 
   const getRoleBadge = (level: number) => {
-    if (level >= 90) return <Badge className="bg-purple-500/10 text-purple-500">管理员</Badge>;
-    if (level >= 50) return <Badge className="bg-blue-500/10 text-blue-500">运营</Badge>;
+    if (level >= 90) return <Badge className="bg-[#165DFF]500/10 text-[#165DFF]500">管理员</Badge>;
+    if (level >= 50) return <Badge className="bg-[#165DFF]500/10 text-[#165DFF]500">运营</Badge>;
     return <Badge variant="outline">普通</Badge>;
   };
 
@@ -246,7 +246,7 @@ export default function UsersPage() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-green-500/20 to-green-500/5 flex items-center justify-center">
-              <Users className="h-7 w-7 text-green-500" />
+              <Users className="h-7 w-7 text-[#00B42A]500" />
             </div>
             <div>
               <h1 className="text-[18px] font-semibold text-foreground">用户管理</h1>
@@ -270,13 +270,13 @@ export default function UsersPage() {
           <Card className="bg-white border-border shadow-sm">
             <CardContent className="p-4">
               <div className="text-[12px] text-muted-foreground">启用用户</div>
-              <div className="text-[24px] font-semibold text-green-500">{activeCount}</div>
+              <div className="text-[24px] font-semibold text-[#00B42A]500">{activeCount}</div>
             </CardContent>
           </Card>
           <Card className="bg-white border-border shadow-sm">
             <CardContent className="p-4">
               <div className="text-[12px] text-muted-foreground">管理员</div>
-              <div className="text-[24px] font-semibold text-purple-500">{adminCount}</div>
+              <div className="text-[24px] font-semibold text-[#165DFF]500">{adminCount}</div>
             </CardContent>
           </Card>
           <Card className="bg-white border-border shadow-sm">
@@ -378,7 +378,7 @@ export default function UsersPage() {
                           variant="ghost" 
                           size="sm"
                           onClick={() => handleDelete(u)}
-                          className="text-red-500 hover:text-red-600"
+                          className="text-[#F53F3F]500 hover:text-[#F53F3F]600"
                           title="删除"
                         >
                           <Trash2 className="h-4 w-4" />

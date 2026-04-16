@@ -202,7 +202,7 @@ export default function ERPLogisticsPage() {
     const config: Record<string, { label: string; className: string }> = {
       pending: { label: '待发货', className: 'bg-warning/10 text-warning' },
       shipped: { label: '已发货', className: 'bg-primary/10 text-primary' },
-      in_transit: { label: '运输中', className: 'bg-blue-500/10 text-blue-500' },
+      in_transit: { label: '运输中', className: 'bg-[#165DFF]500/10 text-[#165DFF]500' },
       delivered: { label: '已签收', className: 'bg-success/10 text-success' },
       failed: { label: '派送失败', className: 'bg-destructive/10 text-destructive' },
       returned: { label: '已退回', className: 'bg-muted text-muted-foreground' },
@@ -298,7 +298,7 @@ export default function ERPLogisticsPage() {
           <Card className="bg-white border-border shadow-sm">
             <CardContent className="p-4">
               <div className="text-[12px] text-muted-foreground mb-1">运输中</div>
-              <div className="text-[24px] font-semibold text-blue-500">{inTransitCount}</div>
+              <div className="text-[24px] font-semibold text-[#165DFF]500">{inTransitCount}</div>
               <div className="text-[11px] text-muted-foreground mt-1">配送中</div>
             </CardContent>
           </Card>

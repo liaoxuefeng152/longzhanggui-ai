@@ -58,8 +58,8 @@ export default function PlatformPage() {
             onClick={() => router.push('/platform/datasources')}>
             <CardHeader>
               <div className="flex items-center justify-between">
-                <div className="w-12 h-12 rounded-lg bg-blue-100 flex items-center justify-center">
-                  <Database className="h-6 w-6 text-blue-600" />
+                <div className="w-12 h-12 rounded-lg bg-[#165DFF]100 flex items-center justify-center">
+                  <Database className="h-6 w-6 text-[#165DFF]600" />
                 </div>
                 <Badge variant="outline" className="bg-success/10 text-success border-success/20">
                   <CheckCircle className="h-3 w-3 mr-1" />
@@ -94,8 +94,8 @@ export default function PlatformPage() {
             onClick={() => router.push('/shops')}>
             <CardHeader>
               <div className="flex items-center justify-between">
-                <div className="w-12 h-12 rounded-lg bg-purple-100 flex items-center justify-center">
-                  <Store className="h-6 w-6 text-purple-600" />
+                <div className="w-12 h-12 rounded-lg bg-[#165DFF]100 flex items-center justify-center">
+                  <Store className="h-6 w-6 text-[#165DFF]600" />
                 </div>
                 <Badge variant="outline" className="bg-warning/10 text-warning border-warning/20">
                   <AlertTriangle className="h-3 w-3 mr-1" />
@@ -130,8 +130,8 @@ export default function PlatformPage() {
             onClick={() => router.push('/shops/platforms')}>
             <CardHeader>
               <div className="flex items-center justify-between">
-                <div className="w-12 h-12 rounded-lg bg-orange-100 flex items-center justify-center">
-                  <Key className="h-6 w-6 text-orange-600" />
+                <div className="w-12 h-12 rounded-lg bg-[#FF7D00]100 flex items-center justify-center">
+                  <Key className="h-6 w-6 text-[#FF7D00]600" />
                 </div>
                 <Badge variant="outline" className="bg-warning/10 text-warning border-warning/20">
                   <AlertTriangle className="h-3 w-3 mr-1" />

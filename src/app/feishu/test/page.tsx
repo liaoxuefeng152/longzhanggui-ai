@@ -116,7 +116,7 @@ Verification Token: ${testToken}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-500/20 to-blue-500/5 flex items-center justify-center">
-              <RefreshCw className="h-7 w-7 text-blue-500" />
+              <RefreshCw className="h-7 w-7 text-[#165DFF]500" />
             </div>
             <div>
               <h1 className="text-xl font-semibold text-foreground">Webhook 测试工具</h1>
@@ -203,11 +203,11 @@ Verification Token: ${testToken}
                 <CardContent className="p-4 space-y-2">
                   <div className="flex items-center gap-2">
                     {testResult.success && testResult.validChallenge ? (
-                      <CheckCircle className="h-5 w-5 text-green-500" />
+                      <CheckCircle className="h-5 w-5 text-[#00B42A]500" />
                     ) : testResult.success ? (
                       <XCircle className="h-5 w-5 text-yellow-500" />
                     ) : (
-                      <XCircle className="h-5 w-5 text-red-500" />
+                      <XCircle className="h-5 w-5 text-[#F53F3F]500" />
                     )}
                     <span className="font-medium">
                       {testResult.success && testResult.validChallenge

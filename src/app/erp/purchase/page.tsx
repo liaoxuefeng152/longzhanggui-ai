@@ -379,7 +379,7 @@ export default function ERPPurchasePage() {
     const config: Record<string, { label: string; className: string }> = {
       pending: { label: '待确认', className: 'bg-warning/10 text-warning' },
       confirmed: { label: '已确认', className: 'bg-primary/10 text-primary' },
-      shipped: { label: '发货中', className: 'bg-blue-500/10 text-blue-500' },
+      shipped: { label: '发货中', className: 'bg-[#165DFF]500/10 text-[#165DFF]500' },
       received: { label: '已入库', className: 'bg-success/10 text-success' },
       cancelled: { label: '已取消', className: 'bg-muted text-muted-foreground' },
     };
@@ -468,7 +468,7 @@ export default function ERPPurchasePage() {
           <Card className="bg-white border-border shadow-sm">
             <CardContent className="p-4">
               <div className="text-[12px] text-muted-foreground mb-1">运输中</div>
-              <div className="text-[24px] font-semibold text-blue-500">{inTransitOrders}</div>
+              <div className="text-[24px] font-semibold text-[#165DFF]500">{inTransitOrders}</div>
               <div className="text-[11px] text-muted-foreground mt-1">待入库</div>
             </CardContent>
           </Card>

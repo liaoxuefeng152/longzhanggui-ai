@@ -41,24 +41,24 @@ const PROCESS_TYPES = [
     name: '批量处理图片',
     description: 'AI自动处理：白底图、背景替换、图片翻译',
     icon: ImageIcon,
-    color: 'text-blue-500',
-    bgColor: 'bg-blue-500/10',
+    color: 'text-[#165DFF]500',
+    bgColor: 'bg-[#165DFF]500/10',
   },
   {
     id: 'listing',
     name: '批量生成Listing',
     description: 'AI自动生成：多语言标题、五点描述、关键词',
     icon: FileText,
-    color: 'text-purple-500',
-    bgColor: 'bg-purple-500/10',
+    color: 'text-[#165DFF]500',
+    bgColor: 'bg-[#165DFF]500/10',
   },
   {
     id: 'pricing',
     name: '批量智能定价',
     description: 'AI自动计算：最优售价、利润率分析',
     icon: DollarSign,
-    color: 'text-green-500',
-    bgColor: 'bg-green-500/10',
+    color: 'text-[#00B42A]500',
+    bgColor: 'bg-[#00B42A]500/10',
   },
 ];
 
@@ -261,7 +261,7 @@ export default function BatchProcessPage() {
         {/* 页面标题 */}
         <div className="mb-6">
           <h1 className="text-xl font-bold flex items-center gap-2">
-            <Layers className="h-6 w-6 text-orange-500" />
+            <Layers className="h-6 w-6 text-[#FF7D00]500" />
             批量自动处理
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
@@ -285,7 +285,7 @@ export default function BatchProcessPage() {
                     disabled={isProcessing}
                     className={`p-4 border rounded-lg text-left transition-all ${
                       processType === type.id
-                        ? 'border-orange-500 bg-orange-50'
+                        ? 'border-orange-500 bg-[#FF7D00]50'
                         : 'hover:border-orange-200'
                     } ${isProcessing ? 'opacity-50 cursor-not-allowed' : ''}`}
                   >
@@ -358,7 +358,7 @@ export default function BatchProcessPage() {
                       key={product.id}
                       className={`flex items-center gap-4 p-3 rounded-lg transition-colors ${
                         selectedProducts.includes(product.id)
-                          ? 'bg-orange-50 border border-orange-200'
+                          ? 'bg-[#FF7D00]50 border border-orange-200'
                           : 'hover:bg-muted/50'
                       }`}
                     >
@@ -384,7 +384,7 @@ export default function BatchProcessPage() {
                         <div className="text-[12px] text-muted-foreground font-mono">{product.internal_sku}</div>
                       </div>
                       <div className="text-[14px] w-24">
-                        <span className="text-orange-500">¥{product.cost_price}</span>
+                        <span className="text-[#FF7D00]500">¥{product.cost_price}</span>
                       </div>
                       <div className="w-20">
                         <Badge variant="outline" className="text-xs">
@@ -405,7 +405,7 @@ export default function BatchProcessPage() {
                   <Button
                     onClick={handleBatchProcess}
                     disabled={isProcessing || selectedProducts.length === 0 || !processType}
-                    className="bg-orange-500 hover:bg-orange-600"
+                    className="bg-[#FF7D00]500 hover:bg-[#FF7D00]600"
                   >
                     {isProcessing ? (
                       <>
@@ -497,13 +497,13 @@ export default function BatchProcessPage() {
                         <div className="text-muted-foreground">成本</div>
                         <div className="font-medium">¥{result.details.cost}</div>
                       </div>
-                      <div className="p-2 bg-green-500/10 rounded">
+                      <div className="p-2 bg-[#00B42A]500/10 rounded">
                         <div className="text-muted-foreground">建议售价</div>
-                        <div className="font-medium text-green-600">${result.details.suggested_price}</div>
+                        <div className="font-medium text-[#00B42A]600">${result.details.suggested_price}</div>
                       </div>
-                      <div className="p-2 bg-blue-500/10 rounded">
+                      <div className="p-2 bg-[#165DFF]500/10 rounded">
                         <div className="text-muted-foreground">利润率</div>
-                        <div className="font-medium text-blue-600">{result.details.profit_margin}%</div>
+                        <div className="font-medium text-[#165DFF]600">{result.details.profit_margin}%</div>
                       </div>
                     </div>
                   )}

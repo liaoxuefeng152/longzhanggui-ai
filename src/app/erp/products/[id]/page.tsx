@@ -285,9 +285,9 @@ export default function ProductDetailPage() {
   const getStatusBadge = (status: string) => {
     const variants: Record<string, string> = {
       draft: 'bg-muted text-muted-foreground',
-      selected: 'bg-blue-500/10 text-blue-500',
+      selected: 'bg-[#165DFF]500/10 text-[#165DFF]500',
       processing: 'bg-yellow-500/10 text-yellow-500',
-      ready: 'bg-green-500/10 text-green-500',
+      ready: 'bg-[#00B42A]500/10 text-[#00B42A]500',
       published: 'bg-success text-white',
       archived: 'bg-muted text-muted-foreground',
     };
@@ -664,7 +664,7 @@ export default function ProductDetailPage() {
                             <span className="text-[14px] font-medium">{listing.shop_name || listing.platform}</span>
                             <Badge className={
                               listing.status === 'active' ? 'bg-success text-white' :
-                              listing.status === 'listed' ? 'bg-blue-500/10 text-blue-500' :
+                              listing.status === 'listed' ? 'bg-[#165DFF]500/10 text-[#165DFF]500' :
                               'bg-muted'
                             }>
                               {listing.status === 'active' ? '在售' :
