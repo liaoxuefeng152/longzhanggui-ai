@@ -414,7 +414,7 @@ export default function ERPOrdersPage() {
     const config: Record<string, { label: string; className: string }> = {
       pending: { label: '待付款', className: 'bg-warning/10 text-warning' },
       paid: { label: '已付款', className: 'bg-primary/10 text-primary' },
-      shipped: { label: '已发货', className: 'bg-[#165DFF]500/10 text-[#165DFF]500' },
+      shipped: { label: '已发货', className: 'bg-blue-500/10 text-blue-500' },
       delivered: { label: '已签收', className: 'bg-success/10 text-success' },
       cancelled: { label: '已取消', className: 'bg-muted text-muted-foreground' },
     };
@@ -425,8 +425,8 @@ export default function ERPOrdersPage() {
   const getPlatformBadge = (platform: string) => {
     const config: Record<string, { label: string; className: string }> = {
       tiktok: { label: 'TikTok', className: 'bg-pink-500/10 text-pink-500' },
-      amazon: { label: 'Amazon', className: 'bg-[#FF7D00]500/10 text-[#FF7D00]500' },
-      shopee: { label: 'Shopee', className: 'bg-[#F53F3F]500/10 text-[#F53F3F]500' },
+      amazon: { label: 'Amazon', className: 'bg-orange-500/10 text-orange-500' },
+      shopee: { label: 'Shopee', className: 'bg-red-500/10 text-red-500' },
     };
     const { label, className } = config[platform] || { label: platform, className: 'bg-muted text-muted-foreground' };
     return <Badge variant="outline" className={className}>{label}</Badge>;

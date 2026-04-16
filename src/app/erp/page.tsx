@@ -48,7 +48,7 @@ export default function ERPDashboardPage() {
         { label: '商品总数', value: '1,234' },
         { label: '在售商品', value: '856' },
       ],
-      color: 'bg-[#165DFF]500/10 text-[#165DFF]500',
+      color: 'bg-blue-500/10 text-blue-500',
     },
     {
       title: '库存管理',
@@ -59,7 +59,7 @@ export default function ERPDashboardPage() {
         { label: '可售库存', value: '12,456' },
         { label: '预警商品', value: '23' },
       ],
-      color: 'bg-[#165DFF]500/10 text-[#165DFF]500',
+      color: 'bg-purple-500/10 text-purple-500',
     },
     {
       title: '采购管理',
@@ -70,7 +70,7 @@ export default function ERPDashboardPage() {
         { label: '待处理', value: '12' },
         { label: '本月采购', value: '¥45,678' },
       ],
-      color: 'bg-[#FF7D00]500/10 text-[#FF7D00]500',
+      color: 'bg-orange-500/10 text-orange-500',
     },
     {
       title: '订单管理',
@@ -92,7 +92,7 @@ export default function ERPDashboardPage() {
         { label: '本月销售额', value: '$89,234' },
         { label: '毛利率', value: '32.5%' },
       ],
-      color: 'bg-[#00B42A]500/10 text-[#00B42A]500',
+      color: 'bg-green-500/10 text-green-500',
     },
   ];
 

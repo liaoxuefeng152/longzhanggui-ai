@@ -252,7 +252,7 @@ export default function PlatformConfigPage() {
     const config: Record<string, { label: string; className: string; icon: React.ReactNode }> = {
       configured: { 
         label: '已配置', 
-        className: 'bg-[#00B42A]500/10 text-[#00B42A]500',
+        className: 'bg-green-500/10 text-green-500',
         icon: <CheckCircle className="h-3 w-3" />
       },
       unconfigured: { 
@@ -262,7 +262,7 @@ export default function PlatformConfigPage() {
       },
       error: { 
         label: '配置错误', 
-        className: 'bg-[#F53F3F]500/10 text-[#F53F3F]500',
+        className: 'bg-red-500/10 text-red-500',
         icon: <XCircle className="h-3 w-3" />
       },
     };
@@ -287,7 +287,7 @@ export default function PlatformConfigPage() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-500/20 to-blue-500/5 flex items-center justify-center">
-              <Shield className="h-7 w-7 text-[#165DFF]500" />
+              <Shield className="h-7 w-7 text-blue-500" />
             </div>
             <div>
               <h1 className="text-[18px] font-semibold text-foreground">平台 API 配置</h1>
@@ -301,10 +301,10 @@ export default function PlatformConfigPage() {
         </div>
 
         {/* 说明卡片 */}
-        <Card className="bg-[#165DFF]500/5 border-blue-500/20">
+        <Card className="bg-blue-500/5 border-blue-500/20">
           <CardContent className="p-4">
             <div className="flex items-start gap-3">
-              <Shield className="h-5 w-5 text-[#165DFF]500 mt-0.5" />
+              <Shield className="h-5 w-5 text-blue-500 mt-0.5" />
               <div className="text-[13px]">
                 <p className="font-medium text-foreground mb-1">管理员统一配置模式</p>
                 <p className="text-muted-foreground">
@@ -323,10 +323,10 @@ export default function PlatformConfigPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <div className="text-[12px] text-muted-foreground">已配置平台</div>
-                  <div className="text-[24px] font-semibold text-[#00B42A]500">{configuredCount}</div>
+                  <div className="text-[24px] font-semibold text-green-500">{configuredCount}</div>
                 </div>
-                <div className="w-10 h-10 rounded-lg bg-[#00B42A]500/10 flex items-center justify-center">
-                  <CheckCircle className="h-5 w-5 text-[#00B42A]500" />
+                <div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center">
+                  <CheckCircle className="h-5 w-5 text-green-500" />
                 </div>
               </div>
             </CardContent>
@@ -351,8 +351,8 @@ export default function PlatformConfigPage() {
                   <div className="text-[12px] text-muted-foreground">支持的平台</div>
                   <div className="text-[24px] font-semibold">{totalCount}</div>
                 </div>
-                <div className="w-10 h-10 rounded-lg bg-[#165DFF]500/10 flex items-center justify-center">
-                  <Globe className="h-5 w-5 text-[#165DFF]500" />
+                <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
+                  <Globe className="h-5 w-5 text-blue-500" />
                 </div>
               </div>
             </CardContent>
@@ -467,7 +467,7 @@ export default function PlatformConfigPage() {
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
-              <div className="bg-[#165DFF]500/5 rounded-lg p-3 text-[12px] text-muted-foreground">
+              <div className="bg-blue-500/5 rounded-lg p-3 text-[12px] text-muted-foreground">
                 <p className="font-medium text-foreground mb-1">提示</p>
                 <p>
                   请前往对应平台的开发者后台获取 API 凭证。配置后，普通用户添加店铺时无需再填写这些敏感信息。

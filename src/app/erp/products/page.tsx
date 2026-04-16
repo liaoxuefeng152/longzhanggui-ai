@@ -1515,7 +1515,7 @@ export default function ERPProductsPage() {
                               <div className="flex items-center gap-2">
                                 <Badge className={
                                   listing.status === 'active' ? 'bg-success text-white' :
-                                  listing.status === 'listed' ? 'bg-[#165DFF]500/10 text-[#165DFF]500' :
+                                  listing.status === 'listed' ? 'bg-blue-500/10 text-blue-500' :
                                   'bg-muted text-muted-foreground'
                                 }>
                                   {listing.status === 'active' ? '在售' :
@@ -1581,8 +1581,8 @@ export default function ERPProductsPage() {
               {/* 下载模板 */}
               <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded bg-[#165DFF]100 flex items-center justify-center">
-                    <Download className="h-5 w-5 text-[#165DFF]600" />
+                  <div className="w-10 h-10 rounded bg-blue-100 flex items-center justify-center">
+                    <Download className="h-5 w-5 text-blue-600" />
                   </div>
                   <div>
                     <p className="text-sm font-medium">导入模板</p>

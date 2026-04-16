@@ -160,10 +160,10 @@ export default function TaskDetailPage() {
 
   const statusConfig: Record<string, { label: string; color: string; bgColor: string; icon: any }> = {
     pending: { label: '待执行', color: 'text-muted-foreground', bgColor: 'bg-muted', icon: Clock },
-    running: { label: '执行中', color: 'text-[#165DFF]600', bgColor: 'bg-[#165DFF]600/10', icon: Bot },
-    completed: { label: '已完成', color: 'text-[#00B42A]600', bgColor: 'bg-[#00B42A]600/10', icon: CheckCircle },
-    error: { label: '异常', color: 'text-[#F53F3F]600', bgColor: 'bg-[#F53F3F]600/10', icon: AlertTriangle },
-    blocked: { label: '风控拦截', color: 'text-[#FF7D00]600', bgColor: 'bg-[#FF7D00]600/10', icon: XCircle },
+    running: { label: '执行中', color: 'text-blue-600', bgColor: 'bg-blue-600/10', icon: Bot },
+    completed: { label: '已完成', color: 'text-green-600', bgColor: 'bg-green-600/10', icon: CheckCircle },
+    error: { label: '异常', color: 'text-red-600', bgColor: 'bg-red-600/10', icon: AlertTriangle },
+    blocked: { label: '风控拦截', color: 'text-orange-600', bgColor: 'bg-orange-600/10', icon: XCircle },
   };
 
   if (!user) {
@@ -250,7 +250,7 @@ export default function TaskDetailPage() {
                 <div className="space-y-1">
                   <p className="text-[12px] text-muted-foreground">完成时间</p>
                   <div className="flex items-center gap-2">
-                    <CheckCircle className="h-4 w-4 text-[#00B42A]600" />
+                    <CheckCircle className="h-4 w-4 text-green-600" />
                     <span className="text-[14px]">{task.completedAt}</span>
                   </div>
                 </div>
@@ -286,17 +286,17 @@ export default function TaskDetailPage() {
             </CardHeader>
             <CardContent className="p-6">
               {task.result.error ? (
-                <div className="bg-[#F53F3F]50 border border-red-200 rounded-lg p-4">
-                  <p className="text-[14px] text-[#F53F3F]600 font-medium">{task.result.error}</p>
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                  <p className="text-[14px] text-red-600 font-medium">{task.result.error}</p>
                 </div>
               ) : task.result.reason ? (
-                <div className="bg-[#FF7D00]50 border border-orange-200 rounded-lg p-4">
-                  <p className="text-[14px] text-[#FF7D00]600 font-medium">{task.result.message}</p>
-                  <p className="text-[13px] text-[#FF7D00]600 mt-2">{task.result.reason}</p>
+                <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                  <p className="text-[14px] text-orange-600 font-medium">{task.result.message}</p>
+                  <p className="text-[13px] text-orange-600 mt-2">{task.result.reason}</p>
                 </div>
               ) : (
                 <div className="space-y-4">
-                  <p className="text-[14px] text-[#00B42A]600 font-medium">{task.result.message}</p>
+                  <p className="text-[14px] text-green-600 font-medium">{task.result.message}</p>
                   <p className="text-[13px] text-muted-foreground">{task.result.summary}</p>
                   {task.result.items && (
                     <div className="mt-4">

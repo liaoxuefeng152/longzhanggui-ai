@@ -138,7 +138,7 @@ export function DailyReportCard({
       <CardHeader className="px-6 py-4 border-b border-border bg-gradient-to-r from-blue-50/50 to-violet-50/50">
         <div className="flex items-center justify-between">
           <CardTitle className="text-[15px] font-medium flex items-center gap-2">
-            <BarChart3 className="h-4 w-4 text-[#165DFF]" />
+            <BarChart3 className="h-4 w-4 text-blue-600" />
             {title}
           </CardTitle>
           <span className="text-xs text-muted-foreground">{date}</span>
@@ -157,14 +157,14 @@ export function DailyReportCard({
               {metric.trend && metric.trendDirection && (
                 <div className="flex items-center gap-1 mt-2">
                   {metric.trendDirection === 'up' ? (
-                    <TrendingUp className="h-3 w-3 text-[#00B42A]" />
+                    <TrendingUp className="h-3 w-3 text-green-600" />
                   ) : (
-                    <TrendingDown className="h-3 w-3 text-[#F53F3F]" />
+                    <TrendingDown className="h-3 w-3 text-red-600" />
                   )}
                   <span
                     className={cn(
                       'text-xs font-medium',
-                      metric.trendDirection === 'up' ? 'text-[#00B42A]' : 'text-[#F53F3F]'
+                      metric.trendDirection === 'up' ? 'text-green-600' : 'text-red-600'
                     )}
                   >
                     {metric.trend}
@@ -185,7 +185,7 @@ export function DailyReportCard({
                   key={index}
                   className={cn(
                     'flex items-start gap-2 p-3 rounded-lg text-sm',
-                    item.type === 'success' && 'bg-[#00B42A]/10 border border-[#00B42A]/20',
+                    item.type === 'success' && 'bg-green-50/50 border border-green-100',
                     item.type === 'warning' && 'bg-yellow-50/50 border border-yellow-100',
                     item.type === 'danger' && 'bg-red-50/50 border border-red-100'
                   )}
@@ -193,7 +193,7 @@ export function DailyReportCard({
                   <span>{item.icon}</span>
                   <span
                     className={cn(
-                      item.type === 'success' && 'text-[#00B42A]',
+                      item.type === 'success' && 'text-green-700',
                       item.type === 'warning' && 'text-yellow-700',
                       item.type === 'danger' && 'text-red-700'
                     )}
@@ -249,11 +249,11 @@ export function AlertCard({
         };
       case 'info':
         return {
-          bg: 'bg-[#165DFF]/10',
+          bg: 'bg-blue-50/50',
           border: 'border-blue-100',
           icon: 'ℹ️',
-          text: 'text-[#165DFF]',
-          iconBg: 'bg-[#165DFF]/10',
+          text: 'text-blue-700',
+          iconBg: 'bg-blue-100',
         };
     }
   };
@@ -263,7 +263,7 @@ export function AlertCard({
       <CardHeader className="px-6 py-4 border-b border-border bg-gradient-to-r from-red-50/50 to-orange-50/50">
         <div className="flex items-center justify-between">
           <CardTitle className="text-[15px] font-medium flex items-center gap-2">
-            <AlertTriangle className="h-4 w-4 text-[#F53F3F]" />
+            <AlertTriangle className="h-4 w-4 text-red-600" />
             {title}
           </CardTitle>
           {time && <span className="text-xs text-muted-foreground">{time}</span>}
@@ -359,7 +359,7 @@ export function DecisionCard({
                 <Badge variant="outline" className="text-xs">
                   置信度: {suggestion.confidence}
                 </Badge>
-                <Badge variant="outline" className="text-xs text-[#00B42A]">
+                <Badge variant="outline" className="text-xs text-green-600">
                   预期: {suggestion.potentialImpact}
                 </Badge>
               </div>
@@ -403,7 +403,7 @@ export function ComparisonCard({
       <CardHeader className="px-6 py-4 border-b border-border bg-gradient-to-r from-green-50/50 to-teal-50/50">
         <div className="flex items-center justify-between">
           <CardTitle className="text-[15px] font-medium flex items-center gap-2">
-            <BarChart3 className="h-4 w-4 text-[#00B42A]" />
+            <BarChart3 className="h-4 w-4 text-green-600" />
             {title}
           </CardTitle>
         </div>
@@ -433,7 +433,7 @@ export function ComparisonCard({
                         className={cn(
                           'inline-flex items-center gap-1 text-xs font-medium px-2 py-1 rounded',
                           isPositive
-                            ? 'bg-[#E8FFF3] text-[#00B42A]'
+                            ? 'bg-green-100 text-green-700'
                             : 'bg-red-100 text-red-700'
                         )}
                       >
@@ -463,8 +463,8 @@ export function ComparisonCard({
                   className={cn(
                     'p-3 rounded-lg text-sm',
                     insight.type === 'warning' && 'bg-yellow-50/50 text-yellow-700 border border-yellow-100',
-                    insight.type === 'info' && 'bg-[#165DFF]/10 text-[#165DFF] border border-blue-100',
-                    insight.type === 'success' && 'bg-[#00B42A]/10 text-[#00B42A] border border-[#00B42A]/20'
+                    insight.type === 'info' && 'bg-blue-50/50 text-blue-700 border border-blue-100',
+                    insight.type === 'success' && 'bg-green-50/50 text-green-700 border border-green-100'
                   )}
                 >
                   {insight.text}
@@ -513,7 +513,7 @@ export function ProductSelectionCard({
       <CardHeader className="px-6 py-4 border-b border-border bg-gradient-to-r from-orange-50/50 to-yellow-50/50">
         <div className="flex items-center justify-between">
           <CardTitle className="text-[15px] font-medium flex items-center gap-2">
-            <Package className="h-4 w-4 text-[#FF7D00]" />
+            <Package className="h-4 w-4 text-orange-600" />
             {title}
           </CardTitle>
         </div>
@@ -522,15 +522,15 @@ export function ProductSelectionCard({
         {products.map((product) => (
           <div
             key={product.rank}
-            className="p-4 bg-[#FF7D00]/10 border border-[#FF7D00]/20 rounded-lg space-y-3"
+            className="p-4 bg-orange-50/30 border border-orange-100 rounded-lg space-y-3"
           >
             <div className="flex items-start gap-3">
-              <div className="w-8 h-8 rounded-lg bg-[#FF7D00]/10 flex items-center justify-center shrink-0">
+              <div className="w-8 h-8 rounded-lg bg-orange-100 flex items-center justify-center shrink-0">
                 <span className="text-sm">{getRankIcon(product.rank)}</span>
               </div>
               <div className="flex-1">
                 <div className="flex items-center gap-2">
-                  <p className="text-sm font-medium text-[#FF7D00]">{product.name}</p>
+                  <p className="text-sm font-medium text-orange-700">{product.name}</p>
                   <Badge variant="outline" className="text-xs">
                     {product.category}
                   </Badge>
@@ -546,7 +546,7 @@ export function ProductSelectionCard({
               </div>
               <div className="text-center p-2 bg-white/50 rounded">
                 <p className="text-xs text-muted-foreground">预估利润率</p>
-                <p className="text-sm font-bold text-[#00B42A]">{product.estimatedProfit}</p>
+                <p className="text-sm font-bold text-green-600">{product.estimatedProfit}</p>
               </div>
               <div className="text-center p-2 bg-white/50 rounded">
                 <p className="text-xs text-muted-foreground">竞争程度</p>
@@ -571,7 +571,7 @@ export function ProductSelectionCard({
               <Button size="sm" variant="outline" className="h-7 text-xs">
                 查看详情
               </Button>
-              <Button size="sm" className="h-7 text-xs bg-[#FF7D00] hover:bg-[#E66F00]">
+              <Button size="sm" className="h-7 text-xs bg-orange-600 hover:bg-orange-700">
                 开始采集
               </Button>
             </div>

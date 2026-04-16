@@ -540,7 +540,7 @@ export default function ImageDesignPage() {
       background: { label: '白底图' },
       'a-plus': { label: 'A+页面' },
       cover: { label: '封面图' },
-      translate: { label: '图片翻译', className: 'bg-[#165DFF]100 text-[#165DFF]800' },
+      translate: { label: '图片翻译', className: 'bg-blue-100 text-blue-800' },
     };
     const item = config[type] || { label: type };
     return <Badge variant="secondary" className={item.className}>{item.label}</Badge>;

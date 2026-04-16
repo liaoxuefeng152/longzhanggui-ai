@@ -242,9 +242,9 @@ export default function RolesPage() {
   };
 
   const getLevelBadge = (level: number) => {
-    if (level >= 90) return <Badge className="bg-[#165DFF]500/10 text-[#165DFF]500">最高权限</Badge>;
-    if (level >= 70) return <Badge className="bg-[#165DFF]500/10 text-[#165DFF]500">高权限</Badge>;
-    if (level >= 40) return <Badge className="bg-[#00B42A]500/10 text-[#00B42A]500">普通权限</Badge>;
+    if (level >= 90) return <Badge className="bg-purple-500/10 text-purple-500">最高权限</Badge>;
+    if (level >= 70) return <Badge className="bg-blue-500/10 text-blue-500">高权限</Badge>;
+    if (level >= 40) return <Badge className="bg-green-500/10 text-green-500">普通权限</Badge>;
     return <Badge variant="outline">基础权限</Badge>;
   };
 
@@ -348,7 +348,7 @@ export default function RolesPage() {
                             variant="outline" 
                             size="sm"
                             onClick={() => handleDelete(role)}
-                            className="text-[#F53F3F]500 hover:text-[#F53F3F]600"
+                            className="text-red-500 hover:text-red-600"
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>

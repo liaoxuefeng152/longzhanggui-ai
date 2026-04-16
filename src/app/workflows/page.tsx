@@ -756,10 +756,10 @@ function WorkflowWizard({
     <div className="space-y-6">
       {/* 正在执行时显示 */}
       {isExecuting && (
-        <div className="bg-[#165DFF]50 border border-blue-200 rounded-lg p-4 flex items-center gap-3">
-          <Loader2 className="h-5 w-5 animate-spin text-[#165DFF]500" />
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-center gap-3">
+          <Loader2 className="h-5 w-5 animate-spin text-blue-500" />
           <div>
-            <p className="font-medium text-[#165DFF]800">
+            <p className="font-medium text-blue-800">
               {currentStep === 0 && '选品智能体分析中...'}
               {currentStep === 1 && '采集货源链接中...'}
               {currentStep === 2 && 'Listing优化智能体分析中...'}
@@ -767,7 +767,7 @@ function WorkflowWizard({
               {currentStep === 4 && '智能定价计算中...'}
               {currentStep === 5 && '准备上架...'}
             </p>
-            <p className="text-sm text-[#165DFF]600">请稍候，AI正在处理...</p>
+            <p className="text-sm text-blue-600">请稍候，AI正在处理...</p>
           </div>
         </div>
       )}
@@ -779,7 +779,7 @@ function WorkflowWizard({
             <div key={step.id} className="flex items-center">
               <div className={`
                 flex items-center justify-center w-10 h-10 rounded-full border-2 shrink-0
-                ${index < currentStep ? 'bg-[#00B42A]500 border-green-500 text-white' : ''}
+                ${index < currentStep ? 'bg-green-500 border-green-500 text-white' : ''}
                 ${index === currentStep ? 'bg-primary border-primary text-white' : ''}
                 ${index > currentStep ? 'bg-muted border-muted-foreground text-muted-foreground' : ''}
               `}>
@@ -797,7 +797,7 @@ function WorkflowWizard({
               </span>
               {index < steps.length - 1 && (
                 <div className={`h-0.5 w-8 mx-2 shrink-0 ${
-                  index < currentStep ? 'bg-[#00B42A]500' : 'bg-muted-foreground/30'
+                  index < currentStep ? 'bg-green-500' : 'bg-muted-foreground/30'
                 }`} />
               )}
             </div>
@@ -892,8 +892,8 @@ function WorkflowWizard({
                 </div>
               ) : (
                 <div className="space-y-4">
-                  <div className="bg-[#00B42A]50 border border-green-200 rounded-lg p-4 mb-4">
-                    <p className="text-sm text-[#00B42A]800">
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+                    <p className="text-sm text-green-800">
                       <span className="font-medium">选品智能体分析完成！</span> 根据市场需求、竞争程度、利润空间等维度推荐以下商品。
                     </p>
                   </div>
@@ -910,11 +910,11 @@ function WorkflowWizard({
                           </div>
                           <div className="flex flex-wrap items-center gap-4 mt-2 text-sm">
                             <span className="flex items-center gap-1">
-                              <TrendingUp className="h-3 w-3 text-[#00B42A]500" />
+                              <TrendingUp className="h-3 w-3 text-green-500" />
                               销量趋势 +{product.salesTrend.toFixed(1)}%
                             </span>
                             <span className="flex items-center gap-1">
-                              <DollarSign className="h-3 w-3 text-[#165DFF]500" />
+                              <DollarSign className="h-3 w-3 text-blue-500" />
                               利润率 {product.profitMargin.toFixed(1)}%
                             </span>
                             {product.cost && (
@@ -952,10 +952,10 @@ function WorkflowWizard({
                           )}
                           
                           {/* 1688链接推荐 - 选品完成后显示 */}
-                          <div className="mt-3 p-3 bg-[#FF7D00]50 border border-orange-200 rounded-lg">
+                          <div className="mt-3 p-3 bg-orange-50 border border-orange-200 rounded-lg">
                             <div className="flex items-center gap-2 mb-2">
-                              <span className="text-[#FF7D00]500 font-bold text-sm">1688</span>
-                              <span className="text-sm text-[#FF7D00]800 font-medium">同款货源推荐</span>
+                              <span className="text-orange-500 font-bold text-sm">1688</span>
+                              <span className="text-sm text-orange-800 font-medium">同款货源推荐</span>
                             </div>
                             <div className="space-y-2">
                               <div className="flex items-center gap-2">
@@ -963,14 +963,14 @@ function WorkflowWizard({
                                   href={product.sourceLink || '#'} 
                                   target="_blank" 
                                   rel="noopener noreferrer"
-                                  className="text-sm text-[#165DFF]600 hover:text-[#165DFF]800 hover:underline truncate flex-1"
+                                  className="text-sm text-blue-600 hover:text-blue-800 hover:underline truncate flex-1"
                                 >
                                   {product.sourceLink || '点击搜索1688同款'}
                                 </a>
                                 <Button 
                                   size="sm" 
                                   variant="outline"
-                                  className="h-7 text-xs border-orange-300 text-[#FF7D00]700 hover:bg-[#FF7D00]100"
+                                  className="h-7 text-xs border-orange-300 text-orange-700 hover:bg-orange-100"
                                   onClick={(e) => {
                                     e.preventDefault();
                                     const link = product.sourceLink || `https://search.1688.com/jerry/search.htm?keywords=${encodeURIComponent(product.name)}`;
@@ -983,7 +983,7 @@ function WorkflowWizard({
                                 </Button>
                                 <Button 
                                   size="sm" 
-                                  className="h-7 text-xs bg-[#FF7D00]500 hover:bg-[#FF7D00]600"
+                                  className="h-7 text-xs bg-orange-500 hover:bg-orange-600"
                                   onClick={() => {
                                     // 使用推荐链接跳转到1688
                                     const link = product.sourceLink || `https://search.1688.com/jerry/search.htm?keywords=${encodeURIComponent(product.name)}`;
@@ -998,13 +998,13 @@ function WorkflowWizard({
                               </div>
                               {product.keywords && product.keywords.length > 0 && (
                                 <div className="flex items-center gap-2">
-                                  <span className="text-xs text-[#FF7D00]600">搜索关键词:</span>
+                                  <span className="text-xs text-orange-600">搜索关键词:</span>
                                   <div className="flex flex-wrap gap-1">
                                     {product.keywords.slice(0, 3).map((kw, i) => (
                                       <Badge 
                                         key={i} 
                                         variant="secondary" 
-                                        className="text-xs cursor-pointer hover:bg-[#FF7D00]200"
+                                        className="text-xs cursor-pointer hover:bg-orange-200"
                                         onClick={() => {
                                           const link = `https://search.1688.com/jerry/search.htm?keywords=${encodeURIComponent(kw)}`;
                                           navigator.clipboard.writeText(link);
@@ -1074,9 +1074,9 @@ function WorkflowWizard({
                 <div className="space-y-3">
                   {collectionLinks.map((link) => (
                     <div key={link.id} className="flex items-center gap-3 p-3 border rounded-lg">
-                      <div className="w-10 h-10 bg-[#165DFF]100 rounded-lg flex items-center justify-center">
-                        {link.source === '1688' && <span className="text-[#FF7D00]500 font-bold text-sm">1688</span>}
-                        {link.source === 'taobao' && <span className="text-[#FF7D00]400 font-bold text-sm">淘</span>}
+                      <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                        {link.source === '1688' && <span className="text-orange-500 font-bold text-sm">1688</span>}
+                        {link.source === 'taobao' && <span className="text-orange-400 font-bold text-sm">淘</span>}
                         {link.source === 'pinduoduo' && <span className="text-pink-500 font-bold text-sm">拼</span>}
                       </div>
                       <div className="flex-1 min-w-0">
@@ -1137,8 +1137,8 @@ function WorkflowWizard({
             <div className="space-y-4">
               {listing.title ? (
                 <>
-                  <div className="bg-[#00B42A]50 border border-green-200 rounded-lg p-4">
-                    <p className="text-sm text-[#00B42A]800">
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                    <p className="text-sm text-green-800">
                       <CheckCircle className="h-4 w-4 inline mr-1" />
                       Listing优化完成！AI已生成标题、描述和关键词
                     </p>
@@ -1183,8 +1183,8 @@ function WorkflowWizard({
                 </div>
               ) : (
                 <>
-                  <div className="bg-[#00B42A]50 border border-green-200 rounded-lg p-4">
-                    <p className="text-sm text-[#00B42A]800">
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                    <p className="text-sm text-green-800">
                       <CheckCircle className="h-4 w-4 inline mr-1" />
                       图片处理完成！
                     </p>
@@ -1218,7 +1218,7 @@ function WorkflowWizard({
                   <div className="text-center mb-6">
                     <p className="text-sm text-muted-foreground">建议售价</p>
                     <p className="text-4xl font-bold text-primary">¥{priceSuggestion.suggestedPrice}</p>
-                    <p className="text-sm text-[#00B42A]600 mt-1">
+                    <p className="text-sm text-green-600 mt-1">
                       利润率 {priceSuggestion.profitRate}%
                     </p>
                   </div>
@@ -1237,7 +1237,7 @@ function WorkflowWizard({
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">预期利润</span>
-                      <span className="font-medium text-[#00B42A]600">¥{priceSuggestion.profit}</span>
+                      <span className="font-medium text-green-600">¥{priceSuggestion.profit}</span>
                     </div>
                   </div>
                 </div>
@@ -1253,12 +1253,12 @@ function WorkflowWizard({
           {/* 步骤6：最终确认 */}
           {currentStep === 5 && (
             <div className="space-y-4">
-              <div className="bg-[#00B42A]50 border border-green-200 rounded-lg p-4">
-                <div className="flex items-center gap-2 text-[#00B42A]700">
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                <div className="flex items-center gap-2 text-green-700">
                   <CheckCircle className="h-5 w-5" />
                   <span className="font-medium">所有步骤已完成</span>
                 </div>
-                <p className="text-sm text-[#00B42A]600 mt-2">
+                <p className="text-sm text-green-600 mt-2">
                   商品信息已准备就绪，点击"确认上架"发布到 {productParams.region.toUpperCase()} 站
                 </p>
               </div>
@@ -1278,7 +1278,7 @@ function WorkflowWizard({
                 </div>
                 <div className="p-3 bg-muted rounded-lg">
                   <p className="text-muted-foreground">预期利润</p>
-                  <p className="font-medium text-[#00B42A]600">¥{priceSuggestion?.profit}</p>
+                  <p className="font-medium text-green-600">¥{priceSuggestion?.profit}</p>
                 </div>
               </div>
             </div>
@@ -1311,7 +1311,7 @@ function WorkflowWizard({
               </Button>
             )}
             {currentStep === 5 && (
-              <Button onClick={handlePublish} className="bg-[#00B42A]600 hover:bg-[#00B42A]700">
+              <Button onClick={handlePublish} className="bg-green-600 hover:bg-green-700">
                 <Check className="h-4 w-4 mr-2" />
                 确认上架
               </Button>
@@ -1326,9 +1326,9 @@ function WorkflowWizard({
 // 执行结果卡片组件
 function ExecutionResultCard({ result }: { result: any }) {
   return (
-    <Card className="border-green-200 bg-[#00B42A]50/50">
+    <Card className="border-green-200 bg-green-50/50">
       <CardHeader>
-        <div className="flex items-center gap-2 text-[#00B42A]700">
+        <div className="flex items-center gap-2 text-green-700">
           <CheckCircle className="h-6 w-6" />
           <CardTitle>上架成功</CardTitle>
         </div>
@@ -1345,7 +1345,7 @@ function ExecutionResultCard({ result }: { result: any }) {
                 TikTok Shop · 印尼站 · ¥{result.price?.suggestedPrice}
               </p>
               <div className="flex items-center gap-2 mt-2">
-                <Badge className="bg-[#00B42A]100 text-[#00B42A]700">已上架</Badge>
+                <Badge className="bg-green-100 text-green-700">已上架</Badge>
                 <Badge variant="outline">预计利润 ¥{result.price?.profit}</Badge>
               </div>
             </div>
@@ -1440,8 +1440,8 @@ export default function WorkflowsPage() {
           <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => setShowWizard(true)}>
             <CardContent className="pt-6">
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-full bg-[#165DFF]100 flex items-center justify-center">
-                  <ShoppingCart className="h-6 w-6 text-[#165DFF]600" />
+                <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center">
+                  <ShoppingCart className="h-6 w-6 text-purple-600" />
                 </div>
                 <div>
                   <h3 className="font-medium">新品上架</h3>
@@ -1454,8 +1454,8 @@ export default function WorkflowsPage() {
           <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => setShowBatchProcess(true)}>
             <CardContent className="pt-6">
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-full bg-[#165DFF]100 flex items-center justify-center">
-                  <Package className="h-6 w-6 text-[#165DFF]600" />
+                <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
+                  <Package className="h-6 w-6 text-blue-600" />
                 </div>
                 <div>
                   <h3 className="font-medium">批量处理</h3>
@@ -1468,8 +1468,8 @@ export default function WorkflowsPage() {
           <Card className="hover:shadow-md transition-shadow cursor-pointer" onClick={() => setShowBatchPricing(true)}>
             <CardContent className="pt-6">
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-full bg-[#00B42A]100 flex items-center justify-center">
-                  <TrendingUp className="h-6 w-6 text-[#00B42A]600" />
+                <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
+                  <TrendingUp className="h-6 w-6 text-green-600" />
                 </div>
                 <div>
                   <h3 className="font-medium">批量定价</h3>
@@ -1751,19 +1751,19 @@ function BatchProcessDialog({ open, onClose }: { open: boolean; onClose: () => v
               {results.map((item, index) => (
                 <div key={index} className="p-3 border-b last:border-b-0 flex items-center gap-3">
                   {item.success !== false ? (
-                    <CheckCircle className="h-4 w-4 text-[#00B42A]500 shrink-0" />
+                    <CheckCircle className="h-4 w-4 text-green-500 shrink-0" />
                   ) : (
-                    <X className="h-4 w-4 text-[#F53F3F]500 shrink-0" />
+                    <X className="h-4 w-4 text-red-500 shrink-0" />
                   )}
                   <div className="flex-1 min-w-0">
                     <p className="text-sm truncate">
                       {item.name || item.source_url || item.original_url || `图片 ${index + 1}`}
                     </p>
                     {item.error && (
-                      <p className="text-xs text-[#F53F3F]500">{item.error}</p>
+                      <p className="text-xs text-red-500">{item.error}</p>
                     )}
                     {item.processed_url && (
-                      <p className="text-xs text-[#00B42A]500">处理完成</p>
+                      <p className="text-xs text-green-500">处理完成</p>
                     )}
                   </div>
                 </div>
@@ -2059,7 +2059,7 @@ function BatchPricingDialog({ open, onClose }: { open: boolean; onClose: () => v
                         </div>
                         <div>
                           <p className="text-muted-foreground">建议售价</p>
-                          <p className="font-medium text-[#00B42A]600">¥{result.suggested_price?.toFixed(2) || 0}</p>
+                          <p className="font-medium text-green-600">¥{result.suggested_price?.toFixed(2) || 0}</p>
                         </div>
                         <div>
                           <p className="text-muted-foreground">竞品参考</p>
@@ -2067,7 +2067,7 @@ function BatchPricingDialog({ open, onClose }: { open: boolean; onClose: () => v
                         </div>
                         <div>
                           <p className="text-muted-foreground">预计利润</p>
-                          <p className="font-medium text-[#165DFF]600">
+                          <p className="font-medium text-blue-600">
                             ¥{((result.suggested_price || 0) - (result.total_cost || 0)).toFixed(2)}
                           </p>
                         </div>

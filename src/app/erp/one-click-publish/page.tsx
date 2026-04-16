@@ -399,7 +399,7 @@ Perfect for cats and dogs of all sizes.`,
         {/* 页面标题 */}
         <div className="text-center mb-8">
           <h1 className="text-2xl font-bold flex items-center justify-center gap-3">
-            <Zap className="h-7 w-7 text-[#FF7D00]500" />
+            <Zap className="h-7 w-7 text-orange-500" />
             一键上链接流
           </h1>
           <p className="text-muted-foreground mt-2">
@@ -419,7 +419,7 @@ Perfect for cats and dogs of all sizes.`,
                 <div className="flex flex-col items-center">
                   <div className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${
                     isCompleted ? 'bg-success text-white' :
-                    isActive ? 'bg-[#FF7D00]500 text-white' :
+                    isActive ? 'bg-orange-500 text-white' :
                     'bg-muted text-muted-foreground'
                   }`}>
                     {isCompleted ? (
@@ -449,7 +449,7 @@ Perfect for cats and dogs of all sizes.`,
             {currentStep === 1 && (
               <div className="space-y-6">
                 <div className="text-center mb-6">
-                  <Package className="h-12 w-12 mx-auto mb-3 text-[#FF7D00]500" />
+                  <Package className="h-12 w-12 mx-auto mb-3 text-orange-500" />
                   <h2 className="text-lg font-semibold">步骤1：采集商品</h2>
                   <p className="text-sm text-muted-foreground mt-1">
                     输入1688商品链接，系统将自动获取商品信息
@@ -469,7 +469,7 @@ Perfect for cats and dogs of all sizes.`,
                       <Button 
                         onClick={handleCollect} 
                         disabled={isCollecting || !collectUrl}
-                        className="bg-[#FF7D00]500 hover:bg-[#FF7D00]600"
+                        className="bg-orange-500 hover:bg-orange-600"
                       >
                         {isCollecting ? (
                           <>
@@ -505,7 +505,7 @@ Perfect for cats and dogs of all sizes.`,
                             供应商: {collectedProduct.supplier}
                           </div>
                           <div className="flex items-center gap-4 text-sm">
-                            <span className="text-[#FF7D00]500 font-semibold">
+                            <span className="text-orange-500 font-semibold">
                               ¥{collectedProduct.cost_price}
                             </span>
                             <Badge variant="outline" className="text-xs">
@@ -531,7 +531,7 @@ Perfect for cats and dogs of all sizes.`,
             {currentStep === 2 && (
               <div className="space-y-6">
                 <div className="text-center mb-6">
-                  <Sparkles className="h-12 w-12 mx-auto mb-3 text-[#165DFF]500" />
+                  <Sparkles className="h-12 w-12 mx-auto mb-3 text-purple-500" />
                   <h2 className="text-lg font-semibold">步骤2：AI自动处理</h2>
                   <p className="text-sm text-muted-foreground mt-1">
                     AI将自动生成多语言标题、描述、关键词，并计算最优定价
@@ -542,7 +542,7 @@ Perfect for cats and dogs of all sizes.`,
                 {isProcessing && (
                   <div className="space-y-4">
                     <div className="flex items-center gap-3">
-                      <Loader2 className="h-5 w-5 animate-spin text-[#165DFF]500" />
+                      <Loader2 className="h-5 w-5 animate-spin text-purple-500" />
                       <span className="text-sm">{processingStatus}</span>
                     </div>
                     <Progress value={processingProgress} className="h-2" />
@@ -605,7 +605,7 @@ Perfect for cats and dogs of all sizes.`,
                     <Button 
                       onClick={handleAIProcess} 
                       disabled={isProcessing}
-                      className="bg-[#165DFF]500 hover:bg-[#165DFF]600"
+                      className="bg-purple-500 hover:bg-purple-600"
                     >
                       {isProcessing ? (
                         <>
@@ -647,7 +647,7 @@ Perfect for cats and dogs of all sizes.`,
                         }}
                         className={`p-4 border rounded-lg text-center transition-all ${
                           selectedPlatform === platform.value
-                            ? 'border-orange-500 bg-[#FF7D00]50'
+                            ? 'border-orange-500 bg-orange-50'
                             : 'hover:border-orange-200'
                         }`}
                       >
@@ -671,7 +671,7 @@ Perfect for cats and dogs of all sizes.`,
                             onClick={() => setSelectedRegion(region.value)}
                             className={`px-4 py-2 border rounded-full text-sm transition-all ${
                               selectedRegion === region.value
-                                ? 'border-orange-500 bg-[#FF7D00]500 text-white'
+                                ? 'border-orange-500 bg-orange-500 text-white'
                                 : 'hover:border-orange-200'
                             }`}
                           >
@@ -703,7 +703,7 @@ Perfect for cats and dogs of all sizes.`,
                         <div className="grid grid-cols-2 gap-4">
                           <div>
                             <Label className="text-xs text-muted-foreground">成本</Label>
-                            <div className="text-lg font-semibold text-[#FF7D00]500">
+                            <div className="text-lg font-semibold text-orange-500">
                               ¥{collectedProduct?.cost_price}
                             </div>
                           </div>

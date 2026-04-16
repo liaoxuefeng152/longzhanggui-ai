@@ -226,7 +226,7 @@ export default function DataImportPage() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-green-500/20 to-green-500/5 flex items-center justify-center">
-              <Database className="h-7 w-7 text-[#00B42A]500" />
+              <Database className="h-7 w-7 text-green-500" />
             </div>
             <div>
               <h1 className="text-xl font-semibold text-foreground">数据导入管理</h1>
@@ -235,7 +235,7 @@ export default function DataImportPage() {
               </p>
             </div>
           </div>
-          <Badge className="bg-gradient-to-r from-green-500/10 to-green-500/5 text-[#00B42A]600 border-green-500/30 px-3 py-1.5">
+          <Badge className="bg-gradient-to-r from-green-500/10 to-green-500/5 text-green-600 border-green-500/30 px-3 py-1.5">
             支持 xlsx/csv
           </Badge>
         </div>
@@ -272,14 +272,14 @@ export default function DataImportPage() {
               </CardHeader>
               <CardContent className="p-6 space-y-6">
                 {/* 导入说明 */}
-                <div className="p-4 bg-[#165DFF]50/50 rounded-lg border border-blue-100">
+                <div className="p-4 bg-blue-50/50 rounded-lg border border-blue-100">
                   <div className="flex items-start gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-[#165DFF]100 flex items-center justify-center shrink-0">
-                      <Upload className="h-4 w-4 text-[#165DFF]600" />
+                    <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center shrink-0">
+                      <Upload className="h-4 w-4 text-blue-600" />
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-[#165DFF]700 mb-1">导入说明</p>
-                      <div className="text-xs text-[#165DFF]600/80 space-y-1">
+                      <p className="text-sm font-medium text-blue-700 mb-1">导入说明</p>
+                      <div className="text-xs text-blue-600/80 space-y-1">
                         <p>• 支持 .xlsx、.xls、.csv 格式文件</p>
                         <p>• 文件大小不能超过 10MB</p>
                         <p>• 请确保表头包含必要字段：SKU、商品名称、成本价、库存数量</p>
@@ -304,7 +304,7 @@ export default function DataImportPage() {
                     className={cn(
                       "border-2 border-dashed rounded-lg p-8 text-center transition-all cursor-pointer",
                       uploadedFile
-                        ? "border-green-500 bg-[#00B42A]50/50"
+                        ? "border-green-500 bg-green-50/50"
                         : "border-gray-200 hover:border-primary/50 hover:bg-muted/30"
                     )}
                     onClick={() => document.getElementById('file-upload')?.click()}
@@ -325,7 +325,7 @@ export default function DataImportPage() {
                       </div>
                     ) : uploadedFile ? (
                       <div className="space-y-3">
-                        <CheckCircle className="h-10 w-10 text-[#00B42A]600 mx-auto" />
+                        <CheckCircle className="h-10 w-10 text-green-600 mx-auto" />
                         <p className="text-sm font-medium text-foreground">{uploadedFile.name}</p>
                         <p className="text-xs text-muted-foreground">
                           {(uploadedFile.size / 1024 / 1024).toFixed(2)} MB
@@ -514,14 +514,14 @@ export default function DataImportPage() {
               </CardHeader>
               <CardContent className="p-6 space-y-6">
                 {/* 导入说明 */}
-                <div className="p-4 bg-[#165DFF]50/50 rounded-lg border border-blue-100">
+                <div className="p-4 bg-blue-50/50 rounded-lg border border-blue-100">
                   <div className="flex items-start gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-[#165DFF]100 flex items-center justify-center shrink-0">
-                      <Upload className="h-4 w-4 text-[#165DFF]600" />
+                    <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center shrink-0">
+                      <Upload className="h-4 w-4 text-blue-600" />
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-[#165DFF]700 mb-1">导入说明</p>
-                      <div className="text-xs text-[#165DFF]600/80 space-y-1">
+                      <p className="text-sm font-medium text-blue-700 mb-1">导入说明</p>
+                      <div className="text-xs text-blue-600/80 space-y-1">
                         <p>• 支持批量导入历史订单数据</p>
                         <p>• 必要字段：订单号、商品SKU、数量、售价、订单状态</p>
                         <p>• 可选字段：买家信息、物流信息、付款时间</p>
@@ -546,7 +546,7 @@ export default function DataImportPage() {
                     className={cn(
                       "border-2 border-dashed rounded-lg p-8 text-center transition-all cursor-pointer",
                       uploadedFile
-                        ? "border-green-500 bg-[#00B42A]50/50"
+                        ? "border-green-500 bg-green-50/50"
                         : "border-gray-200 hover:border-primary/50 hover:bg-muted/30"
                     )}
                     onClick={() => document.getElementById('orders-file-upload')?.click()}
@@ -588,14 +588,14 @@ export default function DataImportPage() {
               </CardHeader>
               <CardContent className="p-6 space-y-6">
                 {/* 导入说明 */}
-                <div className="p-4 bg-[#165DFF]50/50 rounded-lg border border-blue-100">
+                <div className="p-4 bg-blue-50/50 rounded-lg border border-blue-100">
                   <div className="flex items-start gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-[#165DFF]100 flex items-center justify-center shrink-0">
-                      <Upload className="h-4 w-4 text-[#165DFF]600" />
+                    <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center shrink-0">
+                      <Upload className="h-4 w-4 text-blue-600" />
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-[#165DFF]700 mb-1">导入说明</p>
-                      <div className="text-xs text-[#165DFF]600/80 space-y-1">
+                      <p className="text-sm font-medium text-blue-700 mb-1">导入说明</p>
+                      <div className="text-xs text-blue-600/80 space-y-1">
                         <p>• 支持导入第三方财务数据</p>
                         <p>• 必要字段：日期、类型（收入/支出）、金额、备注</p>
                         <p>• 可选字段：关联订单、关联商品、关联供应商</p>
@@ -620,7 +620,7 @@ export default function DataImportPage() {
                     className={cn(
                       "border-2 border-dashed rounded-lg p-8 text-center transition-all cursor-pointer",
                       uploadedFile
-                        ? "border-green-500 bg-[#00B42A]50/50"
+                        ? "border-green-500 bg-green-50/50"
                         : "border-gray-200 hover:border-primary/50 hover:bg-muted/30"
                     )}
                     onClick={() => document.getElementById('finance-file-upload')?.click()}
@@ -670,13 +670,13 @@ export default function DataImportPage() {
                         <div className="flex items-center gap-4">
                           <div className={cn(
                             "w-10 h-10 rounded-lg flex items-center justify-center",
-                            record.type === '商品数据' ? "bg-[#FF7D00]100" :
-                            record.type === '订单数据' ? "bg-[#165DFF]100" :
-                            "bg-[#00B42A]100"
+                            record.type === '商品数据' ? "bg-orange-100" :
+                            record.type === '订单数据' ? "bg-blue-100" :
+                            "bg-green-100"
                           )}>
-                            {record.type === '商品数据' && <Package className="h-5 w-5 text-[#FF7D00]600" />}
-                            {record.type === '订单数据' && <ShoppingCart className="h-5 w-5 text-[#165DFF]600" />}
-                            {record.type === '财务数据' && <DollarSign className="h-5 w-5 text-[#00B42A]600" />}
+                            {record.type === '商品数据' && <Package className="h-5 w-5 text-orange-600" />}
+                            {record.type === '订单数据' && <ShoppingCart className="h-5 w-5 text-blue-600" />}
+                            {record.type === '财务数据' && <DollarSign className="h-5 w-5 text-green-600" />}
                           </div>
                           <div>
                             <div className="flex items-center gap-2">
@@ -685,9 +685,9 @@ export default function DataImportPage() {
                                 variant="outline"
                                 className={cn(
                                   "text-xs",
-                                  record.status === 'completed' && "text-[#00B42A]600 border-green-600",
-                                  record.status === 'failed' && "text-[#F53F3F]600 border-red-600",
-                                  record.status === 'processing' && "text-[#165DFF]600 border-blue-600"
+                                  record.status === 'completed' && "text-green-600 border-green-600",
+                                  record.status === 'failed' && "text-red-600 border-red-600",
+                                  record.status === 'processing' && "text-blue-600 border-blue-600"
                                 )}
                               >
                                 {record.status === 'completed' && '已完成'}
@@ -703,11 +703,11 @@ export default function DataImportPage() {
                         <div className="flex items-center gap-6">
                           <div className="text-right">
                             <p className="text-sm">
-                              <span className="text-[#00B42A]600 font-medium">{record.success}</span>
+                              <span className="text-green-600 font-medium">{record.success}</span>
                               <span className="text-muted-foreground"> 成功</span>
                             </p>
                             {record.failed > 0 && (
-                              <p className="text-xs text-[#F53F3F]600">
+                              <p className="text-xs text-red-600">
                                 {record.failed} 失败
                               </p>
                             )}
@@ -724,7 +724,7 @@ export default function DataImportPage() {
                               size="icon"
                               onClick={() => handleDeleteHistory(record.id)}
                             >
-                              <Trash2 className="h-4 w-4 text-[#F53F3F]600" />
+                              <Trash2 className="h-4 w-4 text-red-600" />
                             </Button>
                           </div>
                         </div>

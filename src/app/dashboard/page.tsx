@@ -178,18 +178,20 @@ export default function DashboardPage() {
       value: stats?.onlineModels?.toLocaleString() || '0',
       unit: '个',
       icon: Bot,
-      color: '#165DFF',
-      bgColor: 'from-[#165DFF]/10 to-[#165DFF]/5',
-      borderColor: 'border-[#165DFF]/20',
+      color: 'text-blue-600',
+      bgColor: 'bg-gradient-to-br from-blue-500/20 to-blue-500/10',
+      borderColor: 'border-blue-500/20',
+      gradient: 'from-blue-500 to-blue-600',
     },
     {
       title: '今日任务总量',
       value: stats?.todayTaskCount?.toLocaleString() || '0',
       unit: '单',
       icon: ClipboardList,
-      color: '#FF7D00',
-      bgColor: 'from-[#FF7D00]/10 to-[#FF7D00]/5',
-      borderColor: 'border-[#FF7D00]/20',
+      color: 'text-orange-500',
+      bgColor: 'bg-gradient-to-br from-orange-500/20 to-orange-500/10',
+      borderColor: 'border-orange-500/20',
+      gradient: 'from-orange-500 to-orange-600',
       trend: stats?.taskSuccessRate ? `${stats.taskSuccessRate > 0 ? '+' : ''}${stats.taskSuccessRate.toFixed(1)}%` : undefined,
       trendUp: stats?.taskSuccessRate !== undefined ? stats.taskSuccessRate > 0 : undefined,
     },
@@ -198,27 +200,30 @@ export default function DashboardPage() {
       value: stats?.taskSuccessRate ? `${stats.taskSuccessRate.toFixed(1)}` : '0',
       unit: '%',
       icon: CheckCircle,
-      color: '#00B42A',
-      bgColor: 'from-[#00B42A]/10 to-[#00B42A]/5',
-      borderColor: 'border-[#00B42A]/20',
+      color: 'text-green-600',
+      bgColor: 'bg-gradient-to-br from-green-500/20 to-green-500/10',
+      borderColor: 'border-green-500/20',
+      gradient: 'from-green-500 to-green-600',
     },
     {
       title: '付费用户数',
       value: stats?.paidUsers?.toLocaleString() || '0',
       unit: '人',
       icon: Users,
-      color: '#165DFF',
-      bgColor: 'from-[#165DFF]/10 to-[#165DFF]/5',
-      borderColor: 'border-[#165DFF]/20',
+      color: 'text-purple-600',
+      bgColor: 'bg-gradient-to-br from-purple-500/20 to-purple-500/10',
+      borderColor: 'border-purple-500/20',
+      gradient: 'from-purple-500 to-purple-600',
     },
     {
       title: '智能助理调用',
       value: stats?.assistantCalls?.toLocaleString() || '0',
       unit: '次',
       icon: Sparkles,
-      color: '#165DFF',
-      bgColor: 'from-[#165DFF]/10 to-[#165DFF]/5',
-      borderColor: 'border-[#165DFF]/20',
+      color: 'text-violet-600',
+      bgColor: 'bg-gradient-to-br from-violet-500/20 to-violet-500/10',
+      borderColor: 'border-violet-500/20',
+      gradient: 'from-violet-500 to-violet-600',
     },
   ];
 
@@ -239,14 +244,14 @@ export default function DashboardPage() {
 
   // 实时任务流数据
   const taskStatusMap: Record<string, { label: string; color: string; bgColor: string }> = {
-    pending: { label: '待执行', color: '#86909C', bgColor: '#F2F3F5' },
-    running: { label: '执行中', color: '#165DFF', bgColor: '#E8F3FF' },
-    completed: { label: '已完成', color: '#00B42A', bgColor: '#E8FFF3' },
-    error: { label: '异常', color: '#F53F3F', bgColor: '#FFF1F0' },
-    blocked: { label: '风控拦截', color: '#FF7D00', bgColor: '#FFF7E6' },
-    cancelled: { label: '已取消', color: '#86909C', bgColor: '#F2F3F5' },
-    pending_confirm: { label: '待确认', color: '#165DFF', bgColor: '#E8F3FF' },
-    pushed: { label: '已推送', color: '#165DFF', bgColor: '#E8F3FF' },
+    pending: { label: '待执行', color: 'text-muted-foreground', bgColor: 'bg-muted' },
+    running: { label: '执行中', color: 'text-primary', bgColor: 'bg-primary/10' },
+    completed: { label: '已完成', color: 'text-success', bgColor: 'bg-success/10' },
+    error: { label: '异常', color: 'text-destructive', bgColor: 'bg-destructive/10' },
+    blocked: { label: '风控拦截', color: 'text-warning', bgColor: 'bg-warning/10' },
+    cancelled: { label: '已取消', color: 'text-muted-foreground', bgColor: 'bg-muted' },
+    pending_confirm: { label: '待确认', color: 'text-violet-600', bgColor: 'bg-violet-600/10' },
+    pushed: { label: '已推送', color: 'text-blue-600', bgColor: 'bg-blue-600/10' },
   };
 
   const recentTasks = [
@@ -282,13 +287,13 @@ export default function DashboardPage() {
         {/* 页面标题 */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-[18px] font-semibold text-[#1D2129]">控制台首页</h1>
-            <p className="text-[14px] text-[#86909C] mt-1">
+            <h1 className="text-[18px] font-semibold text-foreground">控制台首页</h1>
+            <p className="text-[14px] text-muted-foreground mt-1">
               系统运行状态 · 数据总览大屏
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-[12px] text-[#86909C]">
+            <span className="text-[12px] text-muted-foreground">
               每30秒自动刷新
             </span>
             <Button
@@ -308,27 +313,28 @@ export default function DashboardPage() {
             const Icon = stat.icon;
             return (
               <Card key={index} className={cn(
-                `bg-gradient-to-br ${stat.bgColor} ${stat.borderColor}`,
-                'hover:shadow-lg hover:-translate-y-1',
-                'transition-all duration-300 ease-out group',
-                'border cursor-pointer'
+                `bg-gradient-to-br from-white to-gray-50 ${stat.borderColor} shadow-sm`,
+                'hover:shadow-lg hover:shadow-primary/10',
+                'transition-all duration-300 ease-out group animate-fade-in',
+                'hover:-translate-y-1 cursor-pointer border'
               )}>
                 <CardContent className="p-5">
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
-                      <p className="text-[14px] text-[#86909C] mb-2">
+                      <p className="text-sm text-muted-foreground mb-2 group-hover:text-foreground/80 transition-colors">
                         {stat.title}
                       </p>
                       <div className="flex items-baseline gap-2">
-                        <p className="text-[28px] font-bold text-[#1D2129]">{stat.value}</p>
-                        {stat.unit && <span className="text-[12px] text-[#86909C]">{stat.unit}</span>}
+                        <p className="text-3xl font-bold text-foreground">{stat.value}</p>
+                        {stat.unit && <span className="text-xs text-muted-foreground">{stat.unit}</span>}
                       </div>
                     </div>
                     <div className={cn(
-                      `w-12 h-12 rounded-lg bg-white/50 flex items-center justify-center`,
+                      `w-14 h-14 rounded-2xl ${stat.bgColor} flex items-center justify-center`,
+                      'shadow-sm group-hover:shadow-md transition-shadow duration-300',
                       'group-hover:scale-110 transition-transform duration-300'
                     )}>
-                      <Icon className="h-6 w-6" style={{ color: stat.color }} />
+                      <Icon className={cn(`h-7 w-7 ${stat.color}`)} />
                     </div>
                   </div>
                 </CardContent>
@@ -389,7 +395,7 @@ export default function DashboardPage() {
               <CardHeader className="px-6 py-4 border-b border-border">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-[15px] font-medium">实时任务流</CardTitle>
-                  <Button variant="link" size="sm" className="text-[#165DFF]" onClick={() => router.push('/task-logs')}>
+                  <Button variant="link" size="sm" className="text-primary" onClick={() => router.push('/task-logs')}>
                     查看全部 <ArrowRight className="h-4 w-4 ml-1" />
                   </Button>
                 </div>
@@ -399,11 +405,11 @@ export default function DashboardPage() {
                   <table className="w-full">
                     <thead className="sticky top-0 bg-muted/50">
                       <tr className="border-b border-border">
-                        <th className="text-left text-[12px] font-medium text-[#86909C] px-6 py-3">任务ID</th>
-                        <th className="text-left text-[12px] font-medium text-[#86909C] px-6 py-3">类型</th>
-                        <th className="text-left text-[12px] font-medium text-[#86909C] px-6 py-3">状态</th>
-                        <th className="text-left text-[12px] font-medium text-[#86909C] px-6 py-3">执行时间</th>
-                        <th className="text-left text-[12px] font-medium text-[#86909C] px-6 py-3">操作用户</th>
+                        <th className="text-left text-[12px] font-medium text-muted-foreground px-6 py-3">任务ID</th>
+                        <th className="text-left text-[12px] font-medium text-muted-foreground px-6 py-3">类型</th>
+                        <th className="text-left text-[12px] font-medium text-muted-foreground px-6 py-3">状态</th>
+                        <th className="text-left text-[12px] font-medium text-muted-foreground px-6 py-3">执行时间</th>
+                        <th className="text-left text-[12px] font-medium text-muted-foreground px-6 py-3">操作用户</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -414,22 +420,19 @@ export default function DashboardPage() {
                             <td className="px-6 py-3">
                               <button 
                                 onClick={() => router.push(`/tasks/${task.id}`)}
-                                className="text-[13px] text-[#165DFF] font-medium hover:underline cursor-pointer bg-transparent border-0 p-0"
+                                className="text-[13px] text-primary font-medium hover:underline cursor-pointer bg-transparent border-0 p-0"
                               >
                                 {task.id}
                               </button>
                             </td>
-                            <td className="px-6 py-3 text-[13px] text-[#1D2129]">{task.type}</td>
+                            <td className="px-6 py-3 text-[13px] text-foreground">{task.type}</td>
                             <td className="px-6 py-3">
-                              <span 
-                                className="inline-block px-2 py-1 rounded text-[12px] font-medium"
-                                style={{ color: status.color, backgroundColor: status.bgColor }}
-                              >
+                              <Badge variant="outline" className={`${status.bgColor} ${status.color} border-0 text-[12px]`}>
                                 {status.label}
-                              </span>
+                              </Badge>
                             </td>
-                            <td className="px-6 py-3 text-[13px] text-[#86909C]">{task.time}</td>
-                            <td className="px-6 py-3 text-[13px] text-[#1D2129]">{task.user}</td>
+                            <td className="px-6 py-3 text-[13px] text-muted-foreground">{task.time}</td>
+                            <td className="px-6 py-3 text-[13px] text-foreground">{task.user}</td>
                           </tr>
                         );
                       })}
@@ -453,17 +456,17 @@ export default function DashboardPage() {
                     {recentUsers.map((u) => (
                       <div key={u.id} className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: '#E8F3FF' }}>
-                            <Users className="h-4 w-4 text-[#165DFF]" />
+                          <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                            <Users className="h-4 w-4 text-primary" />
                           </div>
-                          <span className="text-[14px] text-[#1D2129]">{u.nickname}</span>
+                          <span className="text-[14px] text-foreground">{u.nickname}</span>
                         </div>
-                        <span className="text-[12px] text-[#86909C]">{u.createdAt}</span>
+                        <span className="text-[12px] text-muted-foreground">{u.createdAt}</span>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <div className="text-center py-4 text-[14px] text-[#86909C]">
+                  <div className="text-center py-4 text-[14px] text-muted-foreground">
                     暂无新用户
                   </div>
                 )}
@@ -483,7 +486,7 @@ export default function DashboardPage() {
                     onClick={handleRestartScheduler}
                     disabled={isRestarting}
                   >
-                    <RefreshCw className={`h-4 w-4 mr-2 text-[#165DFF] ${isRestarting ? 'animate-spin' : ''}`} />
+                    <RefreshCw className={`h-4 w-4 mr-2 text-primary ${isRestarting ? 'animate-spin' : ''}`} />
                     {isRestarting ? '重启中...' : '重启调度服务'}
                   </Button>
                   <Button 
@@ -508,7 +511,7 @@ export default function DashboardPage() {
                     onClick={handleExportDailyReport}
                     disabled={isExporting}
                   >
-                    <FileText className="h-4 w-4 mr-2 text-[#165DFF]" />
+                    <FileText className="h-4 w-4 mr-2 text-primary" />
                     {isExporting ? '导出中...' : '导出日报'}
                   </Button>
                   <Button 
@@ -516,7 +519,7 @@ export default function DashboardPage() {
                     className="w-full justify-start h-10"
                     onClick={handleAssistantLogs}
                   >
-                    <Sparkles className="h-4 w-4 mr-2" style={{ color: '#165DFF' }} />
+                    <Sparkles className="h-4 w-4 mr-2 text-violet-600" />
                     智能助理日志
                   </Button>
                   <Button 
@@ -524,7 +527,7 @@ export default function DashboardPage() {
                     className="w-full justify-start h-10"
                     onClick={handlePushConfig}
                   >
-                    <MessageSquare className="h-4 w-4 mr-2" style={{ color: '#165DFF' }} />
+                    <MessageSquare className="h-4 w-4 mr-2 text-blue-600" />
                     推送配置管理
                   </Button>
                 </div>

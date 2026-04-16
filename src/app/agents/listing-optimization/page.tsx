@@ -582,7 +582,7 @@ export default function ListingAgentPage() {
                       <tr>
                         <td className="py-3 px-4 font-medium">平台差异</td>
                         <td className="py-3 px-4 text-pink-500">禁止"最好、100%有效"等夸大词</td>
-                        <td className="py-3 px-4 text-[#FF7D00]500">禁止"留评返现、好评有礼"等诱导词</td>
+                        <td className="py-3 px-4 text-orange-500">禁止"留评返现、好评有礼"等诱导词</td>
                       </tr>
                     </tbody>
                   </table>

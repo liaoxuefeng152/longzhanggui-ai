@@ -215,7 +215,7 @@ export default function FeishuSettingsPage() {
           <Badge className={cn(
             "px-3 py-1.5 text-sm",
             feishuConfig.enabled 
-              ? "bg-gradient-to-r from-green-500/10 to-green-500/5 text-[#00B42A]600 border-green-500/30"
+              ? "bg-gradient-to-r from-green-500/10 to-green-500/5 text-green-600 border-green-500/30"
               : "bg-gradient-to-r from-gray-500/10 to-gray-500/5 text-gray-600 border-gray-500/30"
           )}>
             {feishuConfig.enabled ? '已启用' : '已禁用'}
@@ -337,10 +337,10 @@ export default function FeishuSettingsPage() {
                       <div className="w-3 h-3 rounded-full bg-gray-400" />
                     )}
                     {connectionStatus === 'success' && (
-                      <CheckCircle className="h-5 w-5 text-[#00B42A]600" />
+                      <CheckCircle className="h-5 w-5 text-green-600" />
                     )}
                     {connectionStatus === 'error' && (
-                      <XCircle className="h-5 w-5 text-[#F53F3F]600" />
+                      <XCircle className="h-5 w-5 text-red-600" />
                     )}
                     <span className="text-sm text-muted-foreground">
                       {connectionStatus === 'idle' && '未测试'}
@@ -400,8 +400,8 @@ export default function FeishuSettingsPage() {
                 {/* 早间日报 */}
                 <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-[#FF7D00]500/10 flex items-center justify-center">
-                      <FileText className="h-5 w-5 text-[#FF7D00]500" />
+                    <div className="w-10 h-10 rounded-lg bg-orange-500/10 flex items-center justify-center">
+                      <FileText className="h-5 w-5 text-orange-500" />
                     </div>
                     <div>
                       <p className="text-sm font-medium">早间日报</p>
@@ -426,8 +426,8 @@ export default function FeishuSettingsPage() {
                 {/* 周报 */}
                 <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-[#165DFF]500/10 flex items-center justify-center">
-                      <FileText className="h-5 w-5 text-[#165DFF]500" />
+                    <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
+                      <FileText className="h-5 w-5 text-blue-500" />
                     </div>
                     <div>
                       <p className="text-sm font-medium">周报</p>
@@ -474,14 +474,14 @@ export default function FeishuSettingsPage() {
               </CardHeader>
               <CardContent className="p-6 space-y-4">
                 {/* 库存不足 */}
-                <div className="flex items-center justify-between p-4 bg-[#F53F3F]50/50 rounded-lg border border-red-100">
+                <div className="flex items-center justify-between p-4 bg-red-50/50 rounded-lg border border-red-100">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-[#F53F3F]100 flex items-center justify-center">
-                      <Database className="h-5 w-5 text-[#F53F3F]600" />
+                    <div className="w-10 h-10 rounded-lg bg-red-100 flex items-center justify-center">
+                      <Database className="h-5 w-5 text-red-600" />
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-[#F53F3F]700">库存不足告警</p>
-                      <p className="text-xs text-[#F53F3F]600/70">库存低于阈值时触发</p>
+                      <p className="text-sm font-medium text-red-700">库存不足告警</p>
+                      <p className="text-xs text-red-600/70">库存低于阈值时触发</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
@@ -501,14 +501,14 @@ export default function FeishuSettingsPage() {
                 </div>
 
                 {/* 物流异常 */}
-                <div className="flex items-center justify-between p-4 bg-[#FF7D00]50/50 rounded-lg border border-orange-100">
+                <div className="flex items-center justify-between p-4 bg-orange-50/50 rounded-lg border border-orange-100">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-[#FF7D00]100 flex items-center justify-center">
-                      <Zap className="h-5 w-5 text-[#FF7D00]600" />
+                    <div className="w-10 h-10 rounded-lg bg-orange-100 flex items-center justify-center">
+                      <Zap className="h-5 w-5 text-orange-600" />
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-[#FF7D00]700">物流异常告警</p>
-                      <p className="text-xs text-[#FF7D00]600/70">物流停滞超阈值天数时触发</p>
+                      <p className="text-sm font-medium text-orange-700">物流异常告警</p>
+                      <p className="text-xs text-orange-600/70">物流停滞超阈值天数时触发</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
@@ -555,14 +555,14 @@ export default function FeishuSettingsPage() {
                 </div>
 
                 {/* 广告ROI低 */}
-                <div className="flex items-center justify-between p-4 bg-[#165DFF]50/50 rounded-lg border border-purple-100">
+                <div className="flex items-center justify-between p-4 bg-purple-50/50 rounded-lg border border-purple-100">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-[#165DFF]100 flex items-center justify-center">
-                      <Zap className="h-5 w-5 text-[#165DFF]600" />
+                    <div className="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center">
+                      <Zap className="h-5 w-5 text-purple-600" />
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-[#165DFF]700">广告ROI低告警</p>
-                      <p className="text-xs text-[#165DFF]600/70">广告ROI低于阈值时触发</p>
+                      <p className="text-sm font-medium text-purple-700">广告ROI低告警</p>
+                      <p className="text-xs text-purple-600/70">广告ROI低于阈值时触发</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
@@ -610,14 +610,14 @@ export default function FeishuSettingsPage() {
                 </div>
 
                 {/* 断货预警 */}
-                <div className="flex items-center justify-between p-4 bg-[#F53F3F]50/50 rounded-lg border border-red-100">
+                <div className="flex items-center justify-between p-4 bg-red-50/50 rounded-lg border border-red-100">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-[#F53F3F]100 flex items-center justify-center">
-                      <AlertTriangle className="h-5 w-5 text-[#F53F3F]600" />
+                    <div className="w-10 h-10 rounded-lg bg-red-100 flex items-center justify-center">
+                      <AlertTriangle className="h-5 w-5 text-red-600" />
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-[#F53F3F]700">断货预警</p>
-                      <p className="text-xs text-[#F53F3F]600/70">预计断货天数低于阈值时触发</p>
+                      <p className="text-sm font-medium text-red-700">断货预警</p>
+                      <p className="text-xs text-red-600/70">预计断货天数低于阈值时触发</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
@@ -637,14 +637,14 @@ export default function FeishuSettingsPage() {
                 </div>
 
                 {/* 合规风险 */}
-                <div className="flex items-center justify-between p-4 bg-[#F53F3F]50/50 rounded-lg border border-red-100">
+                <div className="flex items-center justify-between p-4 bg-red-50/50 rounded-lg border border-red-100">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-[#F53F3F]100 flex items-center justify-center">
-                      <AlertTriangle className="h-5 w-5 text-[#F53F3F]600" />
+                    <div className="w-10 h-10 rounded-lg bg-red-100 flex items-center justify-center">
+                      <AlertTriangle className="h-5 w-5 text-red-600" />
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-[#F53F3F]700">合规风险告警</p>
-                      <p className="text-xs text-[#F53F3F]600/70">检测到敏感词或违规内容时触发</p>
+                      <p className="text-sm font-medium text-red-700">合规风险告警</p>
+                      <p className="text-xs text-red-600/70">检测到敏感词或违规内容时触发</p>
                     </div>
                   </div>
                   <Switch
@@ -654,14 +654,14 @@ export default function FeishuSettingsPage() {
                 </div>
 
                 {/* API异常 */}
-                <div className="flex items-center justify-between p-4 bg-[#165DFF]50/50 rounded-lg border border-blue-100">
+                <div className="flex items-center justify-between p-4 bg-blue-50/50 rounded-lg border border-blue-100">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-[#165DFF]100 flex items-center justify-center">
-                      <AlertTriangle className="h-5 w-5 text-[#165DFF]600" />
+                    <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                      <AlertTriangle className="h-5 w-5 text-blue-600" />
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-[#165DFF]700">API异常告警</p>
-                      <p className="text-xs text-[#165DFF]600/70">平台API调用失败时触发</p>
+                      <p className="text-sm font-medium text-blue-700">API异常告警</p>
+                      <p className="text-xs text-blue-600/70">平台API调用失败时触发</p>
                     </div>
                   </div>
                   <Switch
@@ -782,9 +782,9 @@ export default function FeishuSettingsPage() {
               </CardHeader>
               <CardContent className="p-6">
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="p-4 bg-[#165DFF]50/50 rounded-lg border border-blue-100">
-                    <p className="text-sm font-medium text-[#165DFF]700 mb-2">📊 数据查询类</p>
-                    <div className="space-y-1 text-xs text-[#165DFF]600/80">
+                  <div className="p-4 bg-blue-50/50 rounded-lg border border-blue-100">
+                    <p className="text-sm font-medium text-blue-700 mb-2">📊 数据查询类</p>
+                    <div className="space-y-1 text-xs text-blue-600/80">
                       <p>• "今天运营情况怎么样？"</p>
                       <p>• "这周卖得最好的产品是什么？"</p>
                       <p>• "哪些商品库存低于10件了？"</p>
@@ -798,17 +798,17 @@ export default function FeishuSettingsPage() {
                       <p>• "竞品在降价，我们要调整吗？"</p>
                     </div>
                   </div>
-                  <div className="p-4 bg-[#00B42A]50/50 rounded-lg border border-green-100">
-                    <p className="text-sm font-medium text-[#00B42A]700 mb-2">✍️ 文案生成类</p>
-                    <div className="space-y-1 text-xs text-[#00B42A]600/80">
+                  <div className="p-4 bg-green-50/50 rounded-lg border border-green-100">
+                    <p className="text-sm font-medium text-green-700 mb-2">✍️ 文案生成类</p>
+                    <div className="space-y-1 text-xs text-green-600/80">
                       <p>• "帮我写一个催好评的消息"</p>
                       <p>• "帮我写一个回复差评的话术"</p>
                       <p>• "帮我生成产品描述"</p>
                     </div>
                   </div>
-                  <div className="p-4 bg-[#FF7D00]50/50 rounded-lg border border-orange-100">
-                    <p className="text-sm font-medium text-[#FF7D00]700 mb-2">📈 报表生成类</p>
-                    <div className="space-y-1 text-xs text-[#FF7D00]600/80">
+                  <div className="p-4 bg-orange-50/50 rounded-lg border border-orange-100">
+                    <p className="text-sm font-medium text-orange-700 mb-2">📈 报表生成类</p>
+                    <div className="space-y-1 text-xs text-orange-600/80">
                       <p>• "生成今日日报"</p>
                       <p>• "导出本周数据"</p>
                       <p>• "生成运营月报"</p>

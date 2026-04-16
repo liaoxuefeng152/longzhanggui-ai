@@ -466,8 +466,8 @@ export default function ERPFinancePage() {
           <Card className="bg-white border-border shadow-sm">
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-[#165DFF]500/10 flex items-center justify-center">
-                  <Truck className="h-5 w-5 text-[#165DFF]500" />
+                <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
+                  <Truck className="h-5 w-5 text-blue-500" />
                 </div>
                 <div>
                   <div className="text-[12px] text-muted-foreground">运费</div>
@@ -479,8 +479,8 @@ export default function ERPFinancePage() {
           <Card className="bg-white border-border shadow-sm">
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-[#FF7D00]500/10 flex items-center justify-center">
-                  <CreditCard className="h-5 w-5 text-[#FF7D00]500" />
+                <div className="w-10 h-10 rounded-lg bg-orange-500/10 flex items-center justify-center">
+                  <CreditCard className="h-5 w-5 text-orange-500" />
                 </div>
                 <div>
                   <div className="text-[12px] text-muted-foreground">平台费用</div>
@@ -505,8 +505,8 @@ export default function ERPFinancePage() {
           <Card className="bg-white border-border shadow-sm">
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-[#F53F3F]500/10 flex items-center justify-center">
-                  <ArrowDownRight className="h-5 w-5 text-[#F53F3F]500" />
+                <div className="w-10 h-10 rounded-lg bg-red-500/10 flex items-center justify-center">
+                  <ArrowDownRight className="h-5 w-5 text-red-500" />
                 </div>
                 <div>
                   <div className="text-[12px] text-muted-foreground">退款金额</div>

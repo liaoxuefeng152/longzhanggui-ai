@@ -387,8 +387,8 @@ export default function CollectionCenterPage() {
         {/* 页面头部 */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-xl bg-[#FF7D00]500/10 flex items-center justify-center">
-              <Inbox className="h-7 w-7 text-[#FF7D00]500" />
+            <div className="w-14 h-14 rounded-xl bg-orange-500/10 flex items-center justify-center">
+              <Inbox className="h-7 w-7 text-orange-500" />
             </div>
             <div>
               <h1 className="text-[18px] font-semibold text-foreground">采集中心</h1>
@@ -396,7 +396,7 @@ export default function CollectionCenterPage() {
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <Badge variant="outline" className="bg-[#FF7D00]500/10 text-[#FF7D00]500 border-orange-500/20">
+            <Badge variant="outline" className="bg-orange-500/10 text-orange-500 border-orange-500/20">
               <Sparkles className="h-3 w-3 mr-1" />
               支持批量采集
             </Badge>
@@ -412,8 +412,8 @@ export default function CollectionCenterPage() {
                   <p className="text-[12px] text-muted-foreground">采集箱总量</p>
                   <p className="text-[24px] font-semibold">{stats.total}</p>
                 </div>
-                <div className="w-10 h-10 rounded-lg bg-[#FF7D00]500/10 flex items-center justify-center">
-                  <Inbox className="h-5 w-5 text-[#FF7D00]500" />
+                <div className="w-10 h-10 rounded-lg bg-orange-500/10 flex items-center justify-center">
+                  <Inbox className="h-5 w-5 text-orange-500" />
                 </div>
               </div>
             </CardContent>
@@ -438,8 +438,8 @@ export default function CollectionCenterPage() {
                   <p className="text-[12px] text-muted-foreground">已认领</p>
                   <p className="text-[24px] font-semibold text-success">{stats.claimed}</p>
                 </div>
-                <div className="w-10 h-10 rounded-lg bg-[#00B42A]500/10 flex items-center justify-center">
-                  <CheckCircle className="h-5 w-5 text-[#00B42A]500" />
+                <div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center">
+                  <CheckCircle className="h-5 w-5 text-green-500" />
                 </div>
               </div>
             </CardContent>
@@ -451,7 +451,7 @@ export default function CollectionCenterPage() {
           <Card className="bg-white border-border shadow-sm">
             <CardHeader className="pb-3">
               <CardTitle className="text-[15px] flex items-center gap-2">
-                <Link2 className="h-4 w-4 text-[#FF7D00]500" />
+                <Link2 className="h-4 w-4 text-orange-500" />
                 单链接采集
               </CardTitle>
               <CardDescription>输入1688商品链接，采集商品信息</CardDescription>
@@ -491,7 +491,7 @@ export default function CollectionCenterPage() {
                         {previewData.name}
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="text-[16px] font-semibold text-[#FF7D00]500">¥{previewData.price}</span>
+                        <span className="text-[16px] font-semibold text-orange-500">¥{previewData.price}</span>
                         <span className="text-[12px] text-muted-foreground">ID: {previewData.id}</span>
                       </div>
                       <div className="text-[12px] text-muted-foreground">
@@ -512,7 +512,7 @@ export default function CollectionCenterPage() {
           <Card className="bg-white border-border shadow-sm">
             <CardHeader className="pb-3">
               <CardTitle className="text-[15px] flex items-center gap-2">
-                <Package className="h-4 w-4 text-[#FF7D00]500" />
+                <Package className="h-4 w-4 text-orange-500" />
                 批量采集
               </CardTitle>
               <CardDescription>批量输入链接，一键采集多个商品</CardDescription>
@@ -543,7 +543,7 @@ export default function CollectionCenterPage() {
             <div className="flex items-center justify-between">
               <div>
                 <CardTitle className="text-[15px] flex items-center gap-2">
-                  <Inbox className="h-4 w-4 text-[#FF7D00]500" />
+                  <Inbox className="h-4 w-4 text-orange-500" />
                   公用采集箱
                 </CardTitle>
                 <CardDescription>采集完成的商品，可以认领到店铺</CardDescription>
@@ -636,7 +636,7 @@ export default function CollectionCenterPage() {
                           <div className="flex items-start justify-between">
                             <div className="space-y-1">
                               <div className="flex items-center gap-2">
-                                <span className="text-[12px] text-[#FF7D00]500 font-medium">
+                                <span className="text-[12px] text-orange-500 font-medium">
                                   {item.source === '1688' ? '1688' : item.source === 'taobao' ? '淘宝' : '拼多多'}
                                 </span>
                                 {item.category && (
@@ -695,7 +695,7 @@ export default function CollectionCenterPage() {
                                   <Button
                                     variant="default"
                                     size="sm"
-                                    className="bg-[#FF7D00]500 hover:bg-[#FF7D00]600"
+                                    className="bg-orange-500 hover:bg-orange-600"
                                     onClick={() => openClaimDialog(item)}
                                   >
                                     <Store className="h-3 w-3 mr-1" />
@@ -731,7 +731,7 @@ export default function CollectionCenterPage() {
         </Card>
 
         {/* 使用说明 */}
-        <Card className="bg-[#FF7D00]500/5 border-orange-500/20">
+        <Card className="bg-orange-500/5 border-orange-500/20">
           <CardContent className="p-4">
             <div className="text-[13px] text-foreground space-y-2">
               <div className="font-medium">📌 使用流程</div>
