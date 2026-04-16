@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Search, Sparkles, TrendingUp, Filter, Plus, CheckCircle, AlertTriangle, Target, Zap, DollarSign, BarChart3, Clock } from 'lucide-react';
+import { Search, Sparkles, TrendingUp, Filter, Plus, CheckCircle, AlertTriangle, Target, Zap, DollarSign, BarChart3, Clock, Store, Truck, Package, Star, ExternalLink, Copy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { Switch } from '@/components/ui/switch';
 import {
   Select,
   SelectContent,
@@ -59,9 +60,89 @@ const mockProductIdeas = [
   },
 ];
 
+// 模拟供应商数据
+const mockSuppliers = [
+  {
+    id: 1,
+    productId: 1,
+    name: '深圳智能宠物用品有限公司',
+    rating: 4.9,
+    responseTime: '1小时内',
+    moq: 50,
+    priceRange: '¥80 - ¥120',
+    deliveryTime: '3-5天',
+    certifications: ['BSCI', 'ISO9001'],
+    isOnePieceDelivery: true,
+    tradeAssurance: true,
+    years: 8,
+    link: 'https://detail.1688.com/xxx',
+  },
+  {
+    id: 2,
+    productId: 1,
+    name: '东莞宠物科技厂',
+    rating: 4.7,
+    responseTime: '2小时内',
+    moq: 100,
+    priceRange: '¥70 - ¥100',
+    deliveryTime: '5-7天',
+    certifications: ['ISO9001'],
+    isOnePieceDelivery: false,
+    tradeAssurance: true,
+    years: 5,
+    link: 'https://detail.1688.com/yyy',
+  },
+  {
+    id: 3,
+    productId: 1,
+    name: '广州宠物用品批发',
+    rating: 4.5,
+    responseTime: '4小时内',
+    moq: 20,
+    priceRange: '¥90 - ¥130',
+    deliveryTime: '2-3天',
+    certifications: [],
+    isOnePieceDelivery: true,
+    tradeAssurance: true,
+    years: 3,
+    link: 'https://detail.1688.com/zzz',
+  },
+  {
+    id: 4,
+    productId: 2,
+    name: '中山灯饰厂',
+    rating: 4.8,
+    responseTime: '1小时内',
+    moq: 100,
+    priceRange: '¥15 - ¥25',
+    deliveryTime: '3-5天',
+    certifications: ['CE', 'ROHS'],
+    isOnePieceDelivery: true,
+    tradeAssurance: true,
+    years: 10,
+    link: 'https://detail.1688.com/aaa',
+  },
+  {
+    id: 5,
+    productId: 2,
+    name: '义乌装饰品批发',
+    rating: 4.6,
+    responseTime: '3小时内',
+    moq: 200,
+    priceRange: '¥12 - ¥20',
+    deliveryTime: '5-7天',
+    certifications: [],
+    isOnePieceDelivery: false,
+    tradeAssurance: true,
+    years: 6,
+    link: 'https://detail.1688.com/bbb',
+  },
+];
+
 export default function SelectPage() {
   const [activeTab, setActiveTab] = useState('demand');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [isMatchingSupplier, setIsMatchingSupplier] = useState(false);
   const [demandForm, setDemandForm] = useState({
     category: '',
     budget: '',
@@ -69,6 +150,12 @@ export default function SelectPage() {
     requirement: '',
   });
   const [selectedProducts, setSelectedProducts] = useState<number[]>([]);
+  const [currentProductForSupplier, setCurrentProductForSupplier] = useState<number | null>(null);
+  const [supplierFilters, setSupplierFilters] = useState({
+    onePieceDelivery: false,
+    maxMoq: '',
+    sortBy: 'rating',
+  });
 
   const startAnalysis = async () => {
     setIsAnalyzing(true);
@@ -78,6 +165,26 @@ export default function SelectPage() {
     setIsAnalyzing(false);
     setActiveTab('products');
     toast.success('选品分析完成！');
+  };
+
+  const startSupplierMatch = async (productId: number) => {
+    setCurrentProductForSupplier(productId);
+    setIsMatchingSupplier(true);
+    
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    setIsMatchingSupplier(false);
+    setActiveTab('suppliers');
+    toast.success('供应商匹配完成！');
+  };
+
+  const copySupplierLink = (link: string) => {
+    navigator.clipboard.writeText(link);
+    toast.success('链接已复制');
+  };
+
+  const openSupplierLink = (link: string) => {
+    window.open(link, '_blank');
   };
 
   const toggleProductSelection = (id: number) => {
@@ -122,18 +229,21 @@ export default function SelectPage() {
         <Card className="card-minimal">
           <div className="p-6">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="w-full grid grid-cols-4 mb-8 bg-[#F2F3F5]">
+              <TabsList className="w-full grid grid-cols-5 mb-8 bg-[#F2F3F5]">
                 <TabsTrigger value="demand" className="data-[state=active]:bg-white data-[state=active]:text-[#165DFF]">
                   1. 需求分析
                 </TabsTrigger>
-                <TabsTrigger value="mining" className="data-[state=active]:bg-white data-[state=active]:text-[#165DFF]" disabled={!isAnalyzing && activeTab !== 'mining' && activeTab !== 'products' && activeTab !== 'report'}>
+                <TabsTrigger value="mining" className="data-[state=active]:bg-white data-[state=active]:text-[#165DFF]" disabled={!isAnalyzing && activeTab !== 'mining' && activeTab !== 'products' && activeTab !== 'report' && activeTab !== 'suppliers'}>
                   2. 爆款挖掘
                 </TabsTrigger>
-                <TabsTrigger value="products" className="data-[state=active]:bg-white data-[state=active]:text-[#165DFF]" disabled={!isAnalyzing && activeTab !== 'products' && activeTab !== 'report'}>
+                <TabsTrigger value="products" className="data-[state=active]:bg-white data-[state=active]:text-[#165DFF]" disabled={!isAnalyzing && activeTab !== 'products' && activeTab !== 'report' && activeTab !== 'suppliers'}>
                   3. 可行性分析
                 </TabsTrigger>
-                <TabsTrigger value="report" className="data-[state=active]:bg-white data-[state=active]:text-[#165DFF]" disabled={!isAnalyzing && activeTab !== 'report'}>
+                <TabsTrigger value="report" className="data-[state=active]:bg-white data-[state=active]:text-[#165DFF]" disabled={!isAnalyzing && activeTab !== 'report' && activeTab !== 'suppliers'}>
                   4. 生成报告
+                </TabsTrigger>
+                <TabsTrigger value="suppliers" className="data-[state=active]:bg-white data-[state=active]:text-[#165DFF]" disabled={!isAnalyzing && activeTab !== 'suppliers'}>
+                  5. 供应链匹配
                 </TabsTrigger>
               </TabsList>
 
@@ -381,6 +491,20 @@ export default function SelectPage() {
                                   </ul>
                                 </div>
                               </div>
+                              <div className="mt-4 flex justify-end gap-2 pt-4 border-t border-[#E5E6EB]">
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  className="text-[#165DFF]"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    startSupplierMatch(product.id);
+                                  }}
+                                >
+                                  <Store className="w-4 h-4 mr-1" />
+                                  匹配供应商
+                                </Button>
+                              </div>
                             </div>
                           </div>
                         </div>
@@ -429,12 +553,204 @@ export default function SelectPage() {
                       <Button variant="ghost" className="btn-secondary">
                         下载完整报告
                       </Button>
+                      <Button 
+                        className="btn-primary" 
+                        onClick={() => selectedProducts.length > 0 && startSupplierMatch(selectedProducts[0])}
+                        disabled={selectedProducts.length === 0}
+                      >
+                        <Store className="w-4 h-4 mr-2" />
+                        匹配1688供应商
+                      </Button>
+                    </div>
+                    {selectedProducts.length === 0 && (
+                      <p className="text-center text-sm text-[#86909C] mt-4">
+                        请先在可行性分析中选择商品，再匹配供应商
+                      </p>
+                    )}
+                  </div>
+                </Card>
+              </TabsContent>
+
+              {/* 供应链匹配 */}
+              <TabsContent value="suppliers" className="mt-0">
+                {isMatchingSupplier ? (
+                  <Card className="card-minimal">
+                    <div className="p-12 text-center">
+                      <div className="w-20 h-20 rounded-full bg-[#E8F3FF] flex items-center justify-center mx-auto mb-6">
+                        <div className="w-10 h-10 border-4 border-[#165DFF] border-t-transparent rounded-full animate-spin" />
+                      </div>
+                      <h3 className="text-xl font-semibold text-[#1D2129] mb-2">正在匹配1688供应商</h3>
+                      <p className="text-[#86909C] mb-6">AI正在为您筛选最优供应商...</p>
+                      <Progress value={60} className="h-2 max-w-md mx-auto" />
+                    </div>
+                  </Card>
+                ) : (
+                  <div className="space-y-6">
+                    {/* 筛选器 */}
+                    <Card className="card-minimal">
+                      <div className="p-5 border-b border-[#E5E6EB]">
+                        <h3 className="text-lg font-semibold text-[#1D2129]">供应商筛选</h3>
+                      </div>
+                      <div className="p-5">
+                        <div className="flex flex-wrap items-center gap-6">
+                          <div className="flex items-center gap-3">
+                            <label className="text-sm text-[#4E5969]">一件代发</label>
+                            <Switch 
+                              checked={supplierFilters.onePieceDelivery}
+                              onCheckedChange={(checked) => setSupplierFilters({ ...supplierFilters, onePieceDelivery: checked })}
+                            />
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <label className="text-sm text-[#4E5969]">最大MOQ</label>
+                            <Select 
+                              value={supplierFilters.maxMoq} 
+                              onValueChange={(v) => setSupplierFilters({ ...supplierFilters, maxMoq: v })}
+                            >
+                              <SelectTrigger className="w-32 input-minimal h-9">
+                                <SelectValue placeholder="不限" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="">不限</SelectItem>
+                                <SelectItem value="20">≤ 20</SelectItem>
+                                <SelectItem value="50">≤ 50</SelectItem>
+                                <SelectItem value="100">≤ 100</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <label className="text-sm text-[#4E5969]">排序方式</label>
+                            <Select 
+                              value={supplierFilters.sortBy} 
+                              onValueChange={(v) => setSupplierFilters({ ...supplierFilters, sortBy: v })}
+                            >
+                              <SelectTrigger className="w-40 input-minimal h-9">
+                                <SelectValue placeholder="按评分" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="rating">按评分</SelectItem>
+                                <SelectItem value="price">按价格</SelectItem>
+                                <SelectItem value="moq">按MOQ</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                      </div>
+                    </Card>
+
+                    {/* 供应商列表 */}
+                    <div className="space-y-4">
+                      {mockSuppliers
+                        .filter(s => !currentProductForSupplier || s.productId === currentProductForSupplier)
+                        .filter(s => !supplierFilters.onePieceDelivery || s.isOnePieceDelivery)
+                        .filter(s => !supplierFilters.maxMoq || s.moq <= parseInt(supplierFilters.maxMoq))
+                        .sort((a, b) => {
+                          if (supplierFilters.sortBy === 'rating') return b.rating - a.rating;
+                          if (supplierFilters.sortBy === 'price') return parseInt(a.priceRange) - parseInt(b.priceRange);
+                          if (supplierFilters.sortBy === 'moq') return a.moq - b.moq;
+                          return 0;
+                        })
+                        .map((supplier) => (
+                          <Card key={supplier.id} className="card-minimal">
+                            <div className="p-6">
+                              <div className="flex items-start justify-between">
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-3 mb-3">
+                                    <h3 className="text-lg font-semibold text-[#1D2129]">{supplier.name}</h3>
+                                    {supplier.tradeAssurance && (
+                                      <Badge className="bg-[#E8F3FF] text-[#165DFF]">
+                                        <Shield className="w-3 h-3 mr-1" />
+                                        诚信通
+                                      </Badge>
+                                    )}
+                                    {supplier.isOnePieceDelivery && (
+                                      <Badge className="bg-[#E8FFEA] text-[#00B42A]">
+                                        <Truck className="w-3 h-3 mr-1" />
+                                        一件代发
+                                      </Badge>
+                                    )}
+                                  </div>
+                                  
+                                  <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-4">
+                                    <div>
+                                      <p className="text-sm text-[#86909C]">店铺评分</p>
+                                      <div className="flex items-center gap-1">
+                                        <Star className="w-4 h-4 text-[#FF7D00] fill-[#FF7D00]" />
+                                        <span className="text-[#1D2129] font-medium">{supplier.rating}</span>
+                                      </div>
+                                    </div>
+                                    <div>
+                                      <p className="text-sm text-[#86909C]">响应速度</p>
+                                      <p className="text-[#1D2129] font-medium">{supplier.responseTime}</p>
+                                    </div>
+                                    <div>
+                                      <p className="text-sm text-[#86909C]">MOQ</p>
+                                      <p className="text-[#1D2129] font-medium">{supplier.moq} 件</p>
+                                    </div>
+                                    <div>
+                                      <p className="text-sm text-[#86909C]">价格区间</p>
+                                      <p className="text-[#1D2129] font-medium">{supplier.priceRange}</p>
+                                    </div>
+                                    <div>
+                                      <p className="text-sm text-[#86909C]">发货时间</p>
+                                      <p className="text-[#1D2129] font-medium">{supplier.deliveryTime}</p>
+                                    </div>
+                                  </div>
+
+                                  {supplier.certifications.length > 0 && (
+                                    <div className="mb-4">
+                                      <p className="text-sm text-[#86909C] mb-2">资质认证</p>
+                                      <div className="flex flex-wrap gap-2">
+                                        {supplier.certifications.map((cert, idx) => (
+                                          <Badge key={idx} className="bg-[#F2F3F5] text-[#4E5969]">
+                                            {cert}
+                                          </Badge>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  <div className="flex items-center gap-2 text-sm text-[#86909C]">
+                                    <Store className="w-4 h-4" />
+                                    <span>经营 {supplier.years} 年</span>
+                                  </div>
+                                </div>
+
+                                <div className="flex flex-col gap-2 ml-6">
+                                  <Button 
+                                    variant="ghost" 
+                                    size="sm" 
+                                    className="text-[#165DFF] border border-[#E5E6EB]"
+                                    onClick={() => copySupplierLink(supplier.link)}
+                                  >
+                                    <Copy className="w-4 h-4 mr-1" />
+                                    复制链接
+                                  </Button>
+                                  <Button 
+                                    size="sm" 
+                                    className="btn-primary"
+                                    onClick={() => openSupplierLink(supplier.link)}
+                                  >
+                                    <ExternalLink className="w-4 h-4 mr-1" />
+                                    打开1688
+                                  </Button>
+                                </div>
+                              </div>
+                            </div>
+                          </Card>
+                        ))}
+                    </div>
+
+                    <div className="flex justify-center gap-4 mt-6">
+                      <Button variant="ghost" className="btn-secondary" onClick={() => setActiveTab('report')}>
+                        返回报告
+                      </Button>
                       <Button className="btn-primary" onClick={addToDraft}>
-                        加入草稿箱
+                        <Package className="w-4 h-4 mr-2" />
+                        加入上新队列
                       </Button>
                     </div>
                   </div>
-                </Card>
+                )}
               </TabsContent>
             </Tabs>
           </div>
