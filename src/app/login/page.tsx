@@ -75,27 +75,27 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#E8F4FF] via-[#F0F7FF] to-[#E6F0FF]">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#E8F7EE] via-[#F0F9F4] to-[#E6F4ED]">
       <div className="w-full max-w-md">
         {/* 顶部品牌区 */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-primary rounded-2xl mb-4 shadow-lg">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-[#22C97A] rounded-2xl mb-4 shadow-lg">
             <span className="text-3xl">🦞</span>
           </div>
           <h1 className="text-[20px] font-semibold text-foreground mb-2">
-            龙掌柜智能运营系统
+            龙掌柜
           </h1>
           <p className="text-[14px] text-muted-foreground">
-            飞书AI中台驱动版 · v1.0
+            跨境电商AI运营助手
           </p>
         </div>
 
         {/* 登录表单卡片 */}
         <Card className="shadow-xl border-0 rounded-lg">
           <CardHeader className="text-center pb-2">
-            <CardTitle className="text-[16px] font-medium">管理员登录</CardTitle>
+            <CardTitle className="text-[16px] font-medium">登录</CardTitle>
             <CardDescription className="text-[13px]">
-              严格权限校验，保障系统数据安全
+              AI驱动的跨境电商运营助手
             </CardDescription>
           </CardHeader>
           <CardContent className="pt-4">
@@ -107,7 +107,7 @@ export default function LoginPage() {
                   <Input
                     id="username"
                     type="text"
-                    placeholder="请输入管理员账号"
+                    placeholder="请输入账号"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                     className="pl-10 h-10"
@@ -159,7 +159,7 @@ export default function LoginPage() {
 
               <Button
                 type="submit"
-                className="w-full h-10 bg-primary hover:bg-primary/90 text-[14px] font-medium"
+                className="w-full h-10 bg-[#22C97A] hover:bg-[#1EAF6A] text-[14px] font-medium"
                 disabled={isLoading}
               >
                 {isLoading ? '登录中...' : '登录'}
@@ -167,13 +167,8 @@ export default function LoginPage() {
             </form>
 
             <div className="mt-6 pt-4 border-t border-border">
-              <div className="flex items-center justify-center gap-4 text-[12px] text-muted-foreground">
-                <span className="flex items-center gap-1">
-                  <ShieldCheck className="h-3 w-3" />
-                  安全登录
-                </span>
-                <span>·</span>
-                <span>管理员专属入口</span>
+              <div className="text-center text-[12px] text-muted-foreground">
+                安全登录
               </div>
             </div>
           </CardContent>
@@ -200,18 +195,10 @@ export default function LoginPage() {
         </div>
 
         {/* 提示信息 */}
-        <div className="mt-8 p-4 bg-primary/5 rounded-lg border border-primary/10">
+        <div className="mt-8 p-4 bg-[#22C97A]/5 rounded-lg border border-[#22C97A]/10">
           <p className="text-[12px] text-muted-foreground text-center mb-2">
-            <span className="text-primary font-medium">管理员账号：</span>
-            admin / admin123
-          </p>
-          <p className="text-[12px] text-muted-foreground text-center mb-2">
-            <span className="text-primary font-medium">测试账号：</span>
+            <span className="text-[#22C97A] font-medium">测试账号：</span>
             13800138000 / 123456
-          </p>
-          <p className="text-[12px] text-muted-foreground text-center">
-            <span className="text-primary font-medium">提示：</span>
-            终端用户（卖家）请通过飞书机器人交互，无需登录后台
           </p>
         </div>
       </div>
