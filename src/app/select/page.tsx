@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Search, Sparkles, TrendingUp, Filter, Plus, CheckCircle, AlertTriangle, Target, Zap, DollarSign, BarChart3, Clock, Store, Truck, Package, Star, ExternalLink, Copy } from 'lucide-react';
+import { Search, Sparkles, TrendingUp, Filter, Plus, CheckCircle, AlertTriangle, Target, Zap, DollarSign, BarChart3, Clock, Store, Truck, Package, Star, ExternalLink, Copy, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
