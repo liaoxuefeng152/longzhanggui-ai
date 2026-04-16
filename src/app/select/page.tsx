@@ -934,7 +934,7 @@ export default function SelectPage() {
                       </Button>
                       <Button className="btn-primary" onClick={addToDraft}>
                         <Package className="w-4 h-4 mr-2" />
-                        加入上新队列
+                        加入草稿箱
                       </Button>
                     </div>
                   </div>
