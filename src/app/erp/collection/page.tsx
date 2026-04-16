@@ -1,19 +1,17 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import MainLayout from '@/components/layout/MainLayout';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Progress } from '@/components/ui/progress';
+import { Label } from '@/components/ui/label';
 import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
@@ -24,91 +22,71 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { toast } from 'sonner';
 import {
-  Upload,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from '@/components/ui/tabs';
+import {
+  Search,
+  Download,
+  Plus,
   Link2,
   Package,
   CheckCircle,
   Clock,
+  AlertTriangle,
+  Trash2,
+  Eye,
+  ExternalLink,
   Loader2,
   Sparkles,
+  ShoppingCart,
   Store,
-  ArrowRight,
-  Zap,
+  Inbox,
+  ImageIcon,
   DollarSign,
-  Image as ImageIcon,
-  FileText,
-  Globe,
-  Trash2,
-  Plus,
+  Check,
+  X,
 } from 'lucide-react';
+import { toast } from 'sonner';
 
-// 一键上架工作流状态
-type WorkflowStep = 'collect' | 'optimize' | 'price' | 'publish';
-
-interface CollectionItem {
-  id: string;
-  name: string;
-  sourceUrl: string;
-  costPrice: number;
-  images: string[];
-  category?: string;
-}
-
-interface PublishConfig {
-  platforms: string[];
-  stores: string[];
-  title: string;
-  description: string;
-  price: number;
-  images: string[];
-}
+// 平台选项
+const PLATFORMS = [
+  { value: 'tiktok', label: 'TikTok Shop', icon: '📱' },
+  { value: 'amazon', label: 'Amazon', icon: '📦' },
+  { value: 'shopee', label: 'Shopee', icon: '🛒' },
+];
 
 export default function CollectionCenterPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   
-  // 工作流状态
-  const [currentStep, setCurrentStep] = useState<WorkflowStep>('collect');
-  const [workflowProgress, setWorkflowProgress] = useState(0);
-  
-  // 采集表单
+  // 单链接采集
   const [collectUrl, setCollectUrl] = useState('');
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewData, setPreviewData] = useState<any>(null);
+  
+  // 批量采集
   const [batchUrls, setBatchUrls] = useState('');
-  const [collectionItem, setCollectionItem] = useState<CollectionItem | null>(null);
   
-  // 优化表单
-  const [optimizeForm, setOptimizeForm] = useState({
-    title: '',
-    description: '',
-    keywords: '',
-  });
+  // 公用采集箱
+  const [publicCollections, setPublicCollections] = useState<any[]>([]);
+  const [collectionLoading, setCollectionLoading] = useState(true);
+  const [selectedItems, setSelectedItems] = useState<string[]>([]);
   
-  // 定价表单
-  const [priceForm, setPriceForm] = useState({
-    costPrice: 0,
-    logistics: 0,
-    commission: 0,
-    targetProfit: 30,
-  });
-  const [calculatedPrice, setCalculatedPrice] = useState(0);
+  // 认领弹窗
+  const [claimDialogOpen, setClaimDialogOpen] = useState(false);
+  const [claimItem, setClaimItem] = useState<any>(null);
+  const [claimPlatform, setClaimPlatform] = useState('tiktok');
+  const [claimLoading, setClaimLoading] = useState(false);
   
-  // 发布配置
-  const [publishConfig, setPublishConfig] = useState<PublishConfig>({
-    platforms: ['tiktok'],
-    stores: [],
-    title: '',
-    description: '',
-    price: 0,
-    images: [],
-  });
+  // 统计数据
+  const [stats, setStats] = useState({ total: 0, pending: 0, claimed: 0 });
 
-  // 从选品页面跳转
-  const sourceProduct = searchParams.get('product');
-
+  // 加载数据
   useEffect(() => {
     const userData = localStorage.getItem('user');
     if (!userData) {
@@ -116,160 +94,142 @@ export default function CollectionCenterPage() {
       return;
     }
     setUser(JSON.parse(userData));
-    
-    // 如果从选品页面跳转，自动填充商品名称
-    if (sourceProduct) {
-      setCollectionItem({
-        id: `COL-${Date.now()}`,
-        name: decodeURIComponent(sourceProduct),
-        sourceUrl: '',
-        costPrice: 0,
-        images: [],
-      });
-      setCurrentStep('collect');
-    }
-  }, [router, sourceProduct]);
+    loadPublicCollections();
+  }, [router]);
 
-  // 计算售价
-  useEffect(() => {
-    const totalCost = priceForm.costPrice + priceForm.logistics;
-    const platformFee = (totalCost * priceForm.commission) / 100;
-    const sellingPrice = (totalCost + platformFee) / ((100 - priceForm.targetProfit) / 100);
-    setCalculatedPrice(Math.round(sellingPrice * 100) / 100);
-  }, [priceForm]);
+  // 加载公用采集箱
+  const loadPublicCollections = async () => {
+    setCollectionLoading(true);
+    try {
+      const { default: store } = await import('@/lib/store');
+      const items = store.getPublicCollections();
+      const allItems = store.getPublicCollections();
+      
+      // 如果没有数据，添加一些示例数据
+      if (allItems.length === 0) {
+        // 添加示例数据
+        const exampleItems = [
+          {
+            collection_id: 'COL001',
+            product_id: 'PROD001',
+            product_name: '宠物自动饮水机 3.5L',
+            product_name_en: 'Pet Water Fountain 3.5L',
+            source: '1688' as const,
+            source_url: 'https://detail.1688.com/offer/1234567890.html',
+            source_id: '1234567890',
+            supplier_name: '义乌宠物用品厂',
+            cost_price: 45,
+            images: ['https://picsum.photos/200'],
+            category: '宠物用品',
+          },
+          {
+            collection_id: 'COL002',
+            product_id: 'PROD002',
+            product_name: '无线蓝牙耳机 降噪款',
+            product_name_en: 'Wireless Bluetooth Earbuds',
+            source: '1688' as const,
+            source_url: 'https://detail.1688.com/offer/2345678901.html',
+            source_id: '2345678901',
+            supplier_name: '深圳电子科技',
+            cost_price: 68,
+            images: ['https://picsum.photos/201'],
+            category: '数码配件',
+          },
+          {
+            collection_id: 'COL003',
+            product_id: 'PROD003',
+            product_name: '便携式榨汁杯 USB充电',
+            product_name_en: 'Portable Juice Cup USB',
+            source: '1688' as const,
+            source_url: 'https://detail.1688.com/offer/3456789012.html',
+            source_id: '3456789012',
+            supplier_name: '广州小家电',
+            cost_price: 35,
+            images: ['https://picsum.photos/202'],
+            category: '厨房用品',
+          },
+        ];
+        
+        exampleItems.forEach(item => {
+          store.addToPublicCollection(item);
+        });
+        
+        setPublicCollections(store.getPublicCollections());
+        setStats(store.getPublicCollectionStats());
+      } else {
+        setPublicCollections(allItems);
+        setStats(store.getPublicCollectionStats());
+      }
+    } catch (error) {
+      console.error('加载失败:', error);
+    } finally {
+      setCollectionLoading(false);
+    }
+  };
 
   // 预览采集
   const handlePreview = async () => {
     if (!collectUrl) {
-      toast.error('请输入商品链接');
+      toast.error('请输入1688商品链接');
       return;
     }
 
-    if (!collectUrl.includes('1688.com') && !collectUrl.includes('amazon.com')) {
-      toast.error('请输入有效的1688或Amazon商品链接');
+    if (!collectUrl.includes('1688.com')) {
+      toast.error('请输入有效的1688商品链接');
       return;
     }
 
-    setLoading(true);
+    setPreviewLoading(true);
     try {
-      // 模拟预览
+      // 模拟预览数据
       await new Promise(resolve => setTimeout(resolve, 1000));
+      setPreviewData({
+        name: '示例商品名称',
+        price: 59.9,
+        id: '1234567890',
+        supplier: '示例供应商',
+        images: ['https://picsum.photos/300'],
+      });
       toast.success('预览成功');
     } catch (error) {
+      console.error('预览失败:', error);
       toast.error('预览失败');
     } finally {
-      setLoading(false);
+      setPreviewLoading(false);
     }
   };
 
-  // 采集商品
+  // 确认采集
   const handleCollect = async () => {
-    if (!collectUrl && !collectionItem?.name) {
-      toast.error('请输入商品链接或商品名称');
+    if (!collectUrl) {
+      toast.error('请输入1688商品链接');
       return;
     }
 
     setLoading(true);
-    setWorkflowProgress(10);
-
     try {
-      // 模拟采集
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      setWorkflowProgress(30);
-
-      const item: CollectionItem = {
-        id: `COL-${Date.now()}`,
-        name: collectionItem?.name || '采集商品',
-        sourceUrl: collectUrl || 'https://detail.1688.com/offer/1234567890.html',
-        costPrice: 45 + Math.random() * 50,
-        images: [`https://picsum.photos/400?random=${Date.now()}`],
-        category: '宠物用品',
-      };
-
-      setCollectionItem(item);
-      setOptimizeForm({
-        title: item.name,
-        description: '',
-        keywords: '',
+      const { default: store } = await import('@/lib/store');
+      
+      // 添加到公用采集箱
+      store.addToPublicCollection({
+        collection_id: `COL-${Date.now()}`,
+        product_id: `PROD-${Date.now()}`,
+        product_name: previewData?.name || '采集商品',
+        source: '1688',
+        source_url: collectUrl,
+        source_id: previewData?.id,
+        supplier_name: previewData?.supplier,
+        cost_price: previewData?.price,
+        images: previewData?.images,
       });
-      setPriceForm(prev => ({ ...prev, costPrice: item.costPrice }));
       
-      setWorkflowProgress(60);
-      toast.success('采集成功');
-      setCurrentStep('optimize');
+      toast.success('采集成功，已添加到公用采集箱');
+      setCollectUrl('');
+      setPreviewData(null);
+      loadPublicCollections();
     } catch (error) {
+      console.error('采集失败:', error);
       toast.error('采集失败');
-    } finally {
-      setLoading(false);
-      setWorkflowProgress(0);
-    }
-  };
-
-  // AI优化标题描述
-  const handleOptimize = async () => {
-    if (!optimizeForm.title) {
-      toast.error('请输入商品标题');
-      return;
-    }
-
-    setLoading(true);
-    setWorkflowProgress(70);
-
-    try {
-      // 模拟AI优化
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      setOptimizeForm(prev => ({
-        ...prev,
-        description: prev.description || `${prev.title} - 高品质、实用性强、性价比高。适合各种场景使用，是您理想的选择。`,
-        keywords: prev.keywords || 'pet supplies, pet fountain, water dispenser, cat, dog',
-      }));
-
-      setWorkflowProgress(85);
-      toast.success('AI优化完成');
-      setCurrentStep('price');
-    } catch (error) {
-      toast.error('优化失败');
-    } finally {
-      setLoading(false);
-      setWorkflowProgress(0);
-    }
-  };
-
-  // 发布到平台
-  const handlePublish = async () => {
-    if (publishConfig.platforms.length === 0) {
-      toast.error('请选择至少一个平台');
-      return;
-    }
-
-    setLoading(true);
-    setWorkflowProgress(90);
-
-    try {
-      // 模拟发布
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      setWorkflowProgress(100);
-      toast.success(`发布成功！已上架到 ${publishConfig.platforms.join('、')} 平台`);
-      
-      // 重置流程
-      setTimeout(() => {
-        setCurrentStep('collect');
-        setCollectionItem(null);
-        setOptimizeForm({ title: '', description: '', keywords: '' });
-        setPublishConfig({
-          platforms: ['tiktok'],
-          stores: [],
-          title: '',
-          description: '',
-          price: 0,
-          images: [],
-        });
-        setWorkflowProgress(0);
-      }, 1500);
-    } catch (error) {
-      toast.error('发布失败');
     } finally {
       setLoading(false);
     }
@@ -290,454 +250,547 @@ export default function CollectionCenterPage() {
 
     setLoading(true);
     try {
-      // 模拟批量采集
-      await new Promise(resolve => setTimeout(resolve, urls.length * 500));
+      const { default: store } = await import('@/lib/store');
+      
+      // 模拟批量添加
+      for (let i = 0; i < urls.length; i++) {
+        store.addToPublicCollection({
+          collection_id: `COL-${Date.now()}-${i}`,
+          product_id: `PROD-${Date.now()}-${i}`,
+          product_name: `批量采集商品 ${i + 1}`,
+          source: '1688',
+          source_url: urls[i],
+        });
+      }
+      
       toast.success(`批量采集完成，成功添加 ${urls.length} 个商品`);
       setBatchUrls('');
+      loadPublicCollections();
     } catch (error) {
+      console.error('批量采集失败:', error);
       toast.error('批量采集失败');
     } finally {
       setLoading(false);
     }
   };
 
-  const getStepLabel = (step: WorkflowStep) => {
-    const labels: Record<WorkflowStep, string> = {
-      collect: '采集',
-      optimize: 'AI优化',
-      price: '定价',
-      publish: '发布',
-    };
-    return labels[step];
+  // 全选/取消全选
+  const handleSelectAll = () => {
+    if (selectedItems.length === publicCollections.filter(item => !item.claimed).length) {
+      setSelectedItems([]);
+    } else {
+      setSelectedItems(publicCollections.filter(item => !item.claimed).map(item => item.id));
+    }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    router.push('/login');
+  // 单选
+  const handleSelect = (id: string) => {
+    setSelectedItems(prev => 
+      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+    );
+  };
+
+  // 打开认领弹窗
+  const openClaimDialog = (item?: any) => {
+    setClaimItem(item);
+    setClaimDialogOpen(true);
+  };
+
+  // 认领到店铺
+  const handleClaimToShop = async () => {
+    setClaimLoading(true);
+    try {
+      const { default: store } = await import('@/lib/store');
+      
+      if (claimItem) {
+        // 单个认领
+        store.claimPublicCollection(claimItem.id, claimPlatform, PLATFORMS.find(p => p.value === claimPlatform)?.label || '');
+        
+        // 同时添加到商品的platform_listings
+        const product = store.getProduct(claimItem.product_id);
+        if (product) {
+          const newListing = {
+            id: `PL-${Date.now()}`,
+            platform: claimPlatform,
+            shop_id: `${claimPlatform}-${Date.now()}`,
+            shop_name: PLATFORMS.find(p => p.value === claimPlatform)?.label || claimPlatform,
+            status: 'draft' as const,
+            listing_title: claimItem.product_name_en || claimItem.product_name,
+          };
+          store.updateProduct(claimItem.product_id, {
+            platform_listings: [...(product.platform_listings || []), newListing as any],
+          });
+        }
+        
+        toast.success(`已认领到 ${PLATFORMS.find(p => p.value === claimPlatform)?.label}`);
+      } else {
+        // 批量认领
+        for (const id of selectedItems) {
+          store.claimPublicCollection(id, claimPlatform, PLATFORMS.find(p => p.value === claimPlatform)?.label || '');
+        }
+        toast.success(`已将 ${selectedItems.length} 个商品认领到 ${PLATFORMS.find(p => p.value === claimPlatform)?.label}`);
+        setSelectedItems([]);
+      }
+      
+      setClaimDialogOpen(false);
+      loadPublicCollections();
+    } catch (error) {
+      console.error('认领失败:', error);
+      toast.error('认领失败');
+    } finally {
+      setClaimLoading(false);
+    }
+  };
+
+  // 删除商品
+  const handleDelete = async (id: string) => {
+    try {
+      const { default: store } = await import('@/lib/store');
+      store.removePublicCollection(id);
+      toast.success('已删除');
+      loadPublicCollections();
+    } catch (error) {
+      console.error('删除失败:', error);
+      toast.error('删除失败');
+    }
+  };
+
+  // 批量删除
+  const handleBatchDelete = async () => {
+    if (selectedItems.length === 0) {
+      toast.error('请选择要删除的商品');
+      return;
+    }
+    
+    try {
+      const { default: store } = await import('@/lib/store');
+      selectedItems.forEach(id => store.removePublicCollection(id));
+      toast.success(`已删除 ${selectedItems.length} 个商品`);
+      setSelectedItems([]);
+      loadPublicCollections();
+    } catch (error) {
+      console.error('删除失败:', error);
+      toast.error('删除失败');
+    }
+  };
+
+  // 查看商品详情
+  const handleViewProduct = (productId: string) => {
+    router.push(`/erp/products/${productId}`);
   };
 
   if (!user) return null;
 
   return (
-    <MainLayout user={user} onLogout={handleLogout}>
-      <div className="p-6 space-y-6">
-        {/* 页面标题 */}
+    <MainLayout user={user} onLogout={() => router.push('/login')}>
+      <div className="container py-6 space-y-6">
+        {/* 页面头部 */}
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-[20px] font-semibold flex items-center gap-2">
-              <Upload className="h-6 w-6 text-primary" />
-              一键采集上架
-            </h1>
-            <p className="text-[14px] text-muted-foreground mt-1">
-              采集 → AI优化 → 智能定价 → 一键发布到多平台
-            </p>
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 rounded-xl bg-orange-500/10 flex items-center justify-center">
+              <Inbox className="h-7 w-7 text-orange-500" />
+            </div>
+            <div>
+              <h1 className="text-[18px] font-semibold text-foreground">采集中心</h1>
+              <p className="text-[14px] text-muted-foreground">采集1688商品 · 公用采集箱 · 认领到店铺</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <Badge variant="outline" className="bg-orange-500/10 text-orange-500 border-orange-500/20">
+              <Sparkles className="h-3 w-3 mr-1" />
+              支持批量采集
+            </Badge>
           </div>
         </div>
 
-        {/* 工作流进度 */}
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              {(['collect', 'optimize', 'price', 'publish'] as WorkflowStep[]).map((step, idx) => (
-                <div key={step} className="flex items-center flex-1">
-                  <div className="flex flex-col items-center">
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                      currentStep === step ? 'bg-primary text-white' :
-                      ['collect', 'optimize', 'price', 'publish'].indexOf(currentStep) > idx ? 'bg-green-500 text-white' :
-                      'bg-muted text-muted-foreground'
-                    }`}>
-                      {['collect', 'optimize', 'price', 'publish'].indexOf(currentStep) > idx ? (
-                        <CheckCircle className="h-5 w-5" />
-                      ) : (
-                        <span className="text-sm font-medium">{idx + 1}</span>
+        {/* 统计卡片 */}
+        <div className="grid grid-cols-3 gap-4">
+          <Card className="bg-white border-border shadow-sm">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-[12px] text-muted-foreground">采集箱总量</p>
+                  <p className="text-[24px] font-semibold">{stats.total}</p>
+                </div>
+                <div className="w-10 h-10 rounded-lg bg-orange-500/10 flex items-center justify-center">
+                  <Inbox className="h-5 w-5 text-orange-500" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="bg-white border-border shadow-sm">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-[12px] text-muted-foreground">待认领</p>
+                  <p className="text-[24px] font-semibold text-yellow-500">{stats.pending}</p>
+                </div>
+                <div className="w-10 h-10 rounded-lg bg-yellow-500/10 flex items-center justify-center">
+                  <Clock className="h-5 w-5 text-yellow-500" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="bg-white border-border shadow-sm">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-[12px] text-muted-foreground">已认领</p>
+                  <p className="text-[24px] font-semibold text-success">{stats.claimed}</p>
+                </div>
+                <div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center">
+                  <CheckCircle className="h-5 w-5 text-green-500" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* 功能卡片 */}
+        <div className="grid grid-cols-2 gap-4">
+          <Card className="bg-white border-border shadow-sm">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-[15px] flex items-center gap-2">
+                <Link2 className="h-4 w-4 text-orange-500" />
+                单链接采集
+              </CardTitle>
+              <CardDescription>输入1688商品链接，采集商品信息</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex gap-2">
+                <Input
+                  placeholder="https://detail.1688.com/offer/xxx.html"
+                  value={collectUrl}
+                  onChange={(e) => setCollectUrl(e.target.value)}
+                  className="flex-1"
+                />
+                <Button variant="outline" onClick={handlePreview} disabled={previewLoading}>
+                  {previewLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Eye className="h-4 w-4" />}
+                  预览
+                </Button>
+                <Button onClick={handleCollect} disabled={loading}>
+                  {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+                  采集
+                </Button>
+              </div>
+              <p className="text-[12px] text-muted-foreground">
+                提示：点击「预览」可先查看商品信息再确认采集，点击「采集」直接采集到公用采集箱
+              </p>
+
+              {/* 预览数据 */}
+              {previewData && (
+                <div className="p-4 bg-muted/30 rounded-lg space-y-3">
+                  <div className="flex gap-4">
+                    <div className="w-20 h-20 bg-muted rounded-lg overflow-hidden">
+                      {previewData.images?.[0] && (
+                        <img src={previewData.images[0]} alt="" className="w-full h-full object-cover" />
                       )}
                     </div>
-                    <span className={`text-[12px] mt-2 ${currentStep === step ? 'text-primary font-medium' : 'text-muted-foreground'}`}>
-                      {getStepLabel(step)}
-                    </span>
+                    <div className="flex-1 space-y-2">
+                      <div className="text-[14px] font-medium text-foreground line-clamp-2">
+                        {previewData.name}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[16px] font-semibold text-orange-500">¥{previewData.price}</span>
+                        <span className="text-[12px] text-muted-foreground">ID: {previewData.id}</span>
+                      </div>
+                      <div className="text-[12px] text-muted-foreground">
+                        供应商: {previewData.supplier}
+                      </div>
+                    </div>
                   </div>
-                  {idx < 3 && (
-                    <div className={`flex-1 h-[2px] mx-4 ${
-                      ['collect', 'optimize', 'price', 'publish'].indexOf(currentStep) > idx ? 'bg-green-500' : 'bg-border'
-                    }`} />
-                  )}
+                  
+                  <Button onClick={handleCollect} disabled={loading} className="w-full">
+                    {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Download className="h-4 w-4 mr-2" />}
+                    采集到公用采集箱
+                  </Button>
                 </div>
-              ))}
+              )}
+            </CardContent>
+          </Card>
+
+          <Card className="bg-white border-border shadow-sm">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-[15px] flex items-center gap-2">
+                <Package className="h-4 w-4 text-orange-500" />
+                批量采集
+              </CardTitle>
+              <CardDescription>批量输入链接，一键采集多个商品</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <textarea
+                className="w-full h-32 p-3 border border-border rounded-md text-[13px] resize-none focus:outline-none focus:ring-2 focus:ring-primary/20"
+                placeholder="每行一个1688商品链接&#10;例如:&#10;https://detail.1688.com/offer/xxx1.html&#10;https://detail.1688.com/offer/xxx2.html"
+                value={batchUrls}
+                onChange={(e) => setBatchUrls(e.target.value)}
+              />
+              <div className="flex items-center justify-between">
+                <span className="text-[12px] text-muted-foreground">
+                  已输入 {batchUrls.split('\n').filter((u: string) => u.trim()).length} 个链接
+                </span>
+                <Button onClick={handleBatchCollect} disabled={loading}>
+                  {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Download className="h-4 w-4 mr-2" />}
+                  批量采集
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* 公用采集箱 */}
+        <Card className="bg-white border-border shadow-sm">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-[15px] flex items-center gap-2">
+                  <Inbox className="h-4 w-4 text-orange-500" />
+                  公用采集箱
+                </CardTitle>
+                <CardDescription>采集完成的商品，可以认领到店铺</CardDescription>
+              </div>
+              <Button variant="outline" size="sm" onClick={loadPublicCollections}>
+                刷新
+              </Button>
             </div>
-            {loading && (
-              <Progress value={workflowProgress} className="mt-4 h-1" />
+          </CardHeader>
+          <CardContent>
+            {collectionLoading ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2" />
+                加载中...
+              </div>
+            ) : publicCollections.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground">
+                <Inbox className="h-12 w-12 mx-auto mb-3 opacity-30" />
+                <p>公用采集箱为空</p>
+                <p className="text-[12px] mt-1">采集1688商品后，商品将显示在这里</p>
+              </div>
+            ) : (
+              <>
+                {/* 批量操作栏 */}
+                <div className="flex items-center justify-between mb-4 pb-4 border-b">
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={selectedItems.length === publicCollections.filter(item => !item.claimed).length && publicCollections.filter(item => !item.claimed).length > 0}
+                        onChange={handleSelectAll}
+                        className="w-4 h-4 rounded border-gray-300"
+                      />
+                      <span className="text-[13px] text-muted-foreground">
+                        全选 ({selectedItems.length}/{publicCollections.filter(item => !item.claimed).length})
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {selectedItems.length > 0 && (
+                      <>
+                        <Button size="sm" onClick={() => openClaimDialog()}>
+                          <Store className="h-3 w-3 mr-1" />
+                          批量认领 ({selectedItems.length})
+                        </Button>
+                        <Button variant="ghost" size="sm" className="text-destructive" onClick={handleBatchDelete}>
+                          <Trash2 className="h-3 w-3 mr-1" />
+                          批量删除
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                {/* 商品列表 */}
+                <div className="space-y-3">
+                  {publicCollections.map((item) => (
+                    <div
+                      key={item.id}
+                      className={`p-4 border rounded-lg transition-colors ${
+                        item.claimed 
+                          ? 'bg-muted/30 border-muted' 
+                          : 'hover:bg-muted/30 border-border'
+                      }`}
+                    >
+                      <div className="flex items-start gap-4">
+                        {/* 选择框 */}
+                        {!item.claimed && (
+                          <input
+                            type="checkbox"
+                            checked={selectedItems.includes(item.id)}
+                            onChange={() => handleSelect(item.id)}
+                            className="mt-6 w-4 h-4 rounded border-gray-300"
+                          />
+                        )}
+                        
+                        {/* 图片 */}
+                        <div className="w-20 h-20 bg-muted rounded-lg overflow-hidden flex-shrink-0">
+                          {item.images?.[0] ? (
+                            <img src={item.images[0]} alt="" className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <ImageIcon className="h-8 w-8 text-muted-foreground opacity-30" />
+                            </div>
+                          )}
+                        </div>
+                        
+                        {/* 商品信息 */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start justify-between">
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-2">
+                                <span className="text-[12px] text-orange-500 font-medium">
+                                  {item.source === '1688' ? '1688' : item.source === 'taobao' ? '淘宝' : '拼多多'}
+                                </span>
+                                {item.category && (
+                                  <Badge variant="outline" className="text-[10px]">
+                                    {item.category}
+                                  </Badge>
+                                )}
+                                {item.claimed ? (
+                                  <Badge className="bg-success/10 text-success text-[10px]">
+                                    <CheckCircle className="h-3 w-3 mr-1" />
+                                    已认领
+                                  </Badge>
+                                ) : (
+                                  <Badge variant="outline" className="text-[10px] bg-yellow-500/10 text-yellow-600 border-yellow-500/20">
+                                    待认领
+                                  </Badge>
+                                )}
+                              </div>
+                              <div className="text-[14px] font-medium text-foreground">
+                                {item.product_name}
+                              </div>
+                              {item.product_name_en && (
+                                <div className="text-[12px] text-muted-foreground">
+                                  {item.product_name_en}
+                                </div>
+                              )}
+                              <div className="flex items-center gap-4 text-[12px] text-muted-foreground">
+                                {item.supplier_name && (
+                                  <span className="flex items-center gap-1">
+                                    <Store className="h-3 w-3" />
+                                    {item.supplier_name}
+                                  </span>
+                                )}
+                                {item.cost_price && (
+                                  <span className="flex items-center gap-1">
+                                    <DollarSign className="h-3 w-3" />
+                                    ¥{item.cost_price}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            
+                            {/* 操作按钮 */}
+                            <div className="flex items-center gap-2">
+                              {item.claimed ? (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleViewProduct(item.product_id)}
+                                >
+                                  <Eye className="h-3 w-3 mr-1" />
+                                  查看商品
+                                </Button>
+                              ) : (
+                                <>
+                                  <Button
+                                    variant="default"
+                                    size="sm"
+                                    className="bg-orange-500 hover:bg-orange-600"
+                                    onClick={() => openClaimDialog(item)}
+                                  >
+                                    <Store className="h-3 w-3 mr-1" />
+                                    认领到店铺
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => window.open(item.source_url, '_blank')}
+                                  >
+                                    <ExternalLink className="h-3 w-3" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="text-destructive"
+                                    onClick={() => handleDelete(item.id)}
+                                  >
+                                    <Trash2 className="h-3 w-3" />
+                                  </Button>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
             )}
           </CardContent>
         </Card>
 
-        {/* 步骤1: 采集 */}
-        {currentStep === 'collect' && (
-          <div className="grid grid-cols-2 gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-[14px] flex items-center gap-2">
-                  <Link2 className="h-4 w-4" />
-                  单链接采集
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <label className="text-[12px] text-muted-foreground">商品名称（可选）</label>
-                  <Input
-                    placeholder="从选品页跳转时自动填充"
-                    value={collectionItem?.name || ''}
-                    onChange={(e) => setCollectionItem(prev => prev ? { ...prev, name: e.target.value } : { id: '', name: e.target.value, sourceUrl: '', costPrice: 0, images: [] })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[12px] text-muted-foreground">1688商品链接</label>
-                  <div className="flex gap-2">
-                    <Input
-                      placeholder="粘贴1688商品链接"
-                      value={collectUrl}
-                      onChange={(e) => setCollectUrl(e.target.value)}
-                      className="flex-1"
-                    />
-                    <Button
-                      variant="outline"
-                      onClick={handlePreview}
-                    >
-                      预览
-                    </Button>
-                  </div>
-                </div>
-                <Button
-                  onClick={handleCollect}
-                  disabled={loading}
-                  className="w-full gap-2"
-                >
-                  {loading ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      采集中...
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="h-4 w-4" />
-                      开始采集
-                    </>
-                  )}
-                </Button>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-[14px] flex items-center gap-2">
-                  <Package className="h-4 w-4" />
-                  批量采集
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <label className="text-[12px] text-muted-foreground">1688商品链接（每行一个）</label>
-                  <Textarea
-                    placeholder="https://detail.1688.com/offer/1234567890.html&#10;https://detail.1688.com/offer/0987654321.html"
-                    value={batchUrls}
-                    onChange={(e) => setBatchUrls(e.target.value)}
-                    rows={6}
-                  />
-                </div>
-                <Button
-                  onClick={handleBatchCollect}
-                  disabled={loading}
-                  className="w-full gap-2"
-                  variant="outline"
-                >
-                  {loading ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      采集中...
-                    </>
-                  ) : (
-                    <>
-                      <Upload className="h-4 w-4" />
-                      批量采集
-                    </>
-                  )}
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
-        )}
-
-        {/* 步骤2: AI优化 */}
-        {currentStep === 'optimize' && collectionItem && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-[14px] flex items-center gap-2">
-                <Sparkles className="h-4 w-4" />
-                AI智能优化
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-6">
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <label className="text-[12px] text-muted-foreground">商品标题</label>
-                    <Input
-                      value={optimizeForm.title}
-                      onChange={(e) => setOptimizeForm({ ...optimizeForm, title: e.target.value })}
-                      placeholder="输入商品标题"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-[12px] text-muted-foreground">关键词（英文逗号分隔）</label>
-                    <Input
-                      value={optimizeForm.keywords}
-                      onChange={(e) => setOptimizeForm({ ...optimizeForm, keywords: e.target.value })}
-                      placeholder="pet, water, fountain, cat"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-[12px] text-muted-foreground">商品描述</label>
-                    <Textarea
-                      value={optimizeForm.description}
-                      onChange={(e) => setOptimizeForm({ ...optimizeForm, description: e.target.value })}
-                      placeholder="输入商品描述"
-                      rows={5}
-                    />
-                  </div>
-                </div>
-                <div className="space-y-4">
-                  <div className="text-[12px] text-muted-foreground mb-2">商品图片</div>
-                  <div className="grid grid-cols-3 gap-2">
-                    {collectionItem.images.map((img, idx) => (
-                      <div key={idx} className="aspect-square bg-muted rounded-lg overflow-hidden">
-                        <img src={img} alt={`商品图片 ${idx + 1}`} className="w-full h-full object-cover" />
-                      </div>
-                    ))}
-                  </div>
-                  <div className="text-[11px] text-muted-foreground">
-                    采集来源: {collectionItem.sourceUrl || '手动输入'}
-                  </div>
-                </div>
-              </div>
-              <div className="flex items-center gap-4">
-                <Button
-                  variant="outline"
-                  onClick={() => setCurrentStep('collect')}
-                >
-                  上一步
-                </Button>
-                <Button
-                  onClick={handleOptimize}
-                  disabled={loading}
-                  className="gap-2"
-                >
-                  {loading ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      AI优化中...
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="h-4 w-4" />
-                      AI一键优化
-                    </>
-                  )}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* 步骤3: 定价 */}
-        {currentStep === 'price' && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-[14px] flex items-center gap-2">
-                <DollarSign className="h-4 w-4" />
-                智能定价
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-4 gap-4">
-                <div className="space-y-2">
-                  <label className="text-[12px] text-muted-foreground">成本价 (¥)</label>
-                  <Input
-                    type="number"
-                    value={priceForm.costPrice}
-                    onChange={(e) => setPriceForm({ ...priceForm, costPrice: Number(e.target.value) })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[12px] text-muted-foreground">物流费 (¥)</label>
-                  <Input
-                    type="number"
-                    value={priceForm.logistics}
-                    onChange={(e) => setPriceForm({ ...priceForm, logistics: Number(e.target.value) })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[12px] text-muted-foreground">平台佣金 (%)</label>
-                  <Input
-                    type="number"
-                    value={priceForm.commission}
-                    onChange={(e) => setPriceForm({ ...priceForm, commission: Number(e.target.value) })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[12px] text-muted-foreground">目标利润率 (%)</label>
-                  <Input
-                    type="number"
-                    value={priceForm.targetProfit}
-                    onChange={(e) => setPriceForm({ ...priceForm, targetProfit: Number(e.target.value) })}
-                  />
-                </div>
-              </div>
-
-              <div className="bg-primary/5 rounded-lg p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-[12px] text-muted-foreground">建议售价</p>
-                    <p className="text-[32px] font-bold text-primary">${calculatedPrice}</p>
-                    <p className="text-[12px] text-muted-foreground">
-                      成本: ¥{(priceForm.costPrice + priceForm.logistics).toFixed(2)} | 利润率: {priceForm.targetProfit}%
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-[12px] text-muted-foreground">预计利润</p>
-                    <p className="text-[24px] font-bold text-green-500">
-                      ${(calculatedPrice * (priceForm.targetProfit / 100)).toFixed(2)}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-4">
-                <Button
-                  variant="outline"
-                  onClick={() => setCurrentStep('optimize')}
-                >
-                  上一步
-                </Button>
-                <Button
-                  onClick={() => {
-                    setPublishConfig(prev => ({
-                      ...prev,
-                      title: optimizeForm.title,
-                      description: optimizeForm.description,
-                      price: calculatedPrice,
-                      images: collectionItem?.images || [],
-                    }));
-                    setCurrentStep('publish');
-                  }}
-                  className="gap-2"
-                >
-                  下一步
-                  <ArrowRight className="h-4 w-4" />
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* 步骤4: 发布 */}
-        {currentStep === 'publish' && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-[14px] flex items-center gap-2">
-                <Store className="h-4 w-4" />
-                选择发布平台
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-3 gap-4">
-                {[
-                  { id: 'tiktok', name: 'TikTok Shop', icon: '📱' },
-                  { id: 'shopee', name: 'Shopee', icon: '🛒' },
-                  { id: 'lazada', name: 'Lazada', icon: '📦' },
-                ].map((platform) => (
-                  <div
-                    key={platform.id}
-                    className={`p-4 rounded-lg border cursor-pointer transition-all ${
-                      publishConfig.platforms.includes(platform.id)
-                        ? 'border-primary bg-primary/5 ring-2 ring-primary'
-                        : 'hover:border-primary/50'
-                    }`}
-                    onClick={() => {
-                      setPublishConfig(prev => ({
-                        ...prev,
-                        platforms: prev.platforms.includes(platform.id)
-                          ? prev.platforms.filter(p => p !== platform.id)
-                          : [...prev.platforms, platform.id],
-                      }));
-                    }}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-muted rounded-lg flex items-center justify-center text-xl">
-                        {platform.icon}
-                      </div>
-                      <div className="flex-1">
-                        <p className="font-medium">{platform.name}</p>
-                        <p className="text-[11px] text-muted-foreground">推荐指数: ★★★</p>
-                      </div>
-                      {publishConfig.platforms.includes(platform.id) && (
-                        <CheckCircle className="h-5 w-5 text-primary" />
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="bg-muted/50 rounded-lg p-4">
-                <h3 className="text-[14px] font-medium mb-3">发布预览</h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="flex gap-4">
-                    <div className="w-20 h-20 bg-muted rounded-lg overflow-hidden flex-shrink-0">
-                      {collectionItem?.images[0] && (
-                        <img src={collectionItem.images[0]} alt="" className="w-full h-full object-cover" />
-                      )}
-                    </div>
-                    <div>
-                      <p className="font-medium text-[14px]">{optimizeForm.title}</p>
-                      <p className="text-[12px] text-muted-foreground mt-1">售价: ${publishConfig.price}</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-[12px] text-muted-foreground">发布到</p>
-                    <p className="font-medium">{publishConfig.platforms.join('、')}</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-4">
-                <Button
-                  variant="outline"
-                  onClick={() => setCurrentStep('price')}
-                >
-                  上一步
-                </Button>
-                <Button
-                  onClick={handlePublish}
-                  disabled={loading}
-                  className="gap-2"
-                  size="lg"
-                >
-                  {loading ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      发布中...
-                    </>
-                  ) : (
-                    <>
-                      <Zap className="h-4 w-4" />
-                      一键发布到 {publishConfig.platforms.length} 个平台
-                    </>
-                  )}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+        {/* 使用说明 */}
+        <Card className="bg-orange-500/5 border-orange-500/20">
+          <CardContent className="p-4">
+            <div className="text-[13px] text-foreground space-y-2">
+              <div className="font-medium">📌 使用流程</div>
+              <ol className="list-decimal list-inside text-muted-foreground space-y-1">
+                <li>在「采集中心」采集1688商品，商品进入公用采集箱</li>
+                <li>在「公用采集箱」认领商品到目标店铺（如 TikTok Shop）</li>
+                <li>认领后可在「商品管理」编辑 Listing、设置定价</li>
+                <li>完成编辑后点击「上架发布」，商品将发布到对应平台</li>
+              </ol>
+            </div>
+          </CardContent>
+        </Card>
       </div>
+
+      {/* 认领弹窗 */}
+      <Dialog open={claimDialogOpen} onOpenChange={setClaimDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {claimItem ? '认领到店铺' : `批量认领 (${selectedItems.length}个商品)`}
+            </DialogTitle>
+            <DialogDescription>
+              选择要认领到的目标店铺，认领后可以在店铺下编辑商品信息
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>目标店铺</Label>
+              <Select value={claimPlatform} onValueChange={setClaimPlatform}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {PLATFORMS.map((platform) => (
+                    <SelectItem key={platform.value} value={platform.value}>
+                      <span className="flex items-center gap-2">
+                        <span>{platform.icon}</span>
+                        {platform.label}
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setClaimDialogOpen(false)}>
+              取消
+            </Button>
+            <Button onClick={handleClaimToShop} disabled={claimLoading}>
+              {claimLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              <Check className="h-4 w-4 mr-2" />
+              确认认领
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </MainLayout>
   );
 }
