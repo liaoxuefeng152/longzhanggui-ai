@@ -1,15 +1,64 @@
 'use client';
 
 import { useState } from 'react';
-import { MessageSquare, Bell, Calendar, Settings, CheckCircle, AlertCircle, Key, Shield, Smartphone } from 'lucide-react';
+import { MessageSquare, Bell, Calendar, Settings, CheckCircle, AlertCircle, Key, Shield, Smartphone, TrendingDown, Package, ShoppingCart, DollarSign, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import MainLayout from '@/components/layout/MainLayout';
 import { toast } from 'sonner';
+
+interface AlertThreshold {
+  // 库存告警
+  inventoryLow: number;           // 库存低于此值触发告警
+  inventoryCritical: number;      // 库存低于此值触发紧急告警
+  
+  // 订单告警
+  orderCancelRate: number;        // 订单取消率超过此值触发告警(%)
+  refundRate: number;            // 退款率超过此值触发告警(%)
+  
+  // 广告告警
+  adRoiMin: number;              // 广告ROI低于此值触发告警
+  adSpendMax: number;            // 单日广告花费超过此值触发告警
+  adCpcMax: number;              // 单次点击成本超过此值触发告警
+  
+  // 财务告警
+  dailyLoss: number;             // 单日亏损超过此值触发告警
+  cashFlowNegative: boolean;      // 现金流为负时告警
+  
+  // 合规告警
+  complianceEnabled: boolean;    // 是否启用合规检查告警
+}
+
+interface AlertFrequency {
+  // 实时告警（仅紧急情况）
+  realtime: boolean;
+  
+  // 告警合并频率
+  frequency: 'realtime' | 'hourly' | 'daily';
+  
+  // 静默时段（不推送告警的时间段）
+  silentStart: string;           // 格式 HH:mm
+  silentEnd: string;             // 格式 HH:mm
+  silentEnabled: boolean;        // 是否启用静默时段
+}
+
+interface AlertChannel {
+  feishu: boolean;               // 飞书推送
+  email: boolean;                // 邮件通知
+  system: boolean;               // 系统通知
+  
+  // 飞书配置
+  webhookUrl: string;
+  chatId: string;
+  
+  // 邮件配置
+  emailList: string;
+}
 
 export default function FeishuPage() {
   const [activeTab, setActiveTab] = useState('settings');
@@ -27,6 +76,39 @@ export default function FeishuPage() {
     adsAlert: false,
   });
 
+  // 告警阈值配置
+  const [alertThresholds, setAlertThresholds] = useState<AlertThreshold>({
+    inventoryLow: 20,
+    inventoryCritical: 5,
+    orderCancelRate: 5,
+    refundRate: 10,
+    adRoiMin: 1.5,
+    adSpendMax: 1000,
+    adCpcMax: 2.0,
+    dailyLoss: 500,
+    cashFlowNegative: true,
+    complianceEnabled: true,
+  });
+
+  // 告警频率配置
+  const [alertFrequency, setAlertFrequency] = useState<AlertFrequency>({
+    realtime: false,
+    frequency: 'hourly',
+    silentStart: '22:00',
+    silentEnd: '08:00',
+    silentEnabled: true,
+  });
+
+  // 告警渠道配置
+  const [alertChannels, setAlertChannels] = useState<AlertChannel>({
+    feishu: true,
+    email: false,
+    system: true,
+    webhookUrl: '',
+    chatId: '',
+    emailList: '',
+  });
+
   const handleConnect = () => {
     if (!config.appId || !config.appSecret) {
       toast.error('请填写完整的配置信息');
@@ -40,8 +122,16 @@ export default function FeishuPage() {
     toast.success('配置已保存');
   };
 
+  const handleSaveAlertRules = () => {
+    toast.success('告警规则已保存');
+  };
+
   const handleTestSend = () => {
     toast.success('测试消息已发送');
+  };
+
+  const handleTestAlert = (type: string) => {
+    toast.success(`已发送${type}测试告警`);
   };
 
   return (
@@ -60,6 +150,9 @@ export default function FeishuPage() {
             </TabsTrigger>
             <TabsTrigger value="push" className="flex-1 data-[state=active]:bg-white data-[state=active]:text-[#165DFF]">
               推送设置
+            </TabsTrigger>
+            <TabsTrigger value="alerts" className="flex-1 data-[state=active]:bg-white data-[state=active]:text-[#165DFF]">
+              告警规则
             </TabsTrigger>
           </TabsList>
 
@@ -315,6 +408,409 @@ export default function FeishuPage() {
                 </div>
               </div>
             </Card>
+          </TabsContent>
+
+          {/* 告警规则设置 */}
+          <TabsContent value="alerts" className="mt-6">
+            <div className="space-y-6">
+              {/* 告警阈值配置 */}
+              <Card className="card-minimal">
+                <div className="p-6">
+                  <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center gap-2">
+                      <TrendingDown className="w-5 h-5 text-[#F53F3F]" />
+                      <h3 className="text-lg font-semibold text-[#1D2129]">告警阈值设置</h3>
+                    </div>
+                    <Button variant="outline" size="sm" onClick={() => handleTestAlert('阈值测试')}>
+                      测试告警
+                    </Button>
+                  </div>
+                  
+                  <div className="space-y-6">
+                    {/* 库存告警 */}
+                    <div className="border-b border-[#E5E6EB] pb-6">
+                      <div className="flex items-center gap-2 mb-4">
+                        <Package className="w-5 h-5 text-[#165DFF]" />
+                        <h4 className="font-medium text-[#1D2129]">库存告警</h4>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <label className="text-sm text-[#4E5969]">库存预警阈值</label>
+                          <div className="flex items-center gap-2">
+                            <Input
+                              type="number"
+                              value={alertThresholds.inventoryLow}
+                              onChange={(e) => setAlertThresholds({ ...alertThresholds, inventoryLow: Number(e.target.value) })}
+                              className="input-minimal h-10 w-28"
+                            />
+                            <span className="text-sm text-[#86909C]">件（低于此值触发预警）</span>
+                          </div>
+                          <p className="text-xs text-[#BBBDC0]">当库存低于此值时发送黄色预警通知</p>
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <label className="text-sm text-[#4E5969]">库存紧急阈值</label>
+                          <div className="flex items-center gap-2">
+                            <Input
+                              type="number"
+                              value={alertThresholds.inventoryCritical}
+                              onChange={(e) => setAlertThresholds({ ...alertThresholds, inventoryCritical: Number(e.target.value) })}
+                              className="input-minimal h-10 w-28"
+                            />
+                            <span className="text-sm text-[#86909C]">件（低于此值触发紧急告警）</span>
+                          </div>
+                          <p className="text-xs text-[#BBBDC0]">当库存低于此值时发送红色紧急告警</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 订单告警 */}
+                    <div className="border-b border-[#E5E6EB] pb-6">
+                      <div className="flex items-center gap-2 mb-4">
+                        <ShoppingCart className="w-5 h-5 text-[#165DFF]" />
+                        <h4 className="font-medium text-[#1D2129]">订单告警</h4>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <label className="text-sm text-[#4E5969]">订单取消率告警</label>
+                          <div className="flex items-center gap-2">
+                            <Input
+                              type="number"
+                              step="0.1"
+                              value={alertThresholds.orderCancelRate}
+                              onChange={(e) => setAlertThresholds({ ...alertThresholds, orderCancelRate: Number(e.target.value) })}
+                              className="input-minimal h-10 w-28"
+                            />
+                            <span className="text-sm text-[#86909C]">%（超过此值触发告警）</span>
+                          </div>
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <label className="text-sm text-[#4E5969]">退款率告警</label>
+                          <div className="flex items-center gap-2">
+                            <Input
+                              type="number"
+                              step="0.1"
+                              value={alertThresholds.refundRate}
+                              onChange={(e) => setAlertThresholds({ ...alertThresholds, refundRate: Number(e.target.value) })}
+                              className="input-minimal h-10 w-28"
+                            />
+                            <span className="text-sm text-[#86909C]">%（超过此值触发告警）</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 广告告警 */}
+                    <div className="border-b border-[#E5E6EB] pb-6">
+                      <div className="flex items-center gap-2 mb-4">
+                        <TrendingDown className="w-5 h-5 text-[#FF7D00]" />
+                        <h4 className="font-medium text-[#1D2129]">广告告警</h4>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="space-y-2">
+                          <label className="text-sm text-[#4E5969]">最低ROI阈值</label>
+                          <div className="flex items-center gap-2">
+                            <Input
+                              type="number"
+                              step="0.1"
+                              value={alertThresholds.adRoiMin}
+                              onChange={(e) => setAlertThresholds({ ...alertThresholds, adRoiMin: Number(e.target.value) })}
+                              className="input-minimal h-10 w-24"
+                            />
+                            <span className="text-sm text-[#86909C]">（低于此值告警）</span>
+                          </div>
+                          <p className="text-xs text-[#BBBDC0]">广告投入产出比低于此值时告警</p>
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <label className="text-sm text-[#4E5969]">单日最高花费</label>
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm text-[#86909C]">$</span>
+                            <Input
+                              type="number"
+                              value={alertThresholds.adSpendMax}
+                              onChange={(e) => setAlertThresholds({ ...alertThresholds, adSpendMax: Number(e.target.value) })}
+                              className="input-minimal h-10 w-28"
+                            />
+                            <span className="text-sm text-[#86909C]">（单日上限）</span>
+                          </div>
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <label className="text-sm text-[#4E5969]">最高点击成本</label>
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm text-[#86909C]">$</span>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              value={alertThresholds.adCpcMax}
+                              onChange={(e) => setAlertThresholds({ ...alertThresholds, adCpcMax: Number(e.target.value) })}
+                              className="input-minimal h-10 w-24"
+                            />
+                            <span className="text-sm text-[#86909C]">（单次点击上限）</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 财务告警 */}
+                    <div className="pb-6">
+                      <div className="flex items-center gap-2 mb-4">
+                        <DollarSign className="w-5 h-5 text-[#165DFF]" />
+                        <h4 className="font-medium text-[#1D2129]">财务告警</h4>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <label className="text-sm text-[#4E5969]">单日亏损告警阈值</label>
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm text-[#86909C]">$</span>
+                            <Input
+                              type="number"
+                              value={alertThresholds.dailyLoss}
+                              onChange={(e) => setAlertThresholds({ ...alertThresholds, dailyLoss: Number(e.target.value) })}
+                              className="input-minimal h-10 w-28"
+                            />
+                            <span className="text-sm text-[#86909C]">（超过此值触发告警）</span>
+                          </div>
+                        </div>
+                        
+                        <div className="flex items-center justify-between py-3">
+                          <div>
+                            <p className="text-[#1D2129]">现金流为负告警</p>
+                            <p className="text-sm text-[#86909C]">当现金流为负时立即告警</p>
+                          </div>
+                          <Switch 
+                            checked={alertThresholds.cashFlowNegative}
+                            onCheckedChange={(checked) => setAlertThresholds({ ...alertThresholds, cashFlowNegative: checked })}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </Card>
+
+              {/* 告警频率控制 */}
+              <Card className="card-minimal">
+                <div className="p-6">
+                  <div className="flex items-center gap-2 mb-6">
+                    <Clock className="w-5 h-5 text-[#165DFF]" />
+                    <h3 className="text-lg font-semibold text-[#1D2129]">告警频率控制</h3>
+                  </div>
+                  
+                  <div className="space-y-6">
+                    {/* 告警合并频率 */}
+                    <div className="space-y-3">
+                      <label className="text-sm text-[#4E5969]">告警合并频率</label>
+                      <Select 
+                        value={alertFrequency.frequency}
+                        onValueChange={(value: 'realtime' | 'hourly' | 'daily') => setAlertFrequency({ ...alertFrequency, frequency: value })}
+                      >
+                        <SelectTrigger className="w-full md:w-64 input-minimal h-10">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="realtime">实时告警（每次触发立即推送）</SelectItem>
+                          <SelectItem value="hourly">每小时合并（每小时最多推送1次）</SelectItem>
+                          <SelectItem value="daily">每日合并（每天上午9点统一推送）</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-[#BBBDC0]">
+                        {alertFrequency.frequency === 'realtime' && '紧急告警将立即推送，但可能导致告警过多'}
+                        {alertFrequency.frequency === 'hourly' && '建议日常使用，减少告警打扰'}
+                        {alertFrequency.frequency === 'daily' && '适合不紧急的场景，每天统一汇总'}
+                      </p>
+                    </div>
+
+                    {/* 静默时段 */}
+                    <div className="space-y-4 pt-4 border-t border-[#E5E6EB]">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-[#1D2129] font-medium">静默时段</p>
+                          <p className="text-sm text-[#86909C]">在设定时间段内不推送非紧急告警</p>
+                        </div>
+                        <Switch 
+                          checked={alertFrequency.silentEnabled}
+                          onCheckedChange={(checked) => setAlertFrequency({ ...alertFrequency, silentEnabled: checked })}
+                        />
+                      </div>
+                      
+                      {alertFrequency.silentEnabled && (
+                        <div className="flex items-center gap-4 pt-2">
+                          <div className="flex items-center gap-2">
+                            <Input
+                              type="time"
+                              value={alertFrequency.silentStart}
+                              onChange={(e) => setAlertFrequency({ ...alertFrequency, silentStart: e.target.value })}
+                              className="input-minimal h-10 w-36"
+                            />
+                            <span className="text-[#86909C]">至</span>
+                            <Input
+                              type="time"
+                              value={alertFrequency.silentEnd}
+                              onChange={(e) => setAlertFrequency({ ...alertFrequency, silentEnd: e.target.value })}
+                              className="input-minimal h-10 w-36"
+                            />
+                          </div>
+                          <Badge className="bg-[#F2F3F5] text-[#4E5969]">非紧急告警静默</Badge>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* 紧急告警不受静默影响 */}
+                    <div className="flex items-center justify-between py-3 bg-[#FFF7E6] rounded-lg px-4">
+                      <div>
+                        <p className="text-[#1D2129] font-medium">紧急告警不受静默限制</p>
+                        <p className="text-sm text-[#86909C]">库存紧急、现金流为负等紧急告警即使在静默时段也会立即推送</p>
+                      </div>
+                      <Badge className="bg-[#FF7D00] text-white">始终推送</Badge>
+                    </div>
+                  </div>
+                </div>
+              </Card>
+
+              {/* 告警渠道选择 */}
+              <Card className="card-minimal">
+                <div className="p-6">
+                  <div className="flex items-center gap-2 mb-6">
+                    <Bell className="w-5 h-5 text-[#165DFF]" />
+                    <h3 className="text-lg font-semibold text-[#1D2129]">通知渠道</h3>
+                  </div>
+                  
+                  <div className="space-y-6">
+                    {/* 渠道选择 */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div 
+                        className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                          alertChannels.feishu ? 'border-[#165DFF] bg-[#F4F7FF]' : 'border-[#E5E6EB] hover:border-[#BBDC0]'
+                        }`}
+                        onClick={() => setAlertChannels({ ...alertChannels, feishu: !alertChannels.feishu })}
+                      >
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-2">
+                            <MessageSquare className="w-5 h-5 text-[#165DFF]" />
+                            <span className="font-medium text-[#1D2129]">飞书推送</span>
+                          </div>
+                          <Switch checked={alertChannels.feishu} />
+                        </div>
+                        <p className="text-xs text-[#86909C]">通过飞书机器人推送告警消息</p>
+                      </div>
+                      
+                      <div 
+                        className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                          alertChannels.email ? 'border-[#165DFF] bg-[#F4F7FF]' : 'border-[#E5E6EB] hover:border-[#BBDC0]'
+                        }`}
+                        onClick={() => setAlertChannels({ ...alertChannels, email: !alertChannels.email })}
+                      >
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-2">
+                            <Bell className="w-5 h-5 text-[#165DFF]" />
+                            <span className="font-medium text-[#1D2129]">邮件通知</span>
+                          </div>
+                          <Switch checked={alertChannels.email} />
+                        </div>
+                        <p className="text-xs text-[#86909C]">通过邮件发送告警通知</p>
+                      </div>
+                      
+                      <div 
+                        className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                          alertChannels.system ? 'border-[#165DFF] bg-[#F4F7FF]' : 'border-[#E5E6EB] hover:border-[#BBDC0]'
+                        }`}
+                        onClick={() => setAlertChannels({ ...alertChannels, system: !alertChannels.system })}
+                      >
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-2">
+                            <AlertCircle className="w-5 h-5 text-[#165DFF]" />
+                            <span className="font-medium text-[#1D2129]">系统通知</span>
+                          </div>
+                          <Switch checked={alertChannels.system} />
+                        </div>
+                        <p className="text-xs text-[#86909C]">在系统内显示通知消息</p>
+                      </div>
+                    </div>
+
+                    {/* 飞书配置 */}
+                    {alertChannels.feishu && (
+                      <div className="space-y-4 pt-4 border-t border-[#E5E6EB]">
+                        <h4 className="font-medium text-[#1D2129]">飞书配置</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <label className="text-sm text-[#4E5969]">Webhook 地址</label>
+                            <Input
+                              placeholder="https://open.feishu.cn/open-apis/bot/v2/hook/xxx"
+                              value={alertChannels.webhookUrl}
+                              onChange={(e) => setAlertChannels({ ...alertChannels, webhookUrl: e.target.value })}
+                              className="input-minimal h-10"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <label className="text-sm text-[#4E5969]">群组 ID（可选）</label>
+                            <Input
+                              placeholder="oc_xxx"
+                              value={alertChannels.chatId}
+                              onChange={(e) => setAlertChannels({ ...alertChannels, chatId: e.target.value })}
+                              className="input-minimal h-10"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* 邮件配置 */}
+                    {alertChannels.email && (
+                      <div className="space-y-4 pt-4 border-t border-[#E5E6EB]">
+                        <h4 className="font-medium text-[#1D2129]">邮件配置</h4>
+                        <div className="space-y-2">
+                          <label className="text-sm text-[#4E5969]">接收邮箱（多个用逗号分隔）</label>
+                          <Input
+                            placeholder="alert@example.com, oncall@example.com"
+                            value={alertChannels.emailList}
+                            onChange={(e) => setAlertChannels({ ...alertChannels, emailList: e.target.value })}
+                            className="input-minimal h-10"
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </Card>
+
+              {/* 保存按钮 */}
+              <div className="flex justify-end gap-4">
+                <Button variant="outline" className="btn-secondary" onClick={() => {
+                  setAlertThresholds({
+                    inventoryLow: 20,
+                    inventoryCritical: 5,
+                    orderCancelRate: 5,
+                    refundRate: 10,
+                    adRoiMin: 1.5,
+                    adSpendMax: 1000,
+                    adCpcMax: 2.0,
+                    dailyLoss: 500,
+                    cashFlowNegative: true,
+                    complianceEnabled: true,
+                  });
+                  setAlertFrequency({
+                    realtime: false,
+                    frequency: 'hourly',
+                    silentStart: '22:00',
+                    silentEnd: '08:00',
+                    silentEnabled: true,
+                  });
+                  toast.info('已重置为默认值');
+                }}>
+                  重置为默认
+                </Button>
+                <Button className="btn-primary px-8" onClick={handleSaveAlertRules}>
+                  保存告警规则
+                </Button>
+              </div>
+            </div>
           </TabsContent>
         </Tabs>
       </div>
