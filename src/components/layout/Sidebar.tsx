@@ -91,7 +91,9 @@ const menuItems: MenuItem[] = [
     href: '/erp',
     icon: Package,
     submenu: [
-      { title: '1688采集', href: '/erp/collection' },
+      { title: '一键发布', href: '/erp/one-click-publish', highlight: true },
+      { title: '批量处理', href: '/erp/batch-process' },
+      { title: '采集中心', href: '/erp/collection' },
       { title: '商品管理', href: '/erp/products' },
       { title: '库存管理', href: '/erp/inventory' },
       { title: '采购管理', href: '/erp/purchase' },
