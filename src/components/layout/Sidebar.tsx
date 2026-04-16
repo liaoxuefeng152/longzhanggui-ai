@@ -14,6 +14,10 @@ import {
   BarChart3,
   ShoppingCart,
   Truck,
+  Search,
+  Image,
+  Video,
+  Upload,
 } from 'lucide-react';
 
 interface MenuItem {
@@ -24,10 +28,11 @@ interface MenuItem {
     title: string;
     href: string;
     badge?: string;
+    icon?: React.ElementType;
   }[];
 }
 
-// V1.0 精简菜单 - 预留扩展空间
+// V1.0 精简菜单 - 4大核心AI功能
 const menuItems: MenuItem[] = [
   {
     title: '首页',
@@ -35,13 +40,14 @@ const menuItems: MenuItem[] = [
     icon: LayoutDashboard,
   },
   {
-    title: '采集',
-    href: '/erp/collection',
-    icon: Link2,
+    title: 'AI智能体',
+    href: '/agents/product-selection',
+    icon: Sparkles,
     submenu: [
-      { title: '采集中心', href: '/erp/collection' },
-      { title: '公用采集箱', href: '/erp/public-collection' },
-      // 预留：{ title: '自动采集', href: '/erp/auto-collect', badge: 'V1.1' },
+      { title: '智能选品', href: '/agents/product-selection', icon: Search },
+      { title: '图片处理', href: '/agents/image-design', icon: Image },
+      { title: '视频生成', href: '/agents/video-generation', icon: Video },
+      { title: '一键采集上架', href: '/erp/collection', icon: Upload },
     ],
   },
   {
@@ -55,18 +61,12 @@ const menuItems: MenuItem[] = [
     ],
   },
   {
-    title: 'AI智能体',
+    title: '智能助理',
     href: '/ai-assistant',
     icon: Bot,
     submenu: [
-      { title: '智能助理', href: '/ai-assistant', badge: 'V1.0' },
-      // 预留：
-      // { title: '选品智能体', href: '/agents/product-selection', badge: 'V2.0' },
-      // { title: '图片智能体', href: '/agents/image-design', badge: 'V2.0' },
-      // { title: 'Listing优化', href: '/agents/listing-optimization', badge: 'V2.0' },
-      // { title: '广告智能体', href: '/agents/advertising', badge: 'V2.1' },
-      // { title: '客服智能体', href: '/agents/customer-service', badge: 'V2.1' },
-      // { title: '数据复盘', href: '/agents/data-review', badge: 'V2.0' },
+      { title: '对话咨询', href: '/ai-assistant' },
+      { title: '运营日报', href: '/ai-assistant' },
     ],
   },
   {
@@ -76,8 +76,6 @@ const menuItems: MenuItem[] = [
     submenu: [
       { title: '店铺管理', href: '/shops' },
       { title: '平台配置', href: '/shops/platforms' },
-      // 预留：{ title: '供应商管理', href: '/suppliers', badge: 'V1.1' },
-      // 预留：{ title: '参数配置', href: '/settings/config', badge: 'V1.1' },
     ],
   },
 ];
@@ -172,27 +170,34 @@ export default function Sidebar() {
                     "ml-4 mt-1 space-y-1 overflow-hidden transition-all duration-300 ease-in-out",
                     active ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
                   )}>
-                    {item.submenu.map((subItem, idx) => (
-                      <Link
-                        key={`${subItem.title}-${idx}`}
-                        href={subItem.href}
-                        className={cn(
-                          "flex items-center gap-2 px-3 py-1.5 rounded-md text-xs transition-all duration-200",
-                          "hover:bg-white/5 hover:text-white",
-                          pathname === subItem.href
-                            ? "bg-white/10 text-white font-medium"
-                            : "text-sidebar-foreground/70"
-                        )}
-                      >
-                        <div className="w-1 h-1 rounded-full bg-primary/50" />
-                        <span className="flex-1">{subItem.title}</span>
-                        {subItem.badge && (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/20 text-primary/70">
-                            {subItem.badge}
-                          </span>
-                        )}
-                      </Link>
-                    ))}
+                    {item.submenu.map((subItem, idx) => {
+                      const SubIcon = subItem.icon;
+                      return (
+                        <Link
+                          key={`${subItem.title}-${idx}`}
+                          href={subItem.href}
+                          className={cn(
+                            "flex items-center gap-2 px-3 py-1.5 rounded-md text-xs transition-all duration-200",
+                            "hover:bg-white/5 hover:text-white",
+                            pathname === subItem.href
+                              ? "bg-white/10 text-white font-medium"
+                              : "text-sidebar-foreground/70"
+                          )}
+                        >
+                          {SubIcon ? (
+                            <SubIcon className="h-3.5 w-3.5 text-primary/70" />
+                          ) : (
+                            <div className="w-1 h-1 rounded-full bg-primary/50" />
+                          )}
+                          <span className="flex-1">{subItem.title}</span>
+                          {subItem.badge && (
+                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/20 text-primary/70">
+                              {subItem.badge}
+                            </span>
+                          )}
+                        </Link>
+                      );
+                    })}
                   </div>
                 )}
               </div>
