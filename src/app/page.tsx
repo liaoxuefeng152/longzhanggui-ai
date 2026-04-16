@@ -1,14 +1,12 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { TrendingUp, ShoppingCart, AlertTriangle, CheckCircle, Clock, Calendar, Plus, ArrowUp, ArrowDown, Search, FileText, Send, X, Bot, Sparkles } from 'lucide-react';
+import { TrendingUp, ShoppingCart, AlertTriangle, CheckCircle, Clock, Calendar, Plus, ArrowUp, ArrowDown, Search, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import MainLayout from '@/components/layout/MainLayout';
 
 // 模拟数据
@@ -53,13 +51,6 @@ const mockData = {
 export default function HomePage() {
   const router = useRouter();
   const [timeRange, setTimeRange] = useState('today');
-  const [isChatOpen, setIsChatOpen] = useState(false);
-  const [chatMessages, setChatMessages] = useState<Array<{ role: string; content: string }>>([
-    { role: 'assistant', content: '您好！我是龙掌柜AI助手。有什么可以帮您的？\n\n您可以问我：\n• 今天的运营情况怎么样？\n• 帮我分析一下这个新品要不要上？\n• 帮我写一个催好评的消息\n• 生成今日日报' }
-  ]);
-  const [chatInput, setChatInput] = useState('');
-  const [isChatLoading, setIsChatLoading] = useState(false);
-  const chatEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const user = localStorage.getItem('user');
@@ -67,40 +58,6 @@ export default function HomePage() {
       router.push('/login');
     }
   }, [router]);
-
-  // 滚动到底部
-  useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [chatMessages]);
-
-  // 发送消息
-  const handleSendMessage = async () => {
-    if (!chatInput.trim() || isChatLoading) return;
-
-    const userMessage = chatInput.trim();
-    setChatInput('');
-    setChatMessages(prev => [...prev, { role: 'user', content: userMessage }]);
-    setIsChatLoading(true);
-
-    try {
-      const response = await fetch('/api/assistant/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: userMessage })
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setChatMessages(prev => [...prev, { role: 'assistant', content: data.response || '抱歉，我现在无法回答您的问题。' }]);
-      } else {
-        setChatMessages(prev => [...prev, { role: 'assistant', content: '抱歉，发生了错误，请稍后再试。' }]);
-      }
-    } catch {
-      setChatMessages(prev => [...prev, { role: 'assistant', content: '抱歉，网络连接失败，请检查网络后重试。' }]);
-    } finally {
-      setIsChatLoading(false);
-    }
-  };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -353,7 +310,7 @@ export default function HomePage() {
                     <li>• 新功能已上线</li>
                   </ul>
                 </div>
-                <Button className="w-full btn-primary" onClick={() => setIsChatOpen(true)}>
+                <Button className="w-full btn-primary">
                   开始对话
                 </Button>
               </div>
@@ -428,86 +385,6 @@ export default function HomePage() {
           </div>
         </div>
       </div>
-
-      {/* AI助手对话框 */}
-      <Dialog open={isChatOpen} onOpenChange={setIsChatOpen}>
-        <DialogContent className="sm:max-w-[500px] max-h-[70vh] flex flex-col p-0 gap-0">
-          <DialogHeader className="px-6 py-4 border-b border-[#E5E6EB] flex flex-row items-center justify-between space-y-0">
-            <DialogTitle className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#165DFF] to-[#4080FF] flex items-center justify-center">
-                <Bot className="w-4 h-4 text-white" />
-              </div>
-              AI助手
-            </DialogTitle>
-          </DialogHeader>
-          
-          {/* 消息列表 */}
-          <div className="flex-1 overflow-y-auto p-6 space-y-4 max-h-[50vh]">
-            {chatMessages.map((message, index) => (
-              <div
-                key={index}
-                className={`flex gap-3 ${message.role === 'user' ? 'flex-row-reverse' : ''}`}
-              >
-                {message.role === 'assistant' && (
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#165DFF] to-[#4080FF] flex items-center justify-center flex-shrink-0">
-                    <Bot className="w-4 h-4 text-white" />
-                  </div>
-                )}
-                <div
-                  className={`max-w-[80%] rounded-lg px-4 py-3 ${
-                    message.role === 'user'
-                      ? 'bg-[#165DFF] text-white'
-                      : 'bg-[#F2F3F5] text-[#1D2129]'
-                  }`}
-                >
-                  <p className="whitespace-pre-wrap text-sm">{message.content}</p>
-                </div>
-                {message.role === 'user' && (
-                  <div className="w-8 h-8 rounded-full bg-[#00B42A] flex items-center justify-center flex-shrink-0">
-                    <span className="text-white text-sm font-medium">我</span>
-                  </div>
-                )}
-              </div>
-            ))}
-            {isChatLoading && (
-              <div className="flex gap-3">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#165DFF] to-[#4080FF] flex items-center justify-center">
-                  <Bot className="w-4 h-4 text-white" />
-                </div>
-                <div className="bg-[#F2F3F5] rounded-lg px-4 py-3">
-                  <div className="flex gap-1">
-                    <div className="w-2 h-2 bg-[#86909C] rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                    <div className="w-2 h-2 bg-[#86909C] rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                    <div className="w-2 h-2 bg-[#86909C] rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                  </div>
-                </div>
-              </div>
-            )}
-            <div ref={chatEndRef} />
-          </div>
-
-          {/* 输入框 */}
-          <div className="p-4 border-t border-[#E5E6EB]">
-            <div className="flex gap-2">
-              <Input
-                placeholder="输入您的问题..."
-                value={chatInput}
-                onChange={(e) => setChatInput(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-                disabled={isChatLoading}
-                className="flex-1"
-              />
-              <Button
-                className="btn-primary"
-                onClick={handleSendMessage}
-                disabled={!chatInput.trim() || isChatLoading}
-              >
-                <Send className="w-4 h-4" />
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
     </MainLayout>
   );
 }
