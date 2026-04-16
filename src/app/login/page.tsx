@@ -2,322 +2,217 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Eye, EyeOff, Lock, Smartphone, MessageSquare, Shield, User, Store, ArrowRight } from 'lucide-react';
+import { Lock, User, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { toast } from 'sonner';
+import { login } from '@/lib/api/auth';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function LoginPage() {
   const router = useRouter();
-  const [loginType, setLoginType] = useState<'password' | 'sms'>('password');
-  const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [countdown, setCountdown] = useState(0);
-  const [selectedRole, setSelectedRole] = useState<'admin' | 'user' | null>(null);
+  const { login: setAuth } = useAuth();
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [captcha, setCaptcha] = useState('');
+  const [captchaCode, setCaptchaCode] = useState('ABCD');
+  const [isLoading, setIsLoading] = useState(false);
 
-  const [formData, setFormData] = useState({
-    phone: '',
-    password: '',
-    code: '',
+  // 生成随机验证码
+  const generateCaptcha = () => {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let code = '';
+    for (let i = 0; i < 4; i++) {
+      code += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    setCaptchaCode(code);
+  };
+
+  // 初始化验证码
+  useState(() => {
+    generateCaptcha();
   });
 
-  const handleGetCode = () => {
-    if (!formData.phone) {
-      toast.error('请输入手机号');
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!username || !password) {
+      toast.error('请输入账号和密码');
       return;
     }
-    setCountdown(60);
-    const timer = setInterval(() => {
-      setCountdown((prev) => {
-        if (prev <= 1) {
-          clearInterval(timer);
-          return 0;
-        }
-        return prev - 1;
+
+    if (captcha.toUpperCase() !== captchaCode) {
+      toast.error('验证码错误，请重新输入');
+      generateCaptcha();
+      setCaptcha('');
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      // 调用真实登录API
+      const response = await login({
+        phone: username, // 使用输入的用户名作为手机号
+        password: password,
       });
-    }, 1000);
-    toast.success('验证码已发送');
-  };
 
-  const handleRoleSelect = (role: 'admin' | 'user') => {
-    setSelectedRole(role);
-  };
-
-  const handleLogin = async () => {
-    if (!selectedRole) {
-      toast.error('请先选择登录角色');
-      return;
+      // 使用AuthProvider的login方法保存登录状态
+      setAuth(response.access_token, response.user);
+      
+      toast.success('登录成功');
+      router.push('/');
+    } catch (error: any) {
+      console.error('登录失败:', error);
+      toast.error(error.message || '账号或密码错误');
+      generateCaptcha();
+      setCaptcha('');
+    } finally {
+      setIsLoading(false);
     }
-    if (!formData.phone) {
-      toast.error('请输入手机号');
-      return;
-    }
-    if (loginType === 'password' && !formData.password) {
-      toast.error('请输入密码');
-      return;
-    }
-    if (loginType === 'sms' && !formData.code) {
-      toast.error('请输入验证码');
-      return;
-    }
-
-    setLoading(true);
-    
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    // 根据角色保存用户信息
-    const userInfo = {
-      id: selectedRole === 'admin' ? '1' : '2',
-      username: formData.phone,
-      role: selectedRole,
-      email: `${formData.phone}@example.com`,
-      name: selectedRole === 'admin' ? '管理员' : '普通用户',
-    };
-    
-    localStorage.setItem('user', JSON.stringify(userInfo));
-    localStorage.setItem('token', 'mock-jwt-token');
-    
-    toast.success(`${selectedRole === 'admin' ? '管理员' : '用户'}登录成功`);
-    
-    setTimeout(() => {
-      router.push('/dashboard');
-    }, 500);
-    
-    setLoading(false);
   };
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-[#F7F8FA]">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#E8F4FF] via-[#F0F7FF] to-[#E6F0FF]">
       <div className="w-full max-w-md">
-        {/* Logo */}
+        {/* 顶部品牌区 */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center gap-2 mb-4">
-            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#165DFF] to-[#4080FF] flex items-center justify-center">
-              <span className="text-white font-bold text-lg">龙</span>
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-primary rounded-2xl mb-4 shadow-lg">
+            <span className="text-3xl">🦞</span>
+          </div>
+          <h1 className="text-[20px] font-semibold text-foreground mb-2">
+            龙掌柜智能运营系统
+          </h1>
+          <p className="text-[14px] text-muted-foreground">
+            飞书AI中台驱动版 · v1.0
+          </p>
+        </div>
+
+        {/* 登录表单卡片 */}
+        <Card className="shadow-xl border-0 rounded-lg">
+          <CardHeader className="text-center pb-2">
+            <CardTitle className="text-[16px] font-medium">管理员登录</CardTitle>
+            <CardDescription className="text-[13px]">
+              严格权限校验，保障系统数据安全
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="pt-4">
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="username" className="text-[14px]">账号</Label>
+                <div className="relative">
+                  <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="username"
+                    type="text"
+                    placeholder="请输入管理员账号"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    className="pl-10 h-10"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="password" className="text-[14px]">密码</Label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="password"
+                    type="password"
+                    placeholder="请输入密码"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="pl-10 h-10"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="captcha" className="text-[14px]">验证码</Label>
+                <div className="flex gap-3">
+                  <div className="relative flex-1">
+                    <ShieldCheck className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="captcha"
+                      type="text"
+                      placeholder="请输入验证码"
+                      value={captcha}
+                      onChange={(e) => setCaptcha(e.target.value)}
+                      className="pl-10 h-10"
+                      maxLength={4}
+                    />
+                  </div>
+                  <div
+                    className="w-[100px] h-10 bg-muted rounded-md flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity"
+                    onClick={generateCaptcha}
+                    title="点击刷新验证码"
+                  >
+                    <span className="text-[18px] font-bold tracking-[4px] text-primary select-none">
+                      {captchaCode}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <Button
+                type="submit"
+                className="w-full h-10 bg-primary hover:bg-primary/90 text-[14px] font-medium"
+                disabled={isLoading}
+              >
+                {isLoading ? '登录中...' : '登录'}
+              </Button>
+            </form>
+
+            <div className="mt-6 pt-4 border-t border-border">
+              <div className="flex items-center justify-center gap-4 text-[12px] text-muted-foreground">
+                <span className="flex items-center gap-1">
+                  <ShieldCheck className="h-3 w-3" />
+                  安全登录
+                </span>
+                <span>·</span>
+                <span>管理员专属入口</span>
+              </div>
             </div>
-            <span className="text-[#1D2129] font-bold text-xl">龙掌柜 AI 运营助手</span>
+          </CardContent>
+        </Card>
+
+        {/* 底部信息 */}
+        <div className="text-center mt-6 space-y-2">
+          <p className="text-[12px] text-muted-foreground">
+            © 2024 龙掌柜智能运营系统 · 版权所有
+          </p>
+          <div className="flex items-center justify-center gap-4 text-[12px]">
+            <a href="#" className="text-muted-foreground hover:text-primary transition-colors">
+              帮助中心
+            </a>
+            <span className="text-muted-foreground/50">|</span>
+            <a href="#" className="text-muted-foreground hover:text-primary transition-colors">
+              联系阿峰
+            </a>
+            <span className="text-muted-foreground/50">|</span>
+            <a href="#" className="text-muted-foreground hover:text-primary transition-colors">
+              忘记密码
+            </a>
           </div>
         </div>
 
-        {/* 登录卡片 */}
-        <Card className="p-8 bg-white border border-[#E5E6EB] shadow-lg">
-          <h2 className="text-xl font-bold text-[#1D2129] mb-6 text-center">账号登录</h2>
-
-          {/* 角色选择 - 仅当未选择时显示 */}
-          {!selectedRole ? (
-            <div className="space-y-4">
-              <p className="text-center text-[#86909C] mb-4">请选择登录角色</p>
-              
-              {/* 管理员入口 */}
-              <button
-                onClick={() => handleRoleSelect('admin')}
-                className="w-full p-4 border-2 border-[#E5E6EB] rounded-lg hover:border-[#FF7D00] transition-all duration-200 group"
-              >
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-full bg-[#FFF7E6] flex items-center justify-center group-hover:bg-[#FF7D00]/10 transition-colors">
-                    <Shield className="w-6 h-6 text-[#FF7D00]" />
-                  </div>
-                  <div className="flex-1 text-left">
-                    <h3 className="font-semibold text-[#1D2129]">管理员入口</h3>
-                    <p className="text-sm text-[#86909C]">平台配置、用户管理、系统设置</p>
-                  </div>
-                  <ArrowRight className="w-5 h-5 text-[#86909C] group-hover:text-[#FF7D00] transition-colors" />
-                </div>
-              </button>
-
-              {/* 普通用户入口 */}
-              <button
-                onClick={() => handleRoleSelect('user')}
-                className="w-full p-4 border-2 border-[#E5E6EB] rounded-lg hover:border-[#00B42A] transition-all duration-200 group"
-              >
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-full bg-[#E8FFF3] flex items-center justify-center group-hover:bg-[#00B42A]/10 transition-colors">
-                    <Store className="w-6 h-6 text-[#00B42A]" />
-                  </div>
-                  <div className="flex-1 text-left">
-                    <h3 className="font-semibold text-[#1D2129]">商家入口</h3>
-                    <p className="text-sm text-[#86909C]">店铺管理、AI智能体、ERP系统</p>
-                  </div>
-                  <ArrowRight className="w-5 h-5 text-[#86909C] group-hover:text-[#00B42A] transition-colors" />
-                </div>
-              </button>
-            </div>
-          ) : (
-            <>
-              {/* 已选角色提示 */}
-              <div className="mb-4 p-3 bg-[#F7F8FA] rounded-lg flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  {selectedRole === 'admin' ? (
-                    <>
-                      <Shield className="w-4 h-4 text-[#FF7D00]" />
-                      <span className="text-sm text-[#1D2129]">管理员登录</span>
-                    </>
-                  ) : (
-                    <>
-                      <Store className="w-4 h-4 text-[#00B42A]" />
-                      <span className="text-sm text-[#1D2129]">商家登录</span>
-                    </>
-                  )}
-                </div>
-                <button
-                  onClick={() => setSelectedRole(null)}
-                  className="text-xs text-[#165DFF] hover:underline"
-                >
-                  切换角色
-                </button>
-              </div>
-
-              {/* 登录方式切换 */}
-              <Tabs 
-                defaultValue="password" 
-                value={loginType}
-                onValueChange={(v) => setLoginType(v as 'password' | 'sms')}
-                className="w-full mb-6"
-              >
-                <TabsList className="w-full bg-[#F2F3F5]">
-                  <TabsTrigger value="password" className="flex-1 data-[state=active]:bg-white data-[state=active]:text-[#165DFF]">
-                    密码登录
-                  </TabsTrigger>
-                  <TabsTrigger value="sms" className="flex-1 data-[state=active]:bg-white data-[state=active]:text-[#165DFF]">
-                    验证码登录
-                  </TabsTrigger>
-                </TabsList>
-              </Tabs>
-
-              <div className="space-y-4">
-                {/* 手机号 */}
-                <div className="space-y-2">
-                  <label className="text-sm text-[#4E5969]">手机号/邮箱</label>
-                  <div className="relative">
-                    <Smartphone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#86909C]" />
-                    <Input
-                      type="tel"
-                      placeholder="请输入手机号"
-                      value={formData.phone}
-                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                      className="pl-10 h-12 input-minimal"
-                    />
-                  </div>
-                </div>
-
-                {/* 密码/验证码 */}
-                {loginType === 'password' ? (
-                  <div className="space-y-2">
-                    <label className="text-sm text-[#4E5969]">密码</label>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#86909C]" />
-                      <Input
-                        type={showPassword ? 'text' : 'password'}
-                        placeholder="请输入密码"
-                        value={formData.password}
-                        onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                        className="pl-10 pr-10 h-12 input-minimal"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-[#86909C] hover:text-[#4E5969]"
-                      >
-                        {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    <label className="text-sm text-[#4E5969]">验证码</label>
-                    <div className="flex gap-3">
-                      <div className="relative flex-1">
-                        <MessageSquare className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#86909C]" />
-                        <Input
-                          type="text"
-                          placeholder="请输入验证码"
-                          value={formData.code}
-                          onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-                          className="pl-10 h-12 input-minimal"
-                        />
-                      </div>
-                      <Button
-                        variant="ghost"
-                        onClick={handleGetCode}
-                        disabled={countdown > 0}
-                        className="h-12 px-4 bg-[#F2F3F5] text-[#4E5969] hover:bg-[#E5E6EB] disabled:opacity-50 whitespace-nowrap"
-                      >
-                        {countdown > 0 ? `${countdown}s` : '获取验证码'}
-                      </Button>
-                    </div>
-                  </div>
-                )}
-
-                {/* 忘记密码/验证码登录切换 */}
-                <div className="flex items-center justify-between text-sm">
-                  {loginType === 'password' ? (
-                    <button 
-                      className="text-[#165DFF] hover:underline"
-                      onClick={() => setLoginType('sms')}
-                    >
-                      验证码登录
-                    </button>
-                  ) : (
-                    <button 
-                      className="text-[#165DFF] hover:underline"
-                      onClick={() => setLoginType('password')}
-                    >
-                      密码登录
-                    </button>
-                  )}
-                  <button className="text-[#86909C] hover:text-[#4E5969]">
-                    忘记密码
-                  </button>
-                </div>
-
-                {/* 登录按钮 */}
-                <Button
-                  onClick={handleLogin}
-                  disabled={loading}
-                  className={`w-full h-12 text-base ${
-                    selectedRole === 'admin' 
-                      ? 'bg-[#FF7D00] hover:bg-[#FF7D00]/90' 
-                      : 'btn-primary'
-                  }`}
-                >
-                  {loading ? (
-                    <div className="flex items-center gap-2">
-                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      登录中...
-                    </div>
-                  ) : (
-                    `以${selectedRole === 'admin' ? '管理员' : '商家'}身份登录`
-                  )}
-                </Button>
-
-                {/* 注册链接 */}
-                <div className="text-center text-sm text-[#86909C]">
-                  还没有账号？
-                  <button className="text-[#165DFF] hover:underline ml-1">
-                    立即注册
-                  </button>
-                </div>
-
-                {/* 飞书快捷登录 */}
-                <div className="mt-4 pt-4 border-t border-[#E5E6EB]">
-                  <Button
-                    variant="ghost"
-                    className="w-full h-12 bg-[#F2F3F5] text-[#4E5969] hover:bg-[#E5E6EB]"
-                  >
-                    <MessageSquare className="w-5 h-5 mr-2" />
-                    飞书快捷登录
-                  </Button>
-                </div>
-              </div>
-            </>
-          )}
-        </Card>
-
-        {/* 版权信息 */}
-        <div className="text-center mt-8 text-sm text-[#86909C]">
-          版权信息 ©2025 龙掌柜 All Rights Reserved
+        {/* 提示信息 */}
+        <div className="mt-8 p-4 bg-primary/5 rounded-lg border border-primary/10">
+          <p className="text-[12px] text-muted-foreground text-center mb-2">
+            <span className="text-primary font-medium">管理员账号：</span>
+            admin / admin123
+          </p>
+          <p className="text-[12px] text-muted-foreground text-center mb-2">
+            <span className="text-primary font-medium">测试账号：</span>
+            13800138000 / 123456
+          </p>
+          <p className="text-[12px] text-muted-foreground text-center">
+            <span className="text-primary font-medium">提示：</span>
+            终端用户（卖家）请通过飞书机器人交互，无需登录后台
+          </p>
         </div>
       </div>
     </div>
