@@ -139,6 +139,16 @@ const mockSuppliers = [
   },
 ];
 
+// 辅助函数：从价格区间提取最低价格
+const getMinPrice = (priceStr: string) => {
+  try {
+    const match = priceStr.match(/¥(\d+)/);
+    return match ? parseInt(match[1]) : 99999;
+  } catch {
+    return 99999;
+  }
+};
+
 export default function SelectPage() {
   const [activeTab, setActiveTab] = useState('demand');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -642,17 +652,10 @@ export default function SelectPage() {
                       {mockSuppliers
                         .filter(s => !currentProductForSupplier || s.productId === currentProductForSupplier)
                         .filter(s => !supplierFilters.onePieceDelivery || s.isOnePieceDelivery)
-                        .filter(s => !supplierFilters.maxMoq || s.moq <= parseInt(supplierFilters.maxMoq || '9999'))
+                        .filter(s => !supplierFilters.maxMoq || s.moq <= parseInt(supplierFilters.maxMoq || '9999', 10))
                         .sort((a, b) => {
                           if (supplierFilters.sortBy === 'rating') return b.rating - a.rating;
-                          if (supplierFilters.sortBy === 'price') {
-                            // 从价格区间中提取最低价格进行比较
-                            const getPrice = (priceStr: string) => {
-                              const match = priceStr.match(/¥(\d+)/);
-                              return match ? parseInt(match[1]) : 99999;
-                            };
-                            return getPrice(a.priceRange) - getPrice(b.priceRange);
-                          }
+                          if (supplierFilters.sortBy === 'price') return getMinPrice(a.priceRange) - getMinPrice(b.priceRange);
                           if (supplierFilters.sortBy === 'moq') return a.moq - b.moq;
                           return 0;
                         })
