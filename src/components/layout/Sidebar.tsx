@@ -99,6 +99,16 @@ const adminMenuItems: MenuItem[] = [
     title: '智能体配置',
     href: '/agents/config',
     icon: Bot,
+    submenu: [
+      { title: '配置总览', href: '/agents/config' },
+      { title: '选品智能体', href: '/agents/product-selection/config' },
+      { title: '图片设计', href: '/agents/image-design/config' },
+      { title: '视频生成', href: '/agents/video-generation/config' },
+      { title: 'Listing优化', href: '/agents/listing-optimization/config' },
+      { title: '广告投放', href: '/agents/advertising/config' },
+      { title: 'AI客服', href: '/agents/customer-service/config' },
+      { title: '数据复盘', href: '/agents/data-review/config' },
+    ],
   },
   {
     title: '模型配置',
@@ -110,6 +120,7 @@ const adminMenuItems: MenuItem[] = [
     href: '/platform',
     icon: Settings,
     submenu: [
+      { title: '配置总览', href: '/platform' },
       { title: '数据源配置', href: '/platform/datasources' },
       { title: '平台凭证', href: '/shops/platforms' },
     ],
@@ -120,6 +131,7 @@ const adminMenuItems: MenuItem[] = [
     icon: MessageSquare,
     submenu: [
       { title: '机器人管理', href: '/feishu' },
+      { title: '数据导入', href: '/feishu/import' },
     ],
   },
   {
