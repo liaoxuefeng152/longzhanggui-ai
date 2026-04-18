@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, Fragment } from 'react';
 import { useRouter } from 'next/navigation';
 import MainLayout from '@/components/layout/MainLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
@@ -58,7 +58,10 @@ import {
   Edit,
   CheckCircle,
   AlertTriangle,
+  Plus,
 } from "lucide-react";
+
+import AIAssistant from '@/components/ai-assistant';
 
 // 工作流步骤类型
 type WorkflowStepStatus = 'pending' | 'processing' | 'completed' | 'confirmed' | 'skipped' | 'failed';
@@ -1398,6 +1401,7 @@ export default function WorkflowsPage() {
   if (!user) return null;
 
   return (
+    <>
     <MainLayout user={user} onLogout={() => router.push('/login')}>
       <div className="space-y-6">
         {/* 页面标题 */}
@@ -1549,6 +1553,8 @@ export default function WorkflowsPage() {
         onClose={() => setShowBatchPricing(false)} 
       />
     </MainLayout>
+    <AIAssistant onNavigate={(path) => router.push(path)} />
+    </>
   );
 }
 
@@ -2092,6 +2098,3 @@ function BatchPricingDialog({ open, onClose }: { open: boolean; onClose: () => v
     </Dialog>
   );
 }
-
-// 缺少的导入
-import { Plus } from "lucide-react";
