@@ -43,10 +43,9 @@ const clientMenuItems: MenuItem[] = [
   },
   {
     title: '智能体中心',
-    href: '/ai-agents',
+    href: '/agents/product-selection',
     icon: Bot,
     submenu: [
-      { title: '智能体中心', href: '/ai-agents' },
       { title: '选品智能体', href: '/agents/product-selection' },
       { title: '图片智能体', href: '/agents/image-design' },
       { title: '视频生成智能体', href: '/agents/video-generation' },
@@ -101,10 +100,9 @@ const adminMenuItems: MenuItem[] = [
   },
   {
     title: '智能体配置',
-    href: '/ai-agents',
+    href: '/agents/product-selection/config',
     icon: Bot,
     submenu: [
-      { title: '智能体中心', href: '/ai-agents' },
       { title: '选品智能体', href: '/agents/product-selection/config' },
       { title: '图片智能体', href: '/agents/image-design/config' },
       { title: '视频生成智能体', href: '/agents/video-generation/config' },
@@ -216,7 +214,7 @@ export default function Sidebar() {
     if (!isClientView) {
       window.location.href = '/dashboard';
     } else {
-      window.location.href = '/ai-agents';
+      window.location.href = '/agents/product-selection';
     }
   };
 
