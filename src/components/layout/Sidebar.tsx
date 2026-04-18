@@ -42,7 +42,7 @@ const clientMenuItems: MenuItem[] = [
     icon: Zap,
   },
   {
-    title: 'AI智能体',
+    title: 'AI智能体(使用)',
     href: '/ai-agents',
     icon: Bot,
     submenu: [
@@ -98,6 +98,21 @@ const adminMenuItems: MenuItem[] = [
     title: '控制台',
     href: '/dashboard',
     icon: LayoutDashboard,
+  },
+  {
+    title: '智能体配置',
+    href: '/ai-agents',
+    icon: Bot,
+    submenu: [
+      { title: '智能体中心', href: '/ai-agents' },
+      { title: '选品智能体', href: '/agents/product-selection/config' },
+      { title: '图片智能体', href: '/agents/image-design/config' },
+      { title: '视频生成智能体', href: '/agents/video-generation/config' },
+      { title: 'Listing优化', href: '/agents/listing-optimization/config' },
+      { title: '广告投放智能体', href: '/agents/advertising/config' },
+      { title: 'AI客服智能体', href: '/agents/customer-service/config' },
+      { title: '数据复盘智能体', href: '/agents/data-review/config' },
+    ],
   },
   {
     title: '工作流编排',
