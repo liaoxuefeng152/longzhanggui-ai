@@ -254,57 +254,60 @@ export default function CollectionCenterPage() {
         {/* 页面头部 */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-xl bg-orange-500/10 flex items-center justify-center">
-              <Inbox className="h-7 w-7 text-orange-500" />
+            <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-500/20 to-cyan-500/5 flex items-center justify-center">
+              <Inbox className="h-7 w-7 text-blue-500" />
             </div>
             <div>
-              <h1 className="text-[18px] font-semibold text-foreground">采集中心</h1>
+              <h1 className="text-[24px] font-semibold text-foreground">采集中心</h1>
               <p className="text-[14px] text-muted-foreground">采集1688商品 · 公用采集箱 · 认领到店铺</p>
             </div>
           </div>
-          <Badge variant="outline" className="bg-orange-500/10 text-orange-500 border-orange-500/20">
-            <Sparkles className="h-3 w-3 mr-1" />
+          <Button variant="outline" className="bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white">
+            <Sparkles className="h-4 w-4 mr-2" />
             支持批量采集
-          </Badge>
+          </Button>
         </div>
 
-        {/* 统计卡片 */}
-        <div className="grid grid-cols-3 gap-4">
-          <Card className="bg-white border-border shadow-sm">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
+        {/* 统计卡片 - 工作台风格 */}
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+          <Card className="bg-white border-border shadow-sm hover:shadow-md transition-shadow">
+            <CardContent className="p-5">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-100 to-cyan-100 flex items-center justify-center">
+                  <Inbox className="h-6 w-6 text-blue-600" />
+                </div>
                 <div>
                   <p className="text-[12px] text-muted-foreground">采集箱总量</p>
-                  <p className="text-[24px] font-semibold">{stats.total}</p>
-                </div>
-                <div className="w-10 h-10 rounded-lg bg-orange-500/10 flex items-center justify-center">
-                  <Inbox className="h-5 w-5 text-orange-500" />
+                  <p className="text-[26px] font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">{stats.total}</p>
+                  <p className="text-[11px] text-muted-foreground">全部商品</p>
                 </div>
               </div>
             </CardContent>
           </Card>
-          <Card className="bg-white border-border shadow-sm">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
+          <Card className="bg-white border-border shadow-sm hover:shadow-md transition-shadow">
+            <CardContent className="p-5">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-100 to-orange-100 flex items-center justify-center">
+                  <Clock className="h-6 w-6 text-amber-600" />
+                </div>
                 <div>
                   <p className="text-[12px] text-muted-foreground">待认领</p>
-                  <p className="text-[24px] font-semibold text-yellow-500">{stats.pending}</p>
-                </div>
-                <div className="w-10 h-10 rounded-lg bg-yellow-500/10 flex items-center justify-center">
-                  <Clock className="h-5 w-5 text-yellow-500" />
+                  <p className="text-[26px] font-bold bg-gradient-to-r from-amber-500 to-orange-500 bg-clip-text text-transparent">{stats.pending}</p>
+                  <p className="text-[11px] text-amber-600">需认领</p>
                 </div>
               </div>
             </CardContent>
           </Card>
-          <Card className="bg-white border-border shadow-sm">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
+          <Card className="bg-white border-border shadow-sm hover:shadow-md transition-shadow">
+            <CardContent className="p-5">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-green-100 to-emerald-100 flex items-center justify-center">
+                  <CheckCircle className="h-6 w-6 text-green-600" />
+                </div>
                 <div>
                   <p className="text-[12px] text-muted-foreground">已认领</p>
-                  <p className="text-[24px] font-semibold text-green-500">{stats.claimed}</p>
-                </div>
-                <div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center">
-                  <CheckCircle className="h-5 w-5 text-green-500" />
+                  <p className="text-[26px] font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">{stats.claimed}</p>
+                  <p className="text-[11px] text-green-600">已完成</p>
                 </div>
               </div>
             </CardContent>

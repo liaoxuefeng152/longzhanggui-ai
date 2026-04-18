@@ -401,19 +401,15 @@ export default function ERPPurchasePage() {
         {/* 页面头部 */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center">
-              <ShoppingCart className="h-7 w-7 text-primary" />
+            <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-green-500/20 to-emerald-500/5 flex items-center justify-center">
+              <ShoppingCart className="h-7 w-7 text-green-500" />
             </div>
             <div>
-              <h1 className="text-[18px] font-semibold text-foreground">ERP采购管理</h1>
+              <h1 className="text-[24px] font-semibold text-foreground">ERP采购管理</h1>
               <p className="text-[14px] text-muted-foreground">采购申请 · 供应商管理 · 入库确认 · 成本核算</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <Button variant="outline" onClick={fetchData}>
-              <RefreshCw className="h-4 w-4 mr-2" />
-              刷新
-            </Button>
             <Button variant="outline" onClick={handleExport} disabled={isProcessing === 'export'}>
               {isProcessing === 'export' ? (
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -422,68 +418,84 @@ export default function ERPPurchasePage() {
               )}
               导出
             </Button>
-            <Button onClick={() => setIsCreateOpen(true)}>
+            <Button onClick={() => setIsCreateOpen(true)}
+              className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white">
               <Plus className="h-4 w-4 mr-2" />
               新建采购
             </Button>
           </div>
         </div>
 
-        {/* 核心能力标签 */}
-        <div className="flex items-center gap-2">
-          <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
-            <ShoppingCart className="h-3 w-3 mr-1" />
-            采购申请
-          </Badge>
-          <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
-            <Truck className="h-3 w-3 mr-1" />
-            物流追踪
-          </Badge>
-          <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
-            <Package className="h-3 w-3 mr-1" />
-            入库管理
-          </Badge>
-          <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
-            <DollarSign className="h-3 w-3 mr-1" />
-            成本核算
-          </Badge>
-        </div>
-
-        {/* 统计概览 */}
-        <div className="grid grid-cols-5 gap-4">
-          <Card className="bg-white border-border shadow-sm">
-            <CardContent className="p-4">
-              <div className="text-[12px] text-muted-foreground mb-1">采购单数</div>
-              <div className="text-[24px] font-semibold text-foreground">{totalOrders}</div>
-              <div className="text-[11px] text-muted-foreground mt-1">全部采购</div>
+        {/* 统计概览 - 工作台风格 */}
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+          <Card className="bg-white border-border shadow-sm hover:shadow-md transition-shadow">
+            <CardContent className="p-5">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-green-100 to-emerald-100 flex items-center justify-center">
+                  <ShoppingCart className="h-6 w-6 text-green-600" />
+                </div>
+                <div>
+                  <p className="text-[12px] text-muted-foreground">采购单数</p>
+                  <p className="text-[26px] font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">{totalOrders}</p>
+                  <p className="text-[11px] text-muted-foreground">全部采购</p>
+                </div>
+              </div>
             </CardContent>
           </Card>
-          <Card className="bg-white border-border shadow-sm">
-            <CardContent className="p-4">
-              <div className="text-[12px] text-muted-foreground mb-1">待确认</div>
-              <div className="text-[24px] font-semibold text-warning">{pendingOrders}</div>
-              <div className="text-[11px] text-muted-foreground mt-1">需处理</div>
+          <Card className="bg-white border-border shadow-sm hover:shadow-md transition-shadow">
+            <CardContent className="p-5">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-100 to-orange-100 flex items-center justify-center">
+                  <Clock className="h-6 w-6 text-amber-600" />
+                </div>
+                <div>
+                  <p className="text-[12px] text-muted-foreground">待确认</p>
+                  <p className="text-[26px] font-bold bg-gradient-to-r from-amber-500 to-orange-500 bg-clip-text text-transparent">{pendingOrders}</p>
+                  <p className="text-[11px] text-amber-600">需处理</p>
+                </div>
+              </div>
             </CardContent>
           </Card>
-          <Card className="bg-white border-border shadow-sm">
-            <CardContent className="p-4">
-              <div className="text-[12px] text-muted-foreground mb-1">运输中</div>
-              <div className="text-[24px] font-semibold text-blue-500">{inTransitOrders}</div>
-              <div className="text-[11px] text-muted-foreground mt-1">待入库</div>
+          <Card className="bg-white border-border shadow-sm hover:shadow-md transition-shadow">
+            <CardContent className="p-5">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-100 to-cyan-100 flex items-center justify-center">
+                  <Truck className="h-6 w-6 text-blue-600" />
+                </div>
+                <div>
+                  <p className="text-[12px] text-muted-foreground">运输中</p>
+                  <p className="text-[26px] font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">{inTransitOrders}</p>
+                  <p className="text-[11px] text-muted-foreground">待入库</p>
+                </div>
+              </div>
             </CardContent>
           </Card>
-          <Card className="bg-white border-border shadow-sm">
-            <CardContent className="p-4">
-              <div className="text-[12px] text-muted-foreground mb-1">采购金额</div>
-              <div className="text-[24px] font-semibold text-foreground">${totalAmount.toFixed(2)}</div>
-              <div className="text-[11px] text-muted-foreground mt-1">总金额</div>
+          <Card className="bg-white border-border shadow-sm hover:shadow-md transition-shadow">
+            <CardContent className="p-5">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center">
+                  <DollarSign className="h-6 w-6 text-purple-600" />
+                </div>
+                <div>
+                  <p className="text-[12px] text-muted-foreground">采购金额</p>
+                  <p className="text-[26px] font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">${totalAmount.toFixed(2)}</p>
+                  <p className="text-[11px] text-muted-foreground">总金额</p>
+                </div>
+              </div>
             </CardContent>
           </Card>
-          <Card className="bg-white border-border shadow-sm">
-            <CardContent className="p-4">
-              <div className="text-[12px] text-muted-foreground mb-1">供应商</div>
-              <div className="text-[24px] font-semibold text-foreground">{suppliers.length}</div>
-              <div className="text-[11px] text-muted-foreground mt-1">合作供应商</div>
+          <Card className="bg-white border-border shadow-sm hover:shadow-md transition-shadow">
+            <CardContent className="p-5">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-100 to-blue-100 flex items-center justify-center">
+                  <Package className="h-6 w-6 text-indigo-600" />
+                </div>
+                <div>
+                  <p className="text-[12px] text-muted-foreground">供应商</p>
+                  <p className="text-[26px] font-bold bg-gradient-to-r from-indigo-600 to-blue-600 bg-clip-text text-transparent">{suppliers.length}</p>
+                  <p className="text-[11px] text-muted-foreground">合作供应商</p>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </div>

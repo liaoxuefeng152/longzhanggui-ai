@@ -252,20 +252,17 @@ export default function ERPInventoryPage() {
         {/* 页面头部 */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center">
-              <Package className="h-7 w-7 text-primary" />
+            <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-orange-500/20 to-amber-500/5 flex items-center justify-center">
+              <Package className="h-7 w-7 text-orange-500" />
             </div>
             <div>
-              <h1 className="text-[18px] font-semibold text-foreground">ERP库存管理</h1>
+              <h1 className="text-[24px] font-semibold text-foreground">ERP库存管理</h1>
               <p className="text-[14px] text-muted-foreground">库存预警 · 安全库存 · 自动补货 · 周转分析</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <Button variant="outline" onClick={fetchInventory}>
-              <RefreshCw className="h-4 w-4 mr-2" />
-              刷新
-            </Button>
-            <Button variant="outline" onClick={handleSyncInventory} disabled={isProcessing === 'sync'}>
+            <Button variant="outline" onClick={handleSyncInventory} disabled={isProcessing === 'sync'}
+              className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white">
               {isProcessing === 'sync' ? (
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
               ) : (
@@ -284,61 +281,76 @@ export default function ERPInventoryPage() {
           </div>
         </div>
 
-        {/* 核心能力标签 */}
-        <div className="flex items-center gap-2">
-          <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
-            <AlertTriangle className="h-3 w-3 mr-1" />
-            库存预警
-          </Badge>
-          <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
-            <Truck className="h-3 w-3 mr-1" />
-            自动补货
-          </Badge>
-          <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
-            <Warehouse className="h-3 w-3 mr-1" />
-            多仓管理
-          </Badge>
-          <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
-            <BarChart3 className="h-3 w-3 mr-1" />
-            周转分析
-          </Badge>
-        </div>
-
-        {/* 统计概览 */}
-        <div className="grid grid-cols-5 gap-4">
-          <Card className="bg-white border-border shadow-sm">
-            <CardContent className="p-4">
-              <div className="text-[12px] text-muted-foreground mb-1">SKU数量</div>
-              <div className="text-[24px] font-semibold text-foreground">{totalItems}</div>
-              <div className="text-[11px] text-muted-foreground mt-1">库存商品</div>
+        {/* 统计概览 - 工作台风格 */}
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+          <Card className="bg-white border-border shadow-sm hover:shadow-md transition-shadow">
+            <CardContent className="p-5">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-orange-100 to-amber-100 flex items-center justify-center">
+                  <Package className="h-6 w-6 text-orange-600" />
+                </div>
+                <div>
+                  <p className="text-[12px] text-muted-foreground">SKU数量</p>
+                  <p className="text-[26px] font-bold bg-gradient-to-r from-orange-600 to-amber-600 bg-clip-text text-transparent">{totalItems}</p>
+                  <p className="text-[11px] text-muted-foreground">库存商品</p>
+                </div>
+              </div>
             </CardContent>
           </Card>
-          <Card className="bg-white border-border shadow-sm">
-            <CardContent className="p-4">
-              <div className="text-[12px] text-muted-foreground mb-1">总库存</div>
-              <div className="text-[24px] font-semibold text-foreground">{totalQuantity}</div>
-              <div className="text-[11px] text-muted-foreground mt-1">件</div>
+          <Card className="bg-white border-border shadow-sm hover:shadow-md transition-shadow">
+            <CardContent className="p-5">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-100 to-cyan-100 flex items-center justify-center">
+                  <Warehouse className="h-6 w-6 text-blue-600" />
+                </div>
+                <div>
+                  <p className="text-[12px] text-muted-foreground">总库存</p>
+                  <p className="text-[26px] font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">{totalQuantity}</p>
+                  <p className="text-[11px] text-muted-foreground">件</p>
+                </div>
+              </div>
             </CardContent>
           </Card>
-          <Card className="bg-white border-border shadow-sm">
-            <CardContent className="p-4">
-              <div className="text-[12px] text-muted-foreground mb-1">库存价值</div>
-              <div className="text-[24px] font-semibold text-success">${totalValue.toFixed(2)}</div>
-              <div className="text-[11px] text-muted-foreground mt-1">成本价值</div>
+          <Card className="bg-white border-border shadow-sm hover:shadow-md transition-shadow">
+            <CardContent className="p-5">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-green-100 to-emerald-100 flex items-center justify-center">
+                  <BarChart3 className="h-6 w-6 text-green-600" />
+                </div>
+                <div>
+                  <p className="text-[12px] text-muted-foreground">库存价值</p>
+                  <p className="text-[26px] font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">${totalValue.toFixed(2)}</p>
+                  <p className="text-[11px] text-muted-foreground">成本价值</p>
+                </div>
+              </div>
             </CardContent>
           </Card>
-          <Card className="bg-white border-border shadow-sm">
-            <CardContent className="p-4">
-              <div className="text-[12px] text-muted-foreground mb-1">预警商品</div>
-              <div className="text-[24px] font-semibold text-warning">{warningItems}</div>
-              <div className="text-[11px] text-muted-foreground mt-1">需关注</div>
+          <Card className="bg-white border-border shadow-sm hover:shadow-md transition-shadow">
+            <CardContent className="p-5">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-100 to-orange-100 flex items-center justify-center">
+                  <AlertTriangle className="h-6 w-6 text-amber-600" />
+                </div>
+                <div>
+                  <p className="text-[12px] text-muted-foreground">预警商品</p>
+                  <p className="text-[26px] font-bold bg-gradient-to-r from-amber-500 to-orange-500 bg-clip-text text-transparent">{warningItems}</p>
+                  <p className="text-[11px] text-amber-600">需关注</p>
+                </div>
+              </div>
             </CardContent>
           </Card>
-          <Card className="bg-white border-border shadow-sm">
-            <CardContent className="p-4">
-              <div className="text-[12px] text-muted-foreground mb-1">缺货商品</div>
-              <div className="text-[24px] font-semibold text-destructive">{criticalItems}</div>
-              <div className="text-[11px] text-muted-foreground mt-1">需补货</div>
+          <Card className="bg-white border-border shadow-sm hover:shadow-md transition-shadow">
+            <CardContent className="p-5">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-red-100 to-pink-100 flex items-center justify-center">
+                  <AlertTriangle className="h-6 w-6 text-red-600" />
+                </div>
+                <div>
+                  <p className="text-[12px] text-muted-foreground">缺货商品</p>
+                  <p className="text-[26px] font-bold bg-gradient-to-r from-red-500 to-pink-500 bg-clip-text text-transparent">{criticalItems}</p>
+                  <p className="text-[11px] text-red-600">需补货</p>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </div>

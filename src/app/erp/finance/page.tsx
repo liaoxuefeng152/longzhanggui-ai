@@ -359,20 +359,17 @@ export default function ERPFinancePage() {
         {/* 页面头部 */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center">
-              <DollarSign className="h-7 w-7 text-primary" />
+            <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-green-500/20 to-emerald-500/5 flex items-center justify-center">
+              <DollarSign className="h-7 w-7 text-green-500" />
             </div>
             <div>
-              <h1 className="text-[18px] font-semibold text-foreground">ERP财务管理</h1>
+              <h1 className="text-[24px] font-semibold text-foreground">ERP财务管理</h1>
               <p className="text-[14px] text-muted-foreground">利润核算 · 成本分析 · 财务报表 · 资金流水</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <Button variant="outline" onClick={fetchData}>
-              <RefreshCw className="h-4 w-4 mr-2" />
-              刷新
-            </Button>
-            <Button variant="outline" onClick={handleExportReport} disabled={isProcessing}>
+            <Button variant="outline" onClick={handleExportReport} disabled={isProcessing}
+              className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white">
               {isProcessing ? (
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
               ) : (
@@ -387,76 +384,76 @@ export default function ERPFinancePage() {
           </div>
         </div>
 
-        {/* 核心能力标签 */}
-        <div className="flex items-center gap-2">
-          <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
-            <Calculator className="h-3 w-3 mr-1" />
-            自动核算
-          </Badge>
-          <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
-            <BarChart3 className="h-3 w-3 mr-1" />
-            利润分析
-          </Badge>
-          <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
-            <FileText className="h-3 w-3 mr-1" />
-            财务报表
-          </Badge>
-          <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
-            <Wallet className="h-3 w-3 mr-1" />
-            资金管理
-          </Badge>
-        </div>
-
-        {/* 核心财务指标 */}
-        <div className="grid grid-cols-5 gap-4">
-          <Card className="bg-white border-border shadow-sm">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-1">
-                <div className="text-[12px] text-muted-foreground">总销售额</div>
-                <TrendingUp className="h-4 w-4 text-success" />
+        {/* 核心财务指标 - 工作台风格 */}
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+          <Card className="bg-white border-border shadow-sm hover:shadow-md transition-shadow">
+            <CardContent className="p-5">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-green-100 to-emerald-100 flex items-center justify-center">
+                  <TrendingUp className="h-6 w-6 text-green-600" />
+                </div>
+                <div>
+                  <p className="text-[12px] text-muted-foreground">总销售额</p>
+                  <p className="text-[26px] font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">${totalSales.toFixed(2)}</p>
+                  <p className="text-[11px] text-green-600">本期累计</p>
+                </div>
               </div>
-              <div className="text-[24px] font-semibold text-success">${totalSales.toFixed(2)}</div>
-              <div className="text-[11px] text-muted-foreground mt-1">本期累计</div>
             </CardContent>
           </Card>
-          <Card className="bg-white border-border shadow-sm">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-1">
-                <div className="text-[12px] text-muted-foreground">总成本</div>
-                <DollarSign className="h-4 w-4 text-muted-foreground" />
+          <Card className="bg-white border-border shadow-sm hover:shadow-md transition-shadow">
+            <CardContent className="p-5">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-orange-100 to-amber-100 flex items-center justify-center">
+                  <DollarSign className="h-6 w-6 text-orange-600" />
+                </div>
+                <div>
+                  <p className="text-[12px] text-muted-foreground">总成本</p>
+                  <p className="text-[26px] font-bold bg-gradient-to-r from-orange-600 to-amber-600 bg-clip-text text-transparent">${totalCost.toFixed(2)}</p>
+                  <p className="text-[11px] text-muted-foreground">商品成本</p>
+                </div>
               </div>
-              <div className="text-[24px] font-semibold text-foreground">${totalCost.toFixed(2)}</div>
-              <div className="text-[11px] text-muted-foreground mt-1">商品成本</div>
             </CardContent>
           </Card>
-          <Card className="bg-white border-border shadow-sm">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-1">
-                <div className="text-[12px] text-muted-foreground">毛利润</div>
-                <TrendingUp className="h-4 w-4 text-success" />
+          <Card className="bg-white border-border shadow-sm hover:shadow-md transition-shadow">
+            <CardContent className="p-5">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-100 to-green-100 flex items-center justify-center">
+                  <TrendingUp className="h-6 w-6 text-emerald-600" />
+                </div>
+                <div>
+                  <p className="text-[12px] text-muted-foreground">毛利润</p>
+                  <p className="text-[26px] font-bold bg-gradient-to-r from-emerald-600 to-green-600 bg-clip-text text-transparent">${totalProfit.toFixed(2)}</p>
+                  <p className="text-[11px] text-emerald-600">利润率 {avgProfitRate.toFixed(1)}%</p>
+                </div>
               </div>
-              <div className="text-[24px] font-semibold text-success">${totalProfit.toFixed(2)}</div>
-              <div className="text-[11px] text-success mt-1">利润率 {avgProfitRate.toFixed(1)}%</div>
             </CardContent>
           </Card>
-          <Card className="bg-white border-border shadow-sm">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-1">
-                <div className="text-[12px] text-muted-foreground">广告花费</div>
-                <BarChart3 className="h-4 w-4 text-primary" />
+          <Card className="bg-white border-border shadow-sm hover:shadow-md transition-shadow">
+            <CardContent className="p-5">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center">
+                  <BarChart3 className="h-6 w-6 text-purple-600" />
+                </div>
+                <div>
+                  <p className="text-[12px] text-muted-foreground">广告花费</p>
+                  <p className="text-[26px] font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">${totalAdCost.toFixed(2)}</p>
+                  <p className="text-[11px] text-muted-foreground">占比 {totalSales > 0 ? (totalAdCost / totalSales * 100).toFixed(1) : 0}%</p>
+                </div>
               </div>
-              <div className="text-[24px] font-semibold text-foreground">${totalAdCost.toFixed(2)}</div>
-              <div className="text-[11px] text-muted-foreground mt-1">占比 {totalSales > 0 ? (totalAdCost / totalSales * 100).toFixed(1) : 0}%</div>
             </CardContent>
           </Card>
-          <Card className="bg-white border-border shadow-sm">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-1">
-                <div className="text-[12px] text-muted-foreground">订单数</div>
-                <Receipt className="h-4 w-4 text-muted-foreground" />
+          <Card className="bg-white border-border shadow-sm hover:shadow-md transition-shadow">
+            <CardContent className="p-5">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-100 to-cyan-100 flex items-center justify-center">
+                  <Receipt className="h-6 w-6 text-blue-600" />
+                </div>
+                <div>
+                  <p className="text-[12px] text-muted-foreground">订单数</p>
+                  <p className="text-[26px] font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">{totalOrders}</p>
+                  <p className="text-[11px] text-muted-foreground">退款 ${totalRefund.toFixed(2)}</p>
+                </div>
               </div>
-              <div className="text-[24px] font-semibold text-foreground">{totalOrders}</div>
-              <div className="text-[11px] text-muted-foreground mt-1">退款 {totalRefund.toFixed(2)}</div>
             </CardContent>
           </Card>
         </div>
