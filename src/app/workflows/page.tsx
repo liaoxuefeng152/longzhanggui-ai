@@ -10,7 +10,6 @@ import { Separator } from "@/components/ui/separator";
 import { toast } from 'sonner';
 import {
   Zap,
-  Bot,
   Package,
   ShoppingCart,
   Headphones,
@@ -160,21 +159,6 @@ export default function WorkflowsPage() {
                 </>
               )}
             </Button>
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 border border-blue-200 rounded-full">
-              <Bot className="h-4 w-4 text-blue-500" />
-              <span className="text-xs text-blue-700">有问题？试试</span>
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className="h-5 px-2 text-xs text-blue-600 hover:text-blue-700 hover:bg-blue-100"
-                onClick={() => {
-                  const event = new CustomEvent('toggle-ai-assistant');
-                  window.dispatchEvent(event);
-                }}
-              >
-                AI助手
-              </Button>
-            </div>
           </div>
         </div>
 
@@ -529,9 +513,6 @@ export default function WorkflowsPage() {
           }} 
         />
       )}
-
-      {/* AI助手 */}
-      <AIAssistant />
     </MainLayout>
   );
 }
