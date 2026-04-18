@@ -129,9 +129,6 @@ const adminMenuItems: MenuItem[] = [
     icon: MessageSquare,
     submenu: [
       { title: '机器人管理', href: '/feishu' },
-      { title: '配置管理', href: '/feishu/settings' },
-      { title: '推送日志', href: '/feishu/logs' },
-      { title: 'Webhook测试', href: '/feishu/test' },
     ],
   },
   {

@@ -187,18 +187,44 @@ coze dev
 │   ├── app/                    # Next.js App Router
 │   │   ├── api/               # API Routes (前端代理层)
 │   │   │   ├── models/        # 模型管理API
-│   │   │   ├── prompts/       # Prompt管理API
 │   │   │   └── ai/            # AI功能API
-│   │   ├── agents/            # 智能体页面
-│   │   ├── prompts/           # Prompt中心
-│   │   ├── workflows/         # 工作台
-│   │   ├── dashboard/         # 控制台
-│   │   ├── feishu/            # 飞书相关页面
-│   │   │   ├── settings/      # 飞书配置管理
-│   │   │   ├── import/       # 数据导入管理
-│   │   │   ├── logs/         # 推送日志
-│   │   │   └── test/         # Webhook测试
-│   │   └── ...                # 其他业务页面
+│   │   ├── agents/            # AI智能体页面 (7大智能体)
+│   │   │   ├── product-selection/  # 选品智能体
+│   │   │   ├── image-design/       # 图片设计
+│   │   │   ├── video-generation/   # 视频生成
+│   │   │   ├── listing-optimization/ # Listing优化
+│   │   │   ├── advertising/        # 广告投放
+│   │   │   ├── customer-service/   # 客服
+│   │   │   ├── data-review/        # 数据复盘
+│   │   │   └── [agent]/config/     # 各智能体配置页
+│   │   ├── models/            # 模型配置页面
+│   │   ├── task-logs/         # 任务日志页面
+│   │   ├── workflows/         # 工作台页面
+│   │   ├── dashboard/         # 控制台页面
+│   │   ├── feishu/            # 飞书机器人页面
+│   │   │   ├── page.tsx       # 飞书机器人管理 (含Tab: 基础配置/推送规则/指令模板/意图测试)
+│   │   │   └── import/        # 数据导入管理
+│   │   ├── erp/               # ERP系统页面
+│   │   │   ├── products/      # 商品管理
+│   │   │   ├── collection/    # 采集中心
+│   │   │   ├── inventory/    # 库存管理
+│   │   │   ├── orders/        # 订单管理
+│   │   │   ├── logistics/     # 物流管理
+│   │   │   ├── purchase/      # 采购管理
+│   │   │   └── finance/       # 财务管理
+│   │   ├── platform/          # 平台配置
+│   │   │   ├── page.tsx       # 平台配置主页
+│   │   │   └── datasources/   # 数据源配置
+│   │   ├── shops/             # 店铺管理
+│   │   │   ├── page.tsx       # 店铺列表
+│   │   │   └── platforms/     # 平台凭证
+│   │   ├── customer-tickets/  # 客服工单
+│   │   ├── reports/           # 数据报表
+│   │   ├── packages/          # 订购套餐
+│   │   ├── users/             # 用户管理
+│   │   ├── roles/             # 角色管理
+│   │   ├── settings/          # 系统设置
+│   │   └── login/             # 登录页面
 │   ├── components/            # React组件
 │   │   ├── ui/               # shadcn/ui组件
 │   │   ├── layout/           # 布局组件
@@ -446,15 +472,17 @@ npx tsc --noEmit
 
 ### 核心页面
 - 控制台: `src/app/dashboard/page.tsx`
-- AI智能体中心: `src/app/ai-agents/page.tsx`
-- Prompt中心: `src/app/prompts/page.tsx`
+- AI智能体: `src/app/agents/page.tsx` - 7大AI智能体入口
+- 模型配置: `src/app/models/page.tsx` - 模型列表管理
+- 任务日志: `src/app/task-logs/page.tsx` - 智能体执行日志
 - 工作台: `src/app/workflows/page.tsx`
 - 选品分析: `src/app/agents/product-selection/page.tsx` - **支持供应商筛选功能**
 - 图片设计: `src/app/agents/image-design/page.tsx`
-- **平台配置: `src/app/platform/datasources/page.tsx`** - 数据源配置和选品策略
+- **平台配置: `src/app/platform/page.tsx`** - 平台配置主页
+- **数据源配置: `src/app/platform/datasources/page.tsx`** - 数据源配置和选品策略
 - **店铺管理: `src/app/shops/page.tsx`** - 店铺授权管理
 - **平台凭证: `src/app/shops/platforms/page.tsx`** - API密钥管理
-- 飞书配置管理: `src/app/feishu/settings/page.tsx`
+- **飞书机器人: `src/app/feishu/page.tsx`** - 飞书机器人管理（含Tab: 基础配置/推送规则/指令模板/意图测试）
 - 数据导入管理: `src/app/feishu/import/page.tsx`
 
 ### ERP系统页面
@@ -521,7 +549,17 @@ npx tsc --noEmit
 - 意图识别: `src/lib/feishu/intent.ts`
 - 工作流处理: `src/lib/feishu/workflow.ts`
 - Webhook处理: `src/app/api/v1/feishu/webhook/route.ts`
+- 飞书机器人管理: `src/app/feishu/page.tsx` (含Tab: 基础配置/推送规则/指令模板/意图测试)
 - 飞书配置API: `src/app/api/feishu/config/route.ts`
+
+### 模型配置
+- 模型配置页面: `src/app/models/page.tsx` - 模型列表管理
+- 模型API: `src/lib/api/models.ts`
+- 模型API路由: `src/app/api/models/route.ts`
+
+### 任务日志
+- 任务日志页面: `src/app/task-logs/page.tsx` - 智能体执行日志
+- 任务日志API: `src/lib/api/task-logs.ts`
 
 ### 智能助理相关
 - 智能分析卡片组件: `src/components/smart-cards/index.tsx`
