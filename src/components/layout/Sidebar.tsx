@@ -248,57 +248,65 @@ export default function Sidebar() {
             const Icon = item.icon;
             const active = isActive(item.href);
             
-            // 智能体中心主菜单：根据当前选中的智能体显示对应颜色
-            const isAgentMenu = item.href === '/agents/product-selection' || item.href === '/agents/config';
-            const currentAgentKey = pathname.includes('product-selection') ? 'product-selection'
-              : pathname.includes('image-design') ? 'image-design'
-              : pathname.includes('video-generation') ? 'video-generation'
-              : pathname.includes('listing-optimization') ? 'listing-optimization'
-              : pathname.includes('advertising') ? 'advertising'
-              : pathname.includes('customer-service') ? 'customer-service'
-              : pathname.includes('data-review') ? 'data-review'
-              : null;
-            const menuColors = isAgentMenu && currentAgentKey ? agentColors[currentAgentKey as keyof typeof agentColors] : null;
-
-            return (
-              <div key={item.href}>
-                <Link
-                  href={item.href}
-                  className={cn(
-                    'sidebar-item flex items-center gap-3 px-3 py-2.5 rounded-md transition-all duration-200',
-                    'group relative',
-                    active
-                      ? menuColors
-                        ? `${menuColors.bg}/20 text-white shadow-lg ${menuColors.hover.replace('hover:', '')}/10`
-                        : 'bg-gradient-to-r from-primary/20 to-primary/10 text-white shadow-lg shadow-primary/20'
-                      : menuColors
-                        ? `${menuColors.hover} hover:text-white`
-                        : 'text-sidebar-foreground hover:bg-white/5 hover:text-white hover:translate-x-1'
-                  )}
-                >
-                  <Icon className={cn(
-                    "h-4 w-4 shrink-0 transition-transform duration-200",
-                    active ? "scale-110" : "group-hover:scale-105"
-                  )} />
-                  <span className="text-sm font-medium">{item.title}</span>
-                  {active && (
-                    <div className={cn(
-                      "absolute left-0 top-0 bottom-0 w-[2px] rounded-r-full animate-pulse",
-                      menuColors
-                        ? `bg-gradient-to-b ${menuColors.gradient}`
-                        : 'bg-gradient-to-b from-primary to-blue-400'
-                    )} />
-                  )}
-                  {item.submenu && (
-                    <ChevronRight className={cn(
-                      "h-3.5 w-3.5 ml-auto transition-transform duration-200",
-                      active && "rotate-90"
-                    )} />
-                  )}
-                </Link>
+            // 判断是否为智能体相关路径
+  const isAgentPath = pathname.startsWith('/agents/') && pathname !== '/agents';
+  
+  // 智能体中心主菜单：根据当前选中的智能体显示对应颜色
+  const isAgentMenu = item.href === '/agents/product-selection' || item.href === '/agents/config';
+  const currentAgentKey = isAgentPath ? (
+    pathname.includes('product-selection') ? 'product-selection'
+    : pathname.includes('image-design') ? 'image-design'
+    : pathname.includes('video-generation') ? 'video-generation'
+    : pathname.includes('listing-optimization') ? 'listing-optimization'
+    : pathname.includes('advertising') ? 'advertising'
+    : pathname.includes('customer-service') ? 'customer-service'
+    : pathname.includes('data-review') ? 'data-review'
+    : 'product-selection' // 默认选品
+  ) : null;
+  const menuColors = isAgentMenu && currentAgentKey ? agentColors[currentAgentKey as keyof typeof agentColors] : null;
+  
+  // 智能体中心菜单：在任何智能体子页面都显示为 active
+  const isActiveAgentMenu = isAgentMenu && isAgentPath;
+  
+  return (
+    <div key={item.href}>
+      <Link
+        href={item.href}
+        className={cn(
+          'sidebar-item flex items-center gap-3 px-3 py-2.5 rounded-md transition-all duration-200',
+          'group relative',
+          (active || isActiveAgentMenu)
+            ? menuColors
+              ? `${menuColors.bg}/20 text-white shadow-lg ${menuColors.hover.replace('hover:', '')}/10`
+              : 'bg-gradient-to-r from-primary/20 to-primary/10 text-white shadow-lg shadow-primary/20'
+            : menuColors
+              ? `${menuColors.hover} hover:text-white`
+              : 'text-sidebar-foreground hover:bg-white/5 hover:text-white hover:translate-x-1'
+        )}
+      >
+        <Icon className={cn(
+          "h-4 w-4 shrink-0 transition-transform duration-200",
+          (active || isActiveAgentMenu) ? "scale-110" : "group-hover:scale-105"
+        )} />
+        <span className="text-sm font-medium">{item.title}</span>
+        {(active || isActiveAgentMenu) && (
+          <div className={cn(
+            "absolute left-0 top-0 bottom-0 w-[2px] rounded-r-full animate-pulse",
+            menuColors
+              ? `bg-gradient-to-b ${menuColors.gradient}`
+              : 'bg-gradient-to-b from-primary to-blue-400'
+          )} />
+        )}
+        {item.submenu && (
+          <ChevronRight className={cn(
+            "h-3.5 w-3.5 ml-auto transition-transform duration-200",
+            (active || isActiveAgentMenu) && "rotate-90"
+          )} />
+        )}
+      </Link>
 
                 {/* 子菜单 */}
-                {item.submenu && active && (
+                {item.submenu && (active || isActiveAgentMenu) && (
                   <div className="ml-4 mt-1 space-y-0.5 border-l border-white/10 pl-3">
                     {item.submenu.map((sub) => {
                       const colors = sub.agentKey ? agentColors[sub.agentKey as keyof typeof agentColors] : null;
