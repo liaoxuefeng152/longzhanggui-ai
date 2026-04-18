@@ -9,6 +9,7 @@ import {
   Bot,
   Users,
   CreditCard,
+  ClipboardList,
   Package,
   Headphones,
   BarChart3,
@@ -133,6 +134,11 @@ const adminMenuItems: MenuItem[] = [
       { title: '推送日志', href: '/feishu/logs' },
       { title: 'Webhook测试', href: '/feishu/test' },
     ],
+  },
+  {
+    title: '任务日志',
+    href: '/task-logs',
+    icon: ClipboardList,
   },
   {
     title: '用户管理',
