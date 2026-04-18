@@ -1411,7 +1411,7 @@ export default function WorkflowsPage() {
               <Zap className="h-7 w-7 text-yellow-500" />
             </div>
             <div>
-              <h1 className="text-xl font-semibold text-foreground">新品上架助手</h1>
+              <h1 className="text-xl font-semibold text-foreground">工作台</h1>
               <p className="text-sm text-muted-foreground">
                 AI智能选品 · 一键生成Listing · 自动计算定价
               </p>
