@@ -23,12 +23,6 @@ interface HeaderProps {
 }
 
 export default function Header({ user, onLogout }: HeaderProps) {
-  // 打开AI助手
-  const openAIAssistant = () => {
-    const event = new CustomEvent('toggle-ai-assistant');
-    window.dispatchEvent(event);
-  };
-
   return (
     <header className="h-[60px] bg-white border-b border-border flex items-center justify-between px-6 fixed top-0 left-0 right-0 z-50">
       <div className="flex items-center gap-3">
@@ -56,18 +50,6 @@ export default function Header({ user, onLogout }: HeaderProps) {
             hour: '2-digit',
             minute: '2-digit',
           })}
-        </div>
-
-        {/* AI智能助手入口 */}
-        <div className="flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-full cursor-pointer hover:from-purple-100 hover:to-pink-100 transition-all" onClick={openAIAssistant}>
-          <Avatar className="h-7 w-7">
-            <AvatarImage src="https://api.dicebear.com/7.x/avataaars/svg?seed=assistant&backgroundColor=c0aede&clothingColor=b38aef&skinColor=ffdbb4" />
-            <AvatarFallback className="bg-gradient-to-br from-purple-400 to-pink-400 text-white text-xs">
-              AI
-            </AvatarFallback>
-          </Avatar>
-          <span className="text-xs text-purple-700">有问题?</span>
-          <span className="text-xs font-medium text-purple-600">试试AI助手</span>
         </div>
 
         <Button variant="ghost" size="icon" className="relative">
