@@ -6,7 +6,6 @@ import { cn } from '@/lib/utils';
 import {
   LayoutDashboard,
   Cpu,
-  FileText,
   Bot,
   Users,
   CreditCard,
@@ -110,11 +109,6 @@ const adminMenuItems: MenuItem[] = [
       { title: 'AI客服智能体', href: '/agents/customer-service/config' },
       { title: '数据复盘智能体', href: '/agents/data-review/config' },
     ],
-  },
-  {
-    title: 'Prompt中心',
-    href: '/prompts',
-    icon: FileText,
   },
   {
     title: '模型路由',
