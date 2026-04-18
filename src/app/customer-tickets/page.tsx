@@ -33,6 +33,9 @@ import {
   MessageSquare,
   RefreshCw,
   Loader2,
+  Clock,
+  AlertCircle,
+  CheckCircle2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
