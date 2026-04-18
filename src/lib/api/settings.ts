@@ -241,7 +241,7 @@ export async function getSystemInfo(): Promise<SystemInfo> {
   return {
     name: settings.name || '龙掌柜智能运营系统',
     version: settings.version || 'v1.0',
-    description: settings.description || '飞书AI中台驱动版，实现跨境无人店全链路自动化',
+    description: settings.description || '龙掌柜智能运营系统，实现跨境电商全链路自动化',
     contact_email: settings.contact_email || 'contact@lobster.ai',
   };
 }

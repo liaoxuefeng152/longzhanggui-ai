@@ -35,7 +35,7 @@ export default function Header({ user, onLogout }: HeaderProps) {
               龙掌柜
             </span>
             <span className="text-[11px] text-muted-foreground">
-              v1.0 · 飞书AI中台驱动版
+              v1.0 · 龙掌柜智能运营系统
             </span>
           </div>
         </div>

@@ -103,7 +103,7 @@ export default function LoginPage() {
             龙掌柜智能运营系统
           </h1>
           <p className="text-[14px] text-muted-foreground">
-            飞书AI中台驱动版 · v1.0
+            龙掌柜智能运营系统 · v1.0
           </p>
         </div>
 

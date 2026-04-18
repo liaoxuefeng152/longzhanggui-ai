@@ -42,7 +42,7 @@ export default function SettingsPage() {
   const [systemInfo, setSystemInfo] = useState<SystemInfo>({
     name: '龙掌柜智能运营系统',
     version: 'v1.0',
-    description: '飞书AI中台驱动版，实现跨境无人店全链路自动化',
+    description: '龙掌柜智能运营系统，实现跨境电商全链路自动化',
     contact_email: 'contact@lobster.ai',
   });
 
