@@ -1,5 +1,5 @@
 /**
- * 1688采集 API
+ * 采集中心 API
  */
 import { apiClient } from './client';
 

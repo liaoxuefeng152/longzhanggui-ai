@@ -69,7 +69,7 @@ const clientMenuItems: MenuItem[] = [
     href: '/erp',
     icon: Package,
     submenu: [
-      { title: '1688采集', href: '/erp/collection' },
+      { title: '采集中心', href: '/erp/collection' },
       { title: '商品管理', href: '/erp/products' },
       { title: '库存管理', href: '/erp/inventory' },
       { title: '采购管理', href: '/erp/purchase' },

@@ -2190,7 +2190,7 @@ ${report.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
                                       keyword: hotProducts[0]?.name || mockHotProducts[0]?.name,
                                       added_from: 'selection_agent',
                                     });
-                                    toast.success('已加入待采集清单，可在1688采集中心查看', {
+                                    toast.success('已加入待采集清单，可在采集中心查看', {
                                       action: {
                                         label: '去采集',
                                         onClick: () => router.push('/erp/collection'),

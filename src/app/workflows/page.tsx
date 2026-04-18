@@ -73,7 +73,7 @@ const quickWorkflows = [
     color: 'from-purple-500 to-pink-500',
     bgColor: 'bg-purple-500/10',
     description: 'AI全流程：选品→采集→Listing→图片→定价',
-    steps: ['选品分析', '1688采集', 'Listing优化', '图片处理', '智能定价'],
+    steps: ['选品分析', '采集中心', 'Listing优化', '图片处理', '智能定价'],
     stats: { total: 156, today: 3 },
   },
   { 

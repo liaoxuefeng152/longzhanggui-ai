@@ -98,7 +98,7 @@ export default function ERPDashboardPage() {
 
   const aiFeatures = [
     {
-      title: '1688采集',
+      title: '采集中心',
       description: '一键采集1688商品信息',
       icon: Bot,
       status: 'pending',
