@@ -678,72 +678,122 @@ export default function ERPProductsPage() {
         {/* 页面头部 */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center">
-              <Package className="h-7 w-7 text-primary" />
+            <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-500/20 to-purple-500/5 flex items-center justify-center">
+              <Package className="h-7 w-7 text-blue-500" />
             </div>
             <div>
-              <h1 className="text-[18px] font-semibold text-foreground">商品中心</h1>
+              <h1 className="text-[24px] font-semibold text-foreground">商品中心</h1>
               <p className="text-[14px] text-muted-foreground">选品入库 · 图片处理 · Listing优化 · 上架发布</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <Button variant="outline" onClick={fetchProducts}>
-              <RefreshCw className="h-4 w-4 mr-2" />
-              刷新
-            </Button>
             <Button variant="outline" onClick={() => setIsImportOpen(true)}>
               <Upload className="h-4 w-4 mr-2" />
               导入
             </Button>
-            <Button onClick={() => router.push('/agents/product-selection')}>
+            <Button 
+              onClick={() => router.push('/agents/product-selection')}
+              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+            >
               <Search className="h-4 w-4 mr-2" />
               AI选品
             </Button>
-            <Button onClick={() => setIsNewProductOpen(true)}>
+            <Button 
+              onClick={() => setIsNewProductOpen(true)}
+              className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
+            >
               <Plus className="h-4 w-4 mr-2" />
               新增商品
             </Button>
           </div>
         </div>
 
-        {/* 统计概览 */}
-        <div className="grid grid-cols-5 gap-4">
-          <Card className="bg-white border-border shadow-sm">
+        {/* 统计概览 - 工作台风格 */}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+          <Card className="bg-white border-border shadow-sm hover:shadow-md transition-shadow">
             <CardContent className="p-4">
-              <div className="text-[12px] text-muted-foreground mb-1">商品总数</div>
-              <div className="text-[24px] font-semibold text-foreground">{products.length}</div>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                  <Package className="h-5 w-5 text-blue-600" />
+                </div>
+                <div>
+                  <p className="text-[12px] text-muted-foreground">商品总数</p>
+                  <p className="text-[20px] font-semibold">{products.length}</p>
+                </div>
+              </div>
             </CardContent>
           </Card>
-          <Card className="bg-white border-border shadow-sm">
+          <Card className="bg-white border-border shadow-sm hover:shadow-md transition-shadow">
             <CardContent className="p-4">
-              <div className="text-[12px] text-muted-foreground mb-1">已选品</div>
-              <div className="text-[24px] font-semibold text-primary">{products.filter(p => p.status === 'selected').length}</div>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center">
+                  <CheckCircle className="h-5 w-5 text-purple-600" />
+                </div>
+                <div>
+                  <p className="text-[12px] text-muted-foreground">已选品</p>
+                  <p className="text-[20px] font-semibold text-purple-600">{products.filter(p => p.status === 'selected').length}</p>
+                </div>
+              </div>
             </CardContent>
           </Card>
-          <Card className="bg-white border-border shadow-sm">
+          <Card className="bg-white border-border shadow-sm hover:shadow-md transition-shadow">
             <CardContent className="p-4">
-              <div className="text-[12px] text-muted-foreground mb-1">处理中</div>
-              <div className="text-[24px] font-semibold text-warning">{products.filter(p => p.status === 'processing').length}</div>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center">
+                  <RefreshCw className="h-5 w-5 text-amber-600" />
+                </div>
+                <div>
+                  <p className="text-[12px] text-muted-foreground">处理中</p>
+                  <p className="text-[20px] font-semibold text-amber-600">{products.filter(p => p.status === 'processing').length}</p>
+                </div>
+              </div>
             </CardContent>
           </Card>
-          <Card className="bg-white border-border shadow-sm">
+          <Card className="bg-white border-border shadow-sm hover:shadow-md transition-shadow">
             <CardContent className="p-4">
-              <div className="text-[12px] text-muted-foreground mb-1">待上架</div>
-              <div className="text-[24px] font-semibold text-success">{products.filter(p => p.status === 'ready').length}</div>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-orange-100 flex items-center justify-center">
+                  <Clock className="h-5 w-5 text-orange-600" />
+                </div>
+                <div>
+                  <p className="text-[12px] text-muted-foreground">待上架</p>
+                  <p className="text-[20px] font-semibold text-orange-600">{products.filter(p => p.status === 'ready').length}</p>
+                </div>
+              </div>
             </CardContent>
           </Card>
-          <Card className="bg-white border-border shadow-sm">
+          <Card className="bg-white border-border shadow-sm hover:shadow-md transition-shadow">
             <CardContent className="p-4">
-              <div className="text-[12px] text-muted-foreground mb-1">已上架</div>
-              <div className="text-[24px] font-semibold text-success">{products.filter(p => p.status === 'published').length}</div>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center">
+                  <TrendingUp className="h-5 w-5 text-green-600" />
+                </div>
+                <div>
+                  <p className="text-[12px] text-muted-foreground">已上架</p>
+                  <p className="text-[20px] font-semibold text-green-600">{products.filter(p => p.status === 'published').length}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="bg-white border-border shadow-sm hover:shadow-md transition-shadow">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-pink-100 flex items-center justify-center">
+                  <DollarSign className="h-5 w-5 text-pink-600" />
+                </div>
+                <div>
+                  <p className="text-[12px] text-muted-foreground">总成本</p>
+                  <p className="text-[20px] font-semibold">¥{products.reduce((sum, p) => sum + (p.total_cost || 0), 0).toLocaleString()}</p>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* 筛选条件 */}
+        {/* 筛选条件 - 工作台风格 */}
         <Card className="bg-white border-border shadow-sm">
           <CardContent className="p-4">
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3 mb-4">
               <div className="flex-1 relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -754,7 +804,7 @@ export default function ERPProductsPage() {
                 />
               </div>
               <select 
-                className="px-4 py-2 border border-border rounded-md text-[14px]"
+                className="px-4 py-2 border border-border rounded-lg text-[14px] bg-white"
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
               >
@@ -764,17 +814,18 @@ export default function ERPProductsPage() {
                 <option value="ready">待上架</option>
                 <option value="published">已上架</option>
               </select>
-              <Button variant="outline" onClick={fetchProducts}>
-                <Filter className="h-4 w-4 mr-2" />
-                筛选
-              </Button>
-              <Button variant="outline" onClick={() => {
-                fetchProducts();
-                toast.success('已刷新商品列表');
-              }}>
+              <Button variant="outline" onClick={fetchProducts} size="sm">
                 <RefreshCw className="h-4 w-4 mr-2" />
                 刷新
               </Button>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-[12px] text-muted-foreground">快速筛选：</span>
+              <Button variant="secondary" size="sm" onClick={() => setStatusFilter('selected')}>已选品</Button>
+              <Button variant="secondary" size="sm" onClick={() => setStatusFilter('processing')}>处理中</Button>
+              <Button variant="secondary" size="sm" onClick={() => setStatusFilter('ready')}>待上架</Button>
+              <Button variant="secondary" size="sm" onClick={() => setStatusFilter('published')}>已上架</Button>
+              <Button variant="ghost" size="sm" onClick={() => setStatusFilter('')}>全部</Button>
             </div>
           </CardContent>
         </Card>
@@ -782,8 +833,18 @@ export default function ERPProductsPage() {
         {/* 商品列表 */}
         <Card className="bg-white border-border shadow-sm">
           <CardHeader className="pb-3">
-            <CardTitle className="text-[15px]">商品列表</CardTitle>
-            <CardDescription>商品全生命周期管理：选品 → 处理 → 上架 → 销售</CardDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-[16px] flex items-center gap-2">
+                  <Package className="h-5 w-5 text-blue-500" />
+                  商品列表
+                </CardTitle>
+                <CardDescription className="text-[13px]">商品全生命周期管理：选品 → 处理 → 上架 → 销售</CardDescription>
+              </div>
+              <Badge variant="outline" className="bg-blue-50 text-blue-600 border-blue-200">
+                共 {products.length} 个商品
+              </Badge>
+            </div>
           </CardHeader>
           <CardContent>
             {loading ? (

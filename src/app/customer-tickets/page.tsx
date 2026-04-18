@@ -193,38 +193,69 @@ export default function CustomerTicketsPage() {
       <div className="space-y-6">
         {/* 页面标题 */}
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-[18px] font-semibold text-foreground">客服工单</h1>
-            <p className="text-[14px] text-muted-foreground mt-1">
-              多语种客服 · 纠纷处理 · 话术合规
-            </p>
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-purple-500/20 to-pink-500/5 flex items-center justify-center">
+              <MessageSquare className="h-7 w-7 text-purple-500" />
+            </div>
+            <div>
+              <h1 className="text-[24px] font-semibold text-foreground">客服工单</h1>
+              <p className="text-[14px] text-muted-foreground">多语种客服 · 纠纷处理 · 话术合规</p>
+            </div>
           </div>
         </div>
 
-        {/* 统计卡片 */}
-        <div className="grid grid-cols-5 gap-4">
-          <Card className="bg-white border-border shadow-sm">
-            <CardContent className="p-4 text-center">
-              <div className="text-[13px] text-muted-foreground mb-1">总工单</div>
-              <div className="text-[20px] font-semibold text-foreground">{stats?.total || 0}</div>
+        {/* 统计卡片 - 工作台风格 */}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+          <Card className="bg-white border-border shadow-sm hover:shadow-md transition-shadow">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                  <MessageSquare className="h-5 w-5 text-blue-600" />
+                </div>
+                <div>
+                  <p className="text-[12px] text-muted-foreground">总工单</p>
+                  <p className="text-[20px] font-semibold">{stats?.total || 0}</p>
+                </div>
+              </div>
             </CardContent>
           </Card>
-          <Card className="bg-white border-border shadow-sm">
-            <CardContent className="p-4 text-center">
-              <div className="text-[13px] text-muted-foreground mb-1">待处理</div>
-              <div className="text-[20px] font-semibold text-warning">{stats?.open || 0}</div>
+          <Card className="bg-white border-border shadow-sm hover:shadow-md transition-shadow">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center">
+                  <Clock className="h-5 w-5 text-amber-600" />
+                </div>
+                <div>
+                  <p className="text-[12px] text-muted-foreground">待处理</p>
+                  <p className="text-[20px] font-semibold text-amber-600">{stats?.open || 0}</p>
+                </div>
+              </div>
             </CardContent>
           </Card>
-          <Card className="bg-white border-border shadow-sm">
-            <CardContent className="p-4 text-center">
-              <div className="text-[13px] text-muted-foreground mb-1">处理中</div>
-              <div className="text-[20px] font-semibold text-primary">{stats?.in_progress || 0}</div>
+          <Card className="bg-white border-border shadow-sm hover:shadow-md transition-shadow">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center">
+                  <RefreshCw className="h-5 w-5 text-purple-600" />
+                </div>
+                <div>
+                  <p className="text-[12px] text-muted-foreground">处理中</p>
+                  <p className="text-[20px] font-semibold text-purple-600">{stats?.in_progress || 0}</p>
+                </div>
+              </div>
             </CardContent>
           </Card>
-          <Card className="bg-white border-border shadow-sm">
-            <CardContent className="p-4 text-center">
-              <div className="text-[13px] text-muted-foreground mb-1">已解决</div>
-              <div className="text-[20px] font-semibold text-success">{stats?.resolved || 0}</div>
+          <Card className="bg-white border-border shadow-sm hover:shadow-md transition-shadow">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center">
+                  <CheckCircle2 className="h-5 w-5 text-green-600" />
+                </div>
+                <div>
+                  <p className="text-[12px] text-muted-foreground">已解决</p>
+                  <p className="text-[20px] font-semibold text-green-600">{stats?.resolved || 0}</p>
+                </div>
+              </div>
             </CardContent>
           </Card>
           <Card className="bg-white border-border shadow-sm">

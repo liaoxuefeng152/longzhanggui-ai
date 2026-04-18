@@ -443,6 +443,42 @@ npx tsc --noEmit
 - 表单验证在提交时执行
 - 错误提示使用 `toast.error()`
 
+### 统一配色方案
+工作台风格的统一配色已应用于各页面，保持视觉一致性：
+
+#### 页面头部
+- 图标背景：`bg-gradient-to-br from-{颜色}-500/20 to-{颜色2}-500/5`
+- 图标颜色：`text-{颜色}-500`
+- 标题：`text-[24px] font-semibold`
+- 副标题：`text-[14px] text-muted-foreground`
+
+#### 统计卡片（工作台风格）
+- 卡片：`bg-white border-border shadow-sm hover:shadow-md transition-shadow`
+- 图标背景：`w-10 h-10 rounded-lg bg-{颜色}-100`
+- 图标：`text-{颜色}-600`
+- 数字：`text-[20px] font-semibold`
+- 趋势徽章：`bg-{颜色}-50 text-{颜色}-600 border-{颜色}-200`
+
+#### 彩虹配色（AI智能体）
+| 智能体 | 背景色 | 图标色 |
+|--------|--------|--------|
+| 选品 | bg-blue-500 | text-blue-600 |
+| 图片 | bg-purple-500 | text-purple-600 |
+| 视频 | bg-pink-500 | text-pink-600 |
+| Listing | bg-green-500 | text-green-600 |
+| 广告 | bg-orange-500 | text-orange-600 |
+| 客服 | bg-cyan-500 | text-cyan-600 |
+| 复盘 | bg-indigo-500 | text-indigo-600 |
+
+#### 渐变按钮
+- 新品上架：`from-purple-600 to-pink-600`
+- 采集/导入：`from-blue-600 to-cyan-600`
+- 定价/完成：`from-green-600 to-emerald-600`
+- 导出/成功：`from-green-500 to-emerald-500`
+
+#### 渐变文字
+- 数字展示：`bg-gradient-to-r from-{颜色1}-600 to-{颜色2}-600 bg-clip-text text-transparent`
+
 ## 常见问题与修复
 
 ### 1. API调用404错误
