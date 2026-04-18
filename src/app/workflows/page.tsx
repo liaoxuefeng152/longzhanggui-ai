@@ -33,7 +33,6 @@ import {
   RefreshCw,
   Play,
 } from "lucide-react";
-import AIAssistant from '@/components/ai-assistant';
 
 // 今日概览数据
 const todayStats = {
@@ -163,18 +162,7 @@ export default function WorkflowsPage() {
             <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 border border-blue-200 rounded-full">
               <Bot className="h-4 w-4 text-blue-500" />
               <span className="text-xs text-blue-700">有问题？试试</span>
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className="h-7 px-2 text-xs text-blue-600 hover:text-blue-700 hover:bg-blue-100"
-                onClick={() => {
-                  const event = new CustomEvent('toggle-ai-assistant');
-                  window.dispatchEvent(event);
-                }}
-              >
-                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=assistant&backgroundColor=b6e3f4" alt="AI助手" className="h-4 w-4 mr-1 rounded-full" />
-                AI助手
-              </Button>
+              <span className="text-xs font-medium text-blue-600">龙掌柜跨境AI全能助手</span>
             </div>
           </div>
         </div>
@@ -530,9 +518,6 @@ export default function WorkflowsPage() {
           }} 
         />
       )}
-
-      {/* AI助手 */}
-      <AIAssistant />
     </MainLayout>
   );
 }
