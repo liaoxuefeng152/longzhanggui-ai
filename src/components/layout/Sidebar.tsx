@@ -19,7 +19,6 @@ import {
   Zap,
   MessageSquare,
   Clock,
-  Workflow,
   Store,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -111,11 +110,6 @@ const adminMenuItems: MenuItem[] = [
       { title: 'AI客服智能体', href: '/agents/customer-service/config' },
       { title: '数据复盘智能体', href: '/agents/data-review/config' },
     ],
-  },
-  {
-    title: '工作流编排',
-    href: '/workflows',
-    icon: Workflow,
   },
   {
     title: 'Prompt中心',
