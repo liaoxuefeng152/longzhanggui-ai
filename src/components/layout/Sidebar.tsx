@@ -20,7 +20,6 @@ import {
   MessageSquare,
   Clock,
   Workflow,
-  LogOut,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
@@ -283,21 +282,6 @@ export default function Sidebar() {
             );
           })}
         </nav>
-
-        {/* 退出登录 */}
-        <div className="mt-6 pt-4 border-t border-white/10">
-          <button
-            onClick={() => {
-              localStorage.removeItem('token');
-              localStorage.removeItem('userRole');
-              window.location.href = '/login';
-            }}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-sidebar-foreground hover:bg-white/5 hover:text-white transition-all"
-          >
-            <LogOut className="h-4 w-4" />
-            <span className="text-sm">退出登录</span>
-          </button>
-        </div>
       </div>
     </aside>
   );
