@@ -70,6 +70,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = (newToken: string, newUser: User) => {
     localStorage.setItem('token', newToken);
     localStorage.setItem('user', JSON.stringify(newUser));
+    // 保存用户角色到 localStorage
+    const userRole = newUser.role === 'admin' ? 'admin' : 'client';
+    localStorage.setItem('userRole', userRole);
     setToken(newToken);
     setUser(newUser);
   };
@@ -78,6 +81,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    localStorage.removeItem('userRole');
     setToken(null);
     setUser(null);
     router.push('/login');

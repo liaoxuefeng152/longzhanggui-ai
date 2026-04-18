@@ -11,27 +11,18 @@ import {
   Users,
   CreditCard,
   ClipboardList,
-  Link2,
   Package,
-  ShoppingCart,
   Headphones,
   BarChart3,
   Settings,
   ChevronRight,
-  Warehouse,
-  DollarSign,
-  Receipt,
-  Truck,
-  Sparkles,
   Zap,
   MessageSquare,
-  Upload,
   Clock,
-  Shield,
   Workflow,
-  UserCog,
-  LayoutGrid,
+  LogOut,
 } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 interface MenuItem {
   title: string;
@@ -41,11 +32,6 @@ interface MenuItem {
     title: string;
     href: string;
   }[];
-}
-
-interface MenuGroup {
-  title: string;
-  items: MenuItem[];
 }
 
 // 客户端菜单（运营人员使用）
@@ -170,23 +156,44 @@ const adminMenuItems: MenuItem[] = [
   },
 ];
 
-// 合并菜单并添加分组
-const menuGroups: MenuGroup[] = [
-  {
-    title: '运营工作台',
-    items: clientMenuItems,
-  },
-  {
-    title: '系统管理',
-    items: adminMenuItems,
-  },
-];
-
-// 保留旧接口兼容
-const menuItems: MenuItem[] = [...clientMenuItems, ...adminMenuItems];
-
 export default function Sidebar() {
   const pathname = usePathname();
+  const [userRole, setUserRole] = useState<'client' | 'admin' | null>(null);
+  const [isClientView, setIsClientView] = useState(false);
+
+  useEffect(() => {
+    // 从 localStorage 获取用户角色
+    const savedRole = localStorage.getItem('userRole');
+    const token = localStorage.getItem('token');
+    
+    if (savedRole) {
+      // 使用保存的角色
+      setUserRole(savedRole as 'client' | 'admin');
+      setIsClientView(savedRole === 'client');
+    } else if (token) {
+      // 如果有 token 但没有保存角色，根据 token 类型判断
+      if (token === 'demo-token') {
+        // 演示模式默认显示客户端视图
+        setUserRole('client');
+        setIsClientView(true);
+        localStorage.setItem('userRole', 'client');
+      }
+    }
+  }, []);
+
+  // 切换视图模式
+  const toggleView = () => {
+    const newRole = isClientView ? 'admin' : 'client';
+    setIsClientView(!isClientView);
+    setUserRole(newRole);
+    localStorage.setItem('userRole', newRole);
+    // 切换到对应的首页
+    if (!isClientView) {
+      window.location.href = '/dashboard';
+    } else {
+      window.location.href = '/ai-agents';
+    }
+  };
 
   const isActive = (href: string) => {
     if (href === '/dashboard') {
@@ -195,6 +202,12 @@ export default function Sidebar() {
     return pathname.startsWith(href);
   };
 
+  // 根据角色选择菜单
+  const menuItems = isClientView ? clientMenuItems : adminMenuItems;
+
+  // 获取当前视图名称
+  const currentViewName = isClientView ? '运营工作台' : '系统管理';
+
   return (
     <aside className={cn(
       "w-[220px] sidebar-gradient fixed left-0 top-[60px] bottom-0 overflow-y-auto",
@@ -202,86 +215,89 @@ export default function Sidebar() {
       "transition-all duration-300 ease-out"
     )}>
       <div className="p-4">
-        {menuGroups.map((group, groupIndex) => (
-          <div key={group.title} className="mb-6">
-            {/* 分组标题 */}
-            <div className="flex items-center gap-2 px-3 mb-2">
-              {group.title === '运营工作台' ? (
-                <LayoutGrid className="h-3.5 w-3.5 text-primary/60" />
-              ) : (
-                <UserCog className="h-3.5 w-3.5 text-muted-foreground/60" />
-              )}
-              <span className={cn(
-                "text-[11px] font-semibold uppercase tracking-wider",
-                group.title === '运营工作台' ? "text-primary/80" : "text-muted-foreground/80"
-              )}>
-                {group.title}
-              </span>
-            </div>
-            
-            <nav className="space-y-1">
-              {group.items.map((item) => {
-                const Icon = item.icon;
-                const active = isActive(item.href);
+        {/* 视图切换提示 */}
+        <div className="mb-4 px-3 py-2 rounded-md bg-white/5 border border-white/10">
+          <p className="text-[11px] text-muted-foreground mb-1">当前视图</p>
+          <p className="text-sm font-medium text-white">{currentViewName}</p>
+          <button
+            onClick={toggleView}
+            className="mt-2 text-[11px] text-primary hover:text-primary/80 transition-colors"
+          >
+            切换到{isClientView ? '管理端' : '客户端'}
+          </button>
+        </div>
 
-                return (
-                  <div key={item.href}>
-                    <Link
-                      href={item.href}
-                      className={cn(
-                        'sidebar-item flex items-center gap-3 px-3 py-2.5 rounded-md transition-all duration-200',
-                        'group relative',
-                        active
-                          ? 'bg-gradient-to-r from-primary/20 to-primary/10 text-white shadow-lg shadow-primary/20'
-                          : 'text-sidebar-foreground hover:bg-white/5 hover:text-white hover:translate-x-1'
-                      )}
-                    >
-                      <Icon className={cn(
-                        "h-4 w-4 shrink-0 transition-transform duration-200",
-                        active ? "scale-110" : "group-hover:scale-105"
-                      )} />
-                      <span className="text-sm font-medium">{item.title}</span>
-                      {active && (
-                        <div className="absolute left-0 top-0 bottom-0 w-[2px] bg-gradient-to-b from-primary to-blue-400 rounded-r-full animate-pulse" />
-                      )}
-                      {item.submenu && (
-                        <ChevronRight className={cn(
-                          "h-3.5 w-3.5 ml-auto transition-transform duration-200",
-                          active && "rotate-90"
-                        )} />
-                      )}
-                    </Link>
+        <nav className="space-y-1">
+          {menuItems.map((item) => {
+            const Icon = item.icon;
+            const active = isActive(item.href);
 
-                    {/* 子菜单 */}
-                    {item.submenu && active && (
-                      <div className="ml-4 mt-1 space-y-0.5 border-l border-white/10 pl-3">
-                        {item.submenu.map((sub) => (
-                          <Link
-                            key={sub.href}
-                            href={sub.href}
-                            className={cn(
-                              'block py-1.5 px-2 text-[13px] rounded transition-colors',
-                              pathname === sub.href
-                                ? 'text-primary font-medium bg-primary/10'
-                                : 'text-sidebar-foreground/70 hover:text-white hover:bg-white/5'
-                            )}
-                          >
-                            {sub.title}
-                          </Link>
-                        ))}
-                      </div>
-                    )}
+            return (
+              <div key={item.href}>
+                <Link
+                  href={item.href}
+                  className={cn(
+                    'sidebar-item flex items-center gap-3 px-3 py-2.5 rounded-md transition-all duration-200',
+                    'group relative',
+                    active
+                      ? 'bg-gradient-to-r from-primary/20 to-primary/10 text-white shadow-lg shadow-primary/20'
+                      : 'text-sidebar-foreground hover:bg-white/5 hover:text-white hover:translate-x-1'
+                  )}
+                >
+                  <Icon className={cn(
+                    "h-4 w-4 shrink-0 transition-transform duration-200",
+                    active ? "scale-110" : "group-hover:scale-105"
+                  )} />
+                  <span className="text-sm font-medium">{item.title}</span>
+                  {active && (
+                    <div className="absolute left-0 top-0 bottom-0 w-[2px] bg-gradient-to-b from-primary to-blue-400 rounded-r-full animate-pulse" />
+                  )}
+                  {item.submenu && (
+                    <ChevronRight className={cn(
+                      "h-3.5 w-3.5 ml-auto transition-transform duration-200",
+                      active && "rotate-90"
+                    )} />
+                  )}
+                </Link>
+
+                {/* 子菜单 */}
+                {item.submenu && active && (
+                  <div className="ml-4 mt-1 space-y-0.5 border-l border-white/10 pl-3">
+                    {item.submenu.map((sub) => (
+                      <Link
+                        key={sub.href}
+                        href={sub.href}
+                        className={cn(
+                          'block py-1.5 px-2 text-[13px] rounded transition-colors',
+                          pathname === sub.href
+                            ? 'text-primary font-medium bg-primary/10'
+                            : 'text-sidebar-foreground/70 hover:text-white hover:bg-white/5'
+                        )}
+                      >
+                        {sub.title}
+                      </Link>
+                    ))}
                   </div>
-                );
-              })}
-            </nav>
+                )}
+              </div>
+            );
+          })}
+        </nav>
 
-            {/* 分隔线（除了最后一个分组） */}
-            {groupIndex < menuGroups.length - 1 && (
-              <div className="mt-4 mb-2 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
-            )}
-          </div>
-        ))}
+        {/* 退出登录 */}
+        <div className="mt-6 pt-4 border-t border-white/10">
+          <button
+            onClick={() => {
+              localStorage.removeItem('token');
+              localStorage.removeItem('userRole');
+              window.location.href = '/login';
+            }}
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-sidebar-foreground hover:bg-white/5 hover:text-white transition-all"
+          >
+            <LogOut className="h-4 w-4" />
+            <span className="text-sm">退出登录</span>
+          </button>
+        </div>
       </div>
     </aside>
   );

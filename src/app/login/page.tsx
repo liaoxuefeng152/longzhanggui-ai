@@ -74,20 +74,21 @@ export default function LoginPage() {
 
   // 演示模式登录（跳过认证）
   const handleDemoLogin = () => {
-    // 模拟登录数据
+    // 模拟登录数据 - 演示模式默认客户端角色
     const mockToken = 'demo-token-' + Date.now();
     const mockUser = {
       id: 'demo-user-001',
-      username: 'admin',
-      name: '管理员',
+      username: 'demo',
+      name: '演示用户',
       phone: '13800138000',
-      role: 'admin',
-      permissions: ['*'],
+      role: 'client', // 演示模式默认客户端
+      permissions: ['dashboard', 'workflows', 'erp', 'tickets', 'reports'],
     };
 
     setAuth(mockToken, mockUser);
+    localStorage.setItem('userRole', 'client');
     toast.success('演示模式登录成功');
-    router.push('/');
+    router.push('/dashboard');
   };
 
   return (
