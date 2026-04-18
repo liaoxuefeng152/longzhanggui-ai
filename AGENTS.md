@@ -128,7 +128,7 @@ coze dev
 │   │   │   └── ai/            # AI功能API
 │   │   ├── agents/            # 智能体页面
 │   │   ├── prompts/           # Prompt中心
-│   │   ├── workflows/         # 工作流编排
+│   │   ├── workflows/         # 工作台
 │   │   ├── dashboard/         # 控制台
 │   │   ├── feishu/            # 飞书相关页面
 │   │   │   ├── settings/      # 飞书配置管理
@@ -274,7 +274,7 @@ coze dev
 | `/api/v1/workflow/status/[id]` | GET | 查询工作流执行状态 |
 | `/api/v1/workflow/list` | GET | 工作流执行列表 |
 
-### 工作流编排功能
+### 工作台功能
 - **新品上架**: 选品→图片处理→Listing生成→智能定价→确认上架
 - **批量处理**: 批量采集1688商品、批量图片处理（翻译/白底/AI优化）
 - **批量定价**: 批量计算商品最优售价，支持利润率、竞品价格参考
@@ -385,7 +385,7 @@ npx tsc --noEmit
 - 控制台: `src/app/dashboard/page.tsx`
 - AI智能体中心: `src/app/ai-agents/page.tsx`
 - Prompt中心: `src/app/prompts/page.tsx`
-- 工作流编排: `src/app/workflows/page.tsx`
+- 工作台: `src/app/workflows/page.tsx`
 - 选品分析: `src/app/agents/product-selection/page.tsx` - **支持供应商筛选功能**
 - 图片设计: `src/app/agents/image-design/page.tsx`
 - **平台配置: `src/app/platform/datasources/page.tsx`** - 数据源配置和选品策略

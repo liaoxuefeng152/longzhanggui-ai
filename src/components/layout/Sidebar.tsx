@@ -48,7 +48,7 @@ const menuItems: MenuItem[] = [
     icon: LayoutDashboard,
   },
   {
-    title: '工作流编排',
+    title: '工作台',
     href: '/workflows',
     icon: Zap,
   },

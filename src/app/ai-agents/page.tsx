@@ -473,7 +473,7 @@ export default function AIAgentsCenterPage() {
               <Button variant="outline" className="h-auto py-4 flex-col gap-2" asChild>
                 <Link href="/workflows">
                   <Zap className="h-5 w-5 text-primary" />
-                  <span className="text-sm">工作流编排</span>
+                  <span className="text-sm">工作台</span>
                 </Link>
               </Button>
               <Button variant="outline" className="h-auto py-4 flex-col gap-2" asChild>
