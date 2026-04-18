@@ -55,13 +55,11 @@ export default function LoginPage() {
     try {
       // 调用真实登录API
       const response = await login({
-        phone: username, // 使用输入的用户名作为手机号
+        phone: username,
         password: password,
       });
 
-      // 使用AuthProvider的login方法保存登录状态
       setAuth(response.access_token, response.user);
-      
       toast.success('登录成功');
       router.push('/');
     } catch (error: any) {
@@ -72,6 +70,24 @@ export default function LoginPage() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // 演示模式登录（跳过认证）
+  const handleDemoLogin = () => {
+    // 模拟登录数据
+    const mockToken = 'demo-token-' + Date.now();
+    const mockUser = {
+      id: 'demo-user-001',
+      username: 'admin',
+      name: '管理员',
+      phone: '13800138000',
+      role: 'admin',
+      permissions: ['*'],
+    };
+
+    setAuth(mockToken, mockUser);
+    toast.success('演示模式登录成功');
+    router.push('/');
   };
 
   return (
@@ -163,6 +179,16 @@ export default function LoginPage() {
                 disabled={isLoading}
               >
                 {isLoading ? '登录中...' : '登录'}
+              </Button>
+
+              {/* 演示模式入口 */}
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full h-10 text-[14px] border-primary/30 text-primary hover:bg-primary/5"
+                onClick={handleDemoLogin}
+              >
+                演示模式（免登录）
               </Button>
             </form>
 
