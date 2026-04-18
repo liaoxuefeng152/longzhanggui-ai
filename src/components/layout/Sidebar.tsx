@@ -59,10 +59,6 @@ const clientMenuItems: MenuItem[] = [
     title: '店铺管理',
     href: '/shops',
     icon: Store,
-    submenu: [
-      { title: '店铺列表', href: '/shops' },
-      { title: '平台配置', href: '/shops/platforms' },
-    ],
   },
   {
     title: '客服工单',
@@ -125,6 +121,7 @@ const adminMenuItems: MenuItem[] = [
     submenu: [
       { title: '数据源配置', href: '/platform/datasources' },
       { title: '平台凭证', href: '/shops/platforms' },
+      { title: '店铺管理', href: '/shops' },
     ],
   },
   {
