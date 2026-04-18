@@ -12,7 +12,6 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import AIAssistant from '@/components/ai-assistant';
 
 interface HeaderProps {
   user?: {
@@ -110,9 +109,6 @@ export default function Header({ user, onLogout }: HeaderProps) {
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-
-      {/* AI助手组件 */}
-      <AIAssistant />
     </header>
   );
 }

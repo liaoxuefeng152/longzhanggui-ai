@@ -3,6 +3,7 @@
 import { ReactNode } from 'react';
 import Header from './Header';
 import Sidebar from './Sidebar';
+import AIAssistant from '@/components/ai-assistant';
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -22,6 +23,8 @@ export default function MainLayout({ children, user, onLogout }: MainLayoutProps
       <main className="pt-[60px] pl-[220px]">
         <div className="p-6">{children}</div>
       </main>
+      {/* AI助手组件 */}
+      <AIAssistant />
     </div>
   );
 }

@@ -32,7 +32,6 @@ import {
   RefreshCw,
   Play,
 } from "lucide-react";
-import AIAssistant from '@/components/ai-assistant';
 
 // 今日概览数据
 const todayStats = {
