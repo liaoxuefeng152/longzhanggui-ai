@@ -20,6 +20,7 @@ import {
   MessageSquare,
   Clock,
   Workflow,
+  Store,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
@@ -52,6 +53,15 @@ const clientMenuItems: MenuItem[] = [
       { title: '订单管理', href: '/erp/orders' },
       { title: '物流管理', href: '/erp/logistics' },
       { title: '财务管理', href: '/erp/finance' },
+    ],
+  },
+  {
+    title: '店铺管理',
+    href: '/shops',
+    icon: Store,
+    submenu: [
+      { title: '店铺列表', href: '/shops' },
+      { title: '平台配置', href: '/shops/platforms' },
     ],
   },
   {
@@ -109,7 +119,6 @@ const adminMenuItems: MenuItem[] = [
     icon: Settings,
     submenu: [
       { title: '数据源配置', href: '/platform/datasources' },
-      { title: '店铺管理', href: '/shops' },
       { title: '平台凭证', href: '/shops/platforms' },
     ],
   },
