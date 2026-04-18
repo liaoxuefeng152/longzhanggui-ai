@@ -42,6 +42,7 @@ import {
   CheckCircle2,
   XCircle,
   AlertTriangle,
+  Bot,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -296,45 +297,74 @@ export default function ModelsPage() {
 
   return (
     <MainLayout>
-      <div className="p-6">
-        {/* 页面标题 */}
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-foreground">模型配置</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            管理AI模型配置，支持多模型接入
-          </p>
+      <div className="p-6 space-y-6">
+        {/* 页面头部 */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-purple-500/20 to-pink-500/5 flex items-center justify-center">
+              <Bot className="h-7 w-7 text-purple-500" />
+            </div>
+            <div>
+              <h1 className="text-[24px] font-semibold text-foreground">模型配置</h1>
+              <p className="text-[14px] text-muted-foreground">
+                管理AI模型配置，支持多模型接入
+              </p>
+            </div>
+          </div>
         </div>
 
         {/* 统计卡片 */}
-        <div className="grid grid-cols-4 gap-4 mb-6">
-          <Card>
-            <CardContent className="pt-6">
-              <div className="text-2xl font-bold">{models.length}</div>
-              <p className="text-xs text-muted-foreground">模型总数</p>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <Card className="bg-white border-border shadow-sm hover:shadow-md transition-shadow">
+            <CardContent className="p-5">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center">
+                  <Bot className="h-6 w-6 text-purple-600" />
+                </div>
+                <div>
+                  <p className="text-[12px] text-muted-foreground">模型总数</p>
+                  <p className="text-[26px] font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">{models.length}</p>
+                </div>
+              </div>
             </CardContent>
           </Card>
-          <Card>
-            <CardContent className="pt-6">
-              <div className="text-2xl font-bold text-green-500">
-                {models.filter((m) => m.status === 'online').length}
+          <Card className="bg-white border-border shadow-sm hover:shadow-md transition-shadow">
+            <CardContent className="p-5">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-green-100 to-emerald-100 flex items-center justify-center">
+                  <CheckCircle2 className="h-6 w-6 text-green-600" />
+                </div>
+                <div>
+                  <p className="text-[12px] text-muted-foreground">在线</p>
+                  <p className="text-[26px] font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">{models.filter((m) => m.status === 'online').length}</p>
+                </div>
               </div>
-              <p className="text-xs text-muted-foreground">在线</p>
             </CardContent>
           </Card>
-          <Card>
-            <CardContent className="pt-6">
-              <div className="text-2xl font-bold">
-                {models.filter((m) => m.enabled).length}
+          <Card className="bg-white border-border shadow-sm hover:shadow-md transition-shadow">
+            <CardContent className="p-5">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-100 to-cyan-100 flex items-center justify-center">
+                  <Power className="h-6 w-6 text-blue-600" />
+                </div>
+                <div>
+                  <p className="text-[12px] text-muted-foreground">已启用</p>
+                  <p className="text-[26px] font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">{models.filter((m) => m.enabled).length}</p>
+                </div>
               </div>
-              <p className="text-xs text-muted-foreground">已启用</p>
             </CardContent>
           </Card>
-          <Card>
-            <CardContent className="pt-6">
-              <div className="text-2xl font-bold text-blue-500">
-                {models.filter((m) => m.provider === 'doubao').length}
+          <Card className="bg-white border-border shadow-sm hover:shadow-md transition-shadow">
+            <CardContent className="p-5">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-100 to-orange-100 flex items-center justify-center">
+                  <AlertTriangle className="h-6 w-6 text-amber-600" />
+                </div>
+                <div>
+                  <p className="text-[12px] text-muted-foreground">豆包模型</p>
+                  <p className="text-[26px] font-bold bg-gradient-to-r from-amber-500 to-orange-500 bg-clip-text text-transparent">{models.filter((m) => m.provider === 'doubao').length}</p>
+                </div>
               </div>
-              <p className="text-xs text-muted-foreground">豆包模型</p>
             </CardContent>
           </Card>
         </div>

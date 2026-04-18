@@ -150,21 +150,28 @@ export default function PackagesPage() {
   return (
     <MainLayout user={user} onLogout={handleLogout}>
       <div className="space-y-6">
-        {/* 页面标题 */}
-        <div className="text-center max-w-2xl mx-auto">
-          <h1 className="text-[24px] font-semibold text-foreground">选择适合您的套餐</h1>
-          <p className="text-[14px] text-muted-foreground mt-2">
-            灵活定价，畅享AI智能体带来的效率提升
-          </p>
+        {/* 页面头部 */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-purple-500/20 to-pink-500/5 flex items-center justify-center">
+              <Crown className="h-7 w-7 text-purple-500" />
+            </div>
+            <div>
+              <h1 className="text-[24px] font-semibold text-foreground">选择适合您的套餐</h1>
+              <p className="text-[14px] text-muted-foreground">
+                灵活定价，畅享AI智能体带来的效率提升
+              </p>
+            </div>
+          </div>
         </div>
 
         {/* 当前订阅状态 */}
-        <Card className="bg-gradient-to-r from-primary/5 to-primary/10 border-primary/20">
+        <Card className="bg-gradient-to-r from-green-500/5 to-emerald-500/10 border-green-500/20">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
-                  <Check className="h-5 w-5 text-primary" />
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-500/20 to-emerald-500/10 flex items-center justify-center">
+                  <Check className="h-5 w-5 text-green-600" />
                 </div>
                 <div>
                   <p className="text-[14px] font-medium">当前订阅：试用套餐</p>

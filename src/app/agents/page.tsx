@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import {
+  Bot,
   Search,
   ShoppingCart,
   Image,
@@ -157,13 +158,18 @@ export default function AgentsPage() {
   return (
     <MainLayout user={user} onLogout={handleLogout}>
       <div className="space-y-6">
-        {/* 页面标题 */}
+        {/* 页面头部 */}
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-[18px] font-semibold text-foreground">智能体调度配置</h1>
-            <p className="text-[14px] text-muted-foreground mt-1">
-              AI智能体工厂 · 7大核心智能体 · 合规+风控
-            </p>
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-purple-500/20 to-pink-500/5 flex items-center justify-center">
+              <Bot className="h-7 w-7 text-purple-500" />
+            </div>
+            <div>
+              <h1 className="text-[24px] font-semibold text-foreground">智能体调度配置</h1>
+              <p className="text-[14px] text-muted-foreground">
+                AI智能体工厂 · 7大核心智能体 · 合规+风控
+              </p>
+            </div>
           </div>
           <div className="flex items-center gap-3">
             <div className="relative">
@@ -184,31 +190,59 @@ export default function AgentsPage() {
         </div>
 
         {/* 统计概览 */}
-        <div className="grid grid-cols-4 gap-4">
-          <Card className="bg-white border-border shadow-sm">
-            <CardContent className="p-4">
-              <div className="text-[13px] text-muted-foreground mb-1">在线智能体</div>
-              <div className="text-[24px] font-semibold text-success">
-                {agents.filter(a => a.status === 'active').length}/{agents.length}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <Card className="bg-white border-border shadow-sm hover:shadow-md transition-shadow">
+            <CardContent className="p-5">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-green-100 to-emerald-100 flex items-center justify-center">
+                  <Bot className="h-6 w-6 text-green-600" />
+                </div>
+                <div>
+                  <p className="text-[12px] text-muted-foreground">在线智能体</p>
+                  <p className="text-[26px] font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
+                    {agents.filter(a => a.status === 'active').length}/{agents.length}
+                  </p>
+                </div>
               </div>
             </CardContent>
           </Card>
-          <Card className="bg-white border-border shadow-sm">
-            <CardContent className="p-4">
-              <div className="text-[13px] text-muted-foreground mb-1">总调用次数</div>
-              <div className="text-[24px] font-semibold text-foreground">{totalCalls.toLocaleString()}</div>
+          <Card className="bg-white border-border shadow-sm hover:shadow-md transition-shadow">
+            <CardContent className="p-5">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-100 to-cyan-100 flex items-center justify-center">
+                  <BarChart3 className="h-6 w-6 text-blue-600" />
+                </div>
+                <div>
+                  <p className="text-[12px] text-muted-foreground">总调用次数</p>
+                  <p className="text-[26px] font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">{totalCalls.toLocaleString()}</p>
+                </div>
+              </div>
             </CardContent>
           </Card>
-          <Card className="bg-white border-border shadow-sm">
-            <CardContent className="p-4">
-              <div className="text-[13px] text-muted-foreground mb-1">智能体类型</div>
-              <div className="text-[24px] font-semibold text-foreground">{agents.length}</div>
+          <Card className="bg-white border-border shadow-sm hover:shadow-md transition-shadow">
+            <CardContent className="p-5">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center">
+                  <Settings className="h-6 w-6 text-purple-600" />
+                </div>
+                <div>
+                  <p className="text-[12px] text-muted-foreground">智能体类型</p>
+                  <p className="text-[26px] font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">{agents.length}</p>
+                </div>
+              </div>
             </CardContent>
           </Card>
-          <Card className="bg-white border-border shadow-sm">
-            <CardContent className="p-4">
-              <div className="text-[13px] text-muted-foreground mb-1">合规校验</div>
-              <div className="text-[24px] font-semibold text-success">已启用</div>
+          <Card className="bg-white border-border shadow-sm hover:shadow-md transition-shadow">
+            <CardContent className="p-5">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-green-100 to-emerald-100 flex items-center justify-center">
+                  <Shield className="h-6 w-6 text-green-600" />
+                </div>
+                <div>
+                  <p className="text-[12px] text-muted-foreground">合规校验</p>
+                  <p className="text-[26px] font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">已启用</p>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </div>

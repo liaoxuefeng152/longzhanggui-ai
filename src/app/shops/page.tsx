@@ -430,11 +430,11 @@ export default function ShopsPage() {
         {/* 页面头部 */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-orange-500/20 to-orange-500/5 flex items-center justify-center">
+            <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-orange-500/20 to-amber-500/5 flex items-center justify-center">
               <Store className="h-7 w-7 text-orange-500" />
             </div>
             <div>
-              <h1 className="text-[18px] font-semibold text-foreground">店铺管理</h1>
+              <h1 className="text-[24px] font-semibold text-foreground">店铺管理</h1>
               <p className="text-[14px] text-muted-foreground">多平台店铺绑定 · 授权管理 · 数据同步</p>
             </div>
           </div>

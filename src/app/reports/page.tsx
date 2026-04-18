@@ -195,13 +195,18 @@ export default function ReportsPage() {
   return (
     <MainLayout user={user} onLogout={handleLogout}>
       <div className="space-y-6">
-        {/* 页面标题 */}
+        {/* 页面头部 */}
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-[18px] font-semibold text-foreground">数据报表</h1>
-            <p className="text-[14px] text-muted-foreground mt-1">
-              销售分析 · 智能体效能 · 自动化任务转化
-            </p>
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-500/20 to-cyan-500/5 flex items-center justify-center">
+              <TrendingUp className="h-7 w-7 text-blue-500" />
+            </div>
+            <div>
+              <h1 className="text-[24px] font-semibold text-foreground">数据报表</h1>
+              <p className="text-[14px] text-muted-foreground">
+                销售分析 · 智能体效能 · 自动化任务转化
+              </p>
+            </div>
           </div>
           <div className="flex items-center gap-3">
             <Select value={timeRange} onValueChange={setTimeRange}>
@@ -214,15 +219,8 @@ export default function ReportsPage() {
                 <SelectItem value="90d">近90天</SelectItem>
               </SelectContent>
             </Select>
-            <Button variant="outline" onClick={fetchReports} disabled={isLoading}>
-              {isLoading ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              ) : (
-                <RefreshCw className="h-4 w-4 mr-2" />
-              )}
-              刷新
-            </Button>
-            <Button variant="outline" onClick={handleExportReport}>
+            <Button variant="outline" onClick={handleExportReport}
+              className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white">
               <Download className="h-4 w-4 mr-2" />
               导出报表
             </Button>
@@ -230,49 +228,45 @@ export default function ReportsPage() {
         </div>
 
         {/* 核心指标卡片 */}
-        <div className="grid grid-cols-4 gap-4">
-          <Card className="bg-white border-border shadow-sm">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <Card className="bg-white border-border shadow-sm hover:shadow-md transition-shadow">
+            <CardContent className="p-5">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-green-100 to-emerald-100 flex items-center justify-center">
+                  <DollarSign className="h-6 w-6 text-green-600" />
+                </div>
                 <div>
-                  <p className="text-[13px] text-muted-foreground mb-1">总销售额</p>
-                  <p className="text-[28px] font-semibold text-foreground">
+                  <p className="text-[12px] text-muted-foreground">总销售额</p>
+                  <p className="text-[26px] font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
                     ${overview?.total_sales?.toLocaleString() || 0}
                   </p>
-                  <div className="flex items-center gap-1 mt-1">
-                    <TrendingUp className="h-3 w-3 text-success" />
-                    <span className="text-[12px] text-success">+15.2%</span>
-                    <span className="text-[12px] text-muted-foreground">vs上周</span>
+                  <div className="flex items-center gap-1">
+                    <TrendingUp className="h-3 w-3 text-green-600" />
+                    <span className="text-[11px] text-green-600">+15.2%</span>
                   </div>
-                </div>
-                <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
-                  <DollarSign className="h-6 w-6 text-primary" />
                 </div>
               </div>
             </CardContent>
           </Card>
-          <Card className="bg-white border-border shadow-sm">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
+          <Card className="bg-white border-border shadow-sm hover:shadow-md transition-shadow">
+            <CardContent className="p-5">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-100 to-cyan-100 flex items-center justify-center">
+                  <ShoppingCart className="h-6 w-6 text-blue-600" />
+                </div>
                 <div>
-                  <p className="text-[13px] text-muted-foreground mb-1">总订单数</p>
-                  <p className="text-[28px] font-semibold text-foreground">
+                  <p className="text-[12px] text-muted-foreground">总订单数</p>
+                  <p className="text-[26px] font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
                     {overview?.total_orders?.toLocaleString() || 0}
                   </p>
-                  <div className="flex items-center gap-1 mt-1">
-                    <TrendingUp className="h-3 w-3 text-success" />
-                    <span className="text-[12px] text-success">+8.5%</span>
-                    <span className="text-[12px] text-muted-foreground">vs上周</span>
+                  <div className="flex items-center gap-1">
+                    <TrendingUp className="h-3 w-3 text-green-600" />
+                    <span className="text-[11px] text-green-600">+8.5%</span>
                   </div>
-                </div>
-                <div className="w-12 h-12 rounded-xl bg-success/10 flex items-center justify-center">
-                  <ShoppingCart className="h-6 w-6 text-success" />
                 </div>
               </div>
             </CardContent>
           </Card>
-          <Card className="bg-white border-border shadow-sm">
-            <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-[13px] text-muted-foreground mb-1">活跃用户</p>

@@ -161,8 +161,8 @@ export default function AgentConfigPage() {
         {/* 页面头部 */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center">
-              <Bot className="h-7 w-7 text-primary" />
+            <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-purple-500/20 to-pink-500/5 flex items-center justify-center">
+              <Bot className="h-7 w-7 text-purple-500" />
             </div>
             <div>
               <h1 className="text-[24px] font-semibold">智能体配置</h1>

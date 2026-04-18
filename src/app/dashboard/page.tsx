@@ -301,11 +301,16 @@ export default function DashboardPage() {
       <div className="space-y-6" key={refreshKey}>
         {/* 页面标题 */}
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-[18px] font-semibold text-foreground">控制台首页</h1>
-            <p className="text-[14px] text-muted-foreground mt-1">
-              系统运行状态 · 数据总览大屏
-            </p>
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-500/20 to-cyan-500/5 flex items-center justify-center">
+              <Activity className="h-7 w-7 text-blue-500" />
+            </div>
+            <div>
+              <h1 className="text-[24px] font-semibold text-foreground">控制台首页</h1>
+              <p className="text-[14px] text-muted-foreground">
+                系统运行状态 · 数据总览大屏
+              </p>
+            </div>
           </div>
           <div className="flex items-center gap-2">
             <span className="text-[12px] text-muted-foreground">

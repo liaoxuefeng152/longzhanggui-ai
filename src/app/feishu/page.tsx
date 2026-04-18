@@ -164,12 +164,12 @@ export default function FeishuPage() {
         {/* 页面头部 */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-500/20 to-blue-500/5 flex items-center justify-center">
+            <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-500/20 to-cyan-500/5 flex items-center justify-center">
               <MessageSquare className="h-7 w-7 text-blue-500" />
             </div>
             <div>
-              <h1 className="text-xl font-semibold text-foreground">飞书机器人管理</h1>
-              <p className="text-sm text-muted-foreground">
+              <h1 className="text-[24px] font-semibold text-foreground">飞书机器人管理</h1>
+              <p className="text-[14px] text-muted-foreground">
                 配置飞书机器人、推送规则和指令模板
               </p>
             </div>

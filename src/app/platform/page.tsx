@@ -37,8 +37,8 @@ export default function PlatformPage() {
         {/* 页面头部 */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center">
-              <Settings className="h-7 w-7 text-primary" />
+            <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-500/20 to-cyan-500/5 flex items-center justify-center">
+              <Settings className="h-7 w-7 text-blue-500" />
             </div>
             <div>
               <h1 className="text-[24px] font-semibold">平台配置</h1>
