@@ -354,7 +354,7 @@ export default function VideoAgentPage() {
   const getStatusBadge = (status: string) => {
     const config: Record<string, { label: string; className: string }> = {
       pending: { label: '待处理', className: 'bg-muted text-muted-foreground' },
-      processing: { label: '生成中', className: 'bg-pink-500/10 text-pink-600 border-pink-500/20' },
+      processing: { label: '生成中', className: 'bg-pink-100 text-pink-600 border-pink-500/20' },
       completed: { label: '已完成', className: 'bg-success/10 text-success border-success/20' },
       failed: { label: '失败', className: 'bg-destructive/10 text-destructive border-destructive/20' },
     };
@@ -390,7 +390,7 @@ export default function VideoAgentPage() {
         {/* 页面头部 */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-xl bg-pink-500/10 flex items-center justify-center">
+            <div className="w-14 h-14 rounded-xl bg-pink-100 flex items-center justify-center">
               <Video className="h-7 w-7 text-pink-600" />
             </div>
             <div>
@@ -399,7 +399,7 @@ export default function VideoAgentPage() {
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <Badge className="bg-pink-500/10 text-pink-500 border-pink-500/20">
+            <Badge className="bg-pink-100 text-pink-500 border-pink-500/20">
               TK东南亚专属
             </Badge>
             <Badge className={agentStatus === 'online' ? 'bg-success text-white' : 'bg-warning text-white'}>

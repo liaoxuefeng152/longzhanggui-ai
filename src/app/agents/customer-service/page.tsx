@@ -535,7 +535,7 @@ export default function CustomerServicePage() {
   const getStatusBadge = (status: string) => {
     const config: Record<string, { label: string; className: string }> = {
       pending: { label: '待处理', className: 'bg-warning/10 text-warning' },
-      processing: { label: '处理中', className: 'bg-cyan-500/10 text-cyan-600' },
+      processing: { label: '处理中', className: 'bg-cyan-100 text-cyan-600' },
       resolved: { label: '已解决', className: 'bg-success/10 text-success' },
       escalated: { label: '已转人工', className: 'bg-blue-500/10 text-blue-500' },
     };
@@ -578,7 +578,7 @@ export default function CustomerServicePage() {
         {/* 页面头部 */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-xl bg-cyan-500/10 flex items-center justify-center">
+            <div className="w-14 h-14 rounded-xl bg-cyan-100 flex items-center justify-center">
               <Headphones className="h-7 w-7 text-cyan-600" />
             </div>
             <div>

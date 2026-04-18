@@ -244,7 +244,7 @@ export default function ListingAgentPage() {
   const getStatusBadge = (status: string) => {
     const config: Record<string, { label: string; className: string }> = {
       pending: { label: '待处理', className: 'bg-muted text-muted-foreground' },
-      processing: { label: '生成中', className: 'bg-green-500/10 text-green-600 border-green-500/20' },
+      processing: { label: '生成中', className: 'bg-green-100 text-green-600 border-green-500/20' },
       completed: { label: '已完成', className: 'bg-success/10 text-success border-success/20' },
       failed: { label: '失败', className: 'bg-destructive/10 text-destructive border-destructive/20' },
     };
@@ -270,7 +270,7 @@ export default function ListingAgentPage() {
         {/* 页面头部 */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-xl bg-green-500/10 flex items-center justify-center">
+            <div className="w-14 h-14 rounded-xl bg-green-100 flex items-center justify-center">
               <FileText className="h-7 w-7 text-green-600" />
             </div>
             <div>

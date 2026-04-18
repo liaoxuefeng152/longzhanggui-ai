@@ -344,7 +344,7 @@ export default function AdvertisingAgentPage() {
         {/* 页面头部 */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-xl bg-orange-500/10 flex items-center justify-center">
+            <div className="w-14 h-14 rounded-xl bg-orange-100 flex items-center justify-center">
               <Megaphone className="h-7 w-7 text-orange-600" />
             </div>
             <div>

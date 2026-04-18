@@ -237,7 +237,7 @@ export default function DataReviewPage() {
     const config: Record<string, { label: string; className: string; icon: any }> = {
       opportunity: { label: '机会', className: 'bg-success/10 text-success', icon: TrendingUp },
       warning: { label: '警告', className: 'bg-destructive/10 text-destructive', icon: AlertTriangle },
-      suggestion: { label: '建议', className: 'bg-indigo-500/10 text-indigo-600', icon: Zap },
+      suggestion: { label: '建议', className: 'bg-indigo-100 text-indigo-600', icon: Zap },
     };
     return config[type] || config.suggestion;
   };
@@ -266,7 +266,7 @@ export default function DataReviewPage() {
         {/* 页面头部 */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-xl bg-indigo-500/10 flex items-center justify-center">
+            <div className="w-14 h-14 rounded-xl bg-indigo-100 flex items-center justify-center">
               <BarChart3 className="h-7 w-7 text-indigo-600" />
             </div>
             <div>
@@ -523,7 +523,7 @@ export default function DataReviewPage() {
                       >
                         <div className="flex items-start justify-between">
                           <div className="flex items-start gap-3">
-                            <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${insight.type === 'opportunity' ? 'bg-success/10' : insight.type === 'warning' ? 'bg-destructive/10' : 'bg-indigo-500/10'}`}>
+                            <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${insight.type === 'opportunity' ? 'bg-success/10' : insight.type === 'warning' ? 'bg-destructive/10' : 'bg-indigo-100'}`}>
                               <Icon className={`h-5 w-5 ${config.className.split(' ')[1]}`} />
                             </div>
                             <div className="space-y-1">
@@ -556,7 +556,7 @@ export default function DataReviewPage() {
               <Card className="bg-white border-border shadow-sm hover:shadow-md transition-shadow cursor-pointer">
                 <CardContent className="p-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-lg bg-indigo-500/10 flex items-center justify-center">
+                    <div className="w-12 h-12 rounded-lg bg-indigo-100 flex items-center justify-center">
                       <FileText className="h-6 w-6 text-indigo-600" />
                     </div>
                     <div>

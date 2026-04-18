@@ -914,7 +914,7 @@ ${report.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
               <p className="text-[14px] text-muted-foreground">基于合规的智能选品决策辅助工具</p>
             </div>
           </div>
-          <Badge className="bg-blue-500/10 text-blue-600 border-blue-500/20">
+          <Badge className="bg-blue-100 text-blue-600 border-blue-500/20">
             在线运行
           </Badge>
         </div>
@@ -1076,7 +1076,7 @@ ${report.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
                           onClick={() => handleRequirementChange('budget', opt.value)}
                           className={`p-3 rounded-lg border text-left transition-colors ${
                             requirement.budget === opt.value 
-                              ? 'bg-blue-500/10 border-primary' 
+                              ? 'bg-blue-100 border-primary' 
                               : 'bg-white border-border hover:border-primary/50'
                           }`}
                         >
@@ -1900,7 +1900,7 @@ ${report.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
                     <div className="flex flex-wrap gap-1 mt-2">
                       {requirement.market && platformCompliance[requirement.market] ? (
                         platformCompliance[requirement.market].requiredDocs.map((cert) => (
-                          <Badge key={cert} variant="outline" className="text-[11px] bg-blue-500/10">
+                          <Badge key={cert} variant="outline" className="text-[11px] bg-blue-100">
                             {cert}
                           </Badge>
                         ))
