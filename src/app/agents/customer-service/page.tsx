@@ -535,7 +535,7 @@ export default function CustomerServicePage() {
   const getStatusBadge = (status: string) => {
     const config: Record<string, { label: string; className: string }> = {
       pending: { label: '待处理', className: 'bg-warning/10 text-warning' },
-      processing: { label: '处理中', className: 'bg-primary/10 text-primary' },
+      processing: { label: '处理中', className: 'bg-cyan-500/10 text-cyan-600' },
       resolved: { label: '已解决', className: 'bg-success/10 text-success' },
       escalated: { label: '已转人工', className: 'bg-blue-500/10 text-blue-500' },
     };
@@ -578,8 +578,8 @@ export default function CustomerServicePage() {
         {/* 页面头部 */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center">
-              <Headphones className="h-7 w-7 text-primary" />
+            <div className="w-14 h-14 rounded-xl bg-cyan-500/10 flex items-center justify-center">
+              <Headphones className="h-7 w-7 text-cyan-600" />
             </div>
             <div>
               <h1 className="text-[18px] font-semibold text-foreground">客服智能体</h1>
@@ -607,19 +607,19 @@ export default function CustomerServicePage() {
 
         {/* 核心能力标签 */}
         <div className="flex items-center gap-2">
-          <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
+          <Badge variant="outline" className="bg-cyan-500/5 text-cyan-600 border-cyan-500/20">
             <Languages className="h-3 w-3 mr-1" />
             多语言翻译
           </Badge>
-          <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
+          <Badge variant="outline" className="bg-cyan-500/5 text-cyan-600 border-cyan-500/20">
             <Shield className="h-3 w-3 mr-1" />
             合规回复
           </Badge>
-          <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
+          <Badge variant="outline" className="bg-cyan-500/5 text-cyan-600 border-cyan-500/20">
             <AlertTriangle className="h-3 w-3 mr-1" />
             纠纷处理
           </Badge>
-          <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
+          <Badge variant="outline" className="bg-cyan-500/5 text-cyan-600 border-cyan-500/20">
             <Globe className="h-3 w-3 mr-1" />
             跨时区覆盖
           </Badge>
@@ -644,7 +644,7 @@ export default function CustomerServicePage() {
           <Card className="bg-white border-border shadow-sm">
             <CardContent className="p-4">
               <div className="text-[12px] text-muted-foreground mb-1">处理中</div>
-              <div className="text-[24px] font-semibold text-primary">{processingTickets}</div>
+              <div className="text-[24px] font-semibold text-cyan-600">{processingTickets}</div>
               <div className="text-[11px] text-muted-foreground mt-1">进行中</div>
             </CardContent>
           </Card>
@@ -732,7 +732,7 @@ export default function CustomerServicePage() {
                               ticket.status === 'escalated' ? 'bg-blue-500/10' : 'bg-warning/10'
                             }`}>
                               {ticket.aiHandled ? (
-                                <Bot className="h-5 w-5 text-primary" />
+                                <Bot className="h-5 w-5 text-cyan-600" />
                               ) : (
                                 <User className="h-5 w-5 text-muted-foreground" />
                               )}
@@ -744,7 +744,7 @@ export default function CustomerServicePage() {
                                 {getTypeBadge(ticket.type)}
                                 {getStatusBadge(ticket.status)}
                                 {ticket.aiHandled && (
-                                  <Badge variant="outline" className="bg-primary/5 text-primary">
+                                  <Badge variant="outline" className="bg-cyan-500/5 text-cyan-600">
                                     <Bot className="h-3 w-3 mr-1" />
                                     AI处理
                                   </Badge>

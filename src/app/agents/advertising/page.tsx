@@ -344,8 +344,8 @@ export default function AdvertisingAgentPage() {
         {/* 页面头部 */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center">
-              <Megaphone className="h-7 w-7 text-primary" />
+            <div className="w-14 h-14 rounded-xl bg-orange-500/10 flex items-center justify-center">
+              <Megaphone className="h-7 w-7 text-orange-600" />
             </div>
             <div>
               <h1 className="text-[18px] font-semibold text-foreground">广告投放智能体</h1>
@@ -377,15 +377,15 @@ export default function AdvertisingAgentPage() {
             <Shield className="h-3 w-3 mr-1" />
             风控引擎
           </Badge>
-          <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
+          <Badge variant="outline" className="bg-orange-500/5 text-orange-600 border-orange-500/20">
             <Target className="h-3 w-3 mr-1" />
             预算分配
           </Badge>
-          <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
+          <Badge variant="outline" className="bg-orange-500/5 text-orange-600 border-orange-500/20">
             <DollarSign className="h-3 w-3 mr-1" />
             出价建议
           </Badge>
-          <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
+          <Badge variant="outline" className="bg-orange-500/5 text-orange-600 border-orange-500/20">
             <TrendingUp className="h-3 w-3 mr-1" />
             关键词挖掘
           </Badge>
@@ -950,7 +950,7 @@ export default function AdvertisingAgentPage() {
               {/* TikTok Ads API 配置 */}
               <div className="space-y-3">
                 <div className="text-[13px] font-medium text-foreground flex items-center gap-2">
-                  <Megaphone className="h-4 w-4 text-primary" />
+                  <Megaphone className="h-4 w-4 text-orange-600" />
                   TikTok Ads API
                 </div>
                 <div className="space-y-2">

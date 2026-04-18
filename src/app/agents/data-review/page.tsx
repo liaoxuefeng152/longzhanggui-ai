@@ -237,7 +237,7 @@ export default function DataReviewPage() {
     const config: Record<string, { label: string; className: string; icon: any }> = {
       opportunity: { label: '机会', className: 'bg-success/10 text-success', icon: TrendingUp },
       warning: { label: '警告', className: 'bg-destructive/10 text-destructive', icon: AlertTriangle },
-      suggestion: { label: '建议', className: 'bg-primary/10 text-primary', icon: Zap },
+      suggestion: { label: '建议', className: 'bg-indigo-500/10 text-indigo-600', icon: Zap },
     };
     return config[type] || config.suggestion;
   };
@@ -266,8 +266,8 @@ export default function DataReviewPage() {
         {/* 页面头部 */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center">
-              <BarChart3 className="h-7 w-7 text-primary" />
+            <div className="w-14 h-14 rounded-xl bg-indigo-500/10 flex items-center justify-center">
+              <BarChart3 className="h-7 w-7 text-indigo-600" />
             </div>
             <div>
               <h1 className="text-[18px] font-semibold text-foreground">数据复盘智能体</h1>
@@ -296,19 +296,19 @@ export default function DataReviewPage() {
 
         {/* 核心能力标签 */}
         <div className="flex items-center gap-2">
-          <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
+          <Badge variant="outline" className="bg-indigo-500/5 text-indigo-600 border-indigo-500/20">
             <Activity className="h-3 w-3 mr-1" />
             数据分析
           </Badge>
-          <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
+          <Badge variant="outline" className="bg-indigo-500/5 text-indigo-600 border-indigo-500/20">
             <Zap className="h-3 w-3 mr-1" />
             AI洞察
           </Badge>
-          <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
+          <Badge variant="outline" className="bg-indigo-500/5 text-indigo-600 border-indigo-500/20">
             <Target className="h-3 w-3 mr-1" />
             运营优化
           </Badge>
-          <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
+          <Badge variant="outline" className="bg-indigo-500/5 text-indigo-600 border-indigo-500/20">
             <FileText className="h-3 w-3 mr-1" />
             自动报告
           </Badge>
@@ -359,7 +359,7 @@ export default function DataReviewPage() {
             <CardContent className="p-4">
               <div className="flex items-center justify-between mb-1">
                 <div className="text-[12px] text-muted-foreground">ROAS</div>
-                <Activity className="h-4 w-4 text-primary" />
+                <Activity className="h-4 w-4 text-indigo-600" />
               </div>
               <div className="text-[24px] font-semibold text-foreground">{avgRoas.toFixed(2)}x</div>
               <div className="text-[11px] text-success mt-1">表现良好</div>
@@ -482,7 +482,7 @@ export default function DataReviewPage() {
                                   <span>转化率: <span className="font-medium">{product.conversionRate}%</span></span>
                                 </div>
                                 {product.insight && (
-                                  <div className="text-[12px] text-primary flex items-center gap-1">
+                                  <div className="text-[12px] text-indigo-600 flex items-center gap-1">
                                     <Zap className="h-3 w-3" />
                                     {product.insight}
                                   </div>
@@ -523,7 +523,7 @@ export default function DataReviewPage() {
                       >
                         <div className="flex items-start justify-between">
                           <div className="flex items-start gap-3">
-                            <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${insight.type === 'opportunity' ? 'bg-success/10' : insight.type === 'warning' ? 'bg-destructive/10' : 'bg-primary/10'}`}>
+                            <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${insight.type === 'opportunity' ? 'bg-success/10' : insight.type === 'warning' ? 'bg-destructive/10' : 'bg-indigo-500/10'}`}>
                               <Icon className={`h-5 w-5 ${config.className.split(' ')[1]}`} />
                             </div>
                             <div className="space-y-1">
@@ -532,7 +532,7 @@ export default function DataReviewPage() {
                                 <Badge variant="outline" className={config.className}>{config.label}</Badge>
                               </div>
                               <div className="text-[12px] text-muted-foreground">{insight.description}</div>
-                              <div className="text-[12px] text-primary">影响: {insight.impact}</div>
+                              <div className="text-[12px] text-indigo-600">影响: {insight.impact}</div>
                             </div>
                           </div>
                           <div className="flex items-center gap-2">
@@ -556,8 +556,8 @@ export default function DataReviewPage() {
               <Card className="bg-white border-border shadow-sm hover:shadow-md transition-shadow cursor-pointer">
                 <CardContent className="p-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
-                      <FileText className="h-6 w-6 text-primary" />
+                    <div className="w-12 h-12 rounded-lg bg-indigo-500/10 flex items-center justify-center">
+                      <FileText className="h-6 w-6 text-indigo-600" />
                     </div>
                     <div>
                       <div className="text-[14px] font-medium">周报</div>
@@ -639,7 +639,7 @@ export default function DataReviewPage() {
                 </div>
                 <div>
                   <div className="text-[12px] text-muted-foreground mb-1">预期影响</div>
-                  <div className="text-[14px] text-primary">{selectedInsight.impact}</div>
+                  <div className="text-[14px] text-indigo-600">{selectedInsight.impact}</div>
                 </div>
                 <div>
                   <div className="text-[12px] text-muted-foreground mb-1">建议操作</div>

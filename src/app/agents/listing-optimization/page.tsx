@@ -244,7 +244,7 @@ export default function ListingAgentPage() {
   const getStatusBadge = (status: string) => {
     const config: Record<string, { label: string; className: string }> = {
       pending: { label: '待处理', className: 'bg-muted text-muted-foreground' },
-      processing: { label: '生成中', className: 'bg-primary/10 text-primary border-primary/20' },
+      processing: { label: '生成中', className: 'bg-green-500/10 text-green-600 border-green-500/20' },
       completed: { label: '已完成', className: 'bg-success/10 text-success border-success/20' },
       failed: { label: '失败', className: 'bg-destructive/10 text-destructive border-destructive/20' },
     };
@@ -270,8 +270,8 @@ export default function ListingAgentPage() {
         {/* 页面头部 */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center">
-              <FileText className="h-7 w-7 text-primary" />
+            <div className="w-14 h-14 rounded-xl bg-green-500/10 flex items-center justify-center">
+              <FileText className="h-7 w-7 text-green-600" />
             </div>
             <div>
               <h1 className="text-[18px] font-semibold text-foreground">Listing优化智能体</h1>
@@ -295,23 +295,23 @@ export default function ListingAgentPage() {
 
         {/* 核心能力标签 */}
         <div className="flex items-center gap-2">
-          <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
+          <Badge variant="outline" className="bg-green-500/5 text-green-600 border-green-500/20">
             <Shield className="h-3 w-3 mr-1" />
             合规校验
           </Badge>
-          <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
+          <Badge variant="outline" className="bg-green-500/5 text-green-600 border-green-500/20">
             <Type className="h-3 w-3 mr-1" />
             标题优化
           </Badge>
-          <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
+          <Badge variant="outline" className="bg-green-500/5 text-green-600 border-green-500/20">
             <List className="h-3 w-3 mr-1" />
             五点描述
           </Badge>
-          <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
+          <Badge variant="outline" className="bg-green-500/5 text-green-600 border-green-500/20">
             <Tag className="h-3 w-3 mr-1" />
             关键词挖掘
           </Badge>
-          <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
+          <Badge variant="outline" className="bg-green-500/5 text-green-600 border-green-500/20">
             <Globe className="h-3 w-3 mr-1" />
             平台差异化
           </Badge>
@@ -597,7 +597,7 @@ export default function ListingAgentPage() {
               <Card className="bg-white border-border shadow-sm">
                 <CardContent className="p-4">
                   <div className="flex items-center gap-3 mb-3">
-                    <TrendingUp className="h-5 w-5 text-primary" />
+                    <TrendingUp className="h-5 w-5 text-green-600" />
                     <span className="text-[13px] font-medium">热门关键词</span>
                   </div>
                   <div className="space-y-2">
@@ -613,7 +613,7 @@ export default function ListingAgentPage() {
               <Card className="bg-white border-border shadow-sm">
                 <CardContent className="p-4">
                   <div className="flex items-center gap-3 mb-3">
-                    <Tag className="h-5 w-5 text-primary" />
+                    <Tag className="h-5 w-5 text-green-600" />
                     <span className="text-[13px] font-medium">TK标签库</span>
                   </div>
                   <div className="flex flex-wrap gap-2">
@@ -626,7 +626,7 @@ export default function ListingAgentPage() {
               <Card className="bg-white border-border shadow-sm">
                 <CardContent className="p-4">
                   <div className="flex items-center gap-3 mb-3">
-                    <Languages className="h-5 w-5 text-primary" />
+                    <Languages className="h-5 w-5 text-green-600" />
                     <span className="text-[13px] font-medium">多语种关键词</span>
                   </div>
                   <div className="space-y-2">
@@ -783,7 +783,7 @@ export default function ListingAgentPage() {
                   {/* 平台和语言信息 */}
                   <div className="flex items-center gap-2 text-[12px]">
                     <Badge variant="outline">{previewTask.platform}</Badge>
-                    <Badge variant="outline" className="bg-primary/5">
+                    <Badge variant="outline" className="bg-green-500/5">
                       {previewTask.result.language === 'id' ? '印尼语' : 
                        previewTask.result.language === 'th' ? '泰语' : 
                        previewTask.result.language === 'vi' ? '越南语' : '英语'}
@@ -870,7 +870,7 @@ export default function ListingAgentPage() {
                       <div className="p-3 bg-muted/30 rounded-lg text-[13px] space-y-2">
                         {getBulletPoints(previewTask.result).map((bullet, idx) => (
                           <div key={idx} className="flex items-start gap-2">
-                            <span className="text-primary font-medium">{idx + 1}.</span>
+                            <span className="text-green-600 font-medium">{idx + 1}.</span>
                             <span>{bullet}</span>
                           </div>
                         ))}
@@ -894,7 +894,7 @@ export default function ListingAgentPage() {
                       </div>
                       <div className="flex flex-wrap gap-2 p-3 bg-muted/30 rounded-lg">
                         {getKeywords(previewTask.result).map((keyword, idx) => (
-                          <Badge key={idx} variant="outline" className="bg-primary/5">{keyword}</Badge>
+                          <Badge key={idx} variant="outline" className="bg-green-500/5">{keyword}</Badge>
                         ))}
                       </div>
                     </div>

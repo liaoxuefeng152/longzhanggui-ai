@@ -906,91 +906,91 @@ ${report.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
         {/* 页面头部 */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center">
-              <ShoppingCart className="h-7 w-7 text-primary" />
+            <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-500/20 to-cyan-400/5 flex items-center justify-center">
+              <ShoppingCart className="h-7 w-7 text-blue-500" />
             </div>
             <div>
-              <h1 className="text-[18px] font-semibold text-foreground">选品智能体</h1>
+              <h1 className="text-[24px] font-semibold text-foreground">选品智能体</h1>
               <p className="text-[14px] text-muted-foreground">基于合规的智能选品决策辅助工具</p>
             </div>
           </div>
-          <Badge className="bg-success text-white">
+          <Badge className="bg-blue-500/10 text-blue-600 border-blue-500/20">
             在线运行
           </Badge>
         </div>
 
         {/* 核心能力标签 */}
         <div className="flex items-center gap-2 flex-wrap">
-          <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
+          <Badge variant="outline" className="bg-blue-500/5 text-blue-600 border-blue-500/20">
             <MessageSquare className="h-3 w-3 mr-1" />
             需求分析
           </Badge>
-          <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
+          <Badge variant="outline" className="bg-blue-500/5 text-blue-600 border-blue-500/20">
             <TrendingUp className="h-3 w-3 mr-1" />
             爆款挖掘
           </Badge>
-          <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
+          <Badge variant="outline" className="bg-blue-500/5 text-blue-600 border-blue-500/20">
             <BarChart3 className="h-3 w-3 mr-1" />
             可行性分析
           </Badge>
-          <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
+          <Badge variant="outline" className="bg-blue-500/5 text-blue-600 border-blue-500/20">
             <Users className="h-3 w-3 mr-1" />
             竞品分析
           </Badge>
-          <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
+          <Badge variant="outline" className="bg-blue-500/5 text-blue-600 border-blue-500/20">
             <FileText className="h-3 w-3 mr-1" />
             报告生成
           </Badge>
-          <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
+          <Badge variant="outline" className="bg-blue-500/5 text-blue-600 border-blue-500/20">
             <Building className="h-3 w-3 mr-1" />
             供应商筛选
           </Badge>
         </div>
 
         {/* 流程指引 */}
-        <Card className="bg-gradient-to-r from-primary/5 to-primary/10 border-primary/20">
+        <Card className="bg-gradient-to-r from-primary/5 to-primary/10 border-blue-500/20">
           <CardContent className="p-4">
             <div className="flex items-center justify-between gap-1 overflow-x-auto">
               <div className="flex items-center gap-2 min-w-fit">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${activeTab === 'requirement' ? 'bg-primary text-white' : 'bg-primary/20 text-primary'}`}>
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${activeTab === 'requirement' ? 'bg-primary text-white' : 'bg-primary/20 text-blue-600'}`}>
                   {directionStep === 'output' ? <Check className="h-4 w-4" /> : <span className="text-[14px] font-medium">1</span>}
                 </div>
-                <span className={`text-[13px] ${activeTab === 'requirement' ? 'font-medium text-primary' : 'text-muted-foreground'}`}>需求分析</span>
+                <span className={`text-[13px] ${activeTab === 'requirement' ? 'font-medium text-blue-600' : 'text-muted-foreground'}`}>需求分析</span>
               </div>
               <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
               <div className="flex items-center gap-2 min-w-fit">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${activeTab === 'hot-products' ? 'bg-primary text-white' : 'bg-primary/20 text-primary'}`}>
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${activeTab === 'hot-products' ? 'bg-primary text-white' : 'bg-primary/20 text-blue-600'}`}>
                   {hotProducts.length > 0 ? <Check className="h-4 w-4" /> : <span className="text-[14px] font-medium">2</span>}
                 </div>
-                <span className={`text-[13px] ${activeTab === 'hot-products' ? 'font-medium text-primary' : 'text-muted-foreground'}`}>爆款挖掘</span>
+                <span className={`text-[13px] ${activeTab === 'hot-products' ? 'font-medium text-blue-600' : 'text-muted-foreground'}`}>爆款挖掘</span>
               </div>
               <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
               <div className="flex items-center gap-2 min-w-fit">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${activeTab === 'feasibility' ? 'bg-primary text-white' : 'bg-primary/20 text-primary'}`}>
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${activeTab === 'feasibility' ? 'bg-primary text-white' : 'bg-primary/20 text-blue-600'}`}>
                   {feasibilityResults.length > 0 ? <Check className="h-4 w-4" /> : <span className="text-[14px] font-medium">3</span>}
                 </div>
-                <span className={`text-[13px] ${activeTab === 'feasibility' ? 'font-medium text-primary' : 'text-muted-foreground'}`}>可行性分析</span>
+                <span className={`text-[13px] ${activeTab === 'feasibility' ? 'font-medium text-blue-600' : 'text-muted-foreground'}`}>可行性分析</span>
               </div>
               <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
               <div className="flex items-center gap-2 min-w-fit">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${activeTab === 'competitor' ? 'bg-primary text-white' : 'bg-primary/20 text-primary'}`}>
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${activeTab === 'competitor' ? 'bg-primary text-white' : 'bg-primary/20 text-blue-600'}`}>
                   {competitors.length > 0 ? <Check className="h-4 w-4" /> : <span className="text-[14px] font-medium">4</span>}
                 </div>
-                <span className={`text-[13px] ${activeTab === 'competitor' ? 'font-medium text-primary' : 'text-muted-foreground'}`}>竞品分析</span>
+                <span className={`text-[13px] ${activeTab === 'competitor' ? 'font-medium text-blue-600' : 'text-muted-foreground'}`}>竞品分析</span>
               </div>
               <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
               <div className="flex items-center gap-2 min-w-fit">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${activeTab === 'report' ? 'bg-primary text-white' : 'bg-primary/20 text-primary'}`}>
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${activeTab === 'report' ? 'bg-primary text-white' : 'bg-primary/20 text-blue-600'}`}>
                   {report ? <Check className="h-4 w-4" /> : <span className="text-[14px] font-medium">5</span>}
                 </div>
-                <span className={`text-[13px] ${activeTab === 'report' ? 'font-medium text-primary' : 'text-muted-foreground'}`}>报告生成</span>
+                <span className={`text-[13px] ${activeTab === 'report' ? 'font-medium text-blue-600' : 'text-muted-foreground'}`}>报告生成</span>
               </div>
               <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
               <div className="flex items-center gap-2 min-w-fit">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${activeTab === 'suppliers' ? 'bg-primary text-white' : 'bg-primary/20 text-primary'}`}>
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${activeTab === 'suppliers' ? 'bg-primary text-white' : 'bg-primary/20 text-blue-600'}`}>
                   {suppliers.length > 0 ? <Check className="h-4 w-4" /> : <span className="text-[14px] font-medium">6</span>}
                 </div>
-                <span className={`text-[13px] ${activeTab === 'suppliers' ? 'font-medium text-primary' : 'text-muted-foreground'}`}>供应商筛选</span>
+                <span className={`text-[13px] ${activeTab === 'suppliers' ? 'font-medium text-blue-600' : 'text-muted-foreground'}`}>供应商筛选</span>
               </div>
             </div>
           </CardContent>
@@ -1014,7 +1014,7 @@ ${report.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
               <Card className="bg-white border-border shadow-sm">
                 <CardHeader>
                   <CardTitle className="text-[15px] flex items-center gap-2">
-                    <MessageSquare className="h-5 w-5 text-primary" />
+                    <MessageSquare className="h-5 w-5 text-blue-600" />
                     选品需求分析
                   </CardTitle>
                   <CardDescription>请告诉我您的选品需求，我会为您推荐最适合的方向</CardDescription>
@@ -1076,11 +1076,11 @@ ${report.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
                           onClick={() => handleRequirementChange('budget', opt.value)}
                           className={`p-3 rounded-lg border text-left transition-colors ${
                             requirement.budget === opt.value 
-                              ? 'bg-primary/10 border-primary' 
+                              ? 'bg-blue-500/10 border-primary' 
                               : 'bg-white border-border hover:border-primary/50'
                           }`}
                         >
-                          <div className={`text-[13px] font-medium ${requirement.budget === opt.value ? 'text-primary' : 'text-foreground'}`}>
+                          <div className={`text-[13px] font-medium ${requirement.budget === opt.value ? 'text-blue-600' : 'text-foreground'}`}>
                             {opt.label}
                           </div>
                           <div className="text-[11px] text-muted-foreground">{opt.desc}</div>
@@ -1193,7 +1193,7 @@ ${report.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
                         key={direction.id || index}
                         className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
                           selectedProducts.includes(direction.name) 
-                            ? 'border-primary bg-primary/5' 
+                            ? 'border-primary bg-blue-500/5' 
                             : 'border-border hover:border-primary/50'
                         }`}
                         onClick={() => toggleProductSelect(direction.name)}
@@ -1282,7 +1282,7 @@ ${report.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
             <Card className="bg-white border-border shadow-sm">
               <CardHeader>
                 <CardTitle className="text-[15px] flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5 text-primary" />
+                  <TrendingUp className="h-5 w-5 text-blue-600" />
                   爆款候选池
                 </CardTitle>
                 <CardDescription>
@@ -1305,7 +1305,7 @@ ${report.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
                         key={product.id}
                         className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
                           selectedProducts.includes(product.id) 
-                            ? 'border-primary bg-primary/5' 
+                            ? 'border-primary bg-blue-500/5' 
                             : 'border-border hover:border-primary/50'
                         }`}
                         onClick={() => toggleProductSelect(product.id)}
@@ -1564,7 +1564,7 @@ ${report.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
                       <div className="grid grid-cols-2 gap-4">
                         <div className="p-3 border rounded-lg">
                           <div className="flex items-center gap-2 mb-2">
-                            <DollarSign className="h-4 w-4 text-primary" />
+                            <DollarSign className="h-4 w-4 text-blue-600" />
                             <span className="text-[13px] font-medium">利润测算</span>
                           </div>
                           <div className="grid grid-cols-2 gap-2 text-[12px]">
@@ -1676,7 +1676,7 @@ ${report.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
             <Card className="bg-white border-border shadow-sm">
               <CardHeader>
                 <CardTitle className="text-[15px] flex items-center gap-2">
-                  <Users className="h-5 w-5 text-primary" />
+                  <Users className="h-5 w-5 text-blue-600" />
                   竞品拆解
                 </CardTitle>
                 <CardDescription>
@@ -1736,9 +1736,9 @@ ${report.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
                     ))}
 
                     {/* 差异化建议 */}
-                    <div className="p-4 bg-primary/5 border border-primary/20 rounded-lg">
+                    <div className="p-4 bg-blue-500/5 border border-blue-500/20 rounded-lg">
                       <div className="flex items-center gap-2 mb-3">
-                        <Lightbulb className="h-5 w-5 text-primary" />
+                        <Lightbulb className="h-5 w-5 text-blue-600" />
                         <span className="font-medium">差异化建议</span>
                       </div>
                       <ul className="text-[13px] space-y-2 text-muted-foreground">
@@ -1777,7 +1777,7 @@ ${report.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
                 <div className="flex items-center justify-between">
                   <div>
                     <CardTitle className="text-[15px] flex items-center gap-2">
-                      <FileText className="h-5 w-5 text-primary" />
+                      <FileText className="h-5 w-5 text-blue-600" />
                       选品报告
                     </CardTitle>
                     <CardDescription>
@@ -1878,7 +1878,7 @@ ${report.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
                 <div className="flex items-center justify-between">
                   <div>
                     <CardTitle className="text-[15px] flex items-center gap-2">
-                      <ShoppingBag className="h-5 w-5 text-primary" />
+                      <ShoppingBag className="h-5 w-5 text-blue-600" />
                       供应商筛选
                     </CardTitle>
                     <CardDescription>
@@ -1889,10 +1889,10 @@ ${report.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
               </CardHeader>
               <CardContent>
                 {/* 合规认证提示 */}
-                <div className="mb-4 p-3 bg-primary/5 border border-primary/20 rounded-lg">
+                <div className="mb-4 p-3 bg-blue-500/5 border border-blue-500/20 rounded-lg">
                   <div className="flex items-center gap-2 mb-2">
-                    <Shield className="h-4 w-4 text-primary" />
-                    <span className="text-[13px] font-medium text-primary">供应商合规认证要求</span>
+                    <Shield className="h-4 w-4 text-blue-600" />
+                    <span className="text-[13px] font-medium text-blue-600">供应商合规认证要求</span>
                   </div>
                   <div className="text-[12px] text-muted-foreground">
                     <p className="mb-1">目标市场: <strong>{marketOptions.find(m => m.value === requirement.market)?.label || '美区'}</strong></p>
@@ -1900,7 +1900,7 @@ ${report.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
                     <div className="flex flex-wrap gap-1 mt-2">
                       {requirement.market && platformCompliance[requirement.market] ? (
                         platformCompliance[requirement.market].requiredDocs.map((cert) => (
-                          <Badge key={cert} variant="outline" className="text-[11px] bg-primary/10">
+                          <Badge key={cert} variant="outline" className="text-[11px] bg-blue-500/10">
                             {cert}
                           </Badge>
                         ))
@@ -1953,7 +1953,7 @@ ${report.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
                 {/* 供应商列表 */}
                 {isLoadingSuppliers ? (
                   <div className="text-center py-12">
-                    <Loader2 className="h-8 w-8 mx-auto mb-3 animate-spin text-primary" />
+                    <Loader2 className="h-8 w-8 mx-auto mb-3 animate-spin text-blue-600" />
                     <p className="text-muted-foreground">正在搜索1688供应商...</p>
                   </div>
                 ) : suppliers.length === 0 ? (
@@ -2001,7 +2001,7 @@ ${report.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
                           key={supplier.id}
                           className={`p-4 border-2 rounded-lg transition-all cursor-pointer ${
                             selectedSupplier?.id === supplier.id 
-                              ? 'border-primary bg-primary/5' 
+                              ? 'border-primary bg-blue-500/5' 
                               : 'border-border hover:border-primary/50'
                           }`}
                           onClick={() => setSelectedSupplier(supplier)}
@@ -2042,7 +2042,7 @@ ${report.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
                                 </div>
                                 <div>
                                   <div className="text-[11px] text-muted-foreground">单价</div>
-                                  <div className="text-[13px] font-medium text-primary">¥{supplier.price.toFixed(2)}</div>
+                                  <div className="text-[13px] font-medium text-blue-600">¥{supplier.price.toFixed(2)}</div>
                                 </div>
                               </div>
 
@@ -2171,7 +2171,7 @@ ${report.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
                                 </div>
                                 <div className="text-[13px]">
                                   <span className="text-muted-foreground">预计总价:</span>
-                                  <span className="ml-1 font-medium text-primary">
+                                  <span className="ml-1 font-medium text-blue-600">
                                     ¥{((purchaseItems.find(p => p.supplier.id === supplier.id)?.quantity || supplier.moq) * supplier.price).toFixed(2)}
                                   </span>
                                 </div>
@@ -2223,7 +2223,7 @@ ${report.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
 
                 {/* 采集清单汇总 */}
                 {purchaseItems.length > 0 && (
-                  <div className="mt-6 p-4 bg-primary/5 border border-primary/20 rounded-lg">
+                  <div className="mt-6 p-4 bg-blue-500/5 border border-blue-500/20 rounded-lg">
                     <div className="flex items-center justify-between mb-3">
                       <h4 className="font-medium text-[14px] flex items-center gap-2">
                         <ShoppingCart className="h-4 w-4" />
@@ -2243,7 +2243,7 @@ ${report.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
                     </div>
                     <div className="flex items-center justify-between mt-3 pt-3 border-t">
                       <span className="font-medium">预计采集总额</span>
-                      <span className="text-lg font-bold text-primary">
+                      <span className="text-lg font-bold text-blue-600">
                         ¥{purchaseItems.reduce((sum, item) => sum + item.totalAmount, 0).toFixed(2)}
                       </span>
                     </div>

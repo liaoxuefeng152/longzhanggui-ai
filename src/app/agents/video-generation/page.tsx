@@ -354,7 +354,7 @@ export default function VideoAgentPage() {
   const getStatusBadge = (status: string) => {
     const config: Record<string, { label: string; className: string }> = {
       pending: { label: '待处理', className: 'bg-muted text-muted-foreground' },
-      processing: { label: '生成中', className: 'bg-primary/10 text-primary border-primary/20' },
+      processing: { label: '生成中', className: 'bg-pink-500/10 text-pink-600 border-pink-500/20' },
       completed: { label: '已完成', className: 'bg-success/10 text-success border-success/20' },
       failed: { label: '失败', className: 'bg-destructive/10 text-destructive border-destructive/20' },
     };
@@ -390,8 +390,8 @@ export default function VideoAgentPage() {
         {/* 页面头部 */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center">
-              <Video className="h-7 w-7 text-primary" />
+            <div className="w-14 h-14 rounded-xl bg-pink-500/10 flex items-center justify-center">
+              <Video className="h-7 w-7 text-pink-600" />
             </div>
             <div>
               <h1 className="text-[18px] font-semibold text-foreground">视频生成智能体</h1>
@@ -418,19 +418,19 @@ export default function VideoAgentPage() {
 
         {/* 核心能力标签 */}
         <div className="flex items-center gap-2">
-          <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
+          <Badge variant="outline" className="bg-pink-500/5 text-pink-600 border-pink-500/20">
             <Shield className="h-3 w-3 mr-1" />
             合规预检
           </Badge>
-          <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
+          <Badge variant="outline" className="bg-pink-500/5 text-pink-600 border-pink-500/20">
             <FileVideo className="h-3 w-3 mr-1" />
             脚本生成
           </Badge>
-          <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
+          <Badge variant="outline" className="bg-pink-500/5 text-pink-600 border-pink-500/20">
             <Mic className="h-3 w-3 mr-1" />
             AI配音
           </Badge>
-          <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
+          <Badge variant="outline" className="bg-pink-500/5 text-pink-600 border-pink-500/20">
             <Subtitles className="h-3 w-3 mr-1" />
             字幕生成
           </Badge>
@@ -532,7 +532,7 @@ export default function VideoAgentPage() {
                             )}
                           </div>
                         ) : task.status === 'processing' ? (
-                          <RefreshCw className="h-8 w-8 text-primary animate-spin" />
+                          <RefreshCw className="h-8 w-8 text-pink-600 animate-spin" />
                         ) : (
                           <AlertTriangle className="h-8 w-8 text-destructive" />
                         )}
@@ -671,17 +671,17 @@ export default function VideoAgentPage() {
               <CardContent>
                 <div className="grid grid-cols-3 gap-4">
                   <div className="p-4 bg-muted/30 rounded-lg text-center">
-                    <Clock className="h-8 w-8 text-primary mx-auto mb-2" />
+                    <Clock className="h-8 w-8 text-pink-600 mx-auto mb-2" />
                     <div className="text-[13px] font-medium text-foreground">定时发布</div>
                     <div className="text-[11px] text-muted-foreground">设置发布时间</div>
                   </div>
                   <div className="p-4 bg-muted/30 rounded-lg text-center">
-                    <Sparkles className="h-8 w-8 text-primary mx-auto mb-2" />
+                    <Sparkles className="h-8 w-8 text-pink-600 mx-auto mb-2" />
                     <div className="text-[13px] font-medium text-foreground">即时发布</div>
                     <div className="text-[11px] text-muted-foreground">生成即发布</div>
                   </div>
                   <div className="p-4 bg-muted/30 rounded-lg text-center">
-                    <Film className="h-8 w-8 text-primary mx-auto mb-2" />
+                    <Film className="h-8 w-8 text-pink-600 mx-auto mb-2" />
                     <div className="text-[13px] font-medium text-foreground">批量发布</div>
                     <div className="text-[11px] text-muted-foreground">多视频排队发布</div>
                   </div>
@@ -884,7 +884,7 @@ export default function VideoAgentPage() {
                       href={previewTask.videoUrl} 
                       target="_blank" 
                       rel="noopener noreferrer"
-                      className="text-primary hover:underline"
+                      className="text-pink-600 hover:underline"
                     >
                       在新窗口打开
                     </a>

@@ -39,6 +39,17 @@ const agentIcons: Record<string, any> = {
   'data-review': BarChart3,
 };
 
+// 智能体彩虹配色映射
+const agentColors: Record<string, { bg: string; text: string; gradient: string }> = {
+  'product-selection': { bg: 'bg-blue-500/10', text: 'text-blue-500', gradient: 'from-blue-500/20 to-cyan-400/5' },
+  'image-design': { bg: 'bg-purple-500/10', text: 'text-purple-500', gradient: 'from-purple-500/20 to-pink-400/5' },
+  'video-generation': { bg: 'bg-pink-500/10', text: 'text-pink-500', gradient: 'from-pink-500/20 to-rose-400/5' },
+  'listing-optimization': { bg: 'bg-green-500/10', text: 'text-green-500', gradient: 'from-green-500/20 to-emerald-400/5' },
+  'advertising': { bg: 'bg-orange-500/10', text: 'text-orange-500', gradient: 'from-orange-500/20 to-amber-400/5' },
+  'customer-service': { bg: 'bg-cyan-500/10', text: 'text-cyan-500', gradient: 'from-cyan-500/20 to-teal-400/5' },
+  'data-review': { bg: 'bg-indigo-500/10', text: 'text-indigo-500', gradient: 'from-indigo-500/20 to-violet-400/5' },
+};
+
 // 智能体描述映射
 const agentDescriptions: Record<string, { description: string; platform: string; features: string[]; compliance: boolean; riskControl: boolean }> = {
   'product-selection': {
@@ -267,14 +278,15 @@ export default function AgentsPage() {
                 compliance: false,
                 riskControl: false,
               };
+              const colors = agentColors[agent.type] || { bg: 'bg-primary/10', text: 'text-primary', gradient: '' };
               
               return (
                 <Card key={agent.id} className="bg-white border-border shadow-sm hover:shadow-md transition-shadow">
                   <CardHeader className="pb-3">
                     <div className="flex items-start justify-between">
                       <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
-                          <Icon className="h-6 w-6 text-primary" />
+                        <div className={cn("w-12 h-12 rounded-xl bg-gradient-to-br flex items-center justify-center", colors.gradient || 'bg-primary/10')}>
+                          <Icon className={cn("h-6 w-6", colors.text)} />
                         </div>
                         <div>
                           <CardTitle className="text-[16px] font-semibold">{agent.name}</CardTitle>

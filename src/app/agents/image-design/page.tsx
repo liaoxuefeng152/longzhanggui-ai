@@ -516,7 +516,7 @@ export default function ImageDesignPage() {
   const getStatusBadge = (status: string) => {
     const config: Record<string, { label: string; className: string }> = {
       pending: { label: '待处理', className: 'bg-warning/10 text-warning' },
-      processing: { label: '处理中', className: 'bg-primary/10 text-primary' },
+      processing: { label: '处理中', className: 'bg-purple-500/10 text-purple-600' },
       completed: { label: '已完成', className: 'bg-success/10 text-success' },
       failed: { label: '失败', className: 'bg-destructive/10 text-destructive' },
     };
@@ -560,8 +560,8 @@ export default function ImageDesignPage() {
         {/* 页面头部 */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center">
-              <Image className="h-7 w-7 text-primary" />
+            <div className="w-14 h-14 rounded-xl bg-purple-500/10 flex items-center justify-center">
+              <Image className="h-7 w-7 text-purple-600" />
             </div>
             <div>
               <h1 className="text-[18px] font-semibold text-foreground">图片设计智能体</h1>
@@ -590,19 +590,19 @@ export default function ImageDesignPage() {
 
         {/* 核心能力标签 */}
         <div className="flex items-center gap-2">
-          <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
+          <Badge variant="outline" className="bg-purple-500/5 text-purple-600 border-purple-500/20">
             <Palette className="h-3 w-3 mr-1" />
             AI生图
           </Badge>
-          <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
+          <Badge variant="outline" className="bg-purple-500/5 text-purple-600 border-purple-500/20">
             <Shield className="h-3 w-3 mr-1" />
             合规校验
           </Badge>
-          <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
+          <Badge variant="outline" className="bg-purple-500/5 text-purple-600 border-purple-500/20">
             <Layers className="h-3 w-3 mr-1" />
             批量处理
           </Badge>
-          <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20">
+          <Badge variant="outline" className="bg-purple-500/5 text-purple-600 border-purple-500/20">
             <FileImage className="h-3 w-3 mr-1" />
             跨平台适配
           </Badge>
@@ -627,7 +627,7 @@ export default function ImageDesignPage() {
           <Card className="bg-white border-border shadow-sm">
             <CardContent className="p-4">
               <div className="text-[12px] text-muted-foreground mb-1">处理中</div>
-              <div className="text-[24px] font-semibold text-primary">{processingTasks}</div>
+              <div className="text-[24px] font-semibold text-purple-600">{processingTasks}</div>
               <div className="text-[11px] text-muted-foreground mt-1">正在生成</div>
             </CardContent>
           </Card>
@@ -713,7 +713,7 @@ export default function ImageDesignPage() {
                               {task.status === 'completed' ? (
                                 <Image className="h-8 w-8 text-success" />
                               ) : task.status === 'processing' ? (
-                                <Loader2 className="h-8 w-8 text-primary animate-spin" />
+                                <Loader2 className="h-8 w-8 text-purple-600 animate-spin" />
                               ) : (
                                 <FileImage className="h-8 w-8 text-muted-foreground" />
                               )}
@@ -1087,7 +1087,7 @@ export default function ImageDesignPage() {
                     </div>
                   ) : selectedTask.status === 'processing' ? (
                     <div className="w-full h-48 bg-muted rounded-lg flex items-center justify-center">
-                      <Loader2 className="h-12 w-12 text-primary animate-spin" />
+                      <Loader2 className="h-12 w-12 text-purple-600 animate-spin" />
                     </div>
                   ) : (
                     <div className="w-full h-48 bg-muted rounded-lg flex items-center justify-center">
@@ -1109,7 +1109,7 @@ export default function ImageDesignPage() {
                     <div className="bg-muted/30 rounded-lg p-3 space-y-2">
                       {selectedTask.translations.map((t, index) => (
                         <div key={index} className="flex items-start gap-3 text-[12px]">
-                          <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-medium flex-shrink-0">
+                          <div className="w-6 h-6 rounded-full bg-purple-500/10 flex items-center justify-center text-[10px] font-medium flex-shrink-0">
                             {index + 1}
                           </div>
                           <div className="flex-1">
