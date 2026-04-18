@@ -9,12 +9,10 @@ import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
 import {
   Database,
-  Store,
   Key,
   ChevronRight,
   CheckCircle,
   AlertTriangle,
-  Plug,
   Settings,
 } from 'lucide-react';
 
@@ -89,42 +87,6 @@ export default function PlatformPage() {
             </CardContent>
           </Card>
 
-          {/* 店铺管理 */}
-          <Card className="bg-white border-border shadow-sm hover:shadow-md transition-shadow cursor-pointer"
-            onClick={() => router.push('/shops')}>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div className="w-12 h-12 rounded-lg bg-purple-100 flex items-center justify-center">
-                  <Store className="h-6 w-6 text-purple-600" />
-                </div>
-                <Badge variant="outline" className="bg-warning/10 text-warning border-warning/20">
-                  <AlertTriangle className="h-3 w-3 mr-1" />
-                  待配置
-                </Badge>
-              </div>
-              <CardTitle className="text-[16px] mt-4">店铺管理</CardTitle>
-              <CardDescription>
-                管理TK、亚马逊等平台店铺授权，统一管理多店铺运营
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between text-[13px]">
-                  <span className="text-muted-foreground">已授权店铺</span>
-                  <span className="font-medium">0个</span>
-                </div>
-                <div className="flex items-center justify-between text-[13px]">
-                  <span className="text-muted-foreground">授权状态</span>
-                  <span className="font-medium text-muted-foreground">未配置</span>
-                </div>
-              </div>
-              <Button className="w-full mt-4" variant="outline">
-                管理店铺
-                <ChevronRight className="h-4 w-4 ml-2" />
-              </Button>
-            </CardContent>
-          </Card>
-
           {/* 平台凭证 */}
           <Card className="bg-white border-border shadow-sm hover:shadow-md transition-shadow cursor-pointer"
             onClick={() => router.push('/shops/platforms')}>
@@ -173,17 +135,9 @@ export default function PlatformPage() {
                 <Database className="h-4 w-4 mr-2" />
                 配置数据源
               </Button>
-              <Button variant="outline" size="sm" onClick={() => router.push('/shops')}>
-                <Store className="h-4 w-4 mr-2" />
-                添加店铺
-              </Button>
               <Button variant="outline" size="sm" onClick={() => router.push('/shops/platforms')}>
                 <Key className="h-4 w-4 mr-2" />
                 配置API凭证
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => router.push('/agents/product-selection')}>
-                <Plug className="h-4 w-4 mr-2" />
-                前往选品
               </Button>
             </div>
           </CardContent>
