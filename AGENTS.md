@@ -473,6 +473,7 @@ npx tsc --noEmit
 ### 核心页面
 - 控制台: `src/app/dashboard/page.tsx`
 - AI智能体: `src/app/agents/page.tsx` - 7大AI智能体入口
+- **智能体配置: `src/app/agents/config/page.tsx`** - 7大AI智能体配置总览（管理端）
 - 模型配置: `src/app/models/page.tsx` - 模型列表管理
 - 任务日志: `src/app/task-logs/page.tsx` - 智能体执行日志
 - 工作台: `src/app/workflows/page.tsx`
