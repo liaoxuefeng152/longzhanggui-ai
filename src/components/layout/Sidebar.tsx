@@ -74,6 +74,11 @@ const clientMenuItems: MenuItem[] = [
     href: '/reports',
     icon: BarChart3,
   },
+  {
+    title: '订购套餐',
+    href: '/packages',
+    icon: CreditCard,
+  },
 ];
 
 // 管理端菜单（管理员使用）
