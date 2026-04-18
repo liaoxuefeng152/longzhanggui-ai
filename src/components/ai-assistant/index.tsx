@@ -231,18 +231,16 @@ export default function AIAssistant({ onNavigate }: AIAssistantProps) {
 
   if (!isOpen) {
     return (
-      <div className="fixed bottom-6 right-6 z-50 group flex items-center gap-3">
-        {/* 文字提示 */}
-        <div className="opacity-0 group-hover:opacity-100 transition-all duration-300 translate-x-4 group-hover:translate-x-0">
-          <div className="bg-white text-slate-700 text-sm px-4 py-2.5 rounded-xl shadow-lg border border-slate-100 whitespace-nowrap">
-            <span className="font-medium">试试龙掌柜跨境AI全能助手</span>
-            <span className="text-slate-400 ml-2">点击咨询</span>
-          </div>
+      <div className="fixed bottom-6 right-6 z-50 flex items-center gap-3">
+        {/* 文字提示 - 始终显示 */}
+        <div className="bg-white text-slate-700 text-sm px-4 py-2.5 rounded-xl shadow-lg border border-slate-100 whitespace-nowrap">
+          <span className="font-medium">试试龙掌柜跨境AI全能助手</span>
+          <span className="text-slate-400 ml-2">点击咨询</span>
         </div>
         {/* 悬浮按钮 */}
         <Button
           onClick={() => setIsOpen(true)}
-          className="h-14 w-14 rounded-full shadow-lg bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 relative"
+          className="h-14 w-14 rounded-full shadow-lg bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 relative shrink-0"
           size="icon"
         >
           <MessageSquare className="h-6 w-6 text-white" />
