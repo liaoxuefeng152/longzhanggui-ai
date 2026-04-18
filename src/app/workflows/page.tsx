@@ -32,7 +32,6 @@ import {
   Truck,
   RefreshCw,
   Play,
-  X,
 } from "lucide-react";
 import AIAssistant from '@/components/ai-assistant';
 
@@ -115,23 +114,6 @@ export default function WorkflowsPage() {
   const [user, setUser] = useState<any>(null);
   const [activeTab, setActiveTab] = useState('overview');
   const [showWizard, setShowWizard] = useState(false);
-  const [wizardType, setWizardType] = useState<string | null>(null);
-
-  // 打开对应类型的工作流向导
-  const handleOpenWizard = (type: string) => {
-    if (type === 'new-product') {
-      setWizardType(type);
-      setShowWizard(true);
-    } else {
-      toast.info(`${quickWorkflows.find(w => w.id === type)?.name || '该工作流'}功能开发中`);
-    }
-  };
-
-  // 关闭工作流向导
-  const handleCloseWizard = () => {
-    setShowWizard(false);
-    setWizardType(null);
-  };
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -418,15 +400,9 @@ export default function WorkflowsPage() {
             {/* 快捷工作流管理 */}
             <Card className="bg-white border-border shadow-sm">
               <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Zap className="h-5 w-5 text-primary" />
-                    <CardTitle className="text-[16px]">快捷工作流</CardTitle>
-                  </div>
-                  <Button onClick={() => setActiveTab('templates')} className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700">
-                    <Plus className="h-4 w-4 mr-2" />
-                    新建工作流
-                  </Button>
+                <div className="flex items-center gap-2">
+                  <Zap className="h-5 w-5 text-primary" />
+                  <CardTitle className="text-[16px]">快捷工作流</CardTitle>
                 </div>
                 <CardDescription>管理常用的工作流程，快速执行重复任务</CardDescription>
               </CardHeader>
@@ -543,58 +519,15 @@ export default function WorkflowsPage() {
       </div>
 
       {/* 工作流向导 */}
-      {showWizard && wizardType === 'new-product' && (
+      {showWizard && (
         <ProductWizardDialog 
           open={showWizard} 
-          onClose={handleCloseWizard}
+          onClose={() => setShowWizard(false)}
           onComplete={() => {
-            handleCloseWizard();
+            setShowWizard(false);
             toast.success('新品上架流程已完成！');
           }} 
         />
-      )}
-
-      {/* 模板选择弹窗 */}
-      {activeTab === 'templates' && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <Card className="w-[500px] max-h-[80vh] overflow-auto">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Zap className="h-5 w-5 text-primary" />
-                  <CardTitle>选择工作流模板</CardTitle>
-                </div>
-                <Button variant="ghost" size="sm" onClick={() => setActiveTab('workflows')}>
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-              <CardDescription>选择一个模板开始创建工作流</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 gap-3">
-                {quickWorkflows.map((workflow) => (
-                  <button
-                    key={workflow.id}
-                    onClick={() => {
-                      handleOpenWizard(workflow.id);
-                      setActiveTab('workflows');
-                    }}
-                    className="relative overflow-hidden rounded-xl border border-border hover:border-primary/50 transition-all p-4 text-left"
-                  >
-                    <div className={`absolute inset-0 bg-gradient-to-br ${workflow.color} opacity-5`} />
-                    <div className="relative">
-                      <div className={`w-10 h-10 rounded-lg ${workflow.bgColor} flex items-center justify-center text-primary mb-2`}>
-                        {workflow.icon}
-                      </div>
-                      <p className="text-[14px] font-medium mb-1">{workflow.name}</p>
-                      <p className="text-[11px] text-muted-foreground">{workflow.description}</p>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
       )}
 
       {/* AI助手 */}
