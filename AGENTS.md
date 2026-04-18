@@ -488,7 +488,7 @@ npx tsc --noEmit
 - 飞书客户端: `src/lib/feishu/client.ts`
 - 意图识别: `src/lib/feishu/intent.ts`
 - 工作流处理: `src/lib/feishu/workflow.ts`
-- Webhook处理: `src/app/api/feishu/webhook/route.ts`
+- Webhook处理: `src/app/api/v1/feishu/webhook/route.ts`
 - 飞书配置API: `src/app/api/feishu/config/route.ts`
 
 ### 智能助理相关
