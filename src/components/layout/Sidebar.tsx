@@ -42,7 +42,7 @@ const clientMenuItems: MenuItem[] = [
     icon: Zap,
   },
   {
-    title: 'AI智能体(使用)',
+    title: '智能体中心',
     href: '/ai-agents',
     icon: Bot,
     submenu: [
