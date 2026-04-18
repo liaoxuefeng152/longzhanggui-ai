@@ -36,11 +36,6 @@ interface MenuItem {
 // 客户端菜单（运营人员使用）
 const clientMenuItems: MenuItem[] = [
   {
-    title: '控制台',
-    href: '/dashboard',
-    icon: LayoutDashboard,
-  },
-  {
     title: '工作台',
     href: '/workflows',
     icon: Zap,
@@ -73,6 +68,11 @@ const clientMenuItems: MenuItem[] = [
 
 // 管理端菜单（管理员使用）
 const adminMenuItems: MenuItem[] = [
+  {
+    title: '控制台',
+    href: '/dashboard',
+    icon: LayoutDashboard,
+  },
   {
     title: 'AI智能体',
     href: '/ai-agents',
