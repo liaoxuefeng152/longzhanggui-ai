@@ -7,6 +7,7 @@ export * from './auth';
 export * from './dashboard';
 export * from './agents';
 export * from './ai';
+export * from './models';
 export * from './packages';
 export * from './tickets';
 export * from './reports';
