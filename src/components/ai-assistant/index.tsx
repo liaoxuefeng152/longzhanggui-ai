@@ -230,23 +230,7 @@ export default function AIAssistant({ onNavigate }: AIAssistantProps) {
   };
 
   if (!isOpen) {
-    return (
-      <div className="fixed bottom-6 right-6 z-50 group">
-        <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 mb-2 mr-1">
-          <div className="bg-slate-800 text-white text-xs px-3 py-1.5 rounded-lg whitespace-nowrap shadow-lg">
-            <span className="font-medium">AI智能助手</span>
-            <span className="text-slate-300 ml-1">有问题？点我</span>
-          </div>
-        </div>
-        <Button
-          onClick={() => setIsOpen(true)}
-          className="h-14 w-14 rounded-full shadow-lg bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
-          size="icon"
-        >
-          <MessageSquare className="h-6 w-6 text-white" />
-        </Button>
-      </div>
-    );
+    return null; // 隐藏右下角悬浮按钮，改为在页面头部显示
   }
 
   return (
@@ -254,9 +238,11 @@ export default function AIAssistant({ onNavigate }: AIAssistantProps) {
       {/* Header */}
       <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white p-4 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-3">
-          <div className="h-10 w-10 bg-white/20 rounded-full flex items-center justify-center">
-            <Bot className="h-6 w-6" />
-          </div>
+          <img 
+            src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix&backgroundColor=ffdfbf" 
+            alt="AI助手" 
+            className="h-10 w-10 rounded-full bg-white/20 object-cover"
+          />
           <div>
             <h3 className="font-semibold">龙掌柜AI助手</h3>
             <p className="text-xs text-white/80">智能运营助理</p>
@@ -300,9 +286,11 @@ export default function AIAssistant({ onNavigate }: AIAssistantProps) {
                   
                   <div className={`flex gap-3 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                     {message.role === 'assistant' && (
-                      <div className="h-8 w-8 bg-blue-100 rounded-full flex items-center justify-center shrink-0">
-                        <Bot className="h-4 w-4 text-blue-500" />
-                      </div>
+                      <img 
+                        src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix&backgroundColor=ffdfbf" 
+                        alt="AI助手" 
+                        className="h-8 w-8 rounded-full shrink-0"
+                      />
                     )}
                     
                     <div className={`max-w-[80%] rounded-2xl px-4 py-3 ${
@@ -329,9 +317,11 @@ export default function AIAssistant({ onNavigate }: AIAssistantProps) {
               
               {isLoading && (
                 <div className="flex gap-3">
-                  <div className="h-8 w-8 bg-blue-100 rounded-full flex items-center justify-center shrink-0">
-                    <Bot className="h-4 w-4 text-blue-500" />
-                  </div>
+                  <img 
+                    src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix&backgroundColor=ffdfbf" 
+                    alt="AI助手" 
+                    className="h-8 w-8 rounded-full shrink-0"
+                  />
                   <div className="bg-muted rounded-2xl px-4 py-3">
                     <div className="flex items-center gap-2 text-muted-foreground">
                       <Loader2 className="h-4 w-4 animate-spin" />

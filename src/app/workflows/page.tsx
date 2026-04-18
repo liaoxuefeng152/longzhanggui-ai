@@ -166,12 +166,13 @@ export default function WorkflowsPage() {
               <Button 
                 variant="ghost" 
                 size="sm" 
-                className="h-5 px-2 text-xs text-blue-600 hover:text-blue-700 hover:bg-blue-100"
+                className="h-7 px-2 text-xs text-blue-600 hover:text-blue-700 hover:bg-blue-100"
                 onClick={() => {
                   const event = new CustomEvent('toggle-ai-assistant');
                   window.dispatchEvent(event);
                 }}
               >
+                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=assistant&backgroundColor=b6e3f4" alt="AI助手" className="h-4 w-4 mr-1 rounded-full" />
                 AI助手
               </Button>
             </div>
