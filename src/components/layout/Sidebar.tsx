@@ -42,6 +42,21 @@ const clientMenuItems: MenuItem[] = [
     icon: Zap,
   },
   {
+    title: 'AI智能体',
+    href: '/ai-agents',
+    icon: Bot,
+    submenu: [
+      { title: '智能体中心', href: '/ai-agents' },
+      { title: '选品智能体', href: '/agents/product-selection' },
+      { title: '图片智能体', href: '/agents/image-design' },
+      { title: '视频生成智能体', href: '/agents/video-generation' },
+      { title: 'Listing优化', href: '/agents/listing-optimization' },
+      { title: '广告投放智能体', href: '/agents/advertising' },
+      { title: 'AI客服智能体', href: '/agents/customer-service' },
+      { title: '数据复盘智能体', href: '/agents/data-review' },
+    ],
+  },
+  {
     title: 'ERP系统',
     href: '/erp',
     icon: Package,
@@ -83,21 +98,6 @@ const adminMenuItems: MenuItem[] = [
     title: '控制台',
     href: '/dashboard',
     icon: LayoutDashboard,
-  },
-  {
-    title: 'AI智能体',
-    href: '/ai-agents',
-    icon: Bot,
-    submenu: [
-      { title: '智能体中心', href: '/ai-agents' },
-      { title: '选品智能体', href: '/agents/product-selection' },
-      { title: '图片智能体', href: '/agents/image-design' },
-      { title: '视频生成智能体', href: '/agents/video-generation' },
-      { title: 'Listing优化', href: '/agents/listing-optimization' },
-      { title: '广告投放智能体', href: '/agents/advertising' },
-      { title: 'AI客服智能体', href: '/agents/customer-service' },
-      { title: '数据复盘智能体', href: '/agents/data-review' },
-    ],
   },
   {
     title: '工作流编排',
