@@ -31,6 +31,7 @@ import {
   CheckCircle2,
   Truck,
   RefreshCw,
+  Play,
 } from "lucide-react";
 import AIAssistant from '@/components/ai-assistant';
 
