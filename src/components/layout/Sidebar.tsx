@@ -5,7 +5,6 @@ import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import {
   LayoutDashboard,
-  Cpu,
   Bot,
   Users,
   CreditCard,
@@ -109,11 +108,6 @@ const adminMenuItems: MenuItem[] = [
       { title: 'AI客服智能体', href: '/agents/customer-service/config' },
       { title: '数据复盘智能体', href: '/agents/data-review/config' },
     ],
-  },
-  {
-    title: '模型路由',
-    href: '/models',
-    icon: Cpu,
   },
   {
     title: '平台配置',
