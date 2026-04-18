@@ -1417,13 +1417,30 @@ export default function WorkflowsPage() {
               </p>
             </div>
           </div>
-          <Button 
-            onClick={() => setShowWizard(true)}
-            className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            新品上架
-          </Button>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 border border-blue-200 rounded-full">
+              <Bot className="h-4 w-4 text-blue-500" />
+              <span className="text-xs text-blue-700">有问题？试试</span>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="h-5 px-2 text-xs text-blue-600 hover:text-blue-700 hover:bg-blue-100"
+                onClick={() => {
+                  const event = new CustomEvent('toggle-ai-assistant');
+                  window.dispatchEvent(event);
+                }}
+              >
+                AI助手
+              </Button>
+            </div>
+            <Button 
+              onClick={() => setShowWizard(true)}
+              className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              新品上架
+            </Button>
+          </div>
         </div>
 
         {/* 工作流向导 */}

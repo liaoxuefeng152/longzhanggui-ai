@@ -122,6 +122,13 @@ export default function AIAssistant({ onNavigate }: AIAssistantProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
 
+  // Listen for external toggle events
+  React.useEffect(() => {
+    const handleToggle = () => setIsOpen(true);
+    window.addEventListener('toggle-ai-assistant', handleToggle);
+    return () => window.removeEventListener('toggle-ai-assistant', handleToggle);
+  }, []);
+
   const handleSend = async () => {
     if (!input.trim() || isLoading) return;
 
@@ -224,13 +231,21 @@ export default function AIAssistant({ onNavigate }: AIAssistantProps) {
 
   if (!isOpen) {
     return (
-      <Button
-        onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 z-50"
-        size="icon"
-      >
-        <MessageSquare className="h-6 w-6 text-white" />
-      </Button>
+      <div className="fixed bottom-6 right-6 z-50 group">
+        <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 mb-2 mr-1">
+          <div className="bg-slate-800 text-white text-xs px-3 py-1.5 rounded-lg whitespace-nowrap shadow-lg">
+            <span className="font-medium">AI智能助手</span>
+            <span className="text-slate-300 ml-1">有问题？点我</span>
+          </div>
+        </div>
+        <Button
+          onClick={() => setIsOpen(true)}
+          className="h-14 w-14 rounded-full shadow-lg bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
+          size="icon"
+        >
+          <MessageSquare className="h-6 w-6 text-white" />
+        </Button>
+      </div>
     );
   }
 
