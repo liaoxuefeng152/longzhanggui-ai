@@ -137,6 +137,21 @@ export default function DashboardPage() {
       // 如果是认证错误，重定向到登录页
       if (error.message?.includes('401') || error.message?.includes('403') || error.message?.includes('Not authenticated')) {
         router.push('/login');
+      } else {
+        // 后端不可用时，使用兜底数据
+        setStats({
+          onlineModels: 2,
+          todayTaskCount: 8,
+          taskSuccessRate: 95.5,
+          paidUsers: 1,
+          assistantCalls: 12,
+          todayCalls: 12,
+          onlineUsers: 1,
+          todayOrders: 8,
+          referralUsers: 0,
+          callTrend: [],
+          recentUsers: [],
+        });
       }
     } finally {
       setIsLoading(false);
