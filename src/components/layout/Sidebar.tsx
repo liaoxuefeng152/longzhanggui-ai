@@ -121,7 +121,6 @@ const adminMenuItems: MenuItem[] = [
     submenu: [
       { title: '数据源配置', href: '/platform/datasources' },
       { title: '平台凭证', href: '/shops/platforms' },
-      { title: '店铺管理', href: '/shops' },
     ],
   },
   {
