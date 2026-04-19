@@ -27,7 +27,7 @@ async def get_dashboard_stats(
     # 在线模型数 - 从 Agent 表获取启用状态的模型
     online_models_result = await db.execute(
         select(func.count(Agent.id)).where(
-            Agent.is_active == True
+            Agent.status == "active"
         )
     )
     online_models = online_models_result.scalar() or 0
