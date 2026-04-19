@@ -2,9 +2,17 @@
 统一LLM服务层 - 封装豆包大模型调用
 为所有AI智能体提供统一的AI能力接口
 """
+import os
 from typing import List, Optional, Dict, Any, Union, AsyncIterator
 from enum import Enum
 from loguru import logger
+
+# CRITICAL: 在导入SDK之前设置环境变量
+# coze-coding-dev-sdk需要COZE_WORKSPACE_ID
+if not os.environ.get("COZE_WORKSPACE_ID"):
+    workspace_id = os.environ.get("COZE_PROJECT_SPACE_ID", "7597647832174657536")
+    os.environ["COZE_WORKSPACE_ID"] = workspace_id
+    logger.debug(f"设置COZE_WORKSPACE_ID={workspace_id}")
 
 from langchain_core.messages import BaseMessage, HumanMessage, AIMessage, SystemMessage
 

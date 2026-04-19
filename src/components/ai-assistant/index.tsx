@@ -52,7 +52,8 @@ interface Message {
 const recognizeIntent = (text: string): IntentType => {
   const lowerText = text.toLowerCase();
   
-  if (/选品|选个|选那|哪款|哪类|产品推荐|爆款|热门|热卖|趋势/.test(lowerText)) {
+  // 选品相关（优先级最高，避免被"预算"等关键词干扰）
+  if (/选品|选\d+款|选个|选那|哪款|哪类|产品推荐|爆款|热门|热卖|趋势|帮我选|推荐产品|选产品/.test(lowerText)) {
     return 'product_selection';
   }
   if (/图片|图片设计|主图|主图优化|图片处理|翻译|抠图|白底|去背景|背景/.test(lowerText)) {
@@ -61,7 +62,8 @@ const recognizeIntent = (text: string): IntentType => {
   if (/listing|标题|描述|关键词|五点|优化|文案/.test(lowerText)) {
     return 'listing_optimize';
   }
-  if (/广告|投放|推广|campaign|roi|ctr|cpc|预算/.test(lowerText)) {
+  // 广告投放（排除"预算"在选品场景下的干扰）
+  if (/广告|投放|推广|campaign|roi|ctr|cpc/.test(lowerText) && !/选品|选\d+款|产品/.test(lowerText)) {
     return 'ad_creation';
   }
   if (/客服|回复|消息|差评|纠纷|退款|退货|评价/.test(lowerText)) {
