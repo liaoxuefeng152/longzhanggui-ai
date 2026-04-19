@@ -287,23 +287,16 @@ export default function AIAssistant({ onNavigate }: AIAssistantProps) {
       }
     } catch (error) {
       console.error('AI chat failed:', error);
-      const mockResponses: Record<IntentType, string> = {
-        product_selection: 'Good! I can help you with product selection. I will analyze market trends and competitors to recommend the best products.',
-        image_design: 'I can help you process images. I support image translation, background removal, and image optimization.',
-        listing_optimize: 'I can help you optimize your listing. I will generate titles, descriptions, and keywords to improve your product visibility.',
-        ad_creation: 'I can help you create ad campaigns. I will set up budgets, targeting, and ad creatives.',
-        customer_service: 'I can help you with customer service. I can generate reply templates and handle disputes.',
-        data_analysis: 'I can help you analyze sales data. I will generate daily reports and identify trends.',
-        price_calculate: 'I can help you calculate optimal pricing. I will consider costs, logistics, and competitor prices.',
-        order_query: 'I can help you query orders. Please provide the order number or date range.',
-        inventory_check: 'I can help you check inventory. I will identify low stock items and suggest restocking.',
-        general_chat: 'Hello! I am your AI assistant. How can I help you today?',
-        help: 'I can help you with:\n- Product selection and analysis\n- Image processing and translation\n- Listing optimization\n- Ad campaign management\n- Customer service\n- Data analysis\n- Order and inventory management\n\nPlease describe your needs in natural language!'
-      };
+      
+      // 检查是否是登录问题
+      const token = localStorage.getItem('token');
+      const errorMessage = !token 
+        ? '请先登录后再使用AI助手功能。\n\n点击右上角登录按钮进行登录。'
+        : 'AI服务暂时不可用，请稍后重试。\n\n如果问题持续，请尝试重新登录。';
       
       setMessages(prev => prev.map(msg => 
         msg.id === assistantMessageId 
-          ? { ...msg, content: mockResponses[intent], isStreaming: false }
+          ? { ...msg, content: errorMessage, isStreaming: false }
           : msg
       ));
     }
