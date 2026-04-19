@@ -218,72 +218,47 @@ export default function AIAssistant({ onNavigate }: AIAssistantProps) {
     setMessages(prev => [...prev, assistantMessage]);
 
     try {
-      // 调用后端AI接口（scene='agent' 会调用云端跨境智能体）
+      // 检查是否已登录
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setMessages(prev => prev.map(msg => 
+          msg.id === assistantMessageId 
+            ? { ...msg, content: '请先登录后再使用AI助手功能。\n\n请点击右上角登录按钮进行登录。', isStreaming: false }
+            : msg
+        ));
+        setIsLoading(false);
+        return;
+      }
+
+      // 首先尝试非流式请求（更稳定）
       const response = await fetch('/api/v1/ai/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token') || ''}`,
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({
           message: userMessage.content,
-          // 所有智能体场景都使用 'agent'，触发云端跨境AI运营智能体
           scene: 'agent',
-          stream: true,
+          stream: false,  // 使用非流式，更稳定
         }),
       });
 
-      if (!response.ok) throw new Error('API request failed');
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || `请求失败 (${response.status})`);
+      }
 
-      const reader = response.body?.getReader();
-      const decoder = new TextDecoder();
-      let fullContent = '';
-
-      if (reader) {
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          const chunk = decoder.decode(value, { stream: true });
-          
-          // 解析SSE格式数据
-          const lines = chunk.split('\n');
-          for (const line of lines) {
-            if (line.startsWith('data: ')) {
-              const data = line.slice(6);
-              if (data === '[DONE]') continue;
-              try {
-                const parsed = JSON.parse(data);
-                if (parsed.content) {
-                  fullContent += parsed.content;
-                  setMessages(prev => prev.map(msg => 
-                    msg.id === assistantMessageId 
-                      ? { ...msg, content: fullContent, isStreaming: false }
-                      : msg
-                  ));
-                }
-              } catch {
-                // 忽略解析错误
-              }
-            }
-          }
-        }
-        
-        if (!fullContent) {
-          fullContent = '抱歉，我暂时无法回答这个问题。请稍后再试。';
-        }
+      const data = await response.json();
+      
+      if (data.content) {
         setMessages(prev => prev.map(msg => 
           msg.id === assistantMessageId 
-            ? { ...msg, content: fullContent, isStreaming: false }
+            ? { ...msg, content: data.content, isStreaming: false }
             : msg
         ));
       } else {
-        const data = await response.json();
-        fullContent = data.content || '抱歉，我暂时无法回答这个问题。请稍后再试。';
-        setMessages(prev => prev.map(msg => 
-          msg.id === assistantMessageId 
-            ? { ...msg, content: fullContent, isStreaming: false }
-            : msg
-        ));
+        throw new Error('未收到有效响应');
       }
     } catch (error) {
       console.error('AI chat failed:', error);
