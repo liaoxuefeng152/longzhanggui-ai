@@ -186,6 +186,90 @@ async def invoke_ai(
         )
 
 
+@router.post("/chat")
+async def chat(
+    request: dict,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """AI聊天接口 - 供前端AI助手调用"""
+    user_message = request.get("message", "")
+    scene = request.get("scene", "agent")
+    stream = request.get("stream", True)
+    session_id = request.get("session_id") or f"user_{current_user.id}"
+    
+    if not user_message:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="消息内容不能为空"
+        )
+    
+    # 判断是否使用云端智能体
+    use_kuajing = (
+        settings.KUAJING_API_TOKEN and 
+        settings.KUAJING_PROJECT_ID and
+        scene in KUAJING_SCENES
+    )
+    
+    # 使用云端智能体
+    if use_kuajing:
+        # 流式输出
+        if stream:
+            return StreamingResponse(
+                generate_stream_kuajing(user_message, session_id),
+                media_type="text/event-stream",
+                headers={
+                    "Cache-Control": "no-cache",
+                    "Connection": "keep-alive",
+                }
+            )
+        
+        # 非流式输出
+        response_text = await kuajing_agent_service.chat(user_message, session_id)
+        return {"content": response_text, "model": "kuajing-agent"}
+    
+    # 使用本地豆包大模型
+    messages = [{"role": "user", "content": user_message}]
+    
+    # 根据场景选择模型
+    scene_model_map = {
+        "customer_service": LLMModel.DOUBAO_MINI.value,
+        "marketing": LLMModel.DOUBAO_LITE.value,
+        "content": LLMModel.DOUBAO_PRO.value,
+        "analysis": LLMModel.DOUBAO_PRO.value,
+        "translation": LLMModel.DOUBAO_MINI.value,
+        "agent": LLMModel.DOUBAO_AGENT.value,
+    }
+    model_id = scene_model_map.get(scene, settings.DEFAULT_MODEL)
+    
+    # 流式输出
+    if stream:
+        return StreamingResponse(
+            generate_stream_doubao(
+                messages=messages,
+                model=model_id,
+                temperature=0.7,
+                thinking="disabled"
+            ),
+            media_type="text/event-stream",
+            headers={
+                "Cache-Control": "no-cache",
+                "Connection": "keep-alive",
+            }
+        )
+    
+    # 非流式输出
+    try:
+        llm = LLMService(model=model_id, temperature=0.7)
+        response_text = await llm.simple_chat(user_message)
+        return {"content": response_text, "model": model_id}
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"AI调用失败: {str(e)}"
+        )
+
+
 @router.get("/models")
 async def list_models():
     """列出可用的AI模型"""

@@ -219,14 +219,14 @@ export default function AIAssistant({ onNavigate }: AIAssistantProps) {
 
     try {
       // 调用后端AI接口（scene='agent' 会调用云端跨境智能体）
-      const response = await fetch('/api/v1/ai/invoke', {
+      const response = await fetch('/api/v1/ai/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('token') || ''}`,
         },
         body: JSON.stringify({
-          prompt: userMessage.content,
+          message: userMessage.content,
           // 所有智能体场景都使用 'agent'，触发云端跨境AI运营智能体
           scene: 'agent',
           stream: true,
