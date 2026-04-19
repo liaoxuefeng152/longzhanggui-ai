@@ -47,10 +47,15 @@ export default function FeishuPage() {
   const [intentResult, setIntentResult] = useState<any>(null);
 
   // 飞书配置状态
-  const [feishuConfig, setFeishuConfig] = useState({
-    appId: FEISHU_CONFIG.appId,
-    appSecret: FEISHU_CONFIG.appSecret,
-    botName: FEISHU_CONFIG.botName || '龙掌柜',
+  const [feishuConfig, setFeishuConfig] = useState<{
+    appId: string;
+    appSecret: string;
+    botName: string;
+    enabled: boolean;
+  }>({
+    appId: FEISHU_CONFIG.appId as string,
+    appSecret: FEISHU_CONFIG.appSecret as string,
+    botName: '龙掌柜',
     enabled: true,
   });
 

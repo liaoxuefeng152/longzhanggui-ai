@@ -125,6 +125,11 @@ export default function WorkflowsPage() {
 
   if (!user) return null;
 
+  // 执行工作流
+  const handleOpenWizard = (workflowId: string) => {
+    toast.success(`正在启动工作流: ${workflowId}`);
+  };
+
   return (
     <MainLayout user={user} onLogout={() => router.push('/login')}>
       <div className="space-y-6">

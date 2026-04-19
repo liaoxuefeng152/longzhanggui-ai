@@ -267,6 +267,8 @@ export default function ReportsPage() {
               </div>
             </CardContent>
           </Card>
+          <Card className="bg-white border-border shadow-sm hover:shadow-md transition-shadow">
+            <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-[13px] text-muted-foreground mb-1">活跃用户</p>
@@ -274,13 +276,13 @@ export default function ReportsPage() {
                     {overview?.active_users?.toLocaleString() || 0}
                   </p>
                   <div className="flex items-center gap-1 mt-1">
-                    <TrendingUp className="h-3 w-3 text-success" />
-                    <span className="text-[12px] text-success">+12</span>
+                    <TrendingUp className="h-3 w-3 text-green-600" />
+                    <span className="text-[12px] text-green-600">+12</span>
                     <span className="text-[12px] text-muted-foreground">新增</span>
                   </div>
                 </div>
-                <div className="w-12 h-12 rounded-xl bg-warning/10 flex items-center justify-center">
-                  <Users className="h-6 w-6 text-warning" />
+                <div className="w-12 h-12 rounded-xl bg-purple-100 flex items-center justify-center">
+                  <Users className="h-6 w-6 text-purple-600" />
                 </div>
               </div>
             </CardContent>

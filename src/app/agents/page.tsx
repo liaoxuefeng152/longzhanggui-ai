@@ -6,6 +6,7 @@ import MainLayout from '@/components/layout/MainLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
 import { Progress } from '@/components/ui/progress';
 import {
   Bot,
