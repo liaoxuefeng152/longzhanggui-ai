@@ -16,12 +16,12 @@ pnpm next build
 # 安装后端依赖
 echo "Installing backend dependencies..."
 cd "${COZE_WORKSPACE_PATH}/backend"
-pip install -r requirements.txt -q
+pip install -r requirements.txt -q 2>/dev/null || pip install -r requirements.txt -q
 
-# 初始化数据库（如果不存在）
-if [ ! -f "data/lobster_ai.db" ]; then
-    echo "Initializing database..."
-    python3 -c "from app.database import init_db; import asyncio; asyncio.run(init_db())"
-fi
+# 确保数据目录存在
+mkdir -p data
+
+# 数据库会在后端首次启动时自动初始化
+echo "Database will be initialized on first backend startup"
 
 echo "Build completed successfully!"
