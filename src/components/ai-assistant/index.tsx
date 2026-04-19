@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -19,6 +19,7 @@ import {
   ChevronDown,
   ChevronUp,
   Loader2,
+  GripHorizontal,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -121,6 +122,65 @@ export default function AIAssistant({ onNavigate }: AIAssistantProps) {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
+  
+  // 拖拽状态 - 使用百分比位置
+  const [isDragging, setIsDragging] = useState(false);
+  const [isMoved, setIsMoved] = useState(false);
+  const dragRef = useRef<{ startX: number; startY: number } | null>(null);
+
+  // 拖拽开始
+  const handleDragStart = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+    dragRef.current = {
+      startX: e.clientX,
+      startY: e.clientY,
+    };
+  }, []);
+
+  // 拖拽中
+  useEffect(() => {
+    if (!isDragging || !dragRef.current) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!dragRef.current) return;
+      
+      // 计算相对偏移
+      const deltaX = e.clientX - dragRef.current.startX;
+      const deltaY = e.clientY - dragRef.current.startY;
+      
+      // 获取元素当前位置
+      const element = document.getElementById('ai-assistant-float');
+      if (!element) return;
+      
+      const rect = element.getBoundingClientRect();
+      let newRight = window.innerWidth - rect.right - deltaX;
+      let newBottom = window.innerHeight - rect.bottom - deltaY;
+      
+      // 限制范围
+      newRight = Math.max(24, Math.min(window.innerWidth - rect.width - 24, newRight));
+      newBottom = Math.max(24, Math.min(window.innerHeight - rect.height - 24, newBottom));
+      
+      element.style.right = `${newRight}px`;
+      element.style.bottom = `${newBottom}px`;
+      element.style.left = 'auto';
+      element.style.top = 'auto';
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(false);
+      setIsMoved(true);
+      dragRef.current = null;
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isDragging]);
 
   // Listen for external toggle events
   React.useEffect(() => {
@@ -231,8 +291,18 @@ export default function AIAssistant({ onNavigate }: AIAssistantProps) {
 
   if (!isOpen) {
     return (
-      <div className="fixed bottom-6 right-6 z-50 flex items-center gap-3">
-        {/* 文字提示 - 始终显示 */}
+      <div 
+        id="ai-assistant-float"
+        className={`fixed z-50 flex items-center gap-3 ${isDragging ? '' : 'transition-all duration-300'} ${isMoved ? '' : 'right-6 bottom-6'}`}
+      >
+        {/* 拖拽手柄 */}
+        <div 
+          className="cursor-move p-1 hover:bg-slate-100 rounded-lg transition-colors"
+          onMouseDown={handleDragStart}
+        >
+          <GripHorizontal className="h-5 w-5 text-slate-400" />
+        </div>
+        {/* 文字提示 */}
         <div className="bg-white text-slate-700 text-sm px-4 py-2.5 rounded-xl shadow-lg border border-slate-100 whitespace-nowrap">
           <span className="font-medium">试试龙掌柜跨境AI全能助手</span>
           <span className="text-slate-400 ml-2">点击咨询</span>
