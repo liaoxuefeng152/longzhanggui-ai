@@ -235,44 +235,70 @@ export default function AIAssistant({ onNavigate }: AIAssistantProps) {
         return;
       }
 
-      // 首先尝试非流式请求（更稳定）
-      const response = await fetch('/api/v1/ai/chat', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          message: userMessage.content,
-          scene: 'agent',
-          stream: false,  // 使用非流式，更稳定
-        }),
-      });
+      // 使用AbortController设置超时（60秒）
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 60000);
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.detail || `请求失败 (${response.status})`);
-      }
+      try {
+        const response = await fetch('/api/v1/ai/chat', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            message: userMessage.content,
+            scene: 'agent',
+            stream: false,  // 使用非流式，更稳定
+          }),
+          signal: controller.signal,
+        });
 
-      const data = await response.json();
-      
-      if (data.content) {
-        setMessages(prev => prev.map(msg => 
-          msg.id === assistantMessageId 
-            ? { ...msg, content: data.content, isStreaming: false }
-            : msg
-        ));
-      } else {
-        throw new Error('未收到有效响应');
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+          // 如果是401错误，提示重新登录
+          if (response.status === 401) {
+            throw new Error('登录已过期，请重新登录');
+          }
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.detail || `请求失败 (${response.status})`);
+        }
+
+        const data = await response.json();
+        
+        if (data.content) {
+          setMessages(prev => prev.map(msg => 
+            msg.id === assistantMessageId 
+              ? { ...msg, content: data.content, isStreaming: false }
+              : msg
+          ));
+        } else {
+          throw new Error('未收到有效响应');
+        }
+      } finally {
+        clearTimeout(timeoutId);
       }
     } catch (error) {
       console.error('AI chat failed:', error);
       
-      // 检查是否是登录问题
-      const token = localStorage.getItem('token');
-      const errorMessage = !token 
-        ? '请先登录后再使用AI助手功能。\n\n点击右上角登录按钮进行登录。'
-        : 'AI服务暂时不可用，请稍后重试。\n\n如果问题持续，请尝试重新登录。';
+      // 根据错误类型提供更具体的提示
+      let errorMessage = 'AI服务暂时不可用，请稍后重试。';
+      
+      if (error instanceof Error) {
+        if (error.name === 'AbortError') {
+          errorMessage = '请求超时，请检查网络连接后重试。';
+        } else if (error.message.includes('过期') || error.message.includes('401')) {
+          errorMessage = '登录已过期，请重新登录后再试。\n\n点击右上角头像，选择"退出登录"后重新登录。';
+          // 清除过期的token
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+        } else if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+          errorMessage = '网络连接失败，请检查网络后重试。';
+        } else {
+          errorMessage = `请求失败：${error.message}\n\n如果问题持续，请尝试刷新页面或重新登录。`;
+        }
+      }
       
       setMessages(prev => prev.map(msg => 
         msg.id === assistantMessageId 
