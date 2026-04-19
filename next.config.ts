@@ -53,9 +53,7 @@ const nextConfig: NextConfig = {
   },
 
   // API 代理 - 将需要后端处理的请求转发到FastAPI后端
-  // ERP模块API - 后端处理（数据库持久化）
-  // 前端自己处理的API：customer-tickets, task-logs, packages, 1688
-  // 后端处理的API：erp, workflow, ai, tiktok, feishu, agents, auth, models, prompts等
+  // 注意：auth、health、ai/chat 已由前端API Routes处理（用于生产环境）
   async rewrites() {
     const backendUrl = process.env.BACKEND_URL || 'http://localhost:8000';
     
@@ -70,20 +68,10 @@ const nextConfig: NextConfig = {
         source: '/api/v1/workflow/:path*',
         destination: `${backendUrl}/api/v1/workflow/:path*`,
       },
-      // AI智能体API - 后端处理（需要调用AI模型）
-      {
-        source: '/api/v1/ai/:path*',
-        destination: `${backendUrl}/api/v1/ai/:path*`,
-      },
       // AI智能体扩展API - 后端处理（选品、Listing、定价等）
       {
         source: '/api/v1/ai-agents/:path*',
         destination: `${backendUrl}/api/v1/ai-agents/:path*`,
-      },
-      // AI智能体API（无v1前缀）- 后端处理
-      {
-        source: '/api/ai/:path*',
-        destination: `${backendUrl}/api/v1/ai/:path*`,
       },
       // TikTok Shop API - 后端处理
       {
@@ -99,16 +87,6 @@ const nextConfig: NextConfig = {
       {
         source: '/api/v1/agents/:path*',
         destination: `${backendUrl}/api/v1/agents/:path*`,
-      },
-      // 认证API - 后端处理（添加无v1前缀的映射）
-      {
-        source: '/api/v1/auth/:path*',
-        destination: `${backendUrl}/api/v1/auth/:path*`,
-      },
-      // 认证API（无v1前缀） - 映射到后端v1版本
-      {
-        source: '/api/auth/:path*',
-        destination: `${backendUrl}/api/v1/auth/:path*`,
       },
       // 模型管理API - 前端处理（本地存储，开发模式）
       // {
