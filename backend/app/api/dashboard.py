@@ -55,11 +55,10 @@ async def get_dashboard_stats(
     
     task_success_rate = (completed_tasks / total_tasks * 100) if total_tasks > 0 else 0
     
-    # 付费用户数 - 有付费套餐的用户
+    # 付费用户数 - 有付费套餐的用户（有package_id的用户）
     paid_users_result = await db.execute(
         select(func.count(FeishuUser.id)).where(
-            FeishuUser.subscription_type != "free",
-            FeishuUser.subscription_type.isnot(None)
+            FeishuUser.package_id.isnot(None)
         )
     )
     paid_users = paid_users_result.scalar() or 0
@@ -68,7 +67,7 @@ async def get_dashboard_stats(
     assistant_calls_result = await db.execute(
         select(func.count(Task.id)).where(
             Task.created_at >= today_start,
-            Task.task_type.in_(["assistant", "query", "daily_report", "inquiry"])
+            (Task.agent_id.isnot(None))
         )
     )
     assistant_calls = assistant_calls_result.scalar() or 0
