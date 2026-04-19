@@ -218,14 +218,20 @@ export default function AIAssistant({ onNavigate }: AIAssistantProps) {
     setMessages(prev => [...prev, assistantMessage]);
 
     try {
-      const response = await fetch('/api/assistant/chat', {
+      // 调用后端AI接口
+      const response = await fetch('/api/v1/ai/invoke', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token') || ''}`,
         },
         body: JSON.stringify({
-          message: userMessage.content,
-          intent
+          prompt: userMessage.content,
+          scene: intent === 'product_selection' ? 'agent' : 
+                 intent === 'data_analysis' ? 'analysis' :
+                 intent === 'customer_service' ? 'customer_service' :
+                 intent === 'listing_optimize' ? 'content' : 'agent',
+          stream: true,
         }),
       });
 
@@ -240,16 +246,41 @@ export default function AIAssistant({ onNavigate }: AIAssistantProps) {
           const { done, value } = await reader.read();
           if (done) break;
           const chunk = decoder.decode(value, { stream: true });
-          fullContent += chunk;
-          setMessages(prev => prev.map(msg => 
-            msg.id === assistantMessageId 
-              ? { ...msg, content: fullContent, isStreaming: false }
-              : msg
-          ));
+          
+          // 解析SSE格式数据
+          const lines = chunk.split('\n');
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              const data = line.slice(6);
+              if (data === '[DONE]') continue;
+              try {
+                const parsed = JSON.parse(data);
+                if (parsed.content) {
+                  fullContent += parsed.content;
+                  setMessages(prev => prev.map(msg => 
+                    msg.id === assistantMessageId 
+                      ? { ...msg, content: fullContent, isStreaming: false }
+                      : msg
+                  ));
+                }
+              } catch {
+                // 忽略解析错误
+              }
+            }
+          }
         }
+        
+        if (!fullContent) {
+          fullContent = '抱歉，我暂时无法回答这个问题。请稍后再试。';
+        }
+        setMessages(prev => prev.map(msg => 
+          msg.id === assistantMessageId 
+            ? { ...msg, content: fullContent, isStreaming: false }
+            : msg
+        ));
       } else {
         const data = await response.json();
-        fullContent = data.content || 'Sorry, I cannot answer your question right now. Please try again later.';
+        fullContent = data.content || '抱歉，我暂时无法回答这个问题。请稍后再试。';
         setMessages(prev => prev.map(msg => 
           msg.id === assistantMessageId 
             ? { ...msg, content: fullContent, isStreaming: false }

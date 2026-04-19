@@ -122,7 +122,7 @@ async def invoke_ai(
         return AIInvokeResponse(
             content=response_text,
             model=model_id,
-            usage={"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
+            tokens_used=0
         )
     except Exception as e:
         raise HTTPException(
