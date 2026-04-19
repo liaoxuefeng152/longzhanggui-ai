@@ -15,12 +15,12 @@ export const PYTHON_API_URL = process.env.NEXT_PUBLIC_PYTHON_API_URL || 'http://
 
 // API端点配置
 export const API_ENDPOINTS = {
-  // 认证 - 使用前端API路由（不依赖后端）
+  // 认证 - 使用v1路径
   auth: {
-    login: '/api/auth/login',
-    logout: '/api/auth/logout',
-    me: '/api/auth/me',
-    sendCode: '/api/auth/send-code',
+    login: '/api/v1/auth/login',
+    logout: '/api/v1/auth/logout',
+    me: '/api/v1/auth/me',
+    sendCode: '/api/v1/auth/send-code',
   },
   
   // 模型管理 - 使用前端API路由
