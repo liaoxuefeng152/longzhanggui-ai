@@ -20,6 +20,8 @@ import {
   ChevronUp,
   Loader2,
   GripHorizontal,
+  Maximize2,
+  Minimize2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -122,6 +124,7 @@ export default function AIAssistant({ onNavigate }: AIAssistantProps) {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false); // 放大状态
   
   // 拖拽状态 - 使用百分比位置
   const [isDragging, setIsDragging] = useState(false);
@@ -319,7 +322,11 @@ export default function AIAssistant({ onNavigate }: AIAssistantProps) {
   }
 
   return (
-    <div className="fixed bottom-6 right-6 w-[420px] h-[600px] bg-background border rounded-2xl shadow-2xl z-50 flex flex-col overflow-hidden">
+    <div className={`fixed bottom-6 right-6 bg-background border rounded-2xl shadow-2xl z-50 flex flex-col overflow-hidden transition-all duration-300 ${
+      isExpanded 
+        ? 'w-[800px] h-[700px]' 
+        : 'w-[420px] h-[600px]'
+    }`}>
       {/* Header */}
       <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white p-4 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-3">
@@ -334,6 +341,16 @@ export default function AIAssistant({ onNavigate }: AIAssistantProps) {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          {/* 放大/缩小按钮 */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 text-white hover:bg-white/20"
+            onClick={() => setIsExpanded(!isExpanded)}
+            title={isExpanded ? '缩小窗口' : '放大窗口'}
+          >
+            {isExpanded ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+          </Button>
           <Button
             variant="ghost"
             size="icon"
