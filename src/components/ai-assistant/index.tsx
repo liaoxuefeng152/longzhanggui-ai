@@ -218,7 +218,7 @@ export default function AIAssistant({ onNavigate }: AIAssistantProps) {
     setMessages(prev => [...prev, assistantMessage]);
 
     try {
-      // 调用后端AI接口
+      // 调用后端AI接口（scene='agent' 会调用云端跨境智能体）
       const response = await fetch('/api/v1/ai/invoke', {
         method: 'POST',
         headers: {
@@ -227,10 +227,8 @@ export default function AIAssistant({ onNavigate }: AIAssistantProps) {
         },
         body: JSON.stringify({
           prompt: userMessage.content,
-          scene: intent === 'product_selection' ? 'agent' : 
-                 intent === 'data_analysis' ? 'analysis' :
-                 intent === 'customer_service' ? 'customer_service' :
-                 intent === 'listing_optimize' ? 'content' : 'agent',
+          // 所有智能体场景都使用 'agent'，触发云端跨境AI运营智能体
+          scene: 'agent',
           stream: true,
         }),
       });

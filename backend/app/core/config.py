@@ -71,6 +71,13 @@ class Settings(BaseSettings):
     VIDEO_API_URL: Optional[str] = None
     
     # ========================================
+    # 跨境AI运营智能体配置 (云端API)
+    # ========================================
+    KUAJING_API_TOKEN: Optional[str] = None
+    KUAJING_PROJECT_ID: Optional[str] = None
+    KUAJING_API_URL: str = "https://yggzpcgkdt.coze.site/stream_run"
+    
+    # ========================================
     # 管理员配置
     # ========================================
     ADMIN_PHONE: str = "13800138000"

@@ -1,5 +1,5 @@
 """
-AI调用API路由 - 使用豆包大模型
+AI调用API路由 - 支持云端智能体和豆包大模型
 """
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import StreamingResponse
@@ -15,6 +15,7 @@ from app.models.user import User
 from app.models.agent import AIModel
 from app.schemas.agent import AIInvokeRequest, AIInvokeResponse
 from app.services.llm_service import LLMService, LLMModel
+from app.services.kuajing_agent_service import kuajing_agent_service
 
 router = APIRouter(prefix="/ai", tags=["AI调用"])
 
@@ -49,40 +50,95 @@ async def generate_stream_doubao(
         yield f"data: {json.dumps({'error': str(e)})}\n\n"
 
 
+async def generate_stream_kuajing(
+    query: str,
+    session_id: str = None
+) -> AsyncGenerator[str, None]:
+    """使用云端跨境AI运营智能体生成流式响应"""
+    try:
+        async for chunk in kuajing_agent_service.chat_stream(query, session_id):
+            yield f"data: {json.dumps({'content': chunk})}\n\n"
+        
+        yield "data: [DONE]\n\n"
+    except Exception as e:
+        yield f"data: {json.dumps({'error': str(e)})}\n\n"
+
+
+# 使用云端智能体的场景
+KUAJING_SCENES = ["agent", "product_selection", "listing", "image", "video", "customer_service"]
+
+
 @router.post("/invoke")
 async def invoke_ai(
     request: AIInvokeRequest,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """调用AI模型 - 使用豆包大模型"""
-    # 构建消息
+    """调用AI模型 - 优先使用云端智能体"""
+    # 获取用户输入
     if request.messages:
-        messages = request.messages
+        # 从messages提取最后一条用户消息
+        user_query = None
+        for msg in reversed(request.messages):
+            if msg.get("role") == "user":
+                user_query = msg.get("content", "")
+                break
+        if not user_query:
+            user_query = str(request.messages)
     elif request.prompt:
-        messages = [{"role": "user", "content": request.prompt}]
+        user_query = request.prompt
     else:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="请提供prompt或messages参数"
         )
     
-    # 确定模型
+    # 判断是否使用云端智能体
+    use_kuajing = (
+        settings.KUAJING_API_TOKEN and 
+        settings.KUAJING_PROJECT_ID and
+        (request.scene in KUAJING_SCENES or request.model == "kuajing")
+    )
+    
+    # 使用云端智能体
+    if use_kuajing:
+        session_id = f"user_{current_user.id}"
+        
+        # 流式输出
+        if request.stream:
+            return StreamingResponse(
+                generate_stream_kuajing(user_query, session_id),
+                media_type="text/event-stream",
+                headers={
+                    "Cache-Control": "no-cache",
+                    "Connection": "keep-alive",
+                }
+            )
+        
+        # 非流式输出
+        response_text = await kuajing_agent_service.chat(user_query, session_id)
+        return AIInvokeResponse(
+            content=response_text,
+            model="kuajing-agent",
+            tokens_used=0
+        )
+    
+    # 使用本地豆包大模型
+    messages = request.messages or [{"role": "user", "content": user_query}]
     model_id = request.model or settings.DEFAULT_MODEL
     
-    # 根据场景选择模型（如果没有指定）
+    # 根据场景选择模型
     if not request.model and request.scene:
         scene_model_map = {
-            "customer_service": LLMModel.DOUBAO_MINI.value,     # 客服 - 快速响应
-            "marketing": LLMModel.DOUBAO_LITE.value,           # 营销 - 平衡模型
-            "content": LLMModel.DOUBAO_PRO.value,              # 内容创作 - 高质量
-            "analysis": LLMModel.DOUBAO_PRO.value,             # 数据分析 - 复杂推理
-            "translation": LLMModel.DOUBAO_MINI.value,         # 翻译 - 快速
-            "agent": LLMModel.DOUBAO_AGENT.value,              # Agent场景
+            "customer_service": LLMModel.DOUBAO_MINI.value,
+            "marketing": LLMModel.DOUBAO_LITE.value,
+            "content": LLMModel.DOUBAO_PRO.value,
+            "analysis": LLMModel.DOUBAO_PRO.value,
+            "translation": LLMModel.DOUBAO_MINI.value,
+            "agent": LLMModel.DOUBAO_AGENT.value,
         }
         model_id = scene_model_map.get(request.scene, model_id)
     
-    # 是否启用思考模式
     thinking = "enabled" if request.scene in ["analysis", "content"] else "disabled"
     
     # 流式输出
@@ -105,7 +161,6 @@ async def invoke_ai(
     try:
         llm = LLMService(model=model_id, temperature=request.temperature or 0.7, thinking=thinking)
         
-        # 转换消息格式
         langchain_messages = []
         for msg in messages:
             role = msg.get("role", "user")
