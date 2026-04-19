@@ -6,6 +6,7 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import AsyncGenerator
 from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
+from loguru import logger
 import json
 
 from app.core.database import get_db
@@ -204,32 +205,12 @@ async def chat(
             detail="消息内容不能为空"
         )
     
-    # 判断是否使用云端智能体
-    use_kuajing = (
-        settings.KUAJING_API_TOKEN and 
-        settings.KUAJING_PROJECT_ID and
-        scene in KUAJING_SCENES
-    )
+    # 自我介绍关键词（用于检测云端智能体是否在重复自我介绍）
+    INTRO_KEYWORDS = ["我是您的全能跨境电商AI运营智能体", "专为Shopee/Lazada/TikTok Shop"]
     
-    # 使用云端智能体
-    if use_kuajing:
-        # 流式输出
-        if stream:
-            return StreamingResponse(
-                generate_stream_kuajing(user_message, session_id),
-                media_type="text/event-stream",
-                headers={
-                    "Cache-Control": "no-cache",
-                    "Connection": "keep-alive",
-                }
-            )
-        
-        # 非流式输出
-        response_text = await kuajing_agent_service.chat(user_message, session_id)
-        return {"content": response_text, "model": "kuajing-agent"}
-    
-    # 使用本地豆包大模型
-    messages = [{"role": "user", "content": user_message}]
+    def is_introduction(text: str) -> bool:
+        """检测是否是自我介绍"""
+        return any(kw in text for kw in INTRO_KEYWORDS)
     
     # 根据场景选择模型
     scene_model_map = {
@@ -241,6 +222,47 @@ async def chat(
         "agent": LLMModel.DOUBAO_AGENT.value,
     }
     model_id = scene_model_map.get(scene, settings.DEFAULT_MODEL)
+    
+    # 准备系统提示词（针对跨境电商场景）
+    system_prompt = """你是龙掌柜跨境AI运营智能体，专为Shopee/Lazada/TikTok Shop/亚马逊卖家提供一站式运营服务。
+
+你可以帮助用户：
+- 🔍 选品分析：市场趋势、竞品分析、蓝海类目挖掘
+- 📸 素材制作：商品图片/视频建议、Listing视觉优化
+- 💰 利润计算：定价策略、成本核算、利润率分析
+- 📝 Listing优化：标题/描述撰写、关键词优化
+- 📊 店铺运营：订单分析、广告优化建议
+- 🚀 商品发布：上架流程、多平台同步建议
+
+请根据用户的具体问题提供专业、实用的建议。如果用户问的是具体业务问题，请直接回答，不要做自我介绍。"""
+
+    # 尝试使用云端智能体
+    use_kuajing = (
+        settings.KUAJING_API_TOKEN and 
+        settings.KUAJING_PROJECT_ID and
+        scene in KUAJING_SCENES
+    )
+    
+    if use_kuajing:
+        # 非流式调用云端智能体
+        response_text = await kuajing_agent_service.chat(user_message, session_id)
+        
+        # 如果云端返回的是自我介绍，fallback到本地LLM
+        if is_introduction(response_text):
+            logger.info("云端智能体返回自我介绍，fallback到本地LLM")
+            try:
+                llm = LLMService(model=model_id, temperature=0.7)
+                response_text = await llm.simple_chat(user_message, system_prompt=system_prompt)
+                return {"content": response_text, "model": model_id}
+            except Exception as e:
+                logger.error(f"本地LLM fallback失败: {e}")
+                # 返回云端结果作为兜底
+                return {"content": response_text, "model": "kuajing-agent"}
+        
+        return {"content": response_text, "model": "kuajing-agent"}
+    
+    # 使用本地豆包大模型
+    messages = [{"role": "user", "content": user_message}]
     
     # 流式输出
     if stream:
@@ -261,7 +283,7 @@ async def chat(
     # 非流式输出
     try:
         llm = LLMService(model=model_id, temperature=0.7)
-        response_text = await llm.simple_chat(user_message)
+        response_text = await llm.simple_chat(user_message, system_prompt=system_prompt)
         return {"content": response_text, "model": model_id}
     except Exception as e:
         raise HTTPException(
