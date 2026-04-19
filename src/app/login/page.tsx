@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Lock, User, ShieldCheck } from 'lucide-react';
+import { Lock, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -16,37 +16,13 @@ export default function LoginPage() {
   const { login: setAuth } = useAuth();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [captcha, setCaptcha] = useState('');
-  const [captchaCode, setCaptchaCode] = useState('ABCD');
   const [isLoading, setIsLoading] = useState(false);
-
-  // 生成随机验证码
-  const generateCaptcha = () => {
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-    let code = '';
-    for (let i = 0; i < 4; i++) {
-      code += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    setCaptchaCode(code);
-  };
-
-  // 初始化验证码
-  useState(() => {
-    generateCaptcha();
-  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!username || !password) {
       toast.error('请输入账号和密码');
-      return;
-    }
-
-    if (captcha.toUpperCase() !== captchaCode) {
-      toast.error('验证码错误，请重新输入');
-      generateCaptcha();
-      setCaptcha('');
       return;
     }
 
@@ -65,8 +41,6 @@ export default function LoginPage() {
     } catch (error: any) {
       console.error('登录失败:', error);
       toast.error(error.message || '账号或密码错误');
-      generateCaptcha();
-      setCaptcha('');
     } finally {
       setIsLoading(false);
     }
@@ -147,33 +121,6 @@ export default function LoginPage() {
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="captcha" className="text-[14px]">验证码</Label>
-                <div className="flex gap-3">
-                  <div className="relative flex-1">
-                    <ShieldCheck className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="captcha"
-                      type="text"
-                      placeholder="请输入验证码"
-                      value={captcha}
-                      onChange={(e) => setCaptcha(e.target.value)}
-                      className="pl-10 h-10"
-                      maxLength={4}
-                    />
-                  </div>
-                  <div
-                    className="w-[100px] h-10 bg-muted rounded-md flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity"
-                    onClick={generateCaptcha}
-                    title="点击刷新验证码"
-                  >
-                    <span className="text-[18px] font-bold tracking-[4px] text-primary select-none">
-                      {captchaCode}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
               <Button
                 type="submit"
                 className="w-full h-10 bg-primary hover:bg-primary/90 text-[14px] font-medium"
@@ -196,7 +143,7 @@ export default function LoginPage() {
             <div className="mt-6 pt-4 border-t border-border">
               <div className="flex items-center justify-center gap-4 text-[12px] text-muted-foreground">
                 <span className="flex items-center gap-1">
-                  <ShieldCheck className="h-3 w-3" />
+                  <Lock className="h-3 w-3" />
                   安全登录
                 </span>
                 <span>·</span>
