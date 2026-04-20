@@ -1,5 +1,4 @@
 import type { Metadata } from 'next';
-import { Inspector } from 'react-dev-inspector';
 import { Providers } from '@/components/providers';
 import './globals.css';
 
@@ -27,12 +26,9 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const isDev = process.env.NODE_ENV === 'development';
-
   return (
     <html lang="zh-CN">
       <body className="antialiased">
-        {isDev && <Inspector />}
         <Providers>
           {children}
         </Providers>
