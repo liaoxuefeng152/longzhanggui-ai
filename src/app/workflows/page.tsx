@@ -664,7 +664,7 @@ export default function WorkflowsPage() {
   );
 }
 
-// 新品上架向导组件
+// 新品上架入口组件 - 简化为两种场景入口
 function ProductWizardDialog({
   open,
   onClose,
@@ -674,234 +674,212 @@ function ProductWizardDialog({
   onClose: () => void;
   onComplete: () => void;
 }) {
-  const [currentStep, setCurrentStep] = useState(0);
-  const [isExecuting, setIsExecuting] = useState(false);
-  const [params, setParams] = useState({
-    category: '宠物用品',
-    platform: 'tiktok',
-    region: 'id',
-    count: 3,
-  });
+  const router = useRouter();
+  const [mode, setMode] = useState<'collect' | null>(null);
+  const [collectUrls, setCollectUrls] = useState('');
+  const [isCollecting, setIsCollecting] = useState(false);
 
-  const steps = [
-    { name: '选品', icon: <Search className="h-4 w-4" /> },
-    { name: '采集', icon: <Upload className="h-4 w-4" /> },
-    { name: 'Listing', icon: <FileText className="h-4 w-4" /> },
-    { name: '图片', icon: <Image className="h-4 w-4" /> },
-    { name: '定价', icon: <DollarSign className="h-4 w-4" /> },
-    { name: '确认', icon: <CheckCircle2 className="h-4 w-4" /> },
-  ];
+  // 执行采集
+  const handleCollect = async () => {
+    const urls = collectUrls.split('\n').filter(url => url.trim());
+    if (urls.length === 0) {
+      toast.error('请输入至少一个1688链接');
+      return;
+    }
 
-  const handleExecute = async () => {
-    setIsExecuting(true);
-    toast.success('选品分析中...');
+    setIsCollecting(true);
+    const toastId = toast.loading(`正在采集 ${urls.length} 个商品...`);
     
-    setTimeout(() => {
-      setIsExecuting(false);
-      toast.success('选品完成！已找到3个潜力商品');
-    }, 2000);
+    try {
+      const { default: store } = await import('@/lib/store');
+      let successCount = 0;
+      
+      for (const url of urls) {
+        try {
+          // 1. 采集商品详情
+          const response = await fetch('/api/v1/tools/scrape', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ url: url.trim() }),
+          });
+          const data = await response.json();
+          
+          if (data.success && data.data) {
+            // 2. 创建商品记录
+            store.createProduct({
+              name_zh: data.data.title || '未命名商品',
+              name_en: '',
+              category: '',
+              source_url: url.trim(),
+              supplier_name: data.data.shop_name || '',
+              cost_price: data.data.price || 0,
+              domestic_shipping: 0,
+              first_mile_shipping: 0,
+              total_cost: data.data.price || 0,
+              status: 'selected',
+              selection_score: 60,
+              selected_at: new Date().toISOString(),
+              image_status: 'pending',
+              listing_status: 'pending',
+              compliance_status: 'pending',
+            });
+            successCount++;
+          }
+        } catch {
+          // 单个失败不影响整体
+        }
+      }
+      
+      toast.success(`成功采集 ${successCount} 个商品！`, {
+        id: toastId,
+        action: {
+          label: '去处理',
+          onClick: () => {
+            onClose();
+            router.push('/erp/products?status=selected');
+          },
+        },
+      });
+      
+      if (successCount > 0) {
+        onComplete();
+      }
+    } catch (error) {
+      toast.error('采集失败', { id: toastId });
+    } finally {
+      setIsCollecting(false);
+    }
   };
+
+  if (!open) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[80vh] overflow-hidden">
+      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-xl overflow-hidden">
         {/* 头部 */}
         <div className="bg-gradient-to-r from-purple-600 to-pink-600 p-6 text-white">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-[20px] font-semibold">新品上架向导</h2>
-              <p className="text-[14px] text-white/80">AI全流程：选品 → 采集 → Listing → 图片 → 定价</p>
+              <h2 className="text-[20px] font-semibold">新品上架</h2>
+              <p className="text-[14px] text-white/80 mt-1">选择您的方式开始</p>
             </div>
             <Button variant="ghost" size="sm" onClick={onClose} className="text-white hover:bg-white/20">
               ✕
             </Button>
           </div>
-          
-          {/* 步骤指示器 */}
-          <div className="flex items-center justify-between mt-6 px-4">
-            {steps.map((step, i) => (
-              <div key={i} className="flex items-center">
-                <div className={`flex flex-col items-center ${i <= currentStep ? 'text-white' : 'text-white/50'}`}>
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                    i < currentStep ? 'bg-white text-primary' :
-                    i === currentStep ? 'bg-white/30 text-white' :
-                    'bg-white/10 text-white/50'
-                  }`}>
-                    {i < currentStep ? <CheckCircle2 className="h-4 w-4" /> : step.icon}
-                  </div>
-                  <span className="text-[11px] mt-1">{step.name}</span>
-                </div>
-                {i < steps.length - 1 && (
-                  <div className={`w-12 h-0.5 mx-1 ${i < currentStep ? 'bg-white' : 'bg-white/30'}`} />
-                )}
-              </div>
-            ))}
-          </div>
         </div>
 
         {/* 内容 */}
-        <div className="p-6 overflow-y-auto max-h-[50vh]">
-          {currentStep === 0 && (
+        <div className="p-6">
+          {!mode ? (
+            // 选择入口
             <div className="space-y-4">
-              <h3 className="text-[16px] font-medium">设置选品参数</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-[13px] text-muted-foreground">目标类目</label>
-                  <select 
-                    value={params.category}
-                    onChange={(e) => setParams({...params, category: e.target.value})}
-                    className="w-full mt-1 px-3 py-2 border border-border rounded-lg text-[14px]"
-                  >
-                    <option>宠物用品</option>
-                    <option>家居用品</option>
-                    <option>3C数码</option>
-                    <option>服装配饰</option>
-                    <option>美妆护肤</option>
-                  </select>
+              <button
+                onClick={() => {
+                  onClose();
+                  router.push('/agents/product-selection');
+                }}
+                className="w-full p-4 rounded-xl border-2 border-border hover:border-purple-300 hover:bg-purple-50/50 transition-all text-left group"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white">
+                    <Search className="h-6 w-6" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-[15px] font-medium flex items-center gap-2">
+                      AI智能选品
+                      <Badge className="bg-purple-100 text-purple-700 text-[10px]">推荐</Badge>
+                    </h3>
+                    <p className="text-[13px] text-muted-foreground mt-1">
+                      告诉我您的需求，AI帮您分析市场、推荐商品、匹配供应商
+                    </p>
+                  </div>
+                  <ArrowRight className="h-5 w-5 text-muted-foreground group-hover:text-purple-500 transition-colors" />
                 </div>
-                <div>
-                  <label className="text-[13px] text-muted-foreground">目标平台</label>
-                  <select 
-                    value={params.platform}
-                    onChange={(e) => setParams({...params, platform: e.target.value})}
-                    className="w-full mt-1 px-3 py-2 border border-border rounded-lg text-[14px]"
-                  >
-                    <option value="tiktok">TikTok Shop</option>
-                    <option value="shopee">Shopee</option>
-                    <option value="lazada">Lazada</option>
-                    <option value="amazon">Amazon</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="text-[13px] text-muted-foreground">目标站点</label>
-                  <select 
-                    value={params.region}
-                    onChange={(e) => setParams({...params, region: e.target.value})}
-                    className="w-full mt-1 px-3 py-2 border border-border rounded-lg text-[14px]"
-                  >
-                    <option value="id">印尼</option>
-                    <option value="th">泰国</option>
-                    <option value="vn">越南</option>
-                    <option value="my">马来西亚</option>
-                    <option value="ph">菲律宾</option>
-                    <option value="sg">新加坡</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="text-[13px] text-muted-foreground">选品数量</label>
-                  <select 
-                    value={params.count}
-                    onChange={(e) => setParams({...params, count: parseInt(e.target.value)})}
-                    className="w-full mt-1 px-3 py-2 border border-border rounded-lg text-[14px]"
-                  >
-                    <option value="3">3个</option>
-                    <option value="5">5个</option>
-                    <option value="10">10个</option>
-                    <option value="20">20个</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-          )}
+              </button>
 
-          {currentStep === 1 && (
-            <div className="space-y-4">
-              <h3 className="text-[16px] font-medium">添加1688货源链接</h3>
-              <p className="text-[13px] text-muted-foreground">输入1688商品链接或搜索页链接，系统将自动采集商品信息</p>
-              <textarea 
-                placeholder="粘贴1688链接，每行一个..."
-                className="w-full h-32 px-3 py-2 border border-border rounded-lg text-[14px] resize-none"
-              />
-              <div className="flex items-center gap-2 text-[12px] text-muted-foreground">
-                <CheckCircle2 className="h-4 w-4 text-green-500" />
-                支持1688商品详情页和搜索页
-              </div>
-            </div>
-          )}
-
-          {currentStep >= 2 && currentStep < 5 && (
-            <div className="space-y-4">
-              <div className="text-center py-8">
-                <div className="w-16 h-16 rounded-full bg-purple-100 flex items-center justify-center mx-auto mb-4">
-                  {isExecuting ? (
-                    <RefreshCw className="h-8 w-8 text-purple-600 animate-spin" />
-                  ) : (
-                    <CheckCircle2 className="h-8 w-8 text-green-500" />
-                  )}
+              <button
+                onClick={() => setMode('collect')}
+                className="w-full p-4 rounded-xl border-2 border-border hover:border-blue-300 hover:bg-blue-50/50 transition-all text-left group"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-white">
+                    <Upload className="h-6 w-6" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-[15px] font-medium">我有链接，直接采集</h3>
+                    <p className="text-[13px] text-muted-foreground mt-1">
+                      已有1688商品链接？直接采集商品信息入库
+                    </p>
+                  </div>
+                  <ArrowRight className="h-5 w-5 text-muted-foreground group-hover:text-blue-500 transition-colors" />
                 </div>
-                <h3 className="text-[16px] font-medium">
-                  {isExecuting ? '处理中...' : '已完成'}
-                </h3>
-                <p className="text-[13px] text-muted-foreground mt-2">
-                  {steps[currentStep].name}处理完成，{currentStep < 5 ? '点击下一步继续' : '准备确认上架'}
+              </button>
+
+              <div className="pt-4 border-t mt-4">
+                <p className="text-[12px] text-muted-foreground text-center">
+                  采集后的商品可在「商品管理」中继续处理图片、Listing、定价
                 </p>
               </div>
             </div>
-          )}
-
-          {currentStep === 5 && (
+          ) : (
+            // 采集模式
             <div className="space-y-4">
-              <h3 className="text-[16px] font-medium">确认上架信息</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="p-4 rounded-lg bg-muted/50">
-                  <p className="text-[12px] text-muted-foreground">选品数量</p>
-                  <p className="text-[18px] font-semibold">3 个</p>
+              <div className="flex items-center gap-2 mb-2">
+                <Button variant="ghost" size="sm" onClick={() => setMode(null)}>
+                  ← 返回
+                </Button>
+              </div>
+              
+              <h3 className="text-[16px] font-medium">粘贴1688链接</h3>
+              <p className="text-[13px] text-muted-foreground">
+                支持商品详情页链接，每行一个，自动采集商品信息并入库
+              </p>
+              
+              <textarea 
+                value={collectUrls}
+                onChange={(e) => setCollectUrls(e.target.value)}
+                placeholder={`示例：
+https://detail.1688.com/offer/123456.html
+https://detail.1688.com/offer/789012.html`}
+                className="w-full h-40 px-3 py-2 border border-border rounded-lg text-[14px] resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+                disabled={isCollecting}
+              />
+              
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-[12px] text-muted-foreground">
+                  <CheckCircle2 className="h-4 w-4 text-green-500" />
+                  支持批量采集，自动创建商品记录
                 </div>
-                <div className="p-4 rounded-lg bg-muted/50">
-                  <p className="text-[12px] text-muted-foreground">采集商品</p>
-                  <p className="text-[18px] font-semibold">3 个</p>
-                </div>
-                <div className="p-4 rounded-lg bg-muted/50">
-                  <p className="text-[12px] text-muted-foreground">处理图片</p>
-                  <p className="text-[18px] font-semibold">9 张</p>
-                </div>
-                <div className="p-4 rounded-lg bg-muted/50">
-                  <p className="text-[12px] text-muted-foreground">预计利润率</p>
-                  <p className="text-[18px] font-semibold text-green-600">35%</p>
+                <div className="text-[12px] text-muted-foreground">
+                  {collectUrls.split('\n').filter(url => url.trim()).length} 个链接
                 </div>
               </div>
-            </div>
-          )}
-        </div>
 
-        {/* 底部操作 */}
-        <div className="border-t p-4 flex items-center justify-between">
-          <Button
-            variant="outline"
-            onClick={() => setCurrentStep(Math.max(0, currentStep - 1))}
-            disabled={currentStep === 0}
-          >
-            <ArrowRight className="h-4 w-4 mr-2 rotate-180" />
-            上一步
-          </Button>
-          
-          {currentStep === 0 ? (
-            <Button
-              onClick={() => {
-                handleExecute();
-                setCurrentStep(1);
-              }}
-              className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
-            >
-              开始AI选品
-              <ArrowRight className="h-4 w-4 ml-2" />
-            </Button>
-          ) : currentStep < 5 ? (
-            <Button
-              onClick={() => setCurrentStep(currentStep + 1)}
-            >
-              下一步
-              <ArrowRight className="h-4 w-4 ml-2" />
-            </Button>
-          ) : (
-            <Button
-              onClick={onComplete}
-              className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
-            >
-              <CheckCircle2 className="h-4 w-4 mr-2" />
-              确认上架
-            </Button>
+              <div className="flex gap-3 pt-2">
+                <Button 
+                  className="flex-1 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700"
+                  onClick={handleCollect}
+                  disabled={isCollecting || !collectUrls.trim()}
+                >
+                  {isCollecting ? (
+                    <>
+                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                      采集中...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="h-4 w-4 mr-2" />
+                      开始采集
+                    </>
+                  )}
+                </Button>
+                <Button variant="outline" onClick={onClose}>
+                  取消
+                </Button>
+              </div>
+            </div>
           )}
         </div>
       </div>
