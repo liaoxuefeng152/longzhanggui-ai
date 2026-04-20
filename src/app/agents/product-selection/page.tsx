@@ -2179,64 +2179,96 @@ ${report.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
                               <div className="flex gap-2">
                                 <Button 
                                   size="sm"
-                                  onClick={(e) => {
+                                  className="flex-1"
+                                  onClick={async (e) => {
                                     e.stopPropagation();
-                                    // 一键入库：直接创建商品记录
-                                    const productData = {
-                                      name_zh: hotProducts[0]?.name || mockHotProducts[0]?.name || supplier.name,
-                                      name_en: '',
-                                      category: requirement.category || '',
-                                      source_url: supplier.productUrl,
-                                      supplier_name: supplier.company,
-                                      supplier_url: supplier.searchUrl,
-                                      cost_price: supplier.price,
-                                      domestic_shipping: 0,
-                                      first_mile_shipping: 0,
-                                      total_cost: supplier.price,
-                                      status: 'selected' as const,
-                                      selection_score: supplier.rating * 20,
-                                      selected_at: new Date().toISOString(),
-                                      image_status: 'pending' as const,
-                                      listing_status: 'pending' as const,
-                                      compliance_status: 'pending' as const,
-                                    };
-                                    const newProduct = store.createProduct(productData);
-                                    toast.success('已添加到商品库！', {
-                                      description: '可在商品管理中继续处理',
-                                      action: {
-                                        label: '去商品库',
-                                        onClick: () => router.push('/erp/products?status=selected'),
-                                      },
-                                    });
+                                    const toastId = toast.loading('正在入库并采集详情...');
+                                    
+                                    try {
+                                      // 1. 先创建商品记录
+                                      const productData = {
+                                        name_zh: hotProducts[0]?.name || mockHotProducts[0]?.name || supplier.name,
+                                        name_en: '',
+                                        category: requirement.category || '',
+                                        source_url: supplier.productUrl,
+                                        supplier_name: supplier.company,
+                                        supplier_url: supplier.searchUrl,
+                                        cost_price: supplier.price,
+                                        domestic_shipping: 0,
+                                        first_mile_shipping: 0,
+                                        total_cost: supplier.price,
+                                        status: 'selected' as const,
+                                        selection_score: supplier.rating * 20,
+                                        selected_at: new Date().toISOString(),
+                                        image_status: 'pending' as const,
+                                        listing_status: 'pending' as const,
+                                        compliance_status: 'pending' as const,
+                                      };
+                                      const newProduct = store.createProduct(productData);
+                                      
+                                      // 2. 自动采集1688详情
+                                      if (supplier.productUrl) {
+                                        try {
+                                          const response = await fetch('/api/v1/tools/scrape', {
+                                            method: 'POST',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({ url: supplier.productUrl }),
+                                          });
+                                          const data = await response.json();
+                                          
+                                          if (data.success && data.data) {
+                                            // 3. 更新商品信息
+                                            store.updateProduct(newProduct.id, {
+                                              name_zh: data.data.title || productData.name_zh,
+                                              cost_price: data.data.price || productData.cost_price,
+                                              total_cost: data.data.price || productData.total_cost,
+                                              supplier_name: data.data.shop_name || productData.supplier_name,
+                                            });
+                                            toast.success('入库成功，已自动采集商品详情！', {
+                                              id: toastId,
+                                              description: data.data.title || productData.name_zh,
+                                              action: {
+                                                label: '去处理',
+                                                onClick: () => router.push('/erp/products?status=selected'),
+                                              },
+                                            });
+                                          } else {
+                                            toast.success('入库成功！', {
+                                              id: toastId,
+                                              description: '详情采集失败，可稍后手动采集',
+                                              action: {
+                                                label: '去商品库',
+                                                onClick: () => router.push('/erp/products?status=selected'),
+                                              },
+                                            });
+                                          }
+                                        } catch (scrapeError) {
+                                          toast.success('入库成功！', {
+                                            id: toastId,
+                                            description: '详情采集失败，可稍后手动采集',
+                                            action: {
+                                              label: '去商品库',
+                                              onClick: () => router.push('/erp/products?status=selected'),
+                                            },
+                                          });
+                                        }
+                                      } else {
+                                        toast.success('入库成功！', {
+                                          id: toastId,
+                                          description: '可在商品管理中继续处理',
+                                          action: {
+                                            label: '去商品库',
+                                            onClick: () => router.push('/erp/products?status=selected'),
+                                          },
+                                        });
+                                      }
+                                    } catch (error) {
+                                      toast.error('入库失败', { id: toastId });
+                                    }
                                   }}
                                 >
                                   <Package className="h-3 w-3 mr-1" />
                                   一键入库
-                                </Button>
-                                <Button 
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    // 添加到待采集清单
-                                    store.addToPendingCollection({
-                                      source: '1688',
-                                      source_url: supplier.productUrl,
-                                      source_id: supplier.id,
-                                      product_name: supplier.name,
-                                      keyword: hotProducts[0]?.name || mockHotProducts[0]?.name,
-                                      added_from: 'selection_agent',
-                                    });
-                                    toast.success('已加入待采集清单，可在采集中心查看', {
-                                      action: {
-                                        label: '去采集',
-                                        onClick: () => router.push('/erp/collection'),
-                                      },
-                                    });
-                                  }}
-                                >
-                                  <ShoppingCart className="h-3 w-3 mr-1" />
-                                  加入采集单
                                 </Button>
                                 <Button 
                                   size="sm"
@@ -2285,38 +2317,79 @@ ${report.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
                       </span>
                     </div>
                     <div className="flex gap-2 mt-4">
-                      <Button className="flex-1" onClick={() => {
-                        // 批量入库：把采购清单中的商品添加到商品库
-                        let count = 0;
-                        purchaseItems.forEach(item => {
-                          const productData = {
-                            name_zh: item.product?.name || item.supplier.name,
-                            name_en: '',
-                            category: requirement.category || '',
-                            source_url: item.supplier.productUrl,
-                            supplier_name: item.supplier.company,
-                            supplier_url: item.supplier.searchUrl,
-                            cost_price: item.unitPrice,
-                            domestic_shipping: 0,
-                            first_mile_shipping: 0,
-                            total_cost: item.unitPrice,
-                            status: 'selected' as const,
-                            selection_score: item.supplier.rating * 20,
-                            selected_at: new Date().toISOString(),
-                            image_status: 'pending' as const,
-                            listing_status: 'pending' as const,
-                            compliance_status: 'pending' as const,
-                          };
-                          store.createProduct(productData);
-                          count++;
-                        });
-                        toast.success(`成功入库 ${count} 个商品！`, {
-                          description: '可在商品管理中继续处理',
-                          action: {
-                            label: '去商品库',
-                            onClick: () => router.push('/erp/products?status=selected'),
-                          },
-                        });
+                      <Button className="flex-1" onClick={async () => {
+                        const toastId = toast.loading(`正在入库 ${purchaseItems.length} 个商品...`);
+                        let successCount = 0;
+                        let failCount = 0;
+                        
+                        for (const item of purchaseItems) {
+                          try {
+                            // 1. 创建商品记录
+                            const productData = {
+                              name_zh: item.product?.name || item.supplier.name,
+                              name_en: '',
+                              category: requirement.category || '',
+                              source_url: item.supplier.productUrl,
+                              supplier_name: item.supplier.company,
+                              supplier_url: item.supplier.searchUrl,
+                              cost_price: item.unitPrice,
+                              domestic_shipping: 0,
+                              first_mile_shipping: 0,
+                              total_cost: item.unitPrice,
+                              status: 'selected' as const,
+                              selection_score: item.supplier.rating * 20,
+                              selected_at: new Date().toISOString(),
+                              image_status: 'pending' as const,
+                              listing_status: 'pending' as const,
+                              compliance_status: 'pending' as const,
+                            };
+                            const newProduct = store.createProduct(productData);
+                            
+                            // 2. 自动采集详情
+                            if (item.supplier.productUrl) {
+                              try {
+                                const response = await fetch('/api/v1/tools/scrape', {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({ url: item.supplier.productUrl }),
+                                });
+                                const data = await response.json();
+                                
+                                if (data.success && data.data) {
+                                  store.updateProduct(newProduct.id, {
+                                    name_zh: data.data.title || productData.name_zh,
+                                    cost_price: data.data.price || productData.cost_price,
+                                    total_cost: data.data.price || productData.total_cost,
+                                    supplier_name: data.data.shop_name || productData.supplier_name,
+                                  });
+                                }
+                              } catch {
+                                // 采集失败不影响入库
+                              }
+                            }
+                            successCount++;
+                          } catch {
+                            failCount++;
+                          }
+                        }
+                        
+                        if (failCount === 0) {
+                          toast.success(`成功入库 ${successCount} 个商品，已自动采集详情！`, {
+                            id: toastId,
+                            action: {
+                              label: '去商品库',
+                              onClick: () => router.push('/erp/products?status=selected'),
+                            },
+                          });
+                        } else {
+                          toast.success(`入库完成：${successCount} 成功，${failCount} 失败`, {
+                            id: toastId,
+                            action: {
+                              label: '去商品库',
+                              onClick: () => router.push('/erp/products?status=selected'),
+                            },
+                          });
+                        }
                         setPurchaseItems([]);
                       }}>
                         <Package className="h-4 w-4 mr-2" />
