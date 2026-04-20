@@ -395,10 +395,27 @@ coze dev
 ### 智能助理API路由
 | 路由 | 方法 | 功能 |
 |------|------|------|
+| `/api/v1/ai/chat-stream` | POST | AI聊天流式API（SSE） |
 | `/api/assistant/chat` | POST | 智能助理对话 |
 | `/api/assistant/daily-report` | GET | 获取运营日报 |
 | `/api/assistant/alerts` | GET | 获取异常告警列表 |
 | `/api/assistant/recommendations` | GET | 获取决策建议 |
+
+### AI工具API路由（新增）
+| 路由 | 方法 | 功能 |
+|------|------|------|
+| `/api/v1/tools/selection` | POST | 选品分析工具（流式） |
+| `/api/v1/tools/scrape` | POST/PUT | 商品采集（单个/批量） |
+| `/api/v1/tools/pricing` | POST | 智能定价计算 |
+| `/api/v1/tools/listing` | POST | Listing生成（流式） |
+| `/api/v1/tools/customer-service` | POST | 客服回复生成（流式） |
+
+**AI工具功能说明**：
+- **选品分析**：市场趋势分析、竞品研究、蓝海类目挖掘
+- **商品采集**：支持1688、淘宝、天猫、京东、拼多多
+- **智能定价**：保本价计算、利润方案、成本拆分
+- **Listing生成**：标题、五点描述、多语言支持（英/泰/越/马/印尼/菲律宾语）
+- **客服回复**：多语言客服回复，支持询盘/订单/物流/投诉/退款/评价场景
 
 ### API配置
 所有API端点配置在 `src/lib/api/config.ts`，使用相对路径 `/api/xxx`。
