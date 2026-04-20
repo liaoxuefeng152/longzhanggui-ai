@@ -32,6 +32,7 @@ import {
   Truck,
   RefreshCw,
   Play,
+  Eye,
 } from "lucide-react";
 
 // 今日概览数据
@@ -113,6 +114,12 @@ export default function WorkflowsPage() {
   const [user, setUser] = useState<any>(null);
   const [activeTab, setActiveTab] = useState('overview');
   const [showWizard, setShowWizard] = useState(false);
+  const [productStats, setProductStats] = useState({
+    selected: 0,
+    processing: 0,
+    ready: 0,
+    published: 0,
+  });
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -121,13 +128,49 @@ export default function WorkflowsPage() {
       return;
     }
     setUser(JSON.parse(userData));
+
+    // 获取商品统计数据
+    const fetchStats = async () => {
+      const { default: store } = await import('@/lib/store');
+      const products = store.getProducts();
+      setProductStats({
+        selected: products.filter((p: any) => p.status === 'selected').length,
+        processing: products.filter((p: any) => p.status === 'processing').length,
+        ready: products.filter((p: any) => p.status === 'ready').length,
+        published: products.filter((p: any) => p.status === 'published').length,
+      });
+    };
+    fetchStats();
   }, [router]);
 
   if (!user) return null;
 
-  // 执行工作流
+  // 执行工作流 - 直接跳转到对应功能页面
   const handleOpenWizard = (workflowId: string) => {
-    toast.success(`正在启动工作流: ${workflowId}`);
+    switch (workflowId) {
+      case 'new-product':
+        // 新品上架：跳转到选品智能体
+        toast.success('开始新品上架流程', { description: '正在跳转到选品分析...' });
+        router.push('/agents/product-selection');
+        break;
+      case 'batch-collect':
+        // 批量采集：跳转到采集中心
+        toast.success('开始批量采集', { description: '正在跳转到采集中心...' });
+        router.push('/erp/collection');
+        break;
+      case 'batch-price':
+        // 批量定价：跳转到商品列表
+        toast.success('开始批量定价', { description: '正在跳转到商品管理...' });
+        router.push('/erp/products?status=selected');
+        break;
+      case 'batch-listing':
+        // 批量优化：跳转到Listing优化
+        toast.success('开始批量优化', { description: '正在跳转到Listing优化...' });
+        router.push('/agents/listing-optimization');
+        break;
+      default:
+        toast.info('功能开发中');
+    }
   };
 
   return (
@@ -261,6 +304,100 @@ export default function WorkflowsPage() {
                 </CardContent>
               </Card>
             </div>
+
+            {/* 商品状态概览 - 快速查看各状态商品数量 */}
+            <Card className="bg-white border-border shadow-sm">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Package className="h-5 w-5 text-primary" />
+                    <CardTitle className="text-[16px]">商品状态概览</CardTitle>
+                  </div>
+                  <Button variant="ghost" size="sm" onClick={() => router.push('/erp/products')}>
+                    商品管理
+                    <ArrowRight className="h-4 w-4 ml-1" />
+                  </Button>
+                </div>
+                <CardDescription className="text-[13px]">
+                  从选品到上架的全流程状态追踪
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                  <button 
+                    onClick={() => router.push('/erp/products?status=selected')}
+                    className="p-4 rounded-lg border border-blue-200 bg-blue-50/50 hover:bg-blue-100/50 transition-colors text-left"
+                  >
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="w-8 h-8 rounded-lg bg-blue-500 flex items-center justify-center">
+                        <Search className="h-4 w-4 text-white" />
+                      </div>
+                      <span className="text-[13px] font-medium text-blue-700">已选品</span>
+                    </div>
+                    <p className="text-[24px] font-semibold text-blue-600">{productStats.selected}</p>
+                    <p className="text-[11px] text-muted-foreground mt-1">待采集详情</p>
+                  </button>
+
+                  <button 
+                    onClick={() => router.push('/erp/products?status=processing')}
+                    className="p-4 rounded-lg border border-yellow-200 bg-yellow-50/50 hover:bg-yellow-100/50 transition-colors text-left"
+                  >
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="w-8 h-8 rounded-lg bg-yellow-500 flex items-center justify-center">
+                        <RefreshCw className="h-4 w-4 text-white" />
+                      </div>
+                      <span className="text-[13px] font-medium text-yellow-700">处理中</span>
+                    </div>
+                    <p className="text-[24px] font-semibold text-yellow-600">{productStats.processing}</p>
+                    <p className="text-[11px] text-muted-foreground mt-1">图片/Listing处理</p>
+                  </button>
+
+                  <button 
+                    onClick={() => router.push('/erp/products?status=ready')}
+                    className="p-4 rounded-lg border border-green-200 bg-green-50/50 hover:bg-green-100/50 transition-colors text-left"
+                  >
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="w-8 h-8 rounded-lg bg-green-500 flex items-center justify-center">
+                        <CheckCircle2 className="h-4 w-4 text-white" />
+                      </div>
+                      <span className="text-[13px] font-medium text-green-700">待上架</span>
+                    </div>
+                    <p className="text-[24px] font-semibold text-green-600">{productStats.ready}</p>
+                    <p className="text-[11px] text-muted-foreground mt-1">可发布上架</p>
+                  </button>
+
+                  <button 
+                    onClick={() => router.push('/erp/products?status=published')}
+                    className="p-4 rounded-lg border border-purple-200 bg-purple-50/50 hover:bg-purple-100/50 transition-colors text-left"
+                  >
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="w-8 h-8 rounded-lg bg-purple-500 flex items-center justify-center">
+                        <ShoppingCart className="h-4 w-4 text-white" />
+                      </div>
+                      <span className="text-[13px] font-medium text-purple-700">已上架</span>
+                    </div>
+                    <p className="text-[24px] font-semibold text-purple-600">{productStats.published}</p>
+                    <p className="text-[11px] text-muted-foreground mt-1">在售商品</p>
+                  </button>
+
+                  <button 
+                    onClick={() => router.push('/agents/product-selection')}
+                    className="p-4 rounded-lg border border-dashed border-primary/30 hover:border-primary/50 hover:bg-primary/5 transition-colors text-left group"
+                  >
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                        <Plus className="h-4 w-4 text-white" />
+                      </div>
+                      <span className="text-[13px] font-medium text-primary">新增商品</span>
+                    </div>
+                    <p className="text-[14px] font-medium text-primary mt-3 group-hover:underline">
+                      开始选品 →
+                    </p>
+                    <p className="text-[11px] text-muted-foreground mt-1">AI智能选品分析</p>
+                  </button>
+                </div>
+              </CardContent>
+            </Card>
 
             {/* AI智能体入口 */}
             <Card className="bg-white border-border shadow-sm">

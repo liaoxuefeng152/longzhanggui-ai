@@ -895,18 +895,64 @@ export default function ERPProductsPage() {
                         )}
                         <div className="flex items-center gap-2 mt-3">
                           {product.status === 'selected' && (
-                            <Button 
-                              size="sm" 
-                              onClick={() => handleProcessProduct(product.id)}
-                              disabled={isProcessing === product.id}
-                            >
-                              {isProcessing === product.id ? (
-                                <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                              ) : (
-                                <Play className="h-3 w-3 mr-1" />
+                            <>
+                              {product.source_url && (
+                                <Button 
+                                  size="sm" 
+                                  variant="outline"
+                                  onClick={async () => {
+                                    // 采集详情
+                                    setIsProcessing(product.id);
+                                    try {
+                                      const response = await fetch('/api/v1/tools/scrape', {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({ url: product.source_url }),
+                                      });
+                                      const data = await response.json();
+                                      if (data.success && data.data) {
+                                        // 更新商品信息
+                                        const { default: store } = await import('@/lib/store');
+                                        store.updateProduct(product.id, {
+                                          name_zh: data.data.title || product.name_zh,
+                                          cost_price: data.data.price || product.cost_price,
+                                          total_cost: data.data.price || product.total_cost,
+                                          supplier_name: data.data.shop_name || product.supplier_name,
+                                        });
+                                        toast.success('采集成功！');
+                                        fetchProducts();
+                                      } else {
+                                        toast.error(data.error || '采集失败');
+                                      }
+                                    } catch (error) {
+                                      toast.error('采集失败');
+                                    } finally {
+                                      setIsProcessing(null);
+                                    }
+                                  }}
+                                  disabled={isProcessing === product.id}
+                                >
+                                  {isProcessing === product.id ? (
+                                    <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                                  ) : (
+                                    <RefreshCw className="h-3 w-3 mr-1" />
+                                  )}
+                                  采集详情
+                                </Button>
                               )}
-                              开始处理
-                            </Button>
+                              <Button 
+                                size="sm" 
+                                onClick={() => handleProcessProduct(product.id)}
+                                disabled={isProcessing === product.id}
+                              >
+                                {isProcessing === product.id ? (
+                                  <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                                ) : (
+                                  <Play className="h-3 w-3 mr-1" />
+                                )}
+                                开始处理
+                              </Button>
+                            </>
                           )}
                           {product.status === 'ready' && (
                             <Button 

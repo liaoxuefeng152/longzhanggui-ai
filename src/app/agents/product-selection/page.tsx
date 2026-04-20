@@ -2181,6 +2181,43 @@ ${report.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
                                   size="sm"
                                   onClick={(e) => {
                                     e.stopPropagation();
+                                    // 一键入库：直接创建商品记录
+                                    const productData = {
+                                      name_zh: hotProducts[0]?.name || mockHotProducts[0]?.name || supplier.name,
+                                      name_en: '',
+                                      category: requirement.category || '',
+                                      source_url: supplier.productUrl,
+                                      supplier_name: supplier.company,
+                                      supplier_url: supplier.searchUrl,
+                                      cost_price: supplier.price,
+                                      domestic_shipping: 0,
+                                      first_mile_shipping: 0,
+                                      total_cost: supplier.price,
+                                      status: 'selected' as const,
+                                      selection_score: supplier.rating * 20,
+                                      selected_at: new Date().toISOString(),
+                                      image_status: 'pending' as const,
+                                      listing_status: 'pending' as const,
+                                      compliance_status: 'pending' as const,
+                                    };
+                                    const newProduct = store.createProduct(productData);
+                                    toast.success('已添加到商品库！', {
+                                      description: '可在商品管理中继续处理',
+                                      action: {
+                                        label: '去商品库',
+                                        onClick: () => router.push('/erp/products?status=selected'),
+                                      },
+                                    });
+                                  }}
+                                >
+                                  <Package className="h-3 w-3 mr-1" />
+                                  一键入库
+                                </Button>
+                                <Button 
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
                                     // 添加到待采集清单
                                     store.addToPendingCollection({
                                       source: '1688',
@@ -2248,9 +2285,42 @@ ${report.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
                       </span>
                     </div>
                     <div className="flex gap-2 mt-4">
-                      <Button className="flex-1">
-                        <ShoppingCart className="h-4 w-4 mr-2" />
-                        提交采集单
+                      <Button className="flex-1" onClick={() => {
+                        // 批量入库：把采购清单中的商品添加到商品库
+                        let count = 0;
+                        purchaseItems.forEach(item => {
+                          const productData = {
+                            name_zh: item.product?.name || item.supplier.name,
+                            name_en: '',
+                            category: requirement.category || '',
+                            source_url: item.supplier.productUrl,
+                            supplier_name: item.supplier.company,
+                            supplier_url: item.supplier.searchUrl,
+                            cost_price: item.unitPrice,
+                            domestic_shipping: 0,
+                            first_mile_shipping: 0,
+                            total_cost: item.unitPrice,
+                            status: 'selected' as const,
+                            selection_score: item.supplier.rating * 20,
+                            selected_at: new Date().toISOString(),
+                            image_status: 'pending' as const,
+                            listing_status: 'pending' as const,
+                            compliance_status: 'pending' as const,
+                          };
+                          store.createProduct(productData);
+                          count++;
+                        });
+                        toast.success(`成功入库 ${count} 个商品！`, {
+                          description: '可在商品管理中继续处理',
+                          action: {
+                            label: '去商品库',
+                            onClick: () => router.push('/erp/products?status=selected'),
+                          },
+                        });
+                        setPurchaseItems([]);
+                      }}>
+                        <Package className="h-4 w-4 mr-2" />
+                        批量入库
                       </Button>
                       <Button variant="outline" onClick={() => setPurchaseItems([])}>
                         清空清单
