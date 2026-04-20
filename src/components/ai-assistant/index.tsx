@@ -22,6 +22,10 @@ import {
   GripHorizontal,
   Maximize2,
   Minimize2,
+  Video,
+  ImageIcon,
+  Download,
+  ExternalLink,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -29,6 +33,8 @@ import { toast } from 'sonner';
 type IntentType = 
   | 'product_selection'
   | 'image_design'
+  | 'image_generation'
+  | 'video_generation'
   | 'listing_optimize'
   | 'ad_creation'
   | 'customer_service'
@@ -39,6 +45,12 @@ type IntentType =
   | 'general_chat'
   | 'help';
 
+interface GeneratedContent {
+  type: 'image' | 'video';
+  urls: string[];
+  isLoading?: boolean;
+}
+
 interface Message {
   id: string;
   role: 'user' | 'assistant';
@@ -46,12 +58,21 @@ interface Message {
   intent?: IntentType;
   timestamp: Date;
   isStreaming?: boolean;
+  generatedContent?: GeneratedContent;
 }
 
 // Intent recognition
 const recognizeIntent = (text: string): IntentType => {
   const lowerText = text.toLowerCase();
   
+  // 图片生成（优先级最高）
+  if (/生成图片|生成一张|画一张|创作.*图|设计.*图|帮我画|制作图片|ai.*图|生图|画个|绘制/.test(lowerText)) {
+    return 'image_generation';
+  }
+  // 视频生成
+  if (/生成视频|制作视频|创作.*视频|生成.*视频|视频.*生成|ai.*视频|生视频|做视频|制作.*短片/.test(lowerText)) {
+    return 'video_generation';
+  }
   // 选品相关（优先级最高，避免被"预算"等关键词干扰）
   if (/选品|选\d+款|选个|选那|哪款|哪类|产品推荐|爆款|热门|热卖|趋势|帮我选|推荐产品|选产品/.test(lowerText)) {
     return 'product_selection';
@@ -91,6 +112,8 @@ const recognizeIntent = (text: string): IntentType => {
 const intentLabels: Record<IntentType, string> = {
   product_selection: '选品分析',
   image_design: '图片设计',
+  image_generation: '图片生成',
+  video_generation: '视频生成',
   listing_optimize: 'Listing优化',
   ad_creation: '广告投放',
   customer_service: '客服',
@@ -105,6 +128,8 @@ const intentLabels: Record<IntentType, string> = {
 const intentIcons: Record<IntentType, React.ReactNode> = {
   product_selection: <TrendingUp className="h-3 w-3" />,
   image_design: <Image className="h-3 w-3" />,
+  image_generation: <ImageIcon className="h-3 w-3" />,
+  video_generation: <Video className="h-3 w-3" />,
   listing_optimize: <Sparkles className="h-3 w-3" />,
   ad_creation: <TrendingUp className="h-3 w-3" />,
   customer_service: <MessageSquare className="h-3 w-3" />,
@@ -235,6 +260,18 @@ export default function AIAssistant({ onNavigate }: AIAssistantProps) {
         return;
       }
 
+      // 处理图片生成意图
+      if (intent === 'image_generation') {
+        await handleImageGeneration(userMessage.content, assistantMessageId, token);
+        return;
+      }
+
+      // 处理视频生成意图
+      if (intent === 'video_generation') {
+        await handleVideoGeneration(userMessage.content, assistantMessageId, token);
+        return;
+      }
+
       // 使用流式API
       const response = await fetch('/api/v1/ai/chat-stream', {
         method: 'POST',
@@ -338,6 +375,106 @@ export default function AIAssistant({ onNavigate }: AIAssistantProps) {
       ));
     }
 
+    setIsLoading(false);
+  };
+
+  // 处理图片生成
+  const handleImageGeneration = async (prompt: string, messageId: string, token: string) => {
+    try {
+      // 更新状态为生成中
+      setMessages(prev => prev.map(msg => 
+        msg.id === messageId 
+          ? { 
+              ...msg, 
+              content: '🎨 正在为您生成图片，请稍候...',
+              generatedContent: { type: 'image', urls: [], isLoading: true }
+            }
+          : msg
+      ));
+
+      const response = await fetch('/api/v1/tools/image', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ prompt, size: '2K' }),
+      });
+
+      const data = await response.json();
+
+      if (data.success && data.imageUrls?.length > 0) {
+        setMessages(prev => prev.map(msg => 
+          msg.id === messageId 
+            ? { 
+                ...msg, 
+                content: `✨ 图片已生成！共 ${data.imageUrls.length} 张`,
+                isStreaming: false,
+                generatedContent: { type: 'image', urls: data.imageUrls, isLoading: false }
+              }
+            : msg
+        ));
+      } else {
+        throw new Error(data.error || '图片生成失败');
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : '图片生成失败';
+      setMessages(prev => prev.map(msg => 
+        msg.id === messageId 
+          ? { ...msg, content: `❌ ${errorMessage}`, isStreaming: false }
+          : msg
+      ));
+    }
+    setIsLoading(false);
+  };
+
+  // 处理视频生成
+  const handleVideoGeneration = async (prompt: string, messageId: string, token: string) => {
+    try {
+      // 更新状态为生成中
+      setMessages(prev => prev.map(msg => 
+        msg.id === messageId 
+          ? { 
+              ...msg, 
+              content: '🎬 正在为您生成视频，这可能需要1-2分钟，请耐心等待...',
+              generatedContent: { type: 'video', urls: [], isLoading: true }
+            }
+          : msg
+      ));
+
+      const response = await fetch('/api/v1/tools/video', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ prompt, duration: 5, resolution: '720p' }),
+      });
+
+      const data = await response.json();
+
+      if (data.success && data.videoUrl) {
+        setMessages(prev => prev.map(msg => 
+          msg.id === messageId 
+            ? { 
+                ...msg, 
+                content: `✨ 视频已生成！时长 ${data.duration || 5} 秒`,
+                isStreaming: false,
+                generatedContent: { type: 'video', urls: [data.videoUrl], isLoading: false }
+              }
+            : msg
+        ));
+      } else {
+        throw new Error(data.error || '视频生成失败');
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : '视频生成失败';
+      setMessages(prev => prev.map(msg => 
+        msg.id === messageId 
+          ? { ...msg, content: `❌ ${errorMessage}`, isStreaming: false }
+          : msg
+      ));
+    }
     setIsLoading(false);
   };
 
@@ -465,6 +602,84 @@ export default function AIAssistant({ onNavigate }: AIAssistantProps) {
                           <span className="inline-block h-4 w-2 bg-blue-500 ml-1 animate-pulse" />
                         )}
                       </div>
+                      
+                      {/* 显示生成的图片 */}
+                      {message.generatedContent?.type === 'image' && message.generatedContent.urls.length > 0 && (
+                        <div className="mt-3 space-y-2">
+                          <div className="grid grid-cols-2 gap-2">
+                            {message.generatedContent.urls.map((url, idx) => (
+                              <div key={idx} className="relative group">
+                                <img 
+                                  src={url} 
+                                  alt={`生成的图片 ${idx + 1}`}
+                                  className="rounded-lg w-full h-auto object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                                  onClick={() => window.open(url, '_blank')}
+                                />
+                                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100">
+                                  <ExternalLink className="h-5 w-5 text-white" />
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                          <div className="flex gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="text-xs"
+                              onClick={() => {
+                                message.generatedContent?.urls.forEach((url, idx) => {
+                                  const a = document.createElement('a');
+                                  a.href = url;
+                                  a.download = `image-${idx + 1}.png`;
+                                  a.target = '_blank';
+                                  a.click();
+                                });
+                              }}
+                            >
+                              <Download className="h-3 w-3 mr-1" />
+                              下载全部
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* 显示生成的视频 */}
+                      {message.generatedContent?.type === 'video' && message.generatedContent.urls.length > 0 && (
+                        <div className="mt-3 space-y-2">
+                          <video 
+                            src={message.generatedContent.urls[0]}
+                            controls
+                            className="rounded-lg w-full h-auto"
+                            style={{ maxHeight: '300px' }}
+                          />
+                          <div className="flex gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="text-xs"
+                              onClick={() => {
+                                const a = document.createElement('a');
+                                a.href = message.generatedContent?.urls[0] || '';
+                                a.download = 'video.mp4';
+                                a.target = '_blank';
+                                a.click();
+                              }}
+                            >
+                              <Download className="h-3 w-3 mr-1" />
+                              下载视频
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="text-xs"
+                              onClick={() => window.open(message.generatedContent?.urls[0], '_blank')}
+                            >
+                              <ExternalLink className="h-3 w-3 mr-1" />
+                              新窗口打开
+                            </Button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                     
                     {message.role === 'user' && (
@@ -528,6 +743,24 @@ export default function AIAssistant({ onNavigate }: AIAssistantProps) {
               >
                 <TrendingUp className="h-3 w-3 mr-1" />
                 选品
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-xs shrink-0"
+                onClick={() => setInput('生成一张产品主图')}
+              >
+                <ImageIcon className="h-3 w-3 mr-1" />
+                生图
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-xs shrink-0"
+                onClick={() => setInput('生成一个产品展示视频')}
+              >
+                <Video className="h-3 w-3 mr-1" />
+                生视频
               </Button>
               <Button
                 variant="outline"
