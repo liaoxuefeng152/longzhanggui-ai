@@ -87,6 +87,7 @@ interface PurchaseItem {
 // 选品需求
 interface SelectionRequirement {
   market: string;
+  platform: string; // 目标平台
   category: string;
   budget: string;
   core诉求: string;
@@ -440,6 +441,16 @@ const marketOptions = [
   { value: 'my', label: '马来', icon: '🇲🇾' },
 ];
 
+// 目标平台选项
+const platformOptions = [
+  { value: 'tiktok', label: 'TikTok Shop', icon: '📱', desc: '短视频带货，年轻人群体' },
+  { value: 'shopee', label: 'Shopee', icon: '🛒', desc: '东南亚主流平台' },
+  { value: 'lazada', label: 'Lazada', icon: '🏬', desc: '阿里系东南亚平台' },
+  { value: 'amazon', label: 'Amazon', icon: '📦', desc: '欧美主流平台' },
+  { value: 'temu', label: 'Temu', icon: '💎', desc: '拼多多海外版' },
+  { value: 'shein', label: 'SHEIN', icon: '👗', desc: '快时尚跨境平台' },
+];
+
 const categoryOptions = [
   '家居用品', '厨房用品', '美妆工具', '宠物用品', 
   '母婴用品', '运动户外', '3C数码', '服装配饰'
@@ -468,6 +479,7 @@ export default function SelectionAgentPage() {
   // 选品需求状态
   const [requirement, setRequirement] = useState<SelectionRequirement>({
     market: '',
+    platform: '', // 目标平台
     category: '',
     budget: '',
     core诉求: '',
@@ -533,11 +545,16 @@ export default function SelectionAgentPage() {
       toast.error('请选择目标市场');
       return;
     }
+    if (!requirement.platform) {
+      toast.error('请选择目标平台');
+      return;
+    }
     
     setIsAnalyzing(true);
     try {
       const result = await suggestDirections({
         market: requirement.market,
+        platform: requirement.platform,
         category: requirement.category,
         budget: requirement.budget,
         core_appeal: requirement.core诉求,
@@ -1042,10 +1059,38 @@ ${report.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
                     </div>
                   </div>
 
+                  {/* 目标平台 */}
+                  <div className="space-y-3">
+                    <label className="text-[13px] font-medium text-foreground">
+                      2️⃣ 目标平台 <span className="text-destructive">*</span>
+                    </label>
+                    <p className="text-[12px] text-muted-foreground">选择销售平台，不同平台的选品策略有所不同</p>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                      {platformOptions.map(opt => (
+                        <button
+                          key={opt.value}
+                          onClick={() => handleRequirementChange('platform', opt.value)}
+                          className={`px-3 py-3 rounded-lg border text-left transition-colors ${
+                            requirement.platform === opt.value 
+                              ? 'bg-primary text-white border-primary' 
+                              : 'bg-white border-border hover:border-primary/50'
+                          }`}
+                        >
+                          <div className="text-[14px] font-medium">
+                            {opt.icon} {opt.label}
+                          </div>
+                          <div className={`text-[11px] mt-1 ${requirement.platform === opt.value ? 'text-white/80' : 'text-muted-foreground'}`}>
+                            {opt.desc}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
                   {/* 类目偏好 */}
                   <div className="space-y-3">
                     <label className="text-[13px] font-medium text-foreground">
-                      2️⃣ 类目偏好
+                      3️⃣ 类目偏好
                     </label>
                     <div className="flex flex-wrap gap-2">
                       {categoryOptions.map(cat => (
@@ -1067,7 +1112,7 @@ ${report.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
                   {/* 成本预算 */}
                   <div className="space-y-3">
                     <label className="text-[13px] font-medium text-foreground">
-                      3️⃣ 成本预算（拿货价）
+                      4️⃣ 成本预算（拿货价）
                     </label>
                     <div className="grid grid-cols-3 gap-3">
                       {budgetOptions.map(opt => (
@@ -1092,7 +1137,7 @@ ${report.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
                   {/* 核心诉求 */}
                   <div className="space-y-3">
                     <label className="text-[13px] font-medium text-foreground">
-                      4️⃣ 核心诉求
+                      5️⃣ 核心诉求
                     </label>
                     <div className="flex flex-wrap gap-2">
                       {appealOptions.map(opt => (
@@ -1114,7 +1159,7 @@ ${report.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
                   {/* 规避类目 */}
                   <div className="space-y-3">
                     <label className="text-[13px] font-medium text-foreground">
-                      5️⃣ 规避类目（可选）
+                      6️⃣ 规避类目（可选）
                     </label>
                     <Input 
                       placeholder="例如：电子烟、医疗用品..."
@@ -1149,7 +1194,7 @@ ${report.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
 
                   <Button 
                     onClick={handleStartRequirementAnalysis}
-                    disabled={!requirement.market || isAnalyzing}
+                    disabled={!requirement.market || !requirement.platform || isAnalyzing}
                     className="mt-4"
                   >
                     {isAnalyzing ? (
@@ -1176,8 +1221,9 @@ ${report.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
                   </CardTitle>
                   <CardDescription>
                     根据您的需求（{marketOptions.find(m => m.value === requirement.market)?.label || ''}
-                    {requirement.category && ` + ${requirement.category}`}
-                    {requirement.budget && ` + ${budgetOptions.find(b => b.value === requirement.budget)?.label}`}）
+                    {requirement.platform && ` | ${platformOptions.find(p => p.value === requirement.platform)?.label}`}
+                    {requirement.category && ` | ${requirement.category}`}
+                    {requirement.budget && ` | ${budgetOptions.find(b => b.value === requirement.budget)?.label}`}）
                     为您推荐以下方向：
                   </CardDescription>
                 </CardHeader>
@@ -1812,6 +1858,7 @@ ${report.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
                         <h3 className="font-medium mb-2">一、选品需求概述</h3>
                         <p className="text-muted-foreground">
                           目标市场: {marketOptions.find(m => m.value === report.requirements.market)?.label} | 
+                          目标平台: {platformOptions.find(p => p.value === report.requirements.platform)?.label || '未指定'} | 
                           类目偏好: {report.requirements.category || '热门类目'} | 
                           预算: {report.requirements.budget ? budgetOptions.find(b => b.value === report.requirements.budget)?.label : '未指定'}
                         </p>

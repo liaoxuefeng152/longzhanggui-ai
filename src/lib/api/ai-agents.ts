@@ -79,6 +79,7 @@ export async function analyzeCompetition(productName: string, platform?: string)
 
 export interface SuggestDirectionRequest {
   market?: string;
+  platform?: string; // 目标平台
   category?: string;
   budget?: string;
   core_appeal?: string;
