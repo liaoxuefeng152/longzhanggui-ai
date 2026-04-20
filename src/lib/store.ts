@@ -1214,10 +1214,12 @@ class LobsterStore {
 
 // 单例模式
 function getStore(): LobsterStore {
-  if (!global.__LOBSTER_STORE__) {
-    global.__LOBSTER_STORE__ = new LobsterStore();
+  // 使用 globalThis 替代 global，兼容浏览器和 Node.js 环境
+  const g = globalThis as typeof globalThis & { __LOBSTER_STORE__: LobsterStore | undefined };
+  if (!g.__LOBSTER_STORE__) {
+    g.__LOBSTER_STORE__ = new LobsterStore();
   }
-  return global.__LOBSTER_STORE__;
+  return g.__LOBSTER_STORE__;
 }
 
 export const store = getStore();
