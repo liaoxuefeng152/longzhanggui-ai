@@ -1,274 +1,280 @@
 /**
- * ERP系统 API
+ * ERP API 客户端
+ * 连接后端数据库 API
  */
-import { apiClient, PaginatedResponse } from './client';
 
-// ERP商品类型
-export interface ERPProduct {
+// API 基础路径
+const API_BASE = '/api/v1';
+
+// 获取认证头
+function getAuthHeaders(): HeadersInit {
+  if (typeof window === 'undefined') return {};
+  
+  const token = localStorage.getItem('token');
+  return {
+    'Content-Type': 'application/json',
+    ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+  };
+}
+
+// API 请求封装
+async function apiRequest<T>(
+  endpoint: string,
+  options: RequestInit = {}
+): Promise<{ data?: T; error?: string }> {
+  try {
+    const response = await fetch(`${API_BASE}${endpoint}`, {
+      ...options,
+      headers: {
+        ...getAuthHeaders(),
+        ...options.headers,
+      },
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        // 未认证，清除本地存储
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          window.location.href = '/login';
+        }
+      }
+      return { error: data.detail || data.error || '请求失败' };
+    }
+
+    return { data };
+  } catch (error) {
+    console.error('API request error:', error);
+    return { error: error instanceof Error ? error.message : '网络错误' };
+  }
+}
+
+// ============ 商品 API ============
+
+export interface Product {
   id: string;
-  user_id?: string;
   internal_sku: string;
   name_zh: string;
   name_en?: string;
+  category?: string;
+  status: string;
+  
+  // 选品阶段
   source_url?: string;
   supplier_name?: string;
   supplier_url?: string;
+  selected_at?: string;
+  selection_score?: number;
+  
+  // 成本信息
   cost_price: number;
   domestic_shipping: number;
   first_mile_shipping: number;
   total_cost: number;
-  images?: string;
-  processed_images?: string;
-  image_status: string;
-  compliance_status: string;
-  compliance_check_result?: string;
-  category_id?: string;
-  category_name?: string;
-  status: string;
+  
+  // 处理状态
+  image_status?: string;
+  listing_status?: string;
+  compliance_status?: string;
+  compliance_issues?: string[];
+  
+  // 店铺认领
+  platform_listings?: PlatformListing[];
+  
+  // 统计
+  total_sales?: number;
+  total_orders?: number;
+  total_profit?: number;
+  
+  // 规格
+  weight_kg?: number;
+  dimensions?: { length: number; width: number; height: number };
+  brand?: string;
+  model?: string;
+  material?: string;
+  color?: string;
+  size?: string;
+  
+  // 时间
   created_at: string;
   updated_at: string;
 }
 
-// 库存类型
+export interface PlatformListing {
+  id: string;
+  platform: string;
+  shop_id: string;
+  shop_name: string;
+  platform_product_id?: string;
+  listing_title?: string;
+  sale_price?: number;
+  currency?: string;
+  status?: string;
+}
+
+export interface CreateProductRequest {
+  name_zh: string;
+  name_en?: string;
+  category?: string;
+  source_url?: string;
+  supplier_name?: string;
+  cost_price: number;
+  domestic_shipping?: number;
+  first_mile_shipping?: number;
+  total_cost?: number;
+  status?: string;
+  selection_score?: number;
+}
+
+export interface UpdateProductRequest extends Partial<CreateProductRequest> {
+  image_status?: string;
+  listing_status?: string;
+  compliance_status?: string;
+}
+
+export const productsApi = {
+  // 获取商品列表
+  async list(params?: { status?: string; category?: string; page?: number; limit?: number }) {
+    const query = new URLSearchParams();
+    if (params?.status) query.set('status', params.status);
+    if (params?.category) query.set('category', params.category);
+    if (params?.page) query.set('page', params.page.toString());
+    if (params?.limit) query.set('limit', params.limit.toString());
+    
+    return apiRequest<Product[]>(`/erp/products?${query.toString()}`);
+  },
+
+  // 获取单个商品
+  async get(id: string) {
+    return apiRequest<Product>(`/erp/products/${id}`);
+  },
+
+  // 创建商品
+  async create(data: CreateProductRequest) {
+    return apiRequest<Product>('/erp/products', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  // 更新商品
+  async update(id: string, data: UpdateProductRequest) {
+    return apiRequest<Product>(`/erp/products/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  },
+
+  // 删除商品
+  async delete(id: string) {
+    return apiRequest<void>(`/erp/products/${id}`, {
+      method: 'DELETE',
+    });
+  },
+};
+
+// ============ 认证 API ============
+// 注意: LoginRequest 和 LoginResponse 已在 auth.ts 中定义，这里使用 auth 模块的
+
+export const authApi = {
+  async login(data: { username: string; password: string }) {
+    return apiRequest<{ access_token: string; token_type: string; user: { id: string; username: string; email: string; role: string } }>('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  async me() {
+    return apiRequest<{ id: string; username: string; email: string; role: string }>('/auth/me');
+  },
+};
+
+// ============ 库存 API ============
+
 export interface Inventory {
   id: string;
   product_id: string;
+  warehouse: string;
+  location?: string;
   qty_available: number;
   qty_reserved: number;
   qty_in_transit: number;
   safety_stock: number;
   reorder_point: number;
   reorder_qty: number;
-  avg_daily_sales: number;
-  days_of_stock: number;
-  is_low_stock: boolean;
-  need_reorder: boolean;
-  warehouse?: string;
-  location?: string;
+}
+
+export const inventoryApi = {
+  async list(productId?: string) {
+    const query = productId ? `?product_id=${productId}` : '';
+    return apiRequest<Inventory[]>(`/erp/inventory${query}`);
+  },
+
+  async update(id: string, data: Partial<Inventory>) {
+    return apiRequest<Inventory>(`/erp/inventory/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  },
+};
+
+// ============ 订单 API ============
+
+export interface Order {
+  id: string;
+  order_no: string;
+  platform: string;
+  shop_name: string;
+  customer_name: string;
+  status: string;
+  total_amount: number;
+  currency: string;
+  items: OrderItem[];
   created_at: string;
   updated_at: string;
 }
 
-// 采购单类型
-export interface PurchaseOrder {
+export interface OrderItem {
   id: string;
-  po_number: string;
   product_id: string;
-  product_name?: string;
-  sku?: string;
+  product_name: string;
+  sku: string;
   qty: number;
   unit_price: number;
-  total_amount: number;
-  supplier_name?: string;
-  supplier_url?: string;
-  supplier_contact?: string;
-  status: string;
-  order_date: string;
-  expected_arrival?: string;
-  actual_arrival?: string;
-  notes?: string;
-  created_at: string;
-  updated_at: string;
+  total_price: number;
 }
 
-// ERP订单类型
-export interface ERPOrder {
-  id: string;
-  user_id?: string;
-  platform?: string;
-  shop_id?: string;
-  platform_order_id?: string;
-  product_id?: string;
-  sku_id?: string;
-  product_name: string;
-  quantity: number;
-  sale_price: number;
-  total_amount: number;
-  currency?: string;
-  cost_price: number;
-  shipping_cost: number;
-  platform_fee: number;
-  ad_cost: number;
-  profit: number;
-  buyer_id?: string;
-  buyer_name?: string;
-  buyer_phone?: string;
-  buyer_address?: string;
-  status: string;
-  abnormal_type?: string;
-  order_time?: string;
-  pay_time?: string;
-  ship_time?: string;
-  deliver_time?: string;
-  notes?: string;
-  created_at: string;
-  updated_at: string;
-}
+export const ordersApi = {
+  async list(params?: { status?: string; platform?: string }) {
+    const query = new URLSearchParams();
+    if (params?.status) query.set('status', params.status);
+    if (params?.platform) query.set('platform', params.platform);
+    
+    return apiRequest<Order[]>(`/erp/orders?${query.toString()}`);
+  },
 
-// 财务汇总
-export interface FinanceSummary {
-  period: {
-    start_date: string;
-    end_date: string;
-  };
-  total_sales: number;
+  async get(id: string) {
+    return apiRequest<Order>(`/erp/orders/${id}`);
+  },
+};
+
+// ============ 数据统计 API ============
+
+export interface ErpDashboardStats {
+  total_products: number;
+  published_products: number;
   total_orders: number;
-  total_cost: number;
+  pending_orders: number;
+  total_revenue: number;
   total_profit: number;
-  profit_rate: number;
-  daily_summaries: Array<{
-    date: string;
-    total_sales: number;
-    total_orders: number;
-    net_profit: number;
-  }>;
+  low_stock_alerts: number;
 }
 
-// 定价请求
-export interface PricingRequest {
-  product_id?: string;
-  cost_price: number;
-  domestic_shipping: number;
-  first_mile_shipping: number;
-  platform_fee_rate: number;
-  ad_budget_rate: number;
-  target_profit_rate: number;
-  competitor_price?: number;
-}
-
-// 定价响应
-export interface PricingResponse {
-  product_id?: string;
-  total_cost: number;
-  target_price: number;
-  competitor_price?: number;
-  suggested_price: number;
-  profit_margin: number;
-  cost_breakdown: Record<string, number>;
-  pricing_basis: string;
-}
-
-// ============ 商品管理 API ============
-
-export async function getERPProducts(params?: {
-  keyword?: string;
-  status?: string;
-  compliance_status?: string;
-  category?: string;
-  page?: number;
-  page_size?: number;
-}): Promise<PaginatedResponse<ERPProduct>> {
-  const searchParams = new URLSearchParams();
-  if (params?.keyword) searchParams.set('keyword', params.keyword);
-  if (params?.status) searchParams.set('status', params.status);
-  if (params?.compliance_status) searchParams.set('compliance_status', params.compliance_status);
-  if (params?.category) searchParams.set('category', params.category);
-  if (params?.page) searchParams.set('page', String(params.page));
-  if (params?.page_size) searchParams.set('page_size', String(params.page_size));
-  
-  return apiClient.get<PaginatedResponse<ERPProduct>>(`/erp/products?${searchParams.toString()}`);
-}
-
-export async function getERPProduct(productId: string): Promise<ERPProduct> {
-  return apiClient.get<ERPProduct>(`/erp/products/${productId}`);
-}
-
-export async function createERPProduct(data: Partial<ERPProduct>): Promise<ERPProduct> {
-  return apiClient.post<ERPProduct>('/erp/products', data);
-}
-
-export async function updateERPProduct(productId: string, data: Partial<ERPProduct>): Promise<ERPProduct> {
-  return apiClient.put<ERPProduct>(`/erp/products/${productId}`, data);
-}
-
-export async function deleteERPProduct(productId: string): Promise<{ success: boolean; message: string }> {
-  return apiClient.delete<{ success: boolean; message: string }>(`/erp/products/${productId}`);
-}
-
-// ============ 库存管理 API ============
-
-export async function getInventoryList(params?: {
-  low_stock?: boolean;
-  page?: number;
-  page_size?: number;
-}): Promise<Inventory[]> {
-  const searchParams = new URLSearchParams();
-  if (params?.low_stock) searchParams.set('low_stock', 'true');
-  if (params?.page) searchParams.set('page', String(params.page));
-  if (params?.page_size) searchParams.set('page_size', String(params.page_size));
-  
-  return apiClient.get<Inventory[]>(`/erp/inventory?${searchParams.toString()}`);
-}
-
-export async function getProductInventory(productId: string): Promise<Inventory> {
-  return apiClient.get<Inventory>(`/erp/inventory/${productId}`);
-}
-
-export async function updateInventory(productId: string, data: Partial<Inventory>): Promise<Inventory> {
-  return apiClient.put<Inventory>(`/erp/inventory/${productId}`, data);
-}
-
-// ============ 采购管理 API ============
-
-export async function getPurchaseOrders(params?: {
-  status?: string;
-  page?: number;
-  page_size?: number;
-}): Promise<PurchaseOrder[]> {
-  const searchParams = new URLSearchParams();
-  if (params?.status) searchParams.set('status', params.status);
-  if (params?.page) searchParams.set('page', String(params.page));
-  if (params?.page_size) searchParams.set('page_size', String(params.page_size));
-  
-  return apiClient.get<PurchaseOrder[]>(`/erp/purchase-orders?${searchParams.toString()}`);
-}
-
-export async function createPurchaseOrder(data: Partial<PurchaseOrder>): Promise<PurchaseOrder> {
-  return apiClient.post<PurchaseOrder>('/erp/purchase-orders', data);
-}
-
-export async function updatePurchaseOrder(orderId: string, data: Partial<PurchaseOrder>): Promise<PurchaseOrder> {
-  return apiClient.put<PurchaseOrder>(`/erp/purchase-orders/${orderId}`, data);
-}
-
-// ============ ERP订单管理 API ============
-
-export async function getERPOrders(params?: {
-  platform?: string;
-  status?: string;
-  keyword?: string;
-  start_date?: string;
-  end_date?: string;
-  page?: number;
-  page_size?: number;
-}): Promise<PaginatedResponse<ERPOrder>> {
-  const searchParams = new URLSearchParams();
-  if (params?.platform) searchParams.set('platform', params.platform);
-  if (params?.status) searchParams.set('status', params.status);
-  if (params?.keyword) searchParams.set('keyword', params.keyword);
-  if (params?.start_date) searchParams.set('start_date', params.start_date);
-  if (params?.end_date) searchParams.set('end_date', params.end_date);
-  if (params?.page) searchParams.set('page', String(params.page));
-  if (params?.page_size) searchParams.set('page_size', String(params.page_size));
-  
-  return apiClient.get<PaginatedResponse<ERPOrder>>(`/erp/orders?${searchParams.toString()}`);
-}
-
-// ============ 智能定价 API ============
-
-export async function calculatePricing(data: PricingRequest): Promise<PricingResponse> {
-  return apiClient.post<PricingResponse>('/erp/pricing', data);
-}
-
-// ============ 财务汇总 API ============
-
-export async function getFinanceSummary(params?: {
-  start_date?: string;
-  end_date?: string;
-}): Promise<FinanceSummary> {
-  const searchParams = new URLSearchParams();
-  if (params?.start_date) searchParams.set('start_date', params.start_date);
-  if (params?.end_date) searchParams.set('end_date', params.end_date);
-  
-  return apiClient.get<FinanceSummary>(`/erp/finance/summary?${searchParams.toString()}`);
-}
+export const dashboardApi = {
+  async getStats() {
+    return apiRequest<ErpDashboardStats>('/dashboard/stats');
+  },
+};

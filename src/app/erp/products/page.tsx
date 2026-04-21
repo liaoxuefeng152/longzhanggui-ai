@@ -214,58 +214,78 @@ export default function ERPProductsPage() {
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [router, keyword, statusFilter]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [router]);
 
   // 当筛选条件改变时自动刷新
   useEffect(() => {
     fetchProducts();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [keyword, statusFilter]);
 
   const fetchProducts = async () => {
     setLoading(true);
     try {
-      // 优先从全局存储读取
-      const { default: store } = await import('@/lib/store');
-      const allProducts = store.getProducts();
+      // 获取token
+      const token = localStorage.getItem('token');
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
 
-      console.log('[商品中心] 从全局存储读取商品:', allProducts.length);
+      // 构建查询参数
+      const params = new URLSearchParams();
+      if (statusFilter) params.set('status', statusFilter);
+      if (keyword) params.set('keyword', keyword);
+      params.set('page', '1');
+      params.set('page_size', '100');
 
-      // 按创建时间倒序排序，新商品显示在顶部
-      const sortedProducts = allProducts.sort((a, b) => {
-        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      // 从后端API获取商品
+      const response = await fetch(`/api/v1/erp/products?${params.toString()}`, {
+        headers,
       });
 
-      console.log('[商品中心] 排序后的商品数量:', sortedProducts.length);
+      const data = await response.json();
 
-      // 应用过滤
-      let filteredProducts = sortedProducts;
+      if (response.ok && data.items) {
+        // 后端返回格式: { items: [...], total: number, page: number, page_size: number }
+        const products = data.items.map((p: any) => ({
+          ...p,
+          // 解析images字段（后端存储为JSON字符串）
+          images: typeof p.images === 'string' ? JSON.parse(p.images) : p.images,
+          // 兼容字段名差异
+          category: p.category_name || p.category,
+        }));
 
-      if (keyword) {
-        filteredProducts = filteredProducts.filter(p =>
-          p.name_zh.toLowerCase().includes(keyword.toLowerCase()) ||
-          p.internal_sku.toLowerCase().includes(keyword.toLowerCase()) ||
-          (p.category && p.category.toLowerCase().includes(keyword.toLowerCase()))
-        );
-      }
+        console.log('[商品中心] 从后端API读取商品:', products.length);
+        setProducts(products as any);
+      } else {
+        // 后端不可用时fallback到内存存储
+        console.log('[商品中心] 后端API不可用，fallback到内存存储');
+        const { default: store } = await import('@/lib/store');
+        const allProducts = store.getProducts();
 
-      if (statusFilter) {
-        filteredProducts = filteredProducts.filter(p => p.status === statusFilter);
-      }
-
-      console.log('[商品中心] 过滤后的商品数量:', filteredProducts.length);
-      console.log('[商品中心] 商品状态分布:', filteredProducts.map(p => ({ id: p.id, name: p.name_zh, status: p.status, created_at: p.created_at })));
-
-      // 如果没有筛选条件且存在"已选品"商品，显示提示
-      if (!statusFilter && !keyword) {
-        const selectedCount = filteredProducts.filter(p => p.status === 'selected').length;
-        if (selectedCount > 0) {
-          toast.info(`发现 ${selectedCount} 个已选品商品`, {
-            description: '新选品的商品显示在列表顶部，状态为"已选品"',
-          });
+        let filteredProducts = allProducts;
+        if (keyword) {
+          filteredProducts = filteredProducts.filter(p =>
+            p.name_zh.toLowerCase().includes(keyword.toLowerCase()) ||
+            p.internal_sku.toLowerCase().includes(keyword.toLowerCase()) ||
+            (p.category && p.category.toLowerCase().includes(keyword.toLowerCase()))
+          );
         }
-      }
+        if (statusFilter) {
+          filteredProducts = filteredProducts.filter(p => p.status === statusFilter);
+        }
 
-      setProducts(filteredProducts as any);
+        // 按创建时间倒序排序
+        const sortedProducts = filteredProducts.sort((a, b) => {
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        });
+
+        setProducts(sortedProducts as any);
+      }
     } catch (error) {
       console.error('获取商品失败:', error);
       toast.error('获取商品列表失败');
