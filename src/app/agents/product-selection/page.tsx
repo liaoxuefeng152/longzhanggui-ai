@@ -52,7 +52,7 @@ import {
   Building,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { selectProductsStream, analyzeCompetition, suggestDirections, analyzeCompetitorDetail, generateSelectionReport, assessRisks } from '@/lib/api/ai-agents';
+import { selectProductsStream, suggestDirections, analyzeCompetitorDetail, assessRisks, generateSelectionReport } from '@/lib/api/ai-agents';
 import { store } from '@/lib/store';
 
 // ==================== 类型定义 ====================
@@ -701,8 +701,6 @@ export default function SelectionAgentPage() {
           product_name: product.name,
           category: product.category || requirement.category || '',
           market: requirement.market || 'id',
-          price: product.price,
-          monthly_sales: product.monthlySales,
         });
         
         if (riskResult.success && riskResult.risks) {
@@ -819,11 +817,12 @@ export default function SelectionAgentPage() {
     setIsAnalyzing(true);
     try {
       const result = await generateSelectionReport({
-        market: requirement.market || 'id',
-        category: requirement.category,
+        directions: selectedProducts.map(id => hotProducts.find(p => p.id === id)).filter(Boolean),
         products: hotProducts.filter(p => selectedProducts.includes(p.id)),
-        feasibility: feasibilityResults,
         competitors: competitors,
+        risks: feasibilityResults.flatMap(f => f.risks || []),
+        market: requirement.market || 'id',
+        platform: 'tiktok',
       });
 
       if (result.success && result.report) {
