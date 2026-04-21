@@ -31,21 +31,25 @@ import {
   Truck,
   Store,
   DollarSign,
-  Ruler,
-  Weight,
   ExternalLink,
   CheckCircle,
   ImageIcon,
-  PlusCircle,
   Sparkles,
   Copy,
   Trash2,
   Video,
   Layers,
-  Move,
   Package,
+  Play,
+  Eye,
+  RefreshCw,
+  Link2,
+  TrendingUp,
+  Image as ImageIconLucide,
+  FileText,
+  Settings,
+  ChevronRight,
   Plus,
-  Upload,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import Link from 'next/link';
@@ -67,15 +71,6 @@ const PLATFORMS = [
   { value: 'shopee', label: 'Shopee' },
 ];
 
-// 货币选项
-const CURRENCIES = [
-  { value: 'USD', label: 'USD ($)', symbol: '$' },
-  { value: 'MYR', label: 'MYR (RM)', symbol: 'RM' },
-  { value: 'IDR', label: 'IDR (Rp)', symbol: 'Rp' },
-  { value: 'THB', label: 'THB (฿)', symbol: '฿' },
-  { value: 'VND', label: 'VND (₫)', symbol: '₫' },
-];
-
 export default function ProductDetailPage() {
   const router = useRouter();
   const params = useParams();
@@ -85,9 +80,8 @@ export default function ProductDetailPage() {
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [isAiOptimizing, setIsAiOptimizing] = useState<string | null>(null);
-  const [isPublishing, setIsPublishing] = useState(false);
   const [activeTab, setActiveTab] = useState('basic');
+  const [mainImageIndex, setMainImageIndex] = useState(0);
 
   // 基本信息表单
   const [basicForm, setBasicForm] = useState({
@@ -124,6 +118,10 @@ export default function ProductDetailPage() {
     packaging_list: '',
   });
 
+  // 模拟图片数据
+  const [images, setImages] = useState<string[]>([]);
+  const [videos, setVideos] = useState<string[]>([]);
+
   // 加载商品数据
   useEffect(() => {
     const loadProduct = async () => {
@@ -133,6 +131,13 @@ export default function ProductDetailPage() {
         if (p) {
           setProduct(p);
           initForms(p);
+          // 模拟图片数据
+          setImages([
+            'https://via.placeholder.com/400x400?text=Main+Image',
+            'https://via.placeholder.com/400x400?text=Image+2',
+            'https://via.placeholder.com/400x400?text=Image+3',
+            'https://via.placeholder.com/400x400?text=Image+4',
+          ]);
         } else {
           toast.error('商品不存在');
           router.push('/erp/products');
@@ -206,7 +211,6 @@ export default function ProductDetailPage() {
         total_cost: totalCost,
       });
 
-      // 刷新
       const updated = store.getProduct(product.id);
       setProduct(updated);
       setIsEditing(false);
@@ -237,7 +241,6 @@ export default function ProductDetailPage() {
         weight_kg: categoryForm.weight_kg,
       });
 
-      // 刷新
       const updated = store.getProduct(product.id);
       setProduct(updated);
       setIsEditing(false);
@@ -268,7 +271,6 @@ export default function ProductDetailPage() {
         packaging_list: logisticsForm.packaging_list.split('\n').filter((p: string) => p.trim()),
       });
 
-      // 刷新
       const updated = store.getProduct(product.id);
       setProduct(updated);
       setIsEditing(false);
@@ -283,13 +285,13 @@ export default function ProductDetailPage() {
 
   // 获取状态标签
   const getStatusBadge = (status: string) => {
-    const variants: Record<string, string> = {
-      draft: 'bg-muted text-muted-foreground',
-      selected: 'bg-blue-500/10 text-blue-500',
-      processing: 'bg-yellow-500/10 text-yellow-500',
-      ready: 'bg-green-500/10 text-green-500',
-      published: 'bg-success text-white',
-      archived: 'bg-muted text-muted-foreground',
+    const variants: Record<string, { bg: string; text: string }> = {
+      draft: { bg: 'bg-gray-100', text: 'text-gray-600' },
+      selected: { bg: 'bg-blue-100', text: 'text-blue-600' },
+      processing: { bg: 'bg-yellow-100', text: 'text-yellow-600' },
+      ready: { bg: 'bg-green-100', text: 'text-green-600' },
+      published: { bg: 'bg-purple-100', text: 'text-purple-600' },
+      archived: { bg: 'bg-gray-100', text: 'text-gray-500' },
     };
     const labels: Record<string, string> = {
       draft: '草稿',
@@ -299,7 +301,23 @@ export default function ProductDetailPage() {
       published: '已上架',
       archived: '已归档',
     };
-    return <Badge className={variants[status] || 'bg-muted'}>{labels[status] || status}</Badge>;
+    const style = variants[status] || variants.draft;
+    return (
+      <Badge className={`${style.bg} ${style.text} border-0 px-3 py-1`}>
+        {labels[status] || status}
+      </Badge>
+    );
+  };
+
+  // 处理进度步骤
+  const getProcessingSteps = () => {
+    return [
+      { key: 'selected', label: '选品入库', icon: Package, done: ['selected', 'processing', 'ready', 'published'].includes(product?.status) },
+      { key: 'image', label: '图片处理', icon: ImageIconLucide, done: product?.image_status === 'done' },
+      { key: 'listing', label: 'Listing优化', icon: FileText, done: product?.listing_status === 'done' },
+      { key: 'pricing', label: '智能定价', icon: TrendingUp, done: product?.pricing_status === 'done' },
+      { key: 'publish', label: '上架发布', icon: Rocket, done: product?.status === 'published' },
+    ];
   };
 
   if (loading) {
@@ -328,647 +346,424 @@ export default function ProductDetailPage() {
     );
   }
 
+  const processingSteps = getProcessingSteps();
+  const currentStepIndex = processingSteps.findIndex(s => !s.done);
+
   return (
     <MainLayout>
-      <div className="container py-6">
+      <div className="container py-4">
         {/* 顶部导航 */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-4">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
             <Button variant="ghost" size="sm" asChild>
               <Link href="/erp/products">
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                返回列表
+                <ArrowLeft className="h-4 w-4 mr-1" />
+                返回
               </Link>
             </Button>
-            <div>
-              <h1 className="text-xl font-semibold flex items-center gap-2">
-                <Package2 className="h-5 w-5" />
-                {product.name_zh}
-              </h1>
-              <p className="text-sm text-muted-foreground font-mono">
-                ID: {product.id} | SKU: {product.internal_sku}
-              </p>
-            </div>
+            <div className="h-4 w-px bg-border" />
+            <span className="text-[13px] text-muted-foreground font-mono">ID: {product.id}</span>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             {getStatusBadge(product.status)}
-            {isEditing ? (
-              <>
-                <Button variant="outline" onClick={() => {
-                  setIsEditing(false);
-                  initForms(product);
-                }}>
-                  取消
-                </Button>
-                <Button onClick={() => {
-                  if (activeTab === 'basic') handleSaveBasic();
-                  else if (activeTab === 'category') handleSaveCategory();
-                  else if (activeTab === 'logistics') handleSaveLogistics();
-                }} disabled={isSaving}>
-                  {isSaving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                  保存
-                </Button>
-              </>
-            ) : (
-              <Button variant="outline" onClick={() => setIsEditing(true)}>
-                编辑
-              </Button>
-            )}
+            <Button size="sm" onClick={() => router.push(`/erp/products/${product.id}/edit`)}>
+              编辑
+            </Button>
           </div>
         </div>
 
-        {/* Tab 切换 */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid grid-cols-6 w-full mb-6">
-            <TabsTrigger value="basic" className="text-[13px]">
-              <Package className="h-4 w-4 mr-2" />
-              基本信息
-            </TabsTrigger>
-            <TabsTrigger value="category" className="text-[13px]">
-              <Layers className="h-4 w-4 mr-2" />
-              类目&属性
-            </TabsTrigger>
-            <TabsTrigger value="sales" className="text-[13px]">
-              <Store className="h-4 w-4 mr-2" />
-              销售属性
-            </TabsTrigger>
-            <TabsTrigger value="images" className="text-[13px]">
-              <ImageIcon className="h-4 w-4 mr-2" />
-              产品图片
-            </TabsTrigger>
-            <TabsTrigger value="video" className="text-[13px]">
-              <Video className="h-4 w-4 mr-2" />
-              产品视频
-            </TabsTrigger>
-            <TabsTrigger value="logistics" className="text-[13px]">
-              <Move className="h-4 w-4 mr-2" />
-              物流信息
-            </TabsTrigger>
-          </TabsList>
-
-          {/* 基本信息 Tab */}
-          <TabsContent value="basic" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-[14px]">商品信息</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label className="text-[12px] text-muted-foreground">商品名称（中文）</Label>
-                    {isEditing ? (
-                      <Input
-                        value={basicForm.name_zh}
-                        onChange={(e) => setBasicForm({ ...basicForm, name_zh: e.target.value })}
-                        placeholder="输入商品名称"
-                      />
-                    ) : (
-                      <div className="p-2 bg-muted/30 rounded text-[14px]">{product.name_zh}</div>
-                    )}
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-[12px] text-muted-foreground">商品名称（英文）</Label>
-                    {isEditing ? (
-                      <Input
-                        value={basicForm.name_en}
-                        onChange={(e) => setBasicForm({ ...basicForm, name_en: e.target.value })}
-                        placeholder="输入英文名称"
-                      />
-                    ) : (
-                      <div className="p-2 bg-muted/30 rounded text-[14px]">{product.name_en || '-'}</div>
-                    )}
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label className="text-[12px] text-muted-foreground">SKU编码</Label>
-                    {isEditing ? (
-                      <Input
-                        value={basicForm.internal_sku}
-                        onChange={(e) => setBasicForm({ ...basicForm, internal_sku: e.target.value })}
-                        placeholder="SKU编码"
-                      />
-                    ) : (
-                      <div className="p-2 bg-muted/30 rounded font-mono">{product.internal_sku}</div>
-                    )}
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-[12px] text-muted-foreground">商品类目</Label>
-                    {isEditing ? (
-                      <Input
-                        value={categoryForm.category}
-                        onChange={(e) => setCategoryForm({ ...categoryForm, category: e.target.value })}
-                        placeholder="商品类目"
-                      />
-                    ) : (
-                      <div className="p-2 bg-muted/30 rounded">{product.category || '-'}</div>
-                    )}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-[14px] flex items-center gap-2">
-                  <Truck className="h-4 w-4" />
-                  供应商信息
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label className="text-[12px] text-muted-foreground">供应商名称</Label>
-                    {isEditing ? (
-                      <Input
-                        value={basicForm.supplier_name}
-                        onChange={(e) => setBasicForm({ ...basicForm, supplier_name: e.target.value })}
-                        placeholder="供应商名称"
-                      />
-                    ) : (
-                      <div className="p-2 bg-muted/30 rounded">{product.supplier_name || '-'}</div>
-                    )}
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-[12px] text-muted-foreground">货源链接</Label>
-                    {isEditing ? (
-                      <Input
-                        value={basicForm.source_url}
-                        onChange={(e) => setBasicForm({ ...basicForm, source_url: e.target.value })}
-                        placeholder="1688链接"
-                      />
-                    ) : product.source_url ? (
-                      <Button variant="outline" size="sm" onClick={() => window.open(product.source_url, '_blank')}>
-                        <ExternalLink className="h-3 w-3 mr-1" />
-                        查看链接
-                      </Button>
-                    ) : (
-                      <div className="p-2 bg-muted/30 rounded text-muted-foreground">-</div>
-                    )}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-[14px] flex items-center gap-2">
-                  <DollarSign className="h-4 w-4" />
-                  成本信息
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-4 gap-4">
-                  <div className="space-y-2">
-                    <Label className="text-[12px] text-muted-foreground">采购成本 (¥)</Label>
-                    {isEditing ? (
-                      <Input
-                        type="number"
-                        value={basicForm.cost_price}
-                        onChange={(e) => setBasicForm({ ...basicForm, cost_price: parseFloat(e.target.value) || 0 })}
-                      />
-                    ) : (
-                      <div className="p-2 bg-muted/30 rounded font-medium">¥{product.cost_price?.toFixed(2) || '0.00'}</div>
-                    )}
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-[12px] text-muted-foreground">国内运费 (¥)</Label>
-                    {isEditing ? (
-                      <Input
-                        type="number"
-                        value={basicForm.domestic_shipping}
-                        onChange={(e) => setBasicForm({ ...basicForm, domestic_shipping: parseFloat(e.target.value) || 0 })}
-                      />
-                    ) : (
-                      <div className="p-2 bg-muted/30 rounded">¥{product.domestic_shipping?.toFixed(2) || '0.00'}</div>
-                    )}
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-[12px] text-muted-foreground">头程运费 (¥)</Label>
-                    {isEditing ? (
-                      <Input
-                        type="number"
-                        value={basicForm.first_mile_shipping}
-                        onChange={(e) => setBasicForm({ ...basicForm, first_mile_shipping: parseFloat(e.target.value) || 0 })}
-                      />
-                    ) : (
-                      <div className="p-2 bg-muted/30 rounded">¥{product.first_mile_shipping?.toFixed(2) || '0.00'}</div>
-                    )}
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-[12px] text-primary">总成本 (¥)</Label>
-                    <div className="p-2 bg-primary/10 rounded font-semibold text-primary">
-                      ¥{(product.total_cost || 0).toFixed(2)}
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* 类目&属性 Tab */}
-          <TabsContent value="category" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-[14px]">基本属性</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="space-y-2">
-                    <Label className="text-[12px] text-muted-foreground">品牌</Label>
-                    {isEditing ? (
-                      <Input
-                        value={categoryForm.brand}
-                        onChange={(e) => setCategoryForm({ ...categoryForm, brand: e.target.value })}
-                        placeholder="品牌"
-                      />
-                    ) : (
-                      <div className="p-2 bg-muted/30 rounded">{product.brand || '-'}</div>
-                    )}
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-[12px] text-muted-foreground">型号</Label>
-                    {isEditing ? (
-                      <Input
-                        value={categoryForm.model}
-                        onChange={(e) => setCategoryForm({ ...categoryForm, model: e.target.value })}
-                        placeholder="型号"
-                      />
-                    ) : (
-                      <div className="p-2 bg-muted/30 rounded">{product.model || '-'}</div>
-                    )}
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-[12px] text-muted-foreground">材质</Label>
-                    {isEditing ? (
-                      <Input
-                        value={categoryForm.material}
-                        onChange={(e) => setCategoryForm({ ...categoryForm, material: e.target.value })}
-                        placeholder="材质"
-                      />
-                    ) : (
-                      <div className="p-2 bg-muted/30 rounded">{product.material || '-'}</div>
-                    )}
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label className="text-[12px] text-muted-foreground">颜色</Label>
-                    {isEditing ? (
-                      <Input
-                        value={categoryForm.color}
-                        onChange={(e) => setCategoryForm({ ...categoryForm, color: e.target.value })}
-                        placeholder="颜色"
-                      />
-                    ) : (
-                      <div className="p-2 bg-muted/30 rounded">{product.color || '-'}</div>
-                    )}
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-[12px] text-muted-foreground">尺寸</Label>
-                    {isEditing ? (
-                      <Input
-                        value={categoryForm.size}
-                        onChange={(e) => setCategoryForm({ ...categoryForm, size: e.target.value })}
-                        placeholder="尺寸"
-                      />
-                    ) : (
-                      <div className="p-2 bg-muted/30 rounded">{product.size || '-'}</div>
-                    )}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* 销售属性 Tab */}
-          <TabsContent value="sales" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-[14px]">店铺 Listing</CardTitle>
-                  <Button size="sm" disabled>
-                    <PlusCircle className="h-4 w-4 mr-2" />
-                    认领新店铺
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {product.platform_listings && product.platform_listings.length > 0 ? (
-                  <div className="space-y-4">
-                    {product.platform_listings.map((listing: any) => (
-                      <div key={listing.id} className="border rounded-lg p-4">
-                        <div className="flex items-center justify-between mb-4">
-                          <div className="flex items-center gap-2">
-                            <Badge variant="outline" className="capitalize">{listing.platform}</Badge>
-                            <span className="text-[14px] font-medium">{listing.shop_name || listing.platform}</span>
-                            <Badge className={
-                              listing.status === 'active' ? 'bg-success text-white' :
-                              listing.status === 'listed' ? 'bg-blue-500/10 text-blue-500' :
-                              'bg-muted'
-                            }>
-                              {listing.status === 'active' ? '在售' :
-                               listing.status === 'listed' ? '已上架' :
-                               listing.status === 'draft' ? '草稿' : listing.status}
-                            </Badge>
-                          </div>
-                          {listing.listing_url && (
-                            <Button variant="ghost" size="sm" onClick={() => window.open(listing.listing_url, '_blank')}>
-                              <ExternalLink className="h-3 w-3 mr-1" />
-                              查看链接
-                            </Button>
-                          )}
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="space-y-2">
-                            <Label className="text-[12px] text-muted-foreground">标题</Label>
-                            <div className="p-2 bg-muted/30 rounded text-[13px]">
-                              {listing.listing_title || '-'}
-                            </div>
-                          </div>
-                          <div className="space-y-2">
-                            <Label className="text-[12px] text-muted-foreground">售价</Label>
-                            <div className="p-2 bg-muted/30 rounded font-medium">
-                              {listing.sale_price ? `${listing.currency || '$'}${listing.sale_price.toFixed(2)}` : '-'}
-                            </div>
-                          </div>
-                        </div>
-                        {listing.bullet_points && listing.bullet_points.length > 0 && (
-                          <div className="mt-4">
-                            <Label className="text-[12px] text-muted-foreground">五点描述</Label>
-                            <ul className="mt-1 space-y-1">
-                              {listing.bullet_points.map((point: string, idx: number) => (
-                                <li key={idx} className="text-[13px] flex items-start gap-2">
-                                  <CheckCircle className="h-3 w-3 text-success mt-1 flex-shrink-0" />
-                                  <span>{point}</span>
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-12 border border-dashed rounded-lg">
-                    <Store className="h-12 w-12 mx-auto mb-3 text-muted-foreground opacity-30" />
-                    <p className="text-muted-foreground">尚未认领任何店铺</p>
-                    <p className="text-[12px] text-muted-foreground mt-1">在采集中心认领商品到店铺</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* 产品图片 Tab */}
-          <TabsContent value="images" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-[14px]">商品图片</CardTitle>
-                  <Button size="sm" disabled>
-                    <Upload className="h-4 w-4 mr-2" />
-                    上传图片
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {product.images && product.images.length > 0 ? (
-                  <div className="grid grid-cols-6 gap-3">
-                    {product.images.map((img: any, idx: number) => (
-                      <div key={img.id || idx} className="relative group">
-                        <div className="aspect-square bg-muted rounded-lg overflow-hidden border">
-                          <img
-                            src={img.processed_url || img.original_url || '/placeholder.png'}
-                            alt=""
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                              (e.target as HTMLImageElement).src = '/placeholder.png';
-                            }}
-                          />
-                        </div>
-                        {idx === 0 && (
-                          <Badge className="absolute top-2 left-2 text-[10px]" variant="default">
-                            主图
-                          </Badge>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-12 border border-dashed rounded-lg">
-                    <ImageIcon className="h-12 w-12 mx-auto mb-3 text-muted-foreground opacity-30" />
-                    <p className="text-muted-foreground">暂无图片</p>
-                    <p className="text-[12px] text-muted-foreground mt-1">在图片设计中心处理商品图片</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* 产品视频 Tab */}
-          <TabsContent value="video" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-[14px]">商品视频</CardTitle>
-                  <Button size="sm" disabled>
-                    <Upload className="h-4 w-4 mr-2" />
-                    上传视频
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {product.video_url ? (
-                  <div className="aspect-video bg-black rounded-lg flex items-center justify-center">
-                    <p className="text-white">视频播放器占位</p>
-                  </div>
-                ) : (
-                  <div className="text-center py-12 border border-dashed rounded-lg">
-                    <Video className="h-12 w-12 mx-auto mb-3 text-muted-foreground opacity-30" />
-                    <p className="text-muted-foreground">暂无视频</p>
-                    <p className="text-[12px] text-muted-foreground mt-1">在视频生成中心制作商品视频</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* 物流信息 Tab */}
-          <TabsContent value="logistics" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-[14px] flex items-center gap-2">
-                  <Weight className="h-4 w-4" />
-                  重量信息
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label className="text-[12px] text-muted-foreground">产品重量 (kg)</Label>
-                    {isEditing ? (
-                      <Input
-                        type="number"
-                        step="0.01"
-                        value={categoryForm.weight_kg}
-                        onChange={(e) => setCategoryForm({ ...categoryForm, weight_kg: parseFloat(e.target.value) || 0 })}
-                        placeholder="0.00"
-                      />
-                    ) : (
-                      <div className="p-2 bg-muted/30 rounded">{product.weight_kg || 0} kg</div>
-                    )}
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-[12px] text-muted-foreground">包裹重量 (kg)</Label>
-                    {isEditing ? (
-                      <Input
-                        type="number"
-                        step="0.01"
-                        value={logisticsForm.package_weight}
-                        onChange={(e) => setLogisticsForm({ ...logisticsForm, package_weight: parseFloat(e.target.value) || 0 })}
-                        placeholder="0.00"
-                      />
-                    ) : (
-                      <div className="p-2 bg-muted/30 rounded">{product.package_weight || 0} kg</div>
-                    )}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-[14px] flex items-center gap-2">
-                  <Ruler className="h-4 w-4" />
-                  尺寸信息
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <Label className="text-[12px] text-muted-foreground mb-2 block">产品尺寸 (长×宽×高 cm)</Label>
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="space-y-2">
-                      {isEditing ? (
-                        <Input
-                          type="number"
-                          placeholder="长"
-                          value={logisticsForm.dimensions_length}
-                          onChange={(e) => setLogisticsForm({ ...logisticsForm, dimensions_length: parseFloat(e.target.value) || 0 })}
-                        />
-                      ) : (
-                        <div className="p-2 bg-muted/30 rounded">{product.dimensions?.length || 0}</div>
-                      )}
-                      <span className="text-[12px] text-muted-foreground">长 (cm)</span>
-                    </div>
-                    <div className="space-y-2">
-                      {isEditing ? (
-                        <Input
-                          type="number"
-                          placeholder="宽"
-                          value={logisticsForm.dimensions_width}
-                          onChange={(e) => setLogisticsForm({ ...logisticsForm, dimensions_width: parseFloat(e.target.value) || 0 })}
-                        />
-                      ) : (
-                        <div className="p-2 bg-muted/30 rounded">{product.dimensions?.width || 0}</div>
-                      )}
-                      <span className="text-[12px] text-muted-foreground">宽 (cm)</span>
-                    </div>
-                    <div className="space-y-2">
-                      {isEditing ? (
-                        <Input
-                          type="number"
-                          placeholder="高"
-                          value={logisticsForm.dimensions_height}
-                          onChange={(e) => setLogisticsForm({ ...logisticsForm, dimensions_height: parseFloat(e.target.value) || 0 })}
-                        />
-                      ) : (
-                        <div className="p-2 bg-muted/30 rounded">{product.dimensions?.height || 0}</div>
-                      )}
-                      <span className="text-[12px] text-muted-foreground">高 (cm)</span>
-                    </div>
-                  </div>
-                </div>
-                <div>
-                  <Label className="text-[12px] text-muted-foreground mb-2 block">包裹尺寸 (长×宽×高 cm)</Label>
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="space-y-2">
-                      {isEditing ? (
-                        <Input
-                          type="number"
-                          placeholder="长"
-                          value={logisticsForm.package_length}
-                          onChange={(e) => setLogisticsForm({ ...logisticsForm, package_length: parseFloat(e.target.value) || 0 })}
-                        />
-                      ) : (
-                        <div className="p-2 bg-muted/30 rounded">{product.package_dimensions?.length || 0}</div>
-                      )}
-                      <span className="text-[12px] text-muted-foreground">长 (cm)</span>
-                    </div>
-                    <div className="space-y-2">
-                      {isEditing ? (
-                        <Input
-                          type="number"
-                          placeholder="宽"
-                          value={logisticsForm.package_width}
-                          onChange={(e) => setLogisticsForm({ ...logisticsForm, package_width: parseFloat(e.target.value) || 0 })}
-                        />
-                      ) : (
-                        <div className="p-2 bg-muted/30 rounded">{product.package_dimensions?.width || 0}</div>
-                      )}
-                      <span className="text-[12px] text-muted-foreground">宽 (cm)</span>
-                    </div>
-                    <div className="space-y-2">
-                      {isEditing ? (
-                        <Input
-                          type="number"
-                          placeholder="高"
-                          value={logisticsForm.package_height}
-                          onChange={(e) => setLogisticsForm({ ...logisticsForm, package_height: parseFloat(e.target.value) || 0 })}
-                        />
-                      ) : (
-                        <div className="p-2 bg-muted/30 rounded">{product.package_dimensions?.height || 0}</div>
-                      )}
-                      <span className="text-[12px] text-muted-foreground">高 (cm)</span>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-[14px]">包装清单</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <Label className="text-[12px] text-muted-foreground">每行填写一个物品</Label>
-                  {isEditing ? (
-                    <Textarea
-                      value={logisticsForm.packaging_list}
-                      onChange={(e) => setLogisticsForm({ ...logisticsForm, packaging_list: e.target.value })}
-                      placeholder="产品 x1&#10;充电线 x1&#10;说明书 x1"
-                      rows={6}
-                      className="text-[13px]"
+        {/* 主内容区域 - 左右分栏 */}
+        <div className="grid grid-cols-12 gap-4">
+          {/* 左侧 - 图片区域 */}
+          <div className="col-span-3">
+            <Card className="sticky top-4">
+              <CardContent className="p-3">
+                {/* 主图 */}
+                <div className="aspect-square rounded-lg overflow-hidden bg-muted mb-3">
+                  {images.length > 0 ? (
+                    <img 
+                      src={images[mainImageIndex]} 
+                      alt={product.name_zh}
+                      className="w-full h-full object-cover"
                     />
                   ) : (
-                    <div className="p-3 bg-muted/30 rounded min-h-[100px]">
-                      {product.packaging_list && product.packaging_list.length > 0 ? (
-                        <ul className="list-disc list-inside text-[13px] space-y-1">
-                          {product.packaging_list.map((item: string, idx: number) => (
-                            <li key={idx}>{item}</li>
-                          ))}
-                        </ul>
-                      ) : (
-                        <span className="text-muted-foreground">暂无包装清单</span>
+                    <div className="w-full h-full flex items-center justify-center">
+                      <ImageIcon className="h-12 w-12 text-muted-foreground/30" />
+                    </div>
+                  )}
+                </div>
+                
+                {/* 缩略图列表 */}
+                <div className="grid grid-cols-4 gap-2">
+                  {images.map((img, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => setMainImageIndex(idx)}
+                      className={`aspect-square rounded border-2 overflow-hidden transition-colors ${
+                        mainImageIndex === idx ? 'border-primary' : 'border-transparent hover:border-muted-foreground/30'
+                      }`}
+                    >
+                      <img src={img} alt="" className="w-full h-full object-cover" />
+                    </button>
+                  ))}
+                  {images.length < 8 && (
+                    <button className="aspect-square rounded border-2 border-dashed border-muted-foreground/30 flex items-center justify-center hover:border-primary/50 transition-colors">
+                      <Plus className="h-4 w-4 text-muted-foreground" />
+                    </button>
+                  )}
+                </div>
+
+                {/* 图片操作 */}
+                <div className="mt-3 pt-3 border-t space-y-2">
+                  <Button variant="outline" size="sm" className="w-full justify-start">
+                    <ImageIconLucide className="h-4 w-4 mr-2" />
+                    AI处理图片
+                  </Button>
+                  <Button variant="outline" size="sm" className="w-full justify-start">
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    重新采集图片
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* 右侧 - 信息区域 */}
+          <div className="col-span-9 space-y-4">
+            {/* 核心信息卡片 */}
+            <Card>
+              <CardContent className="p-4">
+                <div className="grid grid-cols-2 gap-6">
+                  {/* 左侧：标题和来源 */}
+                  <div className="space-y-3">
+                    <div>
+                      <h1 className="text-[18px] font-semibold leading-tight">{product.name_zh}</h1>
+                      {product.name_en && (
+                        <p className="text-[13px] text-muted-foreground mt-1">{product.name_en}</p>
                       )}
                     </div>
+                    
+                    <div className="flex items-center gap-4 text-[13px]">
+                      <div className="flex items-center gap-1 text-muted-foreground">
+                        <span className="font-mono">SKU:</span>
+                        <span className="font-medium text-foreground">{product.internal_sku}</span>
+                      </div>
+                      {product.category && (
+                        <Badge variant="outline" className="text-[11px]">{product.category}</Badge>
+                      )}
+                    </div>
+
+                    {/* 来源链接 */}
+                    {product.source_url && (
+                      <div className="flex items-center gap-2">
+                        <Link2 className="h-3.5 w-3.5 text-muted-foreground" />
+                        <a 
+                          href={product.source_url} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-[12px] text-blue-600 hover:underline flex items-center gap-1"
+                        >
+                          {product.supplier_name || '查看货源'}
+                          <ExternalLink className="h-3 w-3" />
+                        </a>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* 右侧：价格信息 */}
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="p-3 rounded-lg bg-muted/30">
+                      <p className="text-[11px] text-muted-foreground">采购成本</p>
+                      <p className="text-[18px] font-semibold mt-1">¥{product.cost_price?.toFixed(2) || '0.00'}</p>
+                    </div>
+                    <div className="p-3 rounded-lg bg-muted/30">
+                      <p className="text-[11px] text-muted-foreground">总成本</p>
+                      <p className="text-[18px] font-semibold mt-1">¥{(product.total_cost || 0).toFixed(2)}</p>
+                    </div>
+                    <div className="p-3 rounded-lg bg-green-50">
+                      <p className="text-[11px] text-muted-foreground">建议售价</p>
+                      <p className="text-[18px] font-semibold text-green-600 mt-1">
+                        {product.suggested_price ? `$${product.suggested_price.toFixed(2)}` : '-'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* 处理进度 */}
+            <Card>
+              <CardHeader className="py-3 px-4">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-[14px]">处理进度</CardTitle>
+                  <span className="text-[12px] text-muted-foreground">
+                    {processingSteps.filter(s => s.done).length}/{processingSteps.length} 完成
+                  </span>
+                </div>
+              </CardHeader>
+              <CardContent className="px-4 pb-4">
+                <div className="flex items-center justify-between">
+                  {processingSteps.map((step, idx) => {
+                    const Icon = step.icon;
+                    const isCurrent = idx === currentStepIndex;
+                    return (
+                      <div key={step.key} className="flex items-center">
+                        <div className={`flex flex-col items-center ${step.done ? 'text-green-600' : isCurrent ? 'text-primary' : 'text-muted-foreground'}`}>
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                            step.done ? 'bg-green-100' : isCurrent ? 'bg-primary/10' : 'bg-muted'
+                          }`}>
+                            {step.done ? (
+                              <CheckCircle className="h-4 w-4" />
+                            ) : (
+                              <Icon className="h-4 w-4" />
+                            )}
+                          </div>
+                          <span className="text-[11px] mt-1">{step.label}</span>
+                        </div>
+                        {idx < processingSteps.length - 1 && (
+                          <div className={`w-16 h-0.5 mx-2 ${
+                            step.done ? 'bg-green-500' : 'bg-muted'
+                          }`} />
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* 快捷操作按钮 */}
+                <div className="mt-4 pt-4 border-t flex items-center gap-2">
+                  {product.status === 'selected' && (
+                    <>
+                      <Button size="sm" onClick={() => router.push('/agents/image-design')}>
+                        <ImageIconLucide className="h-4 w-4 mr-1" />
+                        图片处理
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => router.push('/agents/listing-optimization')}>
+                        <FileText className="h-4 w-4 mr-1" />
+                        Listing优化
+                      </Button>
+                      <Button size="sm" variant="outline">
+                        <TrendingUp className="h-4 w-4 mr-1" />
+                        智能定价
+                      </Button>
+                    </>
+                  )}
+                  {product.status === 'ready' && (
+                    <Button size="sm" className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700">
+                      <Rocket className="h-4 w-4 mr-1" />
+                      立即上架
+                    </Button>
+                  )}
+                  {product.status === 'published' && (
+                    <Button size="sm" variant="outline">
+                      <Eye className="h-4 w-4 mr-1" />
+                      查看店铺
+                    </Button>
                   )}
                 </div>
               </CardContent>
             </Card>
-          </TabsContent>
-        </Tabs>
+
+            {/* 详细信息 Tab */}
+            <Card>
+              <Tabs value={activeTab} onValueChange={setActiveTab}>
+                <CardHeader className="py-0 px-4 border-b">
+                  <TabsList className="h-11 bg-transparent gap-1">
+                    <TabsTrigger value="basic" className="text-[13px] data-[state=active]:bg-muted">基本信息</TabsTrigger>
+                    <TabsTrigger value="category" className="text-[13px] data-[state=active]:bg-muted">类目属性</TabsTrigger>
+                    <TabsTrigger value="listing" className="text-[13px] data-[state=active]:bg-muted">Listing</TabsTrigger>
+                    <TabsTrigger value="logistics" className="text-[13px] data-[state=active]:bg-muted">物流信息</TabsTrigger>
+                  </TabsList>
+                </CardHeader>
+
+                <CardContent className="p-4">
+                  {/* 基本信息 Tab */}
+                  <TabsContent value="basic" className="space-y-4 mt-0">
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="space-y-1">
+                        <Label className="text-[11px] text-muted-foreground">商品名称（中文）</Label>
+                        {isEditing ? (
+                          <Input value={basicForm.name_zh} onChange={(e) => setBasicForm({ ...basicForm, name_zh: e.target.value })} />
+                        ) : (
+                          <div className="p-2 bg-muted/30 rounded text-[13px]">{product.name_zh}</div>
+                        )}
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-[11px] text-muted-foreground">商品名称（英文）</Label>
+                        {isEditing ? (
+                          <Input value={basicForm.name_en} onChange={(e) => setBasicForm({ ...basicForm, name_en: e.target.value })} />
+                        ) : (
+                          <div className="p-2 bg-muted/30 rounded text-[13px]">{product.name_en || '-'}</div>
+                        )}
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-[11px] text-muted-foreground">SKU编码</Label>
+                        <div className="p-2 bg-muted/30 rounded text-[13px] font-mono">{product.internal_sku}</div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-4 gap-4">
+                      <div className="space-y-1">
+                        <Label className="text-[11px] text-muted-foreground">采购成本 (¥)</Label>
+                        {isEditing ? (
+                          <Input type="number" value={basicForm.cost_price} onChange={(e) => setBasicForm({ ...basicForm, cost_price: parseFloat(e.target.value) || 0 })} />
+                        ) : (
+                          <div className="p-2 bg-muted/30 rounded text-[13px] font-medium">¥{product.cost_price?.toFixed(2) || '0.00'}</div>
+                        )}
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-[11px] text-muted-foreground">国内运费 (¥)</Label>
+                        {isEditing ? (
+                          <Input type="number" value={basicForm.domestic_shipping} onChange={(e) => setBasicForm({ ...basicForm, domestic_shipping: parseFloat(e.target.value) || 0 })} />
+                        ) : (
+                          <div className="p-2 bg-muted/30 rounded text-[13px]">¥{product.domestic_shipping?.toFixed(2) || '0.00'}</div>
+                        )}
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-[11px] text-muted-foreground">头程运费 (¥)</Label>
+                        {isEditing ? (
+                          <Input type="number" value={basicForm.first_mile_shipping} onChange={(e) => setBasicForm({ ...basicForm, first_mile_shipping: parseFloat(e.target.value) || 0 })} />
+                        ) : (
+                          <div className="p-2 bg-muted/30 rounded text-[13px]">¥{product.first_mile_shipping?.toFixed(2) || '0.00'}</div>
+                        )}
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-[11px] text-muted-foreground">总成本 (¥)</Label>
+                        <div className="p-2 bg-primary/10 rounded text-[13px] font-semibold text-primary">
+                          ¥{(product.total_cost || 0).toFixed(2)}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <Label className="text-[11px] text-muted-foreground">供应商</Label>
+                        <div className="p-2 bg-muted/30 rounded text-[13px]">{product.supplier_name || '-'}</div>
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-[11px] text-muted-foreground">货源链接</Label>
+                        {product.source_url ? (
+                          <Button variant="outline" size="sm" className="h-8" onClick={() => window.open(product.source_url, '_blank')}>
+                            <ExternalLink className="h-3 w-3 mr-1" />
+                            查看链接
+                          </Button>
+                        ) : (
+                          <div className="p-2 bg-muted/30 rounded text-[13px] text-muted-foreground">-</div>
+                        )}
+                      </div>
+                    </div>
+
+                    {isEditing && (
+                      <div className="flex justify-end gap-2 pt-2">
+                        <Button variant="outline" size="sm" onClick={() => { setIsEditing(false); initForms(product); }}>取消</Button>
+                        <Button size="sm" onClick={handleSaveBasic} disabled={isSaving}>
+                          {isSaving && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
+                          保存
+                        </Button>
+                      </div>
+                    )}
+                  </TabsContent>
+
+                  {/* 类目属性 Tab */}
+                  <TabsContent value="category" className="space-y-4 mt-0">
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="space-y-1">
+                        <Label className="text-[11px] text-muted-foreground">类目</Label>
+                        <div className="p-2 bg-muted/30 rounded text-[13px]">{product.category || '-'}</div>
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-[11px] text-muted-foreground">品牌</Label>
+                        <div className="p-2 bg-muted/30 rounded text-[13px]">{product.brand || '-'}</div>
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-[11px] text-muted-foreground">型号</Label>
+                        <div className="p-2 bg-muted/30 rounded text-[13px]">{product.model || '-'}</div>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="space-y-1">
+                        <Label className="text-[11px] text-muted-foreground">材质</Label>
+                        <div className="p-2 bg-muted/30 rounded text-[13px]">{product.material || '-'}</div>
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-[11px] text-muted-foreground">颜色</Label>
+                        <div className="p-2 bg-muted/30 rounded text-[13px]">{product.color || '-'}</div>
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-[11px] text-muted-foreground">尺寸</Label>
+                        <div className="p-2 bg-muted/30 rounded text-[13px]">{product.size || '-'}</div>
+                      </div>
+                    </div>
+                  </TabsContent>
+
+                  {/* Listing Tab */}
+                  <TabsContent value="listing" className="mt-0">
+                    {product.platform_listings && product.platform_listings.length > 0 ? (
+                      <div className="space-y-4">
+                        {product.platform_listings.map((listing: any) => (
+                          <div key={listing.id} className="border rounded-lg p-4">
+                            <div className="flex items-center gap-2 mb-3">
+                              <Badge variant="outline">{listing.platform}</Badge>
+                              <span className="text-[14px] font-medium">{listing.shop_name}</span>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                              <div>
+                                <Label className="text-[11px] text-muted-foreground">标题</Label>
+                                <div className="p-2 bg-muted/30 rounded text-[13px] mt-1">{listing.listing_title || '-'}</div>
+                              </div>
+                              <div>
+                                <Label className="text-[11px] text-muted-foreground">售价</Label>
+                                <div className="p-2 bg-muted/30 rounded text-[13px] mt-1 font-medium">
+                                  {listing.sale_price ? `$${listing.sale_price.toFixed(2)}` : '-'}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-8">
+                        <Store className="h-10 w-10 mx-auto text-muted-foreground/30 mb-2" />
+                        <p className="text-[13px] text-muted-foreground">尚未认领到店铺</p>
+                        <Button size="sm" className="mt-3">
+                          认领到店铺
+                        </Button>
+                      </div>
+                    )}
+                  </TabsContent>
+
+                  {/* 物流信息 Tab */}
+                  <TabsContent value="logistics" className="space-y-4 mt-0">
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="space-y-1">
+                        <Label className="text-[11px] text-muted-foreground">产品长度 (cm)</Label>
+                        <div className="p-2 bg-muted/30 rounded text-[13px]">{product.dimensions?.length || '-'}</div>
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-[11px] text-muted-foreground">产品宽度 (cm)</Label>
+                        <div className="p-2 bg-muted/30 rounded text-[13px]">{product.dimensions?.width || '-'}</div>
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-[11px] text-muted-foreground">产品高度 (cm)</Label>
+                        <div className="p-2 bg-muted/30 rounded text-[13px]">{product.dimensions?.height || '-'}</div>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <Label className="text-[11px] text-muted-foreground">包装重量 (kg)</Label>
+                        <div className="p-2 bg-muted/30 rounded text-[13px]">{product.package_weight || '-'}</div>
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-[11px] text-muted-foreground">产品重量 (kg)</Label>
+                        <div className="p-2 bg-muted/30 rounded text-[13px]">{product.weight_kg || '-'}</div>
+                      </div>
+                    </div>
+                  </TabsContent>
+                </CardContent>
+              </Tabs>
+            </Card>
+          </div>
+        </div>
       </div>
     </MainLayout>
   );
