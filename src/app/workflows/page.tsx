@@ -693,6 +693,7 @@ function ProductWizardDialog({
     try {
       const { default: store } = await import('@/lib/store');
       let successCount = 0;
+      let partialCount = 0;
       
       for (const url of urls) {
         try {
@@ -724,25 +725,46 @@ function ProductWizardDialog({
               compliance_status: 'pending',
             });
             successCount++;
+            if (data.error) {
+              partialCount++; // 部分信息采集失败
+            }
           }
         } catch {
           // 单个失败不影响整体
         }
+        
+        // 添加延迟避免请求过快
+        await new Promise(resolve => setTimeout(resolve, 300));
       }
       
-      toast.success(`成功采集 ${successCount} 个商品！`, {
-        id: toastId,
-        action: {
-          label: '去处理',
-          onClick: () => {
-            onClose();
-            router.push('/erp/products?status=selected');
+      if (partialCount > 0) {
+        toast.success(`采集完成！成功 ${successCount} 个，其中 ${partialCount} 个需补充详情`, {
+          id: toastId,
+          description: '部分商品信息不完整，请在商品管理中补充',
+          action: {
+            label: '去商品库',
+            onClick: () => {
+              onClose();
+              router.push('/erp/products?status=selected');
+            },
           },
-        },
-      });
+        });
+      } else {
+        toast.success(`成功采集 ${successCount} 个商品！`, {
+          id: toastId,
+          action: {
+            label: '去处理',
+            onClick: () => {
+              onClose();
+              router.push('/erp/products?status=selected');
+            },
+          },
+        });
+      }
       
       if (successCount > 0) {
         onComplete();
+        setCollectUrls('');
       }
     } catch (error) {
       toast.error('采集失败', { id: toastId });
