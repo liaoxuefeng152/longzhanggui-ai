@@ -599,50 +599,52 @@ export default function SelectionAgentPage() {
     }
     
     setIsAnalyzing(true);
+    setStreamContent(''); // 清空之前的流式内容
     try {
       // 使用流式API
       let fullContent = '';
-      const result = await new Promise<any>((resolve) => {
-        selectProductsStream({
-          platform: 'tiktok',
-          site: requirement.market || 'id',
-          category: requirement.category || '热门商品',
-          budget: String(requirement.budget || 5000),
-          targetMarket: requirement.market?.toUpperCase() || 'ID',
-        }, {
-          content: (text) => {
-            fullContent += text;
-            setStreamContent(fullContent);
-          },
-          done: (response) => {
-            resolve({
-              success: true,
-              data: { analysis: response },
-              products: []
-            });
-          },
-          error: (msg) => {
-            resolve({ success: false, error: msg });
+      let hasError = false;
+      
+      await selectProductsStream({
+        platform: 'tiktok',
+        site: requirement.market || 'id',
+        category: requirement.category || '热门商品',
+        budget: String(requirement.budget || 5000),
+        targetMarket: requirement.market?.toUpperCase() || 'ID',
+      }, {
+        start: (data) => {
+          console.log('[选品] 开始分析:', data);
+        },
+        content: (text) => {
+          fullContent += text;
+          setStreamContent(fullContent);
+        },
+        done: (response) => {
+          console.log('[选品] 分析完成，报告长度:', response?.length || 0);
+          if (response && response.length > 100) {
+            // 真实数据：报告内容足够长
+            toast.success('选品分析完成！');
           }
-        });
+        },
+        error: (msg) => {
+          console.error('[选品] 错误:', msg);
+          hasError = true;
+        }
       });
       
-      if (result.success) {
-        // 使用模拟数据展示
-        setHotProducts(mockHotProducts);
-        setActiveTab('hot-products');
-        toast.success('选品分析完成');
-      } else {
-        // 使用模拟数据
-        setHotProducts(mockHotProducts);
-        setActiveTab('hot-products');
-        toast.success('选品分析完成（演示数据）');
+      // 无论成功与否，都尝试显示模拟商品（作为备选）
+      // 真实场景下，这里应该解析API返回的报告获取商品列表
+      if (fullContent.length > 100) {
+        // API返回了真实报告，使用真实数据
+        // 这里可以添加从报告中解析商品列表的逻辑
+        // 暂时保留模拟数据用于展示
       }
+      
+      setActiveTab('hot-products');
+      
     } catch (error) {
       console.error('选品分析失败:', error);
-      setHotProducts(mockHotProducts);
-      setActiveTab('hot-products');
-      toast.success('选品分析完成（演示数据）');
+      toast.error('选品分析失败，请稍后重试');
     } finally {
       setIsAnalyzing(false);
     }
@@ -1324,6 +1326,23 @@ ${report.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
 
           {/* ==================== 模块2: 爆款挖掘 ==================== */}
           <TabsContent value="hot-products" className="space-y-4">
+            {/* 流式输出显示区域 */}
+            {isAnalyzing && streamContent && (
+              <Card className="bg-slate-900 border-slate-700">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-[14px] flex items-center gap-2 text-white">
+                    <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+                    AI 正在分析中...
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <pre className="text-[13px] text-slate-300 whitespace-pre-wrap font-mono leading-relaxed max-h-96 overflow-y-auto">
+                    {streamContent}
+                  </pre>
+                </CardContent>
+              </Card>
+            )}
+            
             {/* 合规预警提示 */}
             {hotProducts.length > 0 && (
               <Card className="bg-warning/5 border-warning/20">
@@ -1346,7 +1365,7 @@ ${report.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {hotProducts.length === 0 ? (
+                {hotProducts.length === 0 && !isAnalyzing ? (
                   <div className="text-center py-8 text-muted-foreground">
                     <TrendingUp className="h-12 w-12 mx-auto mb-3 opacity-50" />
                     <p>暂无爆款数据，请先进行需求分析</p>
