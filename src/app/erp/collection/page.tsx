@@ -33,6 +33,7 @@ import {
   Check,
   X,
   Package,
+  AlertCircle,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -106,16 +107,51 @@ export default function CollectionCenterPage() {
 
     setPreviewLoading(true);
     try {
-      // 模拟预览数据
-      setPreviewData({
-        name: '女士时尚连衣裙 2024新款 夏季轻薄透气',
-        price: '45.00',
-        id: '628574893012',
-        supplier: '杭州时尚服饰有限公司',
-        images: ['https://cbu01.alicdn.com/img/ibank/O1CN01xxx.jpg'],
-        moq: '2件起批',
-        sales: '8888件',
+      // 获取token
+      const token = localStorage.getItem('token');
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      // 调用后端采集API
+      const response = await fetch('/api/v1/tools/scrape', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ url: firstUrl }),
       });
+
+      const result = await response.json();
+
+      if (result.success) {
+        const data = result.data;
+        setPreviewData({
+          name: data.title || '商品信息',
+          price: data.price || 0,
+          id: result.productId || '',
+          supplier: data.shop_name || '待补充供应商',
+          images: data.images || [],
+          moq: data.specifications?.起批量 || '待确认',
+          sales: data.sales || '待确认',
+          price_range: data.price_range || '',
+          collect_method: data.collect_method || 'api',
+        });
+      } else {
+        // 采集失败时提供手动输入选项
+        setPreviewData({
+          name: '',
+          price: 0,
+          id: '',
+          supplier: '',
+          images: [],
+          moq: '',
+          sales: '',
+          manual_input: true, // 标记为手动输入模式
+        });
+        toast.warning('自动采集受限，请手动填写商品信息');
+      }
     } catch (error) {
       console.error('预览失败:', error);
       toast.error('预览失败，请检查链接是否正确');
@@ -135,35 +171,84 @@ export default function CollectionCenterPage() {
 
     setLoading(true);
     try {
+      // 获取token
+      const token = localStorage.getItem('token');
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      let results: any[] = [];
+      
+      if (urls.length === 1) {
+        // 单个采集
+        const response = await fetch('/api/v1/tools/scrape', {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({ url: urls[0] }),
+        });
+        const result = await response.json();
+        if (result.success) {
+          results.push({
+            url: urls[0],
+            ...result.data,
+            productId: result.productId,
+          });
+        }
+      } else {
+        // 批量采集
+        const response = await fetch('/api/v1/tools/scrape', {
+          method: 'PUT',
+          headers,
+          body: JSON.stringify({ urls }),
+        });
+        const result = await response.json();
+        if (result.success && result.results) {
+          results = result.results.map((r: any, i: number) => ({
+            url: urls[i],
+            ...r.data,
+            productId: r.productId,
+          }));
+        }
+      }
+
+      if (results.length === 0) {
+        toast.error('采集失败，请检查链接是否正确');
+        return;
+      }
+
+      // 保存到公用采集箱
       const { default: store } = await import('@/lib/store');
       
-      // 模拟采集数据
-      const mockData = urls.map((url: string, index: number) => ({
-        id: `COL-${Date.now()}-${index}`,
-        product_id: `PROD-${Date.now()}-${index}`,
-        url,
-        product_name: `商品${index + 1} - 模拟采集数据`,
-        product_name_en: `Product ${index + 1}`,
-        price: (Math.random() * 100 + 20).toFixed(2),
-        supplier: '模拟供应商',
-        images: [],
+      const collectData = results.map((item: any) => ({
+        id: `COL-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        product_id: item.productId || '',
+        url: item.url,
+        product_name: item.title || '待补充商品名称',
+        product_name_en: '',
+        price: item.price || 0,
+        supplier: item.shop_name || '待补充供应商',
+        images: item.images || [],
         claimed: false,
         claimed_platform: '',
         claimed_at: '',
         created_at: new Date().toISOString(),
+        collect_method: item.collect_method || 'api',
       }));
 
-      mockData.forEach((item: any) => {
+      collectData.forEach((item: any) => {
         store.addToPublicCollection(item);
       });
 
-      toast.success(`成功采集 ${mockData.length} 个商品，已添加到公用采集箱`);
+      toast.success(`成功采集 ${collectData.length} 个商品`);
       setCollectUrls('');
       setPreviewData(null);
       loadPublicCollections();
     } catch (error) {
       console.error('采集失败:', error);
-      toast.error('采集失败');
+      toast.error('采集失败，请稍后重试');
     } finally {
       setLoading(false);
     }
@@ -350,23 +435,64 @@ export default function CollectionCenterPage() {
             {/* 预览数据 */}
             {previewData && (
               <div className="p-4 bg-muted/30 rounded-lg space-y-3 border border-border">
-                <div className="flex gap-4">
-                  <div className="w-20 h-20 bg-muted rounded-lg overflow-hidden flex items-center justify-center">
-                    <Package className="h-8 w-8 text-muted-foreground/30" />
+                {previewData.manual_input ? (
+                  // 手动输入模式
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 text-orange-500">
+                      <AlertCircle className="h-4 w-4" />
+                      <span className="text-[13px] font-medium">自动采集受限，请手动填写商品信息</span>
+                    </div>
+                    <Input 
+                      placeholder="商品名称"
+                      value={previewData.name || ''}
+                      onChange={(e) => setPreviewData({...previewData, name: e.target.value})}
+                    />
+                    <div className="grid grid-cols-2 gap-3">
+                      <Input 
+                        type="number"
+                        placeholder="价格"
+                        value={previewData.price || ''}
+                        onChange={(e) => setPreviewData({...previewData, price: e.target.value})}
+                      />
+                      <Input 
+                        placeholder="供应商名称"
+                        value={previewData.supplier || ''}
+                        onChange={(e) => setPreviewData({...previewData, supplier: e.target.value})}
+                      />
+                    </div>
+                    <Input 
+                      placeholder="商品ID（可选）"
+                      value={previewData.id || ''}
+                      onChange={(e) => setPreviewData({...previewData, id: e.target.value})}
+                    />
                   </div>
-                  <div className="flex-1 space-y-2">
-                    <div className="text-[14px] font-medium text-foreground line-clamp-2">
-                      {previewData.name}
+                ) : (
+                  // 自动采集模式
+                  <div className="flex gap-4">
+                    <div className="w-20 h-20 bg-muted rounded-lg overflow-hidden flex items-center justify-center">
+                      {previewData.images?.[0] ? (
+                        <img src={previewData.images[0]} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        <Package className="h-8 w-8 text-muted-foreground/30" />
+                      )}
                     </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-[16px] font-semibold text-orange-500">¥{previewData.price}</span>
-                      <span className="text-[12px] text-muted-foreground">ID: {previewData.id}</span>
-                    </div>
-                    <div className="text-[12px] text-muted-foreground">
-                      供应商: {previewData.supplier} · {previewData.moq} · 已售 {previewData.sales}
+                    <div className="flex-1 space-y-2">
+                      <div className="text-[14px] font-medium text-foreground line-clamp-2">
+                        {previewData.name}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[16px] font-semibold text-orange-500">¥{previewData.price}</span>
+                        {previewData.price_range && previewData.price_range !== String(previewData.price) && (
+                          <span className="text-[12px] text-muted-foreground">（{previewData.price_range}）</span>
+                        )}
+                        <span className="text-[12px] text-muted-foreground">ID: {previewData.id}</span>
+                      </div>
+                      <div className="text-[12px] text-muted-foreground">
+                        供应商: {previewData.supplier} · {previewData.moq} · 已售 {previewData.sales}
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
                 <Button onClick={handleCollect} disabled={loading} className="w-full" variant="outline">
                   {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Download className="h-4 w-4 mr-2" />}
                   采集到公用采集箱
