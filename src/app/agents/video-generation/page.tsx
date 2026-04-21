@@ -182,41 +182,24 @@ export default function VideoAgentPage() {
 
       const result = await generateVideo(request);
 
-      if (result.success && result.data) {
+      if (result.success && result.videoUrl) {
         const newTask: VideoTask = {
-          id: result.data.task_id,
+          id: result.taskId || `task-${Date.now()}`,
           productName: newVideo.product_name,
           type: newVideo.video_type,
           status: 'completed',
           complianceStatus: 'passed',
           preCheckResult: { passed: true, issues: [] },
-          duration: result.data.duration || newVideo.duration,
+          duration: result.duration || newVideo.duration,
           publishStatus: 'draft',
           generatedAt: new Date().toLocaleString('zh-CN'),
-          videoUrl: result.data.video_url,
-          scenes: result.data.scenes,
-          resolution: result.data.resolution,
-          ratio: result.data.ratio,
-          fps: result.data.fps,
+          videoUrl: result.videoUrl,
+          scenes: [],
+          resolution: result.resolution,
+          ratio: result.ratio,
+          fps: 30,
         };
         setVideoTasks([newTask, ...videoTasks]);
-        
-        // 保存脚本内容
-        if (result.data.script) {
-          setTaskScripts((prev: Record<string, string>) => ({
-            ...prev,
-            [result.data.task_id]: result.data.script || ''
-          }));
-        }
-        
-        // 保存场景列表
-        if (result.data.scenes && result.data.scenes.length > 0) {
-          const scenes = result.data.scenes;
-          setTaskScenes((prev: Record<string, VideoScene[]>) => ({
-            ...prev,
-            [result.data.task_id]: scenes
-          }));
-        }
         
         toast.success('视频生成成功！');
         setIsDialogOpen(false);
@@ -252,20 +235,11 @@ export default function VideoAgentPage() {
           resolution: task.resolution || '720p',
           ratio: task.ratio || '16:9',
         });
-        if (result.success && result.data) {
-          if (result.data.script) {
-            setTaskScripts((prev: Record<string, string>) => ({
-              ...prev,
-              [task.id]: result.data.script || ''
-            }));
-          }
-          if (result.data.scenes && result.data.scenes.length > 0) {
-            const scenes = result.data.scenes;
-            setTaskScenes((prev: Record<string, VideoScene[]>) => ({
-              ...prev,
-              [task.id]: scenes
-            }));
-          }
+        if (result.success && result.videoUrl) {
+          // 更新视频URL
+          setVideoTasks(prev => prev.map(t => 
+            t.id === task.id ? { ...t, videoUrl: result.videoUrl } : t
+          ));
         }
       } catch (error) {
         console.error('获取脚本失败:', error);
@@ -301,36 +275,21 @@ export default function VideoAgentPage() {
         ratio: task.ratio || '16:9',
       });
       
-      if (result.success && result.data) {
+      if (result.success && result.videoUrl) {
         setVideoTasks(prev => prev.map(t => 
           t.id === task.id ? {
             ...t,
             status: 'completed' as const,
             complianceStatus: 'passed' as const,
             preCheckResult: { passed: true, issues: [] },
-            videoUrl: result.data.video_url,
-            scenes: result.data.scenes,
-            resolution: result.data.resolution,
-            ratio: result.data.ratio,
-            fps: result.data.fps,
+            videoUrl: result.videoUrl,
+            scenes: [],
+            resolution: result.resolution,
+            ratio: result.ratio,
+            fps: 30,
             generatedAt: new Date().toLocaleString('zh-CN'),
           } : t
         ));
-        
-        if (result.data.script) {
-          setTaskScripts((prev: Record<string, string>) => ({
-            ...prev,
-            [task.id]: result.data.script || ''
-          }));
-        }
-        
-        if (result.data.scenes && result.data.scenes.length > 0) {
-          const scenes = result.data.scenes;
-          setTaskScenes((prev: Record<string, VideoScene[]>) => ({
-            ...prev,
-            [task.id]: scenes
-          }));
-        }
         
         toast.success('视频重新生成成功！', { id: 'retry' });
       }

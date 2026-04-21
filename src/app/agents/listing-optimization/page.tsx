@@ -48,7 +48,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { optimizeListing, suggestKeywords, ListingResult } from '@/lib/api/ai-agents';
+import { optimizeListingStream, ListingResult } from '@/lib/api/ai-agents';
 
 interface ListingTask {
   id: string;
@@ -153,6 +153,7 @@ export default function ListingAgentPage() {
   // 预览对话框状态
   const [previewTask, setPreviewTask] = useState<ListingTask | null>(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [streamContent, setStreamContent] = useState('');
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -178,10 +179,34 @@ export default function ListingAgentPage() {
     const timeoutId = setTimeout(() => controller.abort(), 120000); // 2分钟超时
 
     try {
-      const result = await optimizeListing({
-        product_info: { name: newListing.product_name },
-        platform: newListing.platform.toLowerCase(),
-        language: newListing.language,
+      // 使用流式API
+      let fullContent = '';
+      const result = await new Promise<any>((resolve) => {
+        optimizeListingStream({
+          productName: newListing.product_name,
+          targetMarket: newListing.platform as any,
+          targetLanguage: newListing.language as any,
+        }, {
+          content: (text) => {
+            fullContent += text;
+            // 实时更新显示
+            setStreamContent(fullContent);
+          },
+          done: () => {
+            resolve({
+              success: true,
+              data: {
+                title: fullContent.substring(0, 200),
+                description: fullContent,
+                bullet_points: [],
+                keywords: [],
+              }
+            });
+          },
+          error: (msg) => {
+            resolve({ success: false, error: msg });
+          }
+        });
       });
 
       clearTimeout(timeoutId);

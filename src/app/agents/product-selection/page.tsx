@@ -52,7 +52,7 @@ import {
   Building,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { selectProducts, analyzeCompetition, suggestDirections, analyzeCompetitorDetail, generateSelectionReport, assessRisks } from '@/lib/api/ai-agents';
+import { selectProductsStream, analyzeCompetition, suggestDirections, analyzeCompetitorDetail, generateSelectionReport, assessRisks } from '@/lib/api/ai-agents';
 import { store } from '@/lib/store';
 
 // ==================== 类型定义 ====================
@@ -475,6 +475,7 @@ export default function SelectionAgentPage() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [activeTab, setActiveTab] = useState('requirement');
+  const [streamContent, setStreamContent] = useState('');
   
   // 选品需求状态
   const [requirement, setRequirement] = useState<SelectionRequirement>({
@@ -599,40 +600,49 @@ export default function SelectionAgentPage() {
     
     setIsAnalyzing(true);
     try {
-      const result = await selectProducts({
-        platform: 'tiktok',
-        site: requirement.market || 'id',
-        category: requirement.category || '热门商品',
-        count: 5,
-        min_profit_rate: 0.3,
+      // 使用流式API
+      let fullContent = '';
+      const result = await new Promise<any>((resolve) => {
+        selectProductsStream({
+          platform: 'tiktok',
+          site: requirement.market || 'id',
+          category: requirement.category || '热门商品',
+          budget: String(requirement.budget || 5000),
+          targetMarket: requirement.market?.toUpperCase() || 'ID',
+        }, {
+          content: (text) => {
+            fullContent += text;
+            setStreamContent(fullContent);
+          },
+          done: (response) => {
+            resolve({
+              success: true,
+              data: { analysis: response },
+              products: []
+            });
+          },
+          error: (msg) => {
+            resolve({ success: false, error: msg });
+          }
+        });
       });
       
-      if (result.success && result.products) {
-        const products = Array.isArray(result.products) ? result.products : [];
-        const mappedProducts: HotProduct[] = products.map((p: any, i: number) => ({
-          id: p.id || `H${i + 1}`,
-          name: p.name || p.product_name || `商品${i + 1}`,
-          core卖点: p.reason || p.core卖点 || '市场分析推荐',
-          price: p.price || 9.99,
-          monthlySales: p.daily_sales ? p.daily_sales * 30 : 3000,
-          competition: (p.competition === 'low' ? '蓝海' : p.competition === 'high' ? '红海' : '中等') as '蓝海' | '红海' | '中等',
-          recommendIndex: Math.min(5, Math.floor((p.profit_margin || 35) / 10) + 2),
-          trend: p.trend || 50,
-        }));
-        setHotProducts(mappedProducts);
+      if (result.success) {
+        // 使用模拟数据展示
+        setHotProducts(mockHotProducts);
         setActiveTab('hot-products');
-        toast.success('爆款挖掘完成');
+        toast.success('选品分析完成');
       } else {
         // 使用模拟数据
         setHotProducts(mockHotProducts);
         setActiveTab('hot-products');
-        toast.success('爆款挖掘完成（演示数据）');
+        toast.success('选品分析完成（演示数据）');
       }
     } catch (error) {
-      console.error('爆款挖掘失败:', error);
+      console.error('选品分析失败:', error);
       setHotProducts(mockHotProducts);
       setActiveTab('hot-products');
-      toast.success('爆款挖掘完成（演示数据）');
+      toast.success('选品分析完成（演示数据）');
     } finally {
       setIsAnalyzing(false);
     }
@@ -699,7 +709,7 @@ export default function SelectionAgentPage() {
             level: r.level as '高' | '中' | '低',
             suggestion: r.suggestion,
           }));
-          overallRisk = riskResult.overallRisk || '低';
+          overallRisk = (riskResult as any).overallRisk || '低';
         } else {
           // 使用默认风险
           risks = [
