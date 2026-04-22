@@ -55,7 +55,7 @@ import { toast } from 'sonner';
 import { selectProductsStream, suggestDirections, analyzeCompetitorDetail, assessRisks, generateSelectionReport } from '@/lib/api/ai-agents';
 import { store } from '@/lib/store';
 
-// ==================== 类型定义 ====================
+// 类型定义
 
 // 供应商
 interface Supplier {
@@ -399,77 +399,34 @@ const checkProductCompliance = (
 // 合规状态类型
 type ComplianceStatus = '合规' | '有风险' | '禁售' | '需认证';
 
+// 模拟数据 - 仅在API失败时使用
 const mockHotProducts: HotProduct[] = [
-  {
-    id: 'H001',
-    name: '厨房硅胶收纳夹',
-    core卖点: '食品级硅胶、可重复使用、多功能',
-    price: 9.99,
-    monthlySales: 5000,
-    competition: '蓝海',
-    recommendIndex: 5,
-    trend: 68,
-  },
-  {
-    id: 'H002',
-    name: '宠物自动饮水机配件',
-    core卖点: '兼容多品牌、静音设计、易清洁',
-    price: 12.99,
-    monthlySales: 3500,
-    competition: '中等',
-    recommendIndex: 4,
-    trend: 45,
-  },
-  {
-    id: 'H003',
-    name: '浴室防水收纳盒',
-    core卖点: '免打孔安装、透明可视、防水防潮',
-    price: 8.99,
-    monthlySales: 4200,
-    competition: '蓝海',
-    recommendIndex: 5,
-    trend: 72,
-  },
+  { id: 'H001', name: '厨房硅胶收纳夹', core卖点: '食品级硅胶、可重复使用', price: 9.99, monthlySales: 5000, competition: '蓝海', recommendIndex: 5, trend: 68 },
+  { id: 'H002', name: '宠物自动饮水机配件', core卖点: '兼容多品牌、静音设计', price: 12.99, monthlySales: 3500, competition: '中等', recommendIndex: 4, trend: 45 },
+  { id: 'H003', name: '浴室防水收纳盒', core卖点: '免打孔安装、防水防潮', price: 8.99, monthlySales: 4200, competition: '蓝海', recommendIndex: 5, trend: 72 },
 ];
 
 const marketOptions = [
-  { value: 'us', label: '美区', icon: '🇺🇸' },
-  { value: 'uk', label: '欧区', icon: '🇬🇧' },
-  { value: 'id', label: '印尼', icon: '🇮🇩' },
-  { value: 'th', label: '泰国', icon: '🇹🇭' },
-  { value: 'vn', label: '越南', icon: '🇻🇳' },
-  { value: 'my', label: '马来', icon: '🇲🇾' },
+  { value: 'us', label: '美区' }, { value: 'uk', label: '欧区' },
+  { value: 'id', label: '印尼' }, { value: 'th', label: '泰国' },
+  { value: 'vn', label: '越南' }, { value: 'my', label: '马来' },
 ];
 
-// 目标平台选项
 const platformOptions = [
-  { value: 'tiktok', label: 'TikTok Shop', icon: '📱', desc: '短视频带货，年轻人群体' },
-  { value: 'shopee', label: 'Shopee', icon: '🛒', desc: '东南亚主流平台' },
-  { value: 'lazada', label: 'Lazada', icon: '🏬', desc: '阿里系东南亚平台' },
-  { value: 'amazon', label: 'Amazon', icon: '📦', desc: '欧美主流平台' },
-  { value: 'temu', label: 'Temu', icon: '💎', desc: '拼多多海外版' },
-  { value: 'shein', label: 'SHEIN', icon: '👗', desc: '快时尚跨境平台' },
+  { value: 'tiktok', label: 'TikTok Shop' }, { value: 'shopee', label: 'Shopee' },
+  { value: 'lazada', label: 'Lazada' }, { value: 'amazon', label: 'Amazon' },
 ];
 
-const categoryOptions = [
-  '家居用品', '厨房用品', '美妆工具', '宠物用品', 
-  '母婴用品', '运动户外', '3C数码', '服装配饰'
-];
+const categoryOptions = ['家居用品', '厨房用品', '美妆工具', '宠物用品', '母婴用品', '运动户外', '3C数码', '服装配饰'];
 
 const budgetOptions = [
-  { value: 'low', label: '低预算 (≤5美元)', desc: '新手起步，低成本试水' },
-  { value: 'medium', label: '中预算 (5-15美元)', desc: '平衡利润与销量' },
-  { value: 'high', label: '高预算 (15-30美元)', desc: '追求品质，高客单价' },
+  { value: 'low', label: '低预算 (≤5美元)' }, { value: 'medium', label: '中预算 (5-15美元)' }, { value: 'high', label: '高预算 (15-30美元)' },
 ];
 
 const appealOptions = [
-  { value: 'high_profit', label: '高利润', icon: '💰' },
-  { value: 'low_competition', label: '低竞争', icon: '🌊' },
-  { value: 'fast_turnover', label: '快周转', icon: '⚡' },
-  { value: 'easy_operation', label: '易操作', icon: '🎯' },
+  { value: 'high_profit', label: '高利润' }, { value: 'low_competition', label: '低竞争' },
+  { value: 'fast_turnover', label: '快周转' }, { value: 'easy_operation', label: '易操作' },
 ];
-
-// ==================== 组件 ====================
 
 export default function SelectionAgentPage() {
   const router = useRouter();
@@ -1087,7 +1044,7 @@ ${report.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
                               : 'bg-white border-border hover:border-primary/50'
                           }`}
                         >
-                          {opt.icon} {opt.label}
+                          {opt.label}
                         </button>
                       ))}
                     </div>
@@ -1110,12 +1067,7 @@ ${report.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
                               : 'bg-white border-border hover:border-primary/50'
                           }`}
                         >
-                          <div className="text-[14px] font-medium">
-                            {opt.icon} {opt.label}
-                          </div>
-                          <div className={`text-[11px] mt-1 ${requirement.platform === opt.value ? 'text-white/80' : 'text-muted-foreground'}`}>
-                            {opt.desc}
-                          </div>
+                          <div className="text-[14px] font-medium">{opt.label}</div>
                         </button>
                       ))}
                     </div>
@@ -1162,7 +1114,6 @@ ${report.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
                           <div className={`text-[13px] font-medium ${requirement.budget === opt.value ? 'text-blue-600' : 'text-foreground'}`}>
                             {opt.label}
                           </div>
-                          <div className="text-[11px] text-muted-foreground">{opt.desc}</div>
                         </button>
                       ))}
                     </div>
@@ -1184,7 +1135,7 @@ ${report.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
                               : 'bg-white border-border hover:border-primary/50'
                           }`}
                         >
-                          {opt.icon} {opt.label}
+                          {opt.label}
                         </button>
                       ))}
                     </div>
