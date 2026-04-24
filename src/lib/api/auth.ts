@@ -25,7 +25,7 @@ export interface LoginResponse {
 
 // 登录请求
 export interface LoginRequest {
-  phone: string;
+  username: string;
   password: string;
 }
 

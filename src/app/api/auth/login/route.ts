@@ -38,17 +38,17 @@ function createToken(userId: string): string {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { phone, password } = body;
+    const { username, password } = body;
 
-    if (!phone || !password) {
+    if (!username || !password) {
       return NextResponse.json(
         { detail: '请输入账号和密码' },
         { status: 400 }
       );
     }
 
-    // 查找用户
-    const user = users[phone];
+    // 查找用户（支持 username 或 phone）
+    const user = users[username] || Object.values(users).find(u => u.phone === username);
     
     if (!user || user.password !== password) {
       return NextResponse.json(
