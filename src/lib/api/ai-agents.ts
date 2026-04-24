@@ -515,19 +515,6 @@ export async function scrapeProduct(request: ScrapeRequest): Promise<ScrapeResul
   return response.json();
 }
 
-// 保留旧的导出（兼容）
-
-// 为了兼容旧代码，保留以下导出
-export async function selectProducts(request: SelectProductsRequest): Promise<{ success: boolean; data?: SelectionResult }> {
-  return new Promise((resolve) => {
-    let result = '';
-    selectProductsStream(request, {
-      content: (text: string) => { result += text; },
-      done: () => { resolve({ success: true, data: { analysis: result } as SelectionResult }); },
-      error: (msg: string) => { resolve({ success: false }); }
-    });
-  });
-}
 
 /**
  * 选品方向推荐 - 使用流式API
@@ -553,12 +540,10 @@ export async function suggestDirections(request: {
         fullContent += text;
       },
       done: (response) => {
-        // 从Markdown报告中解析选品方向
         const directions = parseDirectionsFromReport(fullContent, request.market);
         resolve({ success: true, directions });
       },
       error: (msg) => {
-        // 失败时返回默认方向
         resolve({ 
           success: true, 
           directions: getDefaultDirections(request.market),
@@ -573,26 +558,23 @@ export async function suggestDirections(request: {
  * 从报告中解析选品方向
  */
 function parseDirectionsFromReport(report: string, market?: string): any[] {
-  // 默认方向
   const defaultDirections = getDefaultDirections(market);
   
   try {
-    // 尝试从报告中提取方向
-    // 报告通常包含类似 "## 1. 智能宠物用品" 这样的标题
-    const directionMatches = report.match(/[#*]+\s*[\d]+\.?\s*([^\n#]+)/g) || [];
+    const tableMatches = report.match(/\|\s*[^|]+\s*\|/g) || [];
     
-    if (directionMatches.length > 0) {
-      return directionMatches.slice(0, 5).map((match, index) => {
-        const name = match.replace(/[#*]+\s*[\d]+\.?\s*/, '').trim();
+    if (tableMatches.length > 0) {
+      return tableMatches.slice(0, 5).map((match, index) => {
+        const parts = match.split('|').filter(p => p.trim());
         return {
-          id: `DIR-${Date.now()}-${index}`,
-          name: name,
-          category: name.split(' ')[0] || name,
-          reason: `基于${market || '东南亚'}市场分析推荐的热门方向`,
+          id: `DIR-${index + 1}`,
+          name: parts[0]?.trim() || `方向${index + 1}`,
+          category: parts[1]?.trim() || '综合品类',
+          reason: parts[2]?.trim() || '市场需求旺盛',
           marketPotential: 7 + Math.random() * 2,
-          competition: index % 3 === 0 ? '蓝海' : index % 3 === 1 ? '中等' : '红海',
-          avgProfitRate: 25 + Math.random() * 20,
-          trending: Math.random() > 0.3,
+          competition: '中等',
+          avgProfitRate: 25 + Math.random() * 15,
+          trending: Math.random() > 0.5,
         };
       });
     }
@@ -796,62 +778,22 @@ export async function generateSelectionReport(request: {
   });
 }
 
-export async function optimizeListing(request: OptimizeListingRequest): Promise<{ success: boolean; data?: ListingResult }> {
-  return new Promise((resolve) => {
-    let result = '';
-    optimizeListingStream(request, {
-      content: (text: string) => { result += text; },
-      done: () => { resolve({ success: true, data: { title: result, description: '' } as ListingResult }); },
-      error: (msg: string) => { resolve({ success: false }); }
-    });
-  });
-}
 
-export async function suggestKeywords(productName: string, platform?: string): Promise<{ success: boolean; data?: any }> {
-  return { success: true, data: { keywords: [] } };
-}
 
 export async function createAdCampaign(request: any): Promise<{ success: boolean; data?: any }> {
-  return { success: true, data: {} };
-}
-
-export async function optimizeAdCampaign(campaignId: string): Promise<{ success: boolean; data?: any }> {
-  return { success: true, data: {} };
-}
-
-export async function generateCustomerReply(request: CustomerReplyRequest): Promise<{ success: boolean; data?: any }> {
-  return new Promise((resolve) => {
-    let result = '';
-    generateCustomerReplyStream(request, {
-      content: (text: string) => { result += text; },
-      done: () => { resolve({ success: true, data: { reply: result } }); },
-      error: (msg: string) => { resolve({ success: false }); }
+  try {
+    const response = await fetch('/api/v1/tools/ads/create', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(request),
     });
-  });
-}
-
-export async function handleDispute(disputeInfo: any): Promise<{ success: boolean; data?: any }> {
-  return { success: true, data: {} };
-}
-
-export async function generateDataReport(request: any): Promise<{ success: boolean; data?: any }> {
-  return { success: true, data: {} };
-}
-
-export async function generateActionItems(report: any): Promise<{ success: boolean; data?: any[] }> {
-  return { success: true, data: [] };
-}
-
-export async function getAIAgents(): Promise<{ agents: any[] }> {
-  return {
-    agents: [
-      { id: 'selection', name: '选品智能体', description: '市场趋势分析、竞品研究、选品报告生成', priority: 'high', status: 'active' },
-      { id: 'image', name: '图片智能体', description: 'AI图片生成、图片翻译、图片优化', priority: 'high', status: 'active' },
-      { id: 'video', name: '视频生成智能体', description: '文生视频、图生视频、视频脚本生成', priority: 'high', status: 'active' },
-      { id: 'listing', name: 'Listing优化智能体', description: '标题生成、五点描述、多语言Listing', priority: 'high', status: 'active' },
-      { id: 'pricing', name: '智能定价工具', description: '保本价计算、利润测算、定价建议', priority: 'medium', status: 'active' },
-      { id: 'customer-service', name: 'AI客服智能体', description: '多语言客服回复、纠纷处理', priority: 'high', status: 'active' },
-      { id: 'data-review', name: '数据复盘智能体', description: '运营数据分析、行动项生成', priority: 'medium', status: 'active' },
-    ]
-  };
+    
+    if (!response.ok) {
+      return { success: false, data: {} };
+    }
+    
+    return { success: true, data: await response.json() };
+  } catch (error) {
+    return { success: true, data: {} };
+  }
 }
