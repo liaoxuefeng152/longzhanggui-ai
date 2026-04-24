@@ -18,6 +18,7 @@ import {
   Zap,
   MessageSquare,
   Store,
+  DollarSign,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
@@ -30,6 +31,7 @@ const agentColors = {
   'advertising': { primary: 'orange', gradient: 'from-orange-500 to-amber-400', bg: 'bg-orange-500', text: 'text-orange-400', hover: 'hover:bg-orange-500/20' },
   'customer-service': { primary: 'cyan', gradient: 'from-cyan-500 to-teal-400', bg: 'bg-cyan-500', text: 'text-cyan-400', hover: 'hover:bg-cyan-500/20' },
   'data-review': { primary: 'indigo', gradient: 'from-indigo-500 to-violet-400', bg: 'bg-indigo-500', text: 'text-indigo-400', hover: 'hover:bg-indigo-500/20' },
+  'pricing': { primary: 'emerald', gradient: 'from-emerald-500 to-teal-400', bg: 'bg-emerald-500', text: 'text-emerald-400', hover: 'hover:bg-emerald-500/20' },
 };
 
 interface MenuItem {
@@ -62,6 +64,7 @@ const clientMenuItems: MenuItem[] = [
       { title: '广告投放智能体', href: '/agents/advertising', agentKey: 'advertising' },
       { title: 'AI客服智能体', href: '/agents/customer-service', agentKey: 'customer-service' },
       { title: '数据复盘智能体', href: '/agents/data-review', agentKey: 'data-review' },
+      { title: '定价智能体', href: '/agents/pricing', agentKey: 'pricing' },
     ],
   },
   {
@@ -120,6 +123,7 @@ const adminMenuItems: MenuItem[] = [
       { title: '广告投放', href: '/agents/advertising/config', agentKey: 'advertising' },
       { title: 'AI客服', href: '/agents/customer-service/config', agentKey: 'customer-service' },
       { title: '数据复盘', href: '/agents/data-review/config', agentKey: 'data-review' },
+      { title: '定价智能体', href: '/agents/pricing/config', agentKey: 'pricing' },
     ],
   },
   {
