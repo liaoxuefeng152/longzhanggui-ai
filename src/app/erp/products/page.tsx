@@ -999,19 +999,11 @@ export default function ERPProductsPage() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => router.push(`/agents/product-selection`)}>
-                                重新选品分析
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => router.push(`/agents/image-design`)}>
-                                图片处理
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => router.push(`/agents/listing-optimization`)}>
-                                Listing优化
-                              </DropdownMenuItem>
                               <DropdownMenuItem 
                                 className="text-destructive"
                                 onClick={() => handleDeleteProduct(product.id)}
                               >
+                                <Trash2 className="h-3 w-3 mr-2" />
                                 删除商品
                               </DropdownMenuItem>
                             </DropdownMenuContent>
