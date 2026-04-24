@@ -10,6 +10,11 @@ const nextConfig: NextConfig = {
         hostname: 'lf-coze-web-cdn.coze.cn',
         pathname: '/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'coze-coding-project.tos.coze.site',
+        pathname: '/**',
+      },
     ],
   },
   env: {
@@ -30,6 +35,16 @@ const nextConfig: NextConfig = {
   ],
   typescript: {
     ignoreBuildErrors: false,
+  },
+  async rewrites() {
+    const BASE = 'http://localhost:8000';
+    return [
+      // AI智能体API - 代理到Python后端
+      { source: '/api/ai/:path*', destination: BASE + '/api/v1/ai/:path*' },
+      { source: '/api/v1/ai/:path*', destination: BASE + '/api/v1/ai/:path*' },
+      // 认证API - 使用前端路由（已实现）
+      { source: '/api/v1/auth/:path*', destination: '/api/v1/auth/:path*' },
+    ];
   },
 };
 
