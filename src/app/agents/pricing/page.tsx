@@ -1,7 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
+import MainLayout from '@/components/layout/MainLayout';
 import {
   LineChart,
   TrendingUp,
@@ -205,6 +207,8 @@ const mockAdjustments: PriceAdjustment[] = [
 ];
 
 export default function PricingAgentPage() {
+  const router = useRouter();
+  const [user, setUser] = useState<any>(null);
   const [activeTab, setActiveTab] = useState('monitor');
   const [products, setProducts] = useState<Product[]>(mockProducts);
   const [adjustments, setAdjustments] = useState<PriceAdjustment[]>(mockAdjustments);
@@ -218,6 +222,16 @@ export default function PricingAgentPage() {
     newPrice: '',
     reason: '',
   });
+
+  // 获取用户信息
+  useEffect(() => {
+    const userData = localStorage.getItem('user');
+    if (!userData) {
+      router.push('/login');
+      return;
+    }
+    setUser(JSON.parse(userData));
+  }, [router]);
 
   // 计算调价建议
   const generateSuggestions = () => {
@@ -393,8 +407,11 @@ export default function PricingAgentPage() {
     urgentSuggestions: suggestions.filter(s => s.urgency === 'high').length,
   };
 
+  if (!user) return null;
+
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <MainLayout user={user} onLogout={() => router.push('/login')}>
+      <div className="container mx-auto p-6 space-y-6">
       {/* 页面标题 */}
       <div className="flex items-center justify-between">
         <div>
@@ -951,6 +968,7 @@ export default function PricingAgentPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+      </div>
+    </MainLayout>
   );
 }
