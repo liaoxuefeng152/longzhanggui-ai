@@ -4,30 +4,14 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import MainLayout from '@/components/layout/MainLayout';
-import {
-  LineChart,
-  TrendingUp,
-  TrendingDown,
-  AlertTriangle,
-  CheckCircle2,
-  XCircle,
-  Search,
-  DollarSign,
-  Target,
-  History,
-  Settings,
-  RefreshCw,
-  Plus,
-  Minus,
-  Edit3,
-  Eye,
-} from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Dialog,
   DialogContent,
@@ -37,14 +21,26 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
+  DollarSign,
+  TrendingUp,
+  TrendingDown,
+  AlertTriangle,
+  CheckCircle2,
+  XCircle,
+  Target,
+  History,
+  Settings,
+  RefreshCw,
+  Eye,
+  Edit3,
+  Users,
+  BarChart3,
+  MessageSquare,
+  FileText,
+  Building,
+  Check,
+  ChevronRight,
+} from 'lucide-react';
 
 interface CompetitorProduct {
   id: string;
@@ -213,7 +209,6 @@ export default function PricingAgentPage() {
   const [products, setProducts] = useState<Product[]>(mockProducts);
   const [adjustments, setAdjustments] = useState<PriceAdjustment[]>(mockAdjustments);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
   const [suggestions, setSuggestions] = useState<PricingSuggestion[]>([]);
   
   // 调价弹窗
@@ -241,25 +236,11 @@ export default function PricingAgentPage() {
       if (product.competitors.length === 0) return;
       
       const lowestCompetitorPrice = Math.min(...product.competitors.map(c => c.price));
-      const highestCompetitorPrice = Math.max(...product.competitors.map(c => c.price));
       
-      // 成本底线：保本 + 10% 利润
-      const costFloor = product.costPrice * 1.1;
-      // 安全线：保本 + 20% 利润
-      const costSafe = product.costPrice * 1.2;
-      // 建议线：保本 + 目标利润
-      const targetProfitRate = 0.30;
-      const targetPrice = product.costPrice * (1 + targetProfitRate);
+      const minAllowedPrice = product.costPrice * 1.15;
       
-      // 计算最低可执行价格（利润 >= 15%）
-      const minProfitRate = 0.15;
-      const minAllowedPrice = product.costPrice * (1 + minProfitRate);
-      
-      // 如果竞品价格低于安全线
-      if (lowestCompetitorPrice < costSafe) {
-        // 检查是否能降价
+      if (lowestCompetitorPrice < product.sellingPrice * 0.95) {
         if (lowestCompetitorPrice >= minAllowedPrice) {
-          const newProfitRate = (lowestCompetitorPrice - product.costPrice) / lowestCompetitorPrice;
           newSuggestions.push({
             id: `SUG-${product.id}-1`,
             productId: product.id,
@@ -269,50 +250,11 @@ export default function PricingAgentPage() {
             change: lowestCompetitorPrice - product.sellingPrice,
             changePercent: ((lowestCompetitorPrice - product.sellingPrice) / product.sellingPrice) * 100,
             reason: '竞品降价，跟进保持竞争力',
-            profitRate: newProfitRate * 100,
-            minProfitRate: minProfitRate * 100,
+            profitRate: ((lowestCompetitorPrice - product.costPrice) / lowestCompetitorPrice) * 100,
+            minProfitRate: 15,
             urgency: product.status === 'danger' ? 'high' : 'medium',
             competitorPrice: lowestCompetitorPrice,
-            riskLevel: newProfitRate >= 0.20 ? 'safe' : newProfitRate >= 0.15 ? 'warning' : 'danger',
-          });
-        } else {
-          // 降价会导致亏损，建议提价或其他策略
-          newSuggestions.push({
-            id: `SUG-${product.id}-2`,
-            productId: product.id,
-            productName: product.name,
-            currentPrice: product.sellingPrice,
-            suggestedPrice: targetPrice,
-            change: targetPrice - product.sellingPrice,
-            changePercent: ((targetPrice - product.sellingPrice) / product.sellingPrice) * 100,
-            reason: '竞品价格过低，建议差异化定价',
-            profitRate: targetProfitRate * 100,
-            minProfitRate: minProfitRate * 100,
-            urgency: 'low',
-            competitorPrice: lowestCompetitorPrice,
-            riskLevel: 'safe',
-          });
-        }
-      }
-      
-      // 如果当前价格远高于竞品，考虑降价
-      if (product.sellingPrice > highestCompetitorPrice * 1.1) {
-        const suggestedPrice = highestCompetitorPrice * 0.98;
-        if (suggestedPrice >= minAllowedPrice) {
-          newSuggestions.push({
-            id: `SUG-${product.id}-3`,
-            productId: product.id,
-            productName: product.name,
-            currentPrice: product.sellingPrice,
-            suggestedPrice: Math.round(suggestedPrice),
-            change: Math.round(suggestedPrice - product.sellingPrice),
-            changePercent: ((suggestedPrice - product.sellingPrice) / product.sellingPrice) * 100,
-            reason: '价格高于竞品，可适当降价提升竞争力',
-            profitRate: ((suggestedPrice - product.costPrice) / suggestedPrice) * 100,
-            minProfitRate: minProfitRate * 100,
-            urgency: 'low',
-            competitorPrice: highestCompetitorPrice,
-            riskLevel: 'safe',
+            riskLevel: ((lowestCompetitorPrice - product.costPrice) / lowestCompetitorPrice) >= 0.20 ? 'safe' : 'warning',
           });
         }
       }
@@ -362,21 +304,20 @@ export default function PricingAgentPage() {
       profitAfter: newProfit,
       profitRateBefore: selectedProduct.profitRate,
       profitRateAfter: newProfitRate,
-      status: newProfitRate >= 0.20 ? 'executed' : 'pending',
+      status: newProfitRate >= 20 ? 'executed' : 'pending',
       createdAt: new Date().toISOString().replace('T', ' ').substring(0, 16),
-      executor: newProfitRate >= 0.20 ? '系统自动' : undefined,
+      executor: newProfitRate >= 20 ? '系统自动' : undefined,
     };
 
     setAdjustments([adjustment, ...adjustments]);
     
-    // 更新产品
     setProducts(products.map(p => 
       p.id === selectedProduct.id 
         ? { ...p, sellingPrice: newPrice, profit: newProfit, profitRate: newProfitRate }
         : p
     ));
 
-    toast.success(newProfitRate >= 0.20 ? '调价已执行' : '调价已提交，等待审批');
+    toast.success(newProfitRate >= 20 ? '调价已执行' : '调价已提交，等待审批');
     setAdjustmentDialog(false);
   };
 
@@ -411,257 +352,336 @@ export default function PricingAgentPage() {
 
   return (
     <MainLayout user={user} onLogout={() => router.push('/login')}>
-      <div className="container mx-auto p-6 space-y-6">
-      {/* 页面标题 */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <DollarSign className="h-7 w-7 text-green-600" />
-            智能定价
-          </h1>
-          <p className="text-muted-foreground mt-1">
-            盈亏保护 · 竞品监控 · 智能调价
-          </p>
+      <div className="space-y-6">
+        {/* 页面头部 */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-emerald-500/20 to-teal-400/5 flex items-center justify-center">
+              <DollarSign className="h-7 w-7 text-emerald-500" />
+            </div>
+            <div>
+              <h1 className="text-[24px] font-semibold text-foreground">定价智能体</h1>
+              <p className="text-[14px] text-muted-foreground">基于盈亏保护的智能调价决策工具</p>
+            </div>
+          </div>
+          <Badge className="bg-emerald-100 text-emerald-600 border-emerald-500/20">
+            在线运行
+          </Badge>
         </div>
-        <Button onClick={generateSuggestions} className="gap-2">
-          <RefreshCw className="h-4 w-4" />
-          刷新分析
-        </Button>
-      </div>
 
-      {/* 统计卡片 */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">商品监控</CardTitle>
-            <Target className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.totalProducts}</div>
-            <p className="text-xs text-muted-foreground">个商品</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">健康</CardTitle>
-            <CheckCircle2 className="h-4 w-4 text-green-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">{stats.healthy}</div>
-            <p className="text-xs text-muted-foreground">利润 &gt; 30%</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">预警</CardTitle>
-            <AlertTriangle className="h-4 w-4 text-yellow-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-yellow-600">{stats.warning}</div>
-            <p className="text-xs text-muted-foreground">利润 15-30%</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">危险</CardTitle>
-            <XCircle className="h-4 w-4 text-red-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-red-600">{stats.danger}</div>
-            <p className="text-xs text-muted-foreground">利润 &lt; 15%</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* 主内容区 */}
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
-          <TabsTrigger value="monitor" className="gap-2">
-            <Eye className="h-4 w-4" />
+        {/* 核心能力标签 */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <Badge variant="outline" className="bg-emerald-500/5 text-emerald-600 border-emerald-500/20">
+            <Eye className="h-3 w-3 mr-1" />
             竞品监控
-          </TabsTrigger>
-          <TabsTrigger value="suggestions" className="gap-2">
-            <TrendingDown className="h-4 w-4" />
+          </Badge>
+          <Badge variant="outline" className="bg-emerald-500/5 text-emerald-600 border-emerald-500/20">
+            <TrendingDown className="h-3 w-3 mr-1" />
             调价建议
-            {stats.urgentSuggestions > 0 && (
-              <Badge variant="destructive" className="ml-1">{stats.urgentSuggestions}</Badge>
-            )}
-          </TabsTrigger>
-          <TabsTrigger value="adjustments" className="gap-2">
-            <History className="h-4 w-4" />
+          </Badge>
+          <Badge variant="outline" className="bg-emerald-500/5 text-emerald-600 border-emerald-500/20">
+            <History className="h-3 w-3 mr-1" />
             调价记录
-            {stats.pendingAdjustments > 0 && (
-              <Badge variant="default" className="ml-1 bg-yellow-500">{stats.pendingAdjustments}</Badge>
-            )}
-          </TabsTrigger>
-          <TabsTrigger value="settings" className="gap-2">
-            <Settings className="h-4 w-4" />
+          </Badge>
+          <Badge variant="outline" className="bg-emerald-500/5 text-emerald-600 border-emerald-500/20">
+            <Target className="h-3 w-3 mr-1" />
+            盈亏保护
+          </Badge>
+          <Badge variant="outline" className="bg-emerald-500/5 text-emerald-600 border-emerald-500/20">
+            <Settings className="h-3 w-3 mr-1" />
             规则设置
-          </TabsTrigger>
-        </TabsList>
+          </Badge>
+        </div>
 
-        {/* 竞品监控 */}
-        <TabsContent value="monitor" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>商品盈亏监控</CardTitle>
-              <CardDescription>实时监控商品利润空间，识别需要调价的商品</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>商品</TableHead>
-                    <TableHead>成本</TableHead>
-                    <TableHead>售价</TableHead>
-                    <TableHead>利润</TableHead>
-                    <TableHead>利润率</TableHead>
-                    <TableHead>状态</TableHead>
-                    <TableHead>竞品数</TableHead>
-                    <TableHead>操作</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {products.map(product => (
-                    <TableRow key={product.id}>
-                      <TableCell>
-                        <div>
-                          <div className="font-medium">{product.name}</div>
-                          <div className="text-xs text-muted-foreground">{product.sku}</div>
-                        </div>
-                      </TableCell>
-                      <TableCell>¥{product.costPrice}</TableCell>
-                      <TableCell className="font-medium">¥{product.sellingPrice}</TableCell>
-                      <TableCell className={product.profit > 50 ? 'text-green-600' : 'text-orange-600'}>
-                        ¥{product.profit}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <div className={`w-16 h-2 rounded-full ${
-                            product.profitRate >= 30 ? 'bg-green-500' :
-                            product.profitRate >= 15 ? 'bg-yellow-500' : 'bg-red-500'
-                          }`}>
-                            <div 
-                              className={`h-full rounded-full ${
-                                product.profitRate >= 30 ? 'bg-green-500' :
-                                product.profitRate >= 15 ? 'bg-yellow-500' : 'bg-red-500'
-                              }`}
-                              style={{ width: `${Math.min(product.profitRate, 100)}%` }}
-                            />
-                          </div>
-                          <span className={`text-sm ${
-                            product.profitRate >= 30 ? 'text-green-600' :
-                            product.profitRate >= 15 ? 'text-yellow-600' : 'text-red-600'
-                          }`}>
-                            {product.profitRate.toFixed(1)}%
-                          </span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={
-                          product.status === 'healthy' ? 'default' :
-                          product.status === 'warning' ? 'secondary' : 'destructive'
-                        } className={
-                          product.status === 'healthy' ? 'bg-green-100 text-green-800' :
-                          product.status === 'warning' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'
-                        }>
-                          {product.status === 'healthy' ? '健康' :
-                           product.status === 'warning' ? '预警' : '危险'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>{product.competitors.length}</TableCell>
-                      <TableCell>
-                        <Button variant="ghost" size="sm" onClick={() => {
-                          setSelectedProduct(product);
-                          setActiveTab('suggestions');
-                        }}>
-                          查看竞品
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+        {/* 盈亏保护规则提示 */}
+        <Card className="bg-gradient-to-r from-emerald-500/5 to-teal-500/10 border-emerald-500/20">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between gap-4 overflow-x-auto">
+              <div className="flex items-center gap-2 min-w-fit">
+                <div className="w-8 h-8 rounded-full flex items-center justify-center bg-green-500/20 text-green-600">
+                  <Check className="h-4 w-4" />
+                </div>
+                <div>
+                  <span className="text-[13px] font-medium text-green-600">利润 ≥ 20%</span>
+                  <span className="text-[12px] text-muted-foreground ml-2">自动执行</span>
+                </div>
+              </div>
+              <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+              <div className="flex items-center gap-2 min-w-fit">
+                <div className="w-8 h-8 rounded-full flex items-center justify-center bg-yellow-500/20 text-yellow-600">
+                  <span className="text-[14px] font-medium">!</span>
+                </div>
+                <div>
+                  <span className="text-[13px] font-medium text-yellow-600">利润 15-20%</span>
+                  <span className="text-[12px] text-muted-foreground ml-2">需要审批</span>
+                </div>
+              </div>
+              <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+              <div className="flex items-center gap-2 min-w-fit">
+                <div className="w-8 h-8 rounded-full flex items-center justify-center bg-red-500/20 text-red-600">
+                  <XCircle className="h-4 w-4" />
+                </div>
+                <div>
+                  <span className="text-[13px] font-medium text-red-600">利润 &lt; 15%</span>
+                  <span className="text-[12px] text-muted-foreground ml-2">禁止调价</span>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* 统计概览 */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <Card className="bg-white border-border shadow-sm hover:shadow-md transition-shadow">
+            <CardContent className="p-5">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-100 to-cyan-100 flex items-center justify-center">
+                  <Target className="h-6 w-6 text-blue-600" />
+                </div>
+                <div>
+                  <p className="text-[12px] text-muted-foreground">商品监控</p>
+                  <p className="text-[26px] font-bold text-blue-600">{stats.totalProducts}</p>
+                </div>
+              </div>
             </CardContent>
           </Card>
+          <Card className="bg-white border-border shadow-sm hover:shadow-md transition-shadow">
+            <CardContent className="p-5">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-green-100 to-emerald-100 flex items-center justify-center">
+                  <CheckCircle2 className="h-6 w-6 text-green-600" />
+                </div>
+                <div>
+                  <p className="text-[12px] text-muted-foreground">健康</p>
+                  <p className="text-[26px] font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">{stats.healthy}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="bg-white border-border shadow-sm hover:shadow-md transition-shadow">
+            <CardContent className="p-5">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-yellow-100 to-orange-100 flex items-center justify-center">
+                  <AlertTriangle className="h-6 w-6 text-yellow-600" />
+                </div>
+                <div>
+                  <p className="text-[12px] text-muted-foreground">预警</p>
+                  <p className="text-[26px] font-bold bg-gradient-to-r from-yellow-600 to-orange-600 bg-clip-text text-transparent">{stats.warning}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="bg-white border-border shadow-sm hover:shadow-md transition-shadow">
+            <CardContent className="p-5">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-red-100 to-pink-100 flex items-center justify-center">
+                  <XCircle className="h-6 w-6 text-red-600" />
+                </div>
+                <div>
+                  <p className="text-[12px] text-muted-foreground">危险</p>
+                  <p className="text-[26px] font-bold bg-gradient-to-r from-red-600 to-pink-600 bg-clip-text text-transparent">{stats.danger}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
 
-          {/* 竞品详情 */}
-          {selectedProduct && (
-            <Card>
+        {/* 主要内容区 */}
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList className="bg-muted/50">
+            <TabsTrigger value="monitor">
+              <Eye className="h-4 w-4 mr-1" />
+              竞品监控
+            </TabsTrigger>
+            <TabsTrigger value="suggestions">
+              <TrendingDown className="h-4 w-4 mr-1" />
+              调价建议
+              {stats.urgentSuggestions > 0 && (
+                <Badge variant="destructive" className="ml-1">{stats.urgentSuggestions}</Badge>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="adjustments">
+              <History className="h-4 w-4 mr-1" />
+              调价记录
+              {stats.pendingAdjustments > 0 && (
+                <Badge variant="default" className="ml-1 bg-yellow-500">{stats.pendingAdjustments}</Badge>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="settings">
+              <Settings className="h-4 w-4 mr-1" />
+              规则设置
+            </TabsTrigger>
+          </TabsList>
+
+          {/* 竞品监控 */}
+          <TabsContent value="monitor" className="space-y-4">
+            <Card className="bg-white border-border shadow-sm">
               <CardHeader>
-                <CardTitle>竞品分析 - {selectedProduct.name}</CardTitle>
-                <CardDescription>当前售价 ¥{selectedProduct.sellingPrice} | 利润 ¥{selectedProduct.profit}</CardDescription>
+                <CardTitle className="text-[15px] flex items-center gap-2">
+                  <Target className="h-5 w-5 text-emerald-600" />
+                  商品盈亏监控
+                </CardTitle>
+                <CardDescription>实时监控商品利润空间，识别需要调价的商品</CardDescription>
               </CardHeader>
               <CardContent>
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>竞品</TableHead>
-                      <TableHead>价格</TableHead>
-                      <TableHead>趋势</TableHead>
-                      <TableHead>差价</TableHead>
-                      <TableHead>来源</TableHead>
-                      <TableHead>更新时间</TableHead>
+                      <TableHead>商品</TableHead>
+                      <TableHead>成本</TableHead>
+                      <TableHead>售价</TableHead>
+                      <TableHead>利润</TableHead>
+                      <TableHead>利润率</TableHead>
+                      <TableHead>状态</TableHead>
+                      <TableHead>竞品数</TableHead>
+                      <TableHead>操作</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {selectedProduct.competitors.map(comp => (
-                      <TableRow key={comp.id}>
-                        <TableCell className="font-medium">{comp.name}</TableCell>
-                        <TableCell className="font-medium">¥{comp.price}</TableCell>
+                    {products.map(product => (
+                      <TableRow key={product.id}>
                         <TableCell>
-                          <div className="flex items-center gap-1">
-                            {comp.trend === 'up' && <TrendingUp className="h-4 w-4 text-red-600" />}
-                            {comp.trend === 'down' && <TrendingDown className="h-4 w-4 text-green-600" />}
-                            {comp.trend === 'stable' && <span className="text-muted-foreground">-</span>}
-                            <span className={
-                              comp.trend === 'up' ? 'text-red-600' :
-                              comp.trend === 'down' ? 'text-green-600' : ''
-                            }>
-                              {comp.trend === 'up' ? '涨' : comp.trend === 'down' ? '跌' : '稳'}
+                          <div>
+                            <div className="font-medium">{product.name}</div>
+                            <div className="text-xs text-muted-foreground">{product.sku}</div>
+                          </div>
+                        </TableCell>
+                        <TableCell>¥{product.costPrice}</TableCell>
+                        <TableCell className="font-medium">¥{product.sellingPrice}</TableCell>
+                        <TableCell className={product.profit > 50 ? 'text-green-600' : 'text-orange-600'}>
+                          ¥{product.profit}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <div className={`w-16 h-2 rounded-full ${
+                              product.profitRate >= 30 ? 'bg-green-500' :
+                              product.profitRate >= 15 ? 'bg-yellow-500' : 'bg-red-500'
+                            }`}>
+                              <div 
+                                className={`h-full rounded-full ${
+                                  product.profitRate >= 30 ? 'bg-green-500' :
+                                  product.profitRate >= 15 ? 'bg-yellow-500' : 'bg-red-500'
+                                }`}
+                                style={{ width: `${Math.min(product.profitRate, 100)}%` }}
+                              />
+                            </div>
+                            <span className={`text-sm ${
+                              product.profitRate >= 30 ? 'text-green-600' :
+                              product.profitRate >= 15 ? 'text-yellow-600' : 'text-red-600'
+                            }`}>
+                              {product.profitRate.toFixed(1)}%
                             </span>
                           </div>
                         </TableCell>
-                        <TableCell className={
-                          comp.price < selectedProduct.sellingPrice ? 'text-red-600' :
-                          comp.price > selectedProduct.sellingPrice ? 'text-green-600' : ''
-                        }>
-                          {comp.price - selectedProduct.sellingPrice > 0 ? '+' : ''}{comp.price - selectedProduct.sellingPrice}
-                        </TableCell>
                         <TableCell>
-                          <Badge variant="outline">{comp.source}</Badge>
+                          <Badge variant={
+                            product.status === 'healthy' ? 'default' :
+                            product.status === 'warning' ? 'secondary' : 'destructive'
+                          } className={
+                            product.status === 'healthy' ? 'bg-green-100 text-green-800' :
+                            product.status === 'warning' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'
+                          }>
+                            {product.status === 'healthy' ? '健康' :
+                             product.status === 'warning' ? '预警' : '危险'}
+                          </Badge>
                         </TableCell>
-                        <TableCell className="text-muted-foreground">{comp.lastUpdated}</TableCell>
+                        <TableCell>{product.competitors.length}</TableCell>
+                        <TableCell>
+                          <Button variant="ghost" size="sm" onClick={() => {
+                            setSelectedProduct(product);
+                            setActiveTab('suggestions');
+                          }}>
+                            查看竞品
+                          </Button>
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
                 </Table>
               </CardContent>
             </Card>
-          )}
-        </TabsContent>
 
-        {/* 调价建议 */}
-        <TabsContent value="suggestions" className="space-y-4">
-          {suggestions.length === 0 ? (
-            <Card>
-              <CardContent className="flex flex-col items-center justify-center py-12">
-                <CheckCircle2 className="h-12 w-12 text-green-500 mb-4" />
-                <h3 className="text-lg font-medium">暂无调价建议</h3>
-                <p className="text-muted-foreground mt-1">所有商品利润空间良好，无需调价</p>
-              </CardContent>
-            </Card>
-          ) : (
-            suggestions.map(suggestion => (
-              <Card key={suggestion.id} className={
-                suggestion.urgency === 'high' ? 'border-red-200 bg-red-50' :
-                suggestion.urgency === 'medium' ? 'border-yellow-200 bg-yellow-50' : ''
-              }>
-                <CardContent className="pt-6">
-                  <div className="flex items-start justify-between">
-                    <div className="space-y-1">
+            {/* 竞品详情 */}
+            {selectedProduct && (
+              <Card className="bg-white border-border shadow-sm">
+                <CardHeader>
+                  <CardTitle className="text-[15px] flex items-center gap-2">
+                    <Users className="h-5 w-5 text-emerald-600" />
+                    竞品分析 - {selectedProduct.name}
+                  </CardTitle>
+                  <CardDescription>
+                    当前售价 ¥{selectedProduct.sellingPrice} | 利润 ¥{selectedProduct.profit} | 利润率 {selectedProduct.profitRate.toFixed(1)}%
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>竞品</TableHead>
+                        <TableHead>价格</TableHead>
+                        <TableHead>趋势</TableHead>
+                        <TableHead>差价</TableHead>
+                        <TableHead>来源</TableHead>
+                        <TableHead>更新时间</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {selectedProduct.competitors.map(comp => (
+                        <TableRow key={comp.id}>
+                          <TableCell className="font-medium">{comp.name}</TableCell>
+                          <TableCell className="font-medium">¥{comp.price}</TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-1">
+                              {comp.trend === 'up' && <TrendingUp className="h-4 w-4 text-red-600" />}
+                              {comp.trend === 'down' && <TrendingDown className="h-4 w-4 text-green-600" />}
+                              {comp.trend === 'stable' && <span className="text-muted-foreground">-</span>}
+                              <span className={
+                                comp.trend === 'up' ? 'text-red-600' :
+                                comp.trend === 'down' ? 'text-green-600' : ''
+                              }>
+                                {comp.trend === 'up' ? '涨' : comp.trend === 'down' ? '跌' : '稳'}
+                              </span>
+                            </div>
+                          </TableCell>
+                          <TableCell className={
+                            comp.price < selectedProduct.sellingPrice ? 'text-red-600' :
+                            comp.price > selectedProduct.sellingPrice ? 'text-green-600' : ''
+                          }>
+                            {comp.price - selectedProduct.sellingPrice > 0 ? '+' : ''}{comp.price - selectedProduct.sellingPrice}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline">{comp.source}</Badge>
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">{comp.lastUpdated}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+
+          {/* 调价建议 */}
+          <TabsContent value="suggestions" className="space-y-4">
+            {suggestions.length === 0 ? (
+              <Card className="bg-white border-border shadow-sm">
+                <CardContent className="flex flex-col items-center justify-center py-12">
+                  <CheckCircle2 className="h-12 w-12 text-green-500 mb-4" />
+                  <h3 className="text-lg font-medium">暂无调价建议</h3>
+                  <p className="text-muted-foreground mt-1">所有商品利润空间良好，无需调价</p>
+                </CardContent>
+              </Card>
+            ) : (
+              suggestions.map(suggestion => (
+                <Card key={suggestion.id} className={
+                  suggestion.urgency === 'high' ? 'border-red-200 bg-red-50' :
+                  suggestion.urgency === 'medium' ? 'border-yellow-200 bg-yellow-50' : 'bg-white'
+                }>
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-[15px]">{suggestion.productName}</CardTitle>
                       <div className="flex items-center gap-2">
-                        <h3 className="font-medium">{suggestion.productName}</h3>
                         <Badge variant={
                           suggestion.urgency === 'high' ? 'destructive' :
                           suggestion.urgency === 'medium' ? 'default' : 'secondary'
@@ -680,220 +700,227 @@ export default function PricingAgentPage() {
                            suggestion.riskLevel === 'warning' ? '注意' : '禁止'}
                         </Badge>
                       </div>
-                      <p className="text-sm text-muted-foreground">{suggestion.reason}</p>
                     </div>
-                  </div>
-
-                  <div className="grid grid-cols-4 gap-4 mt-4">
-                    <div className="bg-white rounded-lg p-3 border">
-                      <div className="text-xs text-muted-foreground">当前价格</div>
-                      <div className="text-lg font-bold">¥{suggestion.currentPrice}</div>
-                    </div>
-                    <div className="bg-white rounded-lg p-3 border">
-                      <div className="text-xs text-muted-foreground">建议价格</div>
-                      <div className="text-lg font-bold text-blue-600">¥{suggestion.suggestedPrice}</div>
-                    </div>
-                    <div className="bg-white rounded-lg p-3 border">
-                      <div className="text-xs text-muted-foreground">调整幅度</div>
-                      <div className={`text-lg font-bold ${suggestion.change < 0 ? 'text-red-600' : 'text-green-600'}`}>
-                        {suggestion.change > 0 ? '+' : ''}{suggestion.change} ({suggestion.changePercent.toFixed(1)}%)
+                    <CardDescription>{suggestion.reason}</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-4 gap-4">
+                      <div className="bg-muted rounded-lg p-3">
+                        <div className="text-xs text-muted-foreground">当前价格</div>
+                        <div className="text-lg font-bold">¥{suggestion.currentPrice}</div>
+                      </div>
+                      <div className="bg-emerald-50 rounded-lg p-3 border border-emerald-200">
+                        <div className="text-xs text-muted-foreground">建议价格</div>
+                        <div className="text-lg font-bold text-emerald-600">¥{suggestion.suggestedPrice}</div>
+                      </div>
+                      <div className="bg-muted rounded-lg p-3">
+                        <div className="text-xs text-muted-foreground">调整幅度</div>
+                        <div className={`text-lg font-bold ${suggestion.change < 0 ? 'text-red-600' : 'text-green-600'}`}>
+                          {suggestion.change > 0 ? '+' : ''}{suggestion.change} ({suggestion.changePercent.toFixed(1)}%)
+                        </div>
+                      </div>
+                      <div className="bg-muted rounded-lg p-3">
+                        <div className="text-xs text-muted-foreground">调后利润率</div>
+                        <div className={`text-lg font-bold ${
+                          suggestion.profitRate >= 20 ? 'text-green-600' :
+                          suggestion.profitRate >= 15 ? 'text-yellow-600' : 'text-red-600'
+                        }`}>
+                          {suggestion.profitRate.toFixed(1)}%
+                        </div>
+                        <div className="text-xs text-muted-foreground">最低 {suggestion.minProfitRate}%</div>
                       </div>
                     </div>
-                    <div className="bg-white rounded-lg p-3 border">
-                      <div className="text-xs text-muted-foreground">调后利润率</div>
-                      <div className={`text-lg font-bold ${
-                        suggestion.profitRate >= 20 ? 'text-green-600' :
-                        suggestion.profitRate >= 15 ? 'text-yellow-600' : 'text-red-600'
-                      }`}>
-                        {suggestion.profitRate.toFixed(1)}%
-                      </div>
-                      <div className="text-xs text-muted-foreground">最低 {suggestion.minProfitRate}%</div>
-                    </div>
-                  </div>
 
-                  {suggestion.competitorPrice && (
-                    <div className="mt-4 p-3 bg-muted rounded-lg">
-                      <div className="text-sm">
-                        <span className="text-muted-foreground">竞品最低价：</span>
-                        <span className="font-medium">¥{suggestion.competitorPrice}</span>
-                        <span className="text-muted-foreground ml-2">
-                          (当前价格比竞品高 ¥{(suggestion.currentPrice - suggestion.competitorPrice).toFixed(0)})
-                        </span>
+                    {suggestion.competitorPrice && (
+                      <div className="mt-4 p-3 bg-muted rounded-lg">
+                        <div className="text-sm">
+                          <span className="text-muted-foreground">竞品最低价：</span>
+                          <span className="font-medium">¥{suggestion.competitorPrice}</span>
+                          <span className="text-muted-foreground ml-2">
+                            (当前价格比竞品高 ¥{(suggestion.currentPrice - suggestion.competitorPrice).toFixed(0)})
+                          </span>
+                        </div>
                       </div>
-                    </div>
-                  )}
-
-                  <div className="flex justify-end gap-2 mt-4">
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        setSelectedProduct(products.find(p => p.id === suggestion.productId) || null);
-                        setAdjustmentForm({ newPrice: suggestion.suggestedPrice.toString(), reason: suggestion.reason });
-                        setAdjustmentDialog(true);
-                      }}
-                    >
-                      <Edit3 className="h-4 w-4 mr-1" />
-                      手动调整
-                    </Button>
-                    {suggestion.riskLevel !== 'danger' ? (
-                      <Button onClick={() => handleExecuteAdjustment(suggestion)}>
-                        <CheckCircle2 className="h-4 w-4 mr-1" />
-                        执行调价
-                      </Button>
-                    ) : (
-                      <Button disabled>
-                        <XCircle className="h-4 w-4 mr-1" />
-                        禁止调价
-                      </Button>
                     )}
-                  </div>
-                </CardContent>
-              </Card>
-            ))
-          )}
-        </TabsContent>
 
-        {/* 调价记录 */}
-        <TabsContent value="adjustments" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>调价历史</CardTitle>
-              <CardDescription>查看所有调价操作记录和审批状态</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>时间</TableHead>
-                    <TableHead>商品</TableHead>
-                    <TableHead>原价</TableHead>
-                    <TableHead>新价</TableHead>
-                    <TableHead>调整</TableHead>
-                    <TableHead>调前利润</TableHead>
-                    <TableHead>调后利润</TableHead>
-                    <TableHead>状态</TableHead>
-                    <TableHead>操作</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {adjustments.map(adj => (
-                    <TableRow key={adj.id}>
-                      <TableCell className="text-sm">{adj.createdAt}</TableCell>
-                      <TableCell className="font-medium">{adj.productName}</TableCell>
-                      <TableCell>¥{adj.oldPrice}</TableCell>
-                      <TableCell className="font-medium">¥{adj.newPrice}</TableCell>
-                      <TableCell className={adj.change < 0 ? 'text-red-600' : 'text-green-600'}>
-                        {adj.change > 0 ? '+' : ''}{adj.change} ({adj.changePercent.toFixed(1)}%)
-                      </TableCell>
-                      <TableCell>
-                        <span className={adj.profitRateBefore >= 20 ? 'text-green-600' : adj.profitRateBefore >= 15 ? 'text-yellow-600' : 'text-red-600'}>
-                          ¥{adj.profitBefore.toFixed(0)} ({adj.profitRateBefore.toFixed(1)}%)
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <span className={adj.profitRateAfter >= 20 ? 'text-green-600' : adj.profitRateAfter >= 15 ? 'text-yellow-600' : 'text-red-600'}>
-                          ¥{adj.profitAfter.toFixed(0)} ({adj.profitRateAfter.toFixed(1)}%)
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={
-                          adj.status === 'executed' ? 'default' :
-                          adj.status === 'pending' ? 'secondary' : 'destructive'
-                        } className={
-                          adj.status === 'executed' ? 'bg-green-100 text-green-800' :
-                          adj.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'
-                        }>
-                          {adj.status === 'executed' ? '已执行' :
-                           adj.status === 'pending' ? '待审批' : '已拒绝'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {adj.status === 'pending' && (
-                          <div className="flex gap-1">
-                            <Button size="sm" variant="ghost" className="text-green-600" onClick={() => approveAdjustment(adj.id)}>
-                              批准
-                            </Button>
-                            <Button size="sm" variant="ghost" className="text-red-600" onClick={() => rejectAdjustment(adj.id)}>
-                              拒绝
-                            </Button>
-                          </div>
-                        )}
-                        {adj.status === 'executed' && (
-                          <span className="text-sm text-muted-foreground">{adj.executor}</span>
-                        )}
-                      </TableCell>
+                    <div className="flex justify-end gap-2 mt-4">
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setSelectedProduct(products.find(p => p.id === suggestion.productId) || null);
+                          setAdjustmentForm({ newPrice: suggestion.suggestedPrice.toString(), reason: suggestion.reason });
+                          setAdjustmentDialog(true);
+                        }}
+                      >
+                        <Edit3 className="h-4 w-4 mr-1" />
+                        手动调整
+                      </Button>
+                      {suggestion.riskLevel !== 'danger' ? (
+                        <Button onClick={() => handleExecuteAdjustment(suggestion)}>
+                          <CheckCircle2 className="h-4 w-4 mr-1" />
+                          执行调价
+                        </Button>
+                      ) : (
+                        <Button disabled>
+                          <XCircle className="h-4 w-4 mr-1" />
+                          禁止调价
+                        </Button>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            )}
+          </TabsContent>
+
+          {/* 调价记录 */}
+          <TabsContent value="adjustments" className="space-y-4">
+            <Card className="bg-white border-border shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-[15px] flex items-center gap-2">
+                  <History className="h-5 w-5 text-emerald-600" />
+                  调价历史
+                </CardTitle>
+                <CardDescription>查看所有调价操作记录和审批状态</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>时间</TableHead>
+                      <TableHead>商品</TableHead>
+                      <TableHead>原价</TableHead>
+                      <TableHead>新价</TableHead>
+                      <TableHead>调整</TableHead>
+                      <TableHead>调前利润</TableHead>
+                      <TableHead>调后利润</TableHead>
+                      <TableHead>状态</TableHead>
+                      <TableHead>操作</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        </TabsContent>
+                  </TableHeader>
+                  <TableBody>
+                    {adjustments.map(adj => (
+                      <TableRow key={adj.id}>
+                        <TableCell className="text-sm">{adj.createdAt}</TableCell>
+                        <TableCell className="font-medium">{adj.productName}</TableCell>
+                        <TableCell>¥{adj.oldPrice}</TableCell>
+                        <TableCell className="font-medium">¥{adj.newPrice}</TableCell>
+                        <TableCell className={adj.change < 0 ? 'text-red-600' : 'text-green-600'}>
+                          {adj.change > 0 ? '+' : ''}{adj.change} ({adj.changePercent.toFixed(1)}%)
+                        </TableCell>
+                        <TableCell>
+                          <span className={adj.profitRateBefore >= 20 ? 'text-green-600' : adj.profitRateBefore >= 15 ? 'text-yellow-600' : 'text-red-600'}>
+                            ¥{adj.profitBefore.toFixed(0)} ({adj.profitRateBefore.toFixed(1)}%)
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          <span className={adj.profitRateAfter >= 20 ? 'text-green-600' : adj.profitRateAfter >= 15 ? 'text-yellow-600' : 'text-red-600'}>
+                            ¥{adj.profitAfter.toFixed(0)} ({adj.profitRateAfter.toFixed(1)}%)
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={
+                            adj.status === 'executed' ? 'default' :
+                            adj.status === 'pending' ? 'secondary' : 'destructive'
+                          } className={
+                            adj.status === 'executed' ? 'bg-green-100 text-green-800' :
+                            adj.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'
+                          }>
+                            {adj.status === 'executed' ? '已执行' :
+                             adj.status === 'pending' ? '待审批' : '已拒绝'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {adj.status === 'pending' && (
+                            <div className="flex gap-1">
+                              <Button size="sm" variant="ghost" className="text-green-600" onClick={() => approveAdjustment(adj.id)}>
+                                批准
+                              </Button>
+                              <Button size="sm" variant="ghost" className="text-red-600" onClick={() => rejectAdjustment(adj.id)}>
+                                拒绝
+                              </Button>
+                            </div>
+                          )}
+                          {adj.status === 'executed' && (
+                            <span className="text-sm text-muted-foreground">{adj.executor}</span>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-        {/* 规则设置 */}
-        <TabsContent value="settings" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>盈亏保护规则</CardTitle>
-              <CardDescription>设置调价的盈亏保护机制</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label>最低利润率</Label>
-                  <div className="flex items-center gap-2">
-                    <Input type="number" defaultValue="15" className="w-24" />
-                    <span className="text-muted-foreground">%</span>
+          {/* 规则设置 */}
+          <TabsContent value="settings" className="space-y-4">
+            <Card className="bg-white border-border shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-[15px] flex items-center gap-2">
+                  <Settings className="h-5 w-5 text-emerald-600" />
+                  盈亏保护规则
+                </CardTitle>
+                <CardDescription>设置调价的盈亏保护机制</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="minProfit">最低利润率</Label>
+                    <div className="flex items-center gap-2">
+                      <Input id="minProfit" type="number" defaultValue="15" className="w-24" />
+                      <span className="text-muted-foreground">%</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">低于此利润率的调价将被禁止</p>
                   </div>
-                  <p className="text-xs text-muted-foreground">低于此利润率的调价将被禁止</p>
-                </div>
-                <div className="space-y-2">
-                  <Label>安全利润率</Label>
-                  <div className="flex items-center gap-2">
-                    <Input type="number" defaultValue="20" className="w-24" />
-                    <span className="text-muted-foreground">%</span>
+                  <div className="space-y-2">
+                    <Label htmlFor="safeProfit">安全利润率</Label>
+                    <div className="flex items-center gap-2">
+                      <Input id="safeProfit" type="number" defaultValue="20" className="w-24" />
+                      <span className="text-muted-foreground">%</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">高于此利润率的调价可自动执行</p>
                   </div>
-                  <p className="text-xs text-muted-foreground">高于此利润率的调价可自动执行</p>
-                </div>
-                <div className="space-y-2">
-                  <Label>健康利润率</Label>
-                  <div className="flex items-center gap-2">
-                    <Input type="number" defaultValue="30" className="w-24" />
-                    <span className="text-muted-foreground">%</span>
+                  <div className="space-y-2">
+                    <Label htmlFor="healthyProfit">健康利润率</Label>
+                    <div className="flex items-center gap-2">
+                      <Input id="healthyProfit" type="number" defaultValue="30" className="w-24" />
+                      <span className="text-muted-foreground">%</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">高于此利润率为健康状态</p>
                   </div>
-                  <p className="text-xs text-muted-foreground">高于此利润率为健康状态</p>
-                </div>
-                <div className="space-y-2">
-                  <Label>竞品价格权重</Label>
-                  <div className="flex items-center gap-2">
-                    <Input type="number" defaultValue="10" className="w-24" />
-                    <span className="text-muted-foreground">%</span>
-                  </div>
-                  <p className="text-xs text-muted-foreground">调价时参考竞品价格的权重</p>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label>调价审批规则</Label>
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <input type="checkbox" defaultChecked className="rounded" />
-                    <span className="text-sm">利润 ≥ 安全利润率：自动执行</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <input type="checkbox" defaultChecked className="rounded" />
-                    <span className="text-sm">利润 15%-20%：需要管理员审批</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <input type="checkbox" defaultChecked className="rounded" />
-                    <span className="text-sm">利润 &lt; 15%：禁止调价</span>
+                  <div className="space-y-2">
+                    <Label htmlFor="competitorWeight">竞品价格权重</Label>
+                    <div className="flex items-center gap-2">
+                      <Input id="competitorWeight" type="number" defaultValue="10" className="w-24" />
+                      <span className="text-muted-foreground">%</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">调价时参考竞品价格的权重</p>
                   </div>
                 </div>
-              </div>
-              <Button>保存设置</Button>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+                <div className="space-y-2">
+                  <Label>调价审批规则</Label>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <input type="checkbox" defaultChecked className="rounded" />
+                      <span className="text-sm">利润 ≥ 安全利润率：自动执行</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <input type="checkbox" defaultChecked className="rounded" />
+                      <span className="text-sm">利润 15%-20%：需要管理员审批</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <input type="checkbox" defaultChecked className="rounded" />
+                      <span className="text-sm">利润 &lt; 15%：禁止调价</span>
+                    </div>
+                  </div>
+                </div>
+                <Button>保存设置</Button>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </div>
 
       {/* 调价确认弹窗 */}
       <Dialog open={adjustmentDialog} onOpenChange={setAdjustmentDialog}>
@@ -913,9 +940,9 @@ export default function PricingAgentPage() {
                   <div className="text-xl font-bold">¥{selectedProduct.sellingPrice}</div>
                   <div className="text-xs text-muted-foreground">利润率 {selectedProduct.profitRate.toFixed(1)}%</div>
                 </div>
-                <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg">
                   <div className="text-muted-foreground">新价格</div>
-                  <div className="text-xl font-bold text-blue-600">¥{adjustmentForm.newPrice || '-'}</div>
+                  <div className="text-xl font-bold text-emerald-600">¥{adjustmentForm.newPrice || '-'}</div>
                   {adjustmentForm.newPrice && (
                     <div className="text-xs text-muted-foreground">
                       利润率 {(((parseFloat(adjustmentForm.newPrice) - selectedProduct.costPrice) / parseFloat(adjustmentForm.newPrice)) * 100).toFixed(1)}%
@@ -968,7 +995,6 @@ export default function PricingAgentPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      </div>
     </MainLayout>
   );
 }
