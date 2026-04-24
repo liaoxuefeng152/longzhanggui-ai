@@ -33,6 +33,7 @@ import {
   RefreshCw,
   Play,
   Eye,
+  FileBox,
 } from "lucide-react";
 
 // 今日概览数据
@@ -106,6 +107,16 @@ const quickWorkflows = [
     description: '批量生成高质量Listing',
     steps: ['选择商品', 'AI优化', '批量发布'],
     stats: { total: 567, today: 12 },
+  },
+  { 
+    id: 'pricing-template', 
+    name: '定价模板', 
+    icon: <FileBox className="h-5 w-5" />, 
+    color: 'from-emerald-500 to-teal-500',
+    bgColor: 'bg-emerald-500/10',
+    description: '预设定价规则，快速计算商品售价',
+    steps: ['创建模板', '配置规则', '一键定价'],
+    stats: { total: 12, today: 0 },
   },
 ];
 
