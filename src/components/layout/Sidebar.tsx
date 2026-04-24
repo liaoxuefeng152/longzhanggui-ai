@@ -82,6 +82,11 @@ const clientMenuItems: MenuItem[] = [
     ],
   },
   {
+    title: '店铺管理',
+    href: '/shops',
+    icon: Store,
+  },
+  {
     title: '客服工单',
     href: '/customer-tickets',
     icon: Headphones,
@@ -133,8 +138,6 @@ const adminMenuItems: MenuItem[] = [
     submenu: [
       { title: '配置总览', href: '/platform' },
       { title: '数据源配置', href: '/platform/datasources' },
-      { title: '店铺管理', href: '/shops' },
-      { title: '平台凭证', href: '/shops/platforms' },
     ],
   },
   {
