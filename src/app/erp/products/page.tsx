@@ -40,7 +40,6 @@ import {
   Clock,
   Box,
   Loader2,
-  Play,
   Rocket,
   RefreshCw,
   MoreHorizontal,
@@ -59,6 +58,7 @@ import {
   Star,
   TrendingUp,
   FileText,
+  Sparkles,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -914,20 +914,6 @@ export default function ERPProductsPage() {
                           </div>
                         )}
                         <div className="flex items-center gap-2 mt-3">
-                          {product.status === 'selected' && (
-                            <Button 
-                              size="sm" 
-                              onClick={() => handleProcessProduct(product.id)}
-                              disabled={isProcessing === product.id}
-                            >
-                              {isProcessing === product.id ? (
-                                <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                              ) : (
-                                <Play className="h-3 w-3 mr-1" />
-                              )}
-                              开始处理
-                            </Button>
-                          )}
                           {product.status === 'ready' && (
                             <Button 
                               size="sm" 
@@ -949,6 +935,12 @@ export default function ERPProductsPage() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
+                              {product.status === 'selected' && (
+                                <DropdownMenuItem onClick={() => handleProcessProduct(product.id)}>
+                                  <Sparkles className="h-3 w-3 mr-2 text-purple-500" />
+                                  AI优化
+                                </DropdownMenuItem>
+                              )}
                               <DropdownMenuItem onClick={() => handleViewDetail(product.id)}>
                                 <Edit className="h-3 w-3 mr-2" />
                                 编辑商品
