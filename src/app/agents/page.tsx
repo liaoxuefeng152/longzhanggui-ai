@@ -23,6 +23,7 @@ import {
   RefreshCw,
   Shield,
   AlertTriangle,
+  DollarSign,
 } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
@@ -38,6 +39,7 @@ const agentIcons: Record<string, any> = {
   'advertising': Megaphone,
   'customer-service': Headphones,
   'data-review': BarChart3,
+  'pricing': DollarSign,
 };
 
 // 智能体彩虹配色映射
@@ -49,6 +51,7 @@ const agentColors: Record<string, { bg: string; text: string; gradient: string }
   'advertising': { bg: 'bg-orange-500/10', text: 'text-orange-500', gradient: 'from-orange-500/20 to-amber-400/5' },
   'customer-service': { bg: 'bg-cyan-500/10', text: 'text-cyan-500', gradient: 'from-cyan-500/20 to-teal-400/5' },
   'data-review': { bg: 'bg-indigo-500/10', text: 'text-indigo-500', gradient: 'from-indigo-500/20 to-violet-400/5' },
+  'pricing': { bg: 'bg-emerald-500/10', text: 'text-emerald-500', gradient: 'from-emerald-500/20 to-teal-400/5' },
 };
 
 // 智能体描述映射
@@ -101,6 +104,13 @@ const agentDescriptions: Record<string, { description: string; platform: string;
     features: ['销售分析', '流量分析', 'ROI计算', '任务转化'],
     compliance: false,
     riskControl: false,
+  },
+  'pricing': {
+    description: '竞品监控、保本计算、智能调价、盈亏保护',
+    platform: 'Shopee/Lazada/TK',
+    features: ['竞品监控', '保本计算', '智能调价', '盈亏保护'],
+    compliance: false,
+    riskControl: true,
   },
 };
 
