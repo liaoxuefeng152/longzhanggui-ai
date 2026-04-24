@@ -505,6 +505,8 @@ export default function WorkflowsPage() {
                       onClick={() => {
                         if (workflow.id === 'new-product') {
                           setShowWizard(true);
+                        } else if (workflow.id === 'pricing-template') {
+                          router.push('/workflows/pricing-templates');
                         } else {
                           toast.info(`${workflow.name}功能开发中`);
                         }
