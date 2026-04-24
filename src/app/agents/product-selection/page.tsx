@@ -167,7 +167,7 @@ interface SelectionReport {
   recommendations: string[];
 }
 
-// ==================== 模拟数据 ====================
+// 模拟数据
 
 const mockDirections: Direction[] = [
   { id: 'DIR-1', name: '厨房收纳小工具', reason: '近30天搜索增长60%，在售卖家少', stars: 5 },
@@ -259,7 +259,7 @@ const mockSuppliers: Supplier[] = [
   },
 ];
 
-// ==================== 合规规则库 ====================
+// 合规规则库
 
 // TikTok Shop 禁售品类 - 自动过滤关键词
 const bannedCategories = [

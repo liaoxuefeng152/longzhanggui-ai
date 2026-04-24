@@ -3,7 +3,7 @@
  * 用于存储运行时数据，实现数据流转
  */
 
-// ============ 类型定义 ============
+// 类型定义
 
 export interface Product {
   id: string;
@@ -312,7 +312,7 @@ export interface WorkflowStep {
   error?: string;
 }
 
-// ============ 采集清单类型 ============
+// 采集清单类型
 
 export interface CollectionItem {
   id: string;
@@ -330,7 +330,7 @@ export interface CollectionItem {
   collected_at?: string;
 }
 
-// ============ 公用采集箱类型 ============
+// 公用采集箱类型
 
 export interface PublicCollectionItem {
   id: string;
@@ -354,7 +354,7 @@ export interface PublicCollectionItem {
   updated_at: string;
 }
 
-// ============ 全局存储 ============
+// 全局存储
 
 declare global {
   // eslint-disable-next-line no-var
@@ -1018,7 +1018,7 @@ class LobsterStore {
     );
   }
 
-  // ============ 采集清单相关方法 ============
+  // 采集清单相关方法
 
   /**
    * 添加到待采集清单
@@ -1084,7 +1084,7 @@ class LobsterStore {
     return this.pendingCollections.delete(id);
   }
 
-  // ============ 公用采集箱方法 ============
+  // 公用采集箱方法
 
   /**
    * 添加到公用采集箱

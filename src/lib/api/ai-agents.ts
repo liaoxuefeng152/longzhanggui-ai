@@ -4,7 +4,7 @@
  */
 import { apiClient } from './client';
 
-// ============ 选品智能体 ============
+// 选品智能体
 
 export interface SelectProductsRequest {
   platform?: string;
@@ -30,7 +30,7 @@ export interface SelectedProduct {
   moq?: string;
 }
 
-// ============ 类型定义 ============
+// 类型定义
 
 export interface DirectionItem {
   id: string;
@@ -138,7 +138,7 @@ export async function selectProductsStream(request: SelectProductsRequest, callb
   }
 }
 
-// ============ 图片智能体 ============
+// 图片智能体
 
 export type ImageProcessMode = 'translate' | 'optimize' | 'remove_watermark' | 'white_background' | 'text_to_image' | 'image_to_image';
 
@@ -185,7 +185,7 @@ export async function processImage(request: ProcessImageRequest): Promise<ImageP
   return response.json();
 }
 
-// ============ 视频生成智能体 ============
+// 视频生成智能体
 
 export interface GenerateVideoRequest {
   prompt: string;
@@ -231,7 +231,7 @@ export async function generateVideo(request: GenerateVideoRequest): Promise<Vide
   return response.json();
 }
 
-// ============ Listing优化智能体 ============
+// Listing优化智能体
 
 export interface OptimizeListingRequest {
   productName: string;
@@ -329,7 +329,7 @@ export async function optimizeListingStream(request: OptimizeListingRequest, cal
   }
 }
 
-// ============ 智能定价工具 ============
+// 智能定价工具
 
 export interface CalculatePriceRequest {
   costPrice: number;
@@ -379,7 +379,7 @@ export async function calculatePrice(request: CalculatePriceRequest): Promise<Pr
   return response.json();
 }
 
-// ============ AI客服智能体 ============
+// AI客服智能体
 
 export interface CustomerReplyRequest {
   customerMessage: string;
@@ -463,7 +463,7 @@ export async function generateCustomerReplyStream(request: CustomerReplyRequest,
   }
 }
 
-// ============ 商品采集 ============
+// 商品采集
 
 export interface ScrapeRequest {
   url: string;
@@ -515,7 +515,7 @@ export async function scrapeProduct(request: ScrapeRequest): Promise<ScrapeResul
   return response.json();
 }
 
-// ============ 保留旧的导出（兼容） ============
+// 保留旧的导出（兼容）
 
 // 为了兼容旧代码，保留以下导出
 export async function selectProducts(request: SelectProductsRequest): Promise<{ success: boolean; data?: SelectionResult }> {

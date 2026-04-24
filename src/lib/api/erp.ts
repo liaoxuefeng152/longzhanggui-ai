@@ -52,7 +52,7 @@ async function apiRequest<T>(
   }
 }
 
-// ============ 商品 API ============
+// 商品 API
 
 export interface Product {
   id: string;
@@ -176,7 +176,7 @@ export const productsApi = {
   },
 };
 
-// ============ 认证 API ============
+// 认证 API
 // 注意: LoginRequest 和 LoginResponse 已在 auth.ts 中定义，这里使用 auth 模块的
 
 export const authApi = {
@@ -192,7 +192,7 @@ export const authApi = {
   },
 };
 
-// ============ 库存 API ============
+// 库存 API
 
 export interface Inventory {
   id: string;
@@ -221,7 +221,7 @@ export const inventoryApi = {
   },
 };
 
-// ============ 订单 API ============
+// 订单 API
 
 export interface Order {
   id: string;
@@ -261,7 +261,7 @@ export const ordersApi = {
   },
 };
 
-// ============ 数据统计 API ============
+// 数据统计 API
 
 export interface ErpDashboardStats {
   total_products: number;
