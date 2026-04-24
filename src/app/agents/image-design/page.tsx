@@ -147,10 +147,11 @@ Requirements:
   if (!result.success) {
     throw new Error(result.error || '图片生成失败');
   }
+  // 后端返回格式: { success, imageUrl, imageUrls, size, model }
   return {
-    imageUrl: result.data.image_url || result.data.image_urls?.[0],
-    size: result.data.size || '2K',
-    model: result.data.model || 'unknown',
+    imageUrl: result.imageUrl || result.imageUrls?.[0],
+    size: result.size || '2K',
+    model: result.model || 'unknown',
   };
 }
 
