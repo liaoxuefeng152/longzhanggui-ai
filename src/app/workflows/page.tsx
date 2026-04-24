@@ -179,6 +179,11 @@ export default function WorkflowsPage() {
         toast.success('开始批量优化', { description: '正在跳转到Listing优化...' });
         router.push('/agents/listing-optimization');
         break;
+      case 'pricing-template':
+        // 定价模板：跳转到定价模板列表
+        toast.success('打开定价模板', { description: '正在跳转到定价模板...' });
+        router.push('/workflows/pricing-templates');
+        break;
       default:
         toast.info('功能开发中');
     }
