@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import MainLayout from '@/components/layout/MainLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -28,99 +28,134 @@ import {
   Rocket,
   Loader2,
   Package2,
-  Truck,
-  Store,
-  DollarSign,
-  ExternalLink,
-  CheckCircle,
   ImageIcon,
   Sparkles,
-  Copy,
-  Trash2,
-  Video,
-  Layers,
-  Package,
-  Play,
-  Eye,
-  RefreshCw,
-  Link2,
-  TrendingUp,
-  Image as ImageIconLucide,
-  FileText,
-  Settings,
-  ChevronRight,
   Plus,
+  X,
+  GripVertical,
+  Trash2,
+  Upload,
+  Star,
+  Copy,
+  Check,
+  Video,
+  Globe,
+  Languages,
+  MapPin,
+  DollarSign,
+  Truck,
+  Box,
+  ShoppingBag,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import Link from 'next/link';
 
 // 语言选项
 const LANGUAGES = [
-  { value: 'zh', label: '中文' },
-  { value: 'en', label: 'English' },
-  { value: 'id', label: 'Bahasa Indonesia' },
-  { value: 'th', label: 'ภาษาไทย' },
-  { value: 'vi', label: 'Tiếng Việt' },
-  { value: 'ms', label: 'Bahasa Melayu' },
+  { value: 'zh', label: '中文', flag: '🇨🇳' },
+  { value: 'en', label: 'English', flag: '🇺🇸' },
+  { value: 'th', label: 'ภาษาไทย', flag: '🇹🇭' },
+  { value: 'vi', label: 'Tiếng Việt', flag: '🇻🇳' },
+  { value: 'id', label: 'Indonesia', flag: '🇮🇩' },
+  { value: 'ms', label: 'Melayu', flag: '🇲🇾' },
 ];
 
-// 平台选项
-const PLATFORMS = [
-  { value: 'tiktok', label: 'TikTok Shop' },
-  { value: 'amazon', label: 'Amazon' },
-  { value: 'shopee', label: 'Shopee' },
+// 站点选项
+const SITES = [
+  { value: 'th', label: '泰国/TH', currency: 'THB', flag: '🇹🇭' },
+  { value: 'vn', label: '越南/VI', currency: 'VND', flag: '🇻🇳' },
+  { value: 'id', label: '印尼/ID', currency: 'IDR', flag: '🇮🇩' },
+  { value: 'my', label: '马来/MY', currency: 'MYR', flag: '🇲🇾' },
+  { value: 'ph', label: '菲律宾/PH', currency: 'PHP', flag: '🇵🇭' },
 ];
+
+// 规格一选项（颜色）
+const SPEC1_OPTIONS = [
+  '横竖磁吸可拆分【羊脂白】',
+  '横竖磁吸可拆分【绵柔粉】',
+  '横竖磁吸可拆分【天际黑】',
+  '横竖磁吸可拆分【灰苍苍】',
+  '横竖磁吸可拆分【海水蓝】',
+  '横竖磁吸可拆分【绝绝紫】',
+];
+
+// 规格二选项（适用型号）
+const SPEC2_OPTIONS = [
+  '2019/2020/2021款【10.2寸】',
+  '2017/2018【9.7寸】',
+  'Air1/Air2【9.7寸】',
+  'Pro/Air3【10.5寸】',
+  'Air4/Air5【10.9寸】',
+  'iPad第10代/11代【10.9寸】',
+  'Pro2018/2020【11寸】',
+  'Pro2021/2022【11寸】',
+  'iPadMini6/7【8.3寸】',
+  'iPadPro2024年【11寸】',
+  'iPadAir2024/2025【11寸】',
+  'iPadPro2024年【13寸】',
+];
+
+// SKU数据类型
+interface SKUItem {
+  id: string;
+  spec1: string;
+  spec2: string;
+  sourcePrice: number;
+  localPrice: string;
+  stock: number;
+  platformSku: string;
+  weight: number;
+}
+
+// 产品图片类型
+interface ProductImage {
+  id: string;
+  url: string;
+  isMain: boolean;
+}
 
 export default function ProductDetailPage() {
   const router = useRouter();
   const params = useParams();
   const productId = params.id as string;
 
-  const [product, setProduct] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [activeTab, setActiveTab] = useState('basic');
-  const [mainImageIndex, setMainImageIndex] = useState(0);
+  const [selectedLanguage, setSelectedLanguage] = useState('zh');
 
   // 基本信息表单
   const [basicForm, setBasicForm] = useState({
-    name_zh: '',
-    name_en: '',
-    internal_sku: '',
-    supplier_name: '',
-    source_url: '',
-    cost_price: 0,
-    domestic_shipping: 0,
-    first_mile_shipping: 0,
-  });
-
-  // 类目属性表单
-  const [categoryForm, setCategoryForm] = useState({
+    title: '',
+    description: '',
+    group: '',
     category: '',
-    brand: '',
-    model: '',
-    material: '',
-    color: '',
-    size: '',
-    weight_kg: 0,
+    weight: 0,
+    sourcePrice: 0,
   });
 
-  // 物流表单
+  // 产品图片
+  const [images, setImages] = useState<ProductImage[]>([]);
+
+  // SKU数据
+  const [skuList, setSkuList] = useState<SKUItem[]>([]);
+
+  // 多站点数据
+  const [siteData, setSiteData] = useState<Record<string, {
+    preTaxPrice: string;
+    localPrice: string;
+    stock: number;
+    shop: string;
+  }>>({});
+
+  // 物流信息
   const [logisticsForm, setLogisticsForm] = useState({
-    dimensions_length: 0,
-    dimensions_width: 0,
-    dimensions_height: 0,
-    package_length: 0,
-    package_width: 0,
-    package_height: 0,
-    package_weight: 0,
-    packaging_list: '',
+    weight: '',
+    length: '',
+    width: '',
+    height: '',
+    cod: false,
   });
-
-  // 模拟图片数据
-  const [images, setImages] = useState<string[]>([]);
-  const [videos, setVideos] = useState<string[]>([]);
 
   // 加载商品数据
   useEffect(() => {
@@ -129,15 +164,7 @@ export default function ProductDetailPage() {
         const { default: store } = await import('@/lib/store');
         const p = store.getProduct(productId);
         if (p) {
-          setProduct(p);
           initForms(p);
-          // 模拟图片数据
-          setImages([
-            'https://via.placeholder.com/400x400?text=Main+Image',
-            'https://via.placeholder.com/400x400?text=Image+2',
-            'https://via.placeholder.com/400x400?text=Image+3',
-            'https://via.placeholder.com/400x400?text=Image+4',
-          ]);
         } else {
           toast.error('商品不存在');
           router.push('/erp/products');
@@ -158,166 +185,145 @@ export default function ProductDetailPage() {
   // 初始化表单
   const initForms = (p: any) => {
     setBasicForm({
-      name_zh: p.name_zh,
-      name_en: p.name_en || '',
-      internal_sku: p.internal_sku,
-      supplier_name: p.supplier_name || '',
-      source_url: p.source_url || '',
-      cost_price: p.cost_price || 0,
-      domestic_shipping: p.domestic_shipping || 0,
-      first_mile_shipping: p.first_mile_shipping || 0,
+      title: p.name_zh || '',
+      description: '',
+      group: '未分组',
+      category: p.category || '',
+      weight: p.weight_kg || 0,
+      sourcePrice: p.cost_price || 0,
     });
 
-    setCategoryForm({
-      category: p.category || '',
-      brand: p.brand || '',
-      model: p.model || '',
-      material: p.material || '',
-      color: p.color || '',
-      size: p.size || '',
-      weight_kg: p.weight_kg || 0,
+    // 初始化图片
+    setImages([
+      { id: '1', url: 'https://picsum.photos/400/400?random=1', isMain: true },
+      { id: '2', url: 'https://picsum.photos/400/400?random=2', isMain: false },
+      { id: '3', url: 'https://picsum.photos/400/400?random=3', isMain: false },
+      { id: '4', url: 'https://picsum.photos/400/400?random=4', isMain: false },
+      { id: '5', url: 'https://picsum.photos/400/400?random=5', isMain: false },
+    ]);
+
+    // 初始化SKU列表
+    const generatedSkus: SKUItem[] = [];
+    SPEC1_OPTIONS.forEach((spec1, s1Idx) => {
+      SPEC2_OPTIONS.forEach((spec2, s2Idx) => {
+        generatedSkus.push({
+          id: `${s1Idx}-${s2Idx}`,
+          spec1,
+          spec2,
+          sourcePrice: s2Idx === 11 ? 18.00 : (s1Idx === 8 ? 5.00 : (s1Idx === 0 ? 27.80 : 26.00)),
+          localPrice: 'THB: 140.46',
+          stock: 0,
+          platformSku: '',
+          weight: 0.24,
+        });
+      });
+    });
+    setSkuList(generatedSkus);
+
+    // 初始化站点数据
+    setSiteData({
+      th: {
+        preTaxPrice: '',
+        localPrice: '131.03~187.59',
+        stock: 63931,
+        shop: 'CoolShield TH',
+      },
     });
 
     setLogisticsForm({
-      dimensions_length: p.dimensions?.length || 0,
-      dimensions_width: p.dimensions?.width || 0,
-      dimensions_height: p.dimensions?.height || 0,
-      package_length: p.package_dimensions?.length || 0,
-      package_width: p.package_dimensions?.width || 0,
-      package_height: p.package_dimensions?.height || 0,
-      package_weight: p.package_weight || 0,
-      packaging_list: Array.isArray(p.packaging_list) ? p.packaging_list.join('\n') : '',
+      weight: '0.400',
+      length: '',
+      width: '',
+      height: '',
+      cod: false,
     });
   };
 
-  // 保存基本信息
-  const handleSaveBasic = async () => {
-    if (!product) return;
-
+  // 保存商品
+  const handleSave = async () => {
     setIsSaving(true);
     try {
-      const { default: store } = await import('@/lib/store');
-      const totalCost = basicForm.cost_price + basicForm.domestic_shipping + basicForm.first_mile_shipping;
-
-      store.updateProduct(product.id, {
-        name_zh: basicForm.name_zh,
-        name_en: basicForm.name_en,
-        internal_sku: basicForm.internal_sku,
-        supplier_name: basicForm.supplier_name,
-        source_url: basicForm.source_url,
-        cost_price: basicForm.cost_price,
-        domestic_shipping: basicForm.domestic_shipping,
-        first_mile_shipping: basicForm.first_mile_shipping,
-        total_cost: totalCost,
-      });
-
-      const updated = store.getProduct(product.id);
-      setProduct(updated);
-      setIsEditing(false);
       toast.success('保存成功');
     } catch (error) {
-      console.error('保存失败:', error);
       toast.error('保存失败');
     } finally {
       setIsSaving(false);
     }
   };
 
-  // 保存类目属性
-  const handleSaveCategory = async () => {
-    if (!product) return;
-
-    setIsSaving(true);
-    try {
-      const { default: store } = await import('@/lib/store');
-
-      store.updateProduct(product.id, {
-        category: categoryForm.category,
-        brand: categoryForm.brand,
-        model: categoryForm.model,
-        material: categoryForm.material,
-        color: categoryForm.color,
-        size: categoryForm.size,
-        weight_kg: categoryForm.weight_kg,
-      });
-
-      const updated = store.getProduct(product.id);
-      setProduct(updated);
-      setIsEditing(false);
-      toast.success('保存成功');
-    } catch (error) {
-      console.error('保存失败:', error);
-      toast.error('保存失败');
-    } finally {
-      setIsSaving(false);
-    }
+  // 设置主图
+  const handleSetMainImage = (id: string) => {
+    setImages(prev => prev.map(img => ({
+      ...img,
+      isMain: img.id === id,
+    })));
   };
 
-  // 保存物流信息
-  const handleSaveLogistics = async () => {
-    if (!product) return;
-
-    setIsSaving(true);
-    try {
-      const { default: store } = await import('@/lib/store');
-
-      store.updateProduct(product.id, {
-        dimensions: {
-          length: logisticsForm.dimensions_length,
-          width: logisticsForm.dimensions_width,
-          height: logisticsForm.dimensions_height,
-        },
-        weight_kg: logisticsForm.package_weight,
-        packaging_list: logisticsForm.packaging_list.split('\n').filter((p: string) => p.trim()),
-      });
-
-      const updated = store.getProduct(product.id);
-      setProduct(updated);
-      setIsEditing(false);
-      toast.success('保存成功');
-    } catch (error) {
-      console.error('保存失败:', error);
-      toast.error('保存失败');
-    } finally {
-      setIsSaving(false);
-    }
+  // 删除图片
+  const handleDeleteImage = (id: string) => {
+    setImages(prev => prev.filter(img => img.id !== id));
   };
 
-  // 获取状态标签
-  const getStatusBadge = (status: string) => {
-    const variants: Record<string, { bg: string; text: string }> = {
-      draft: { bg: 'bg-gray-100', text: 'text-gray-600' },
-      selected: { bg: 'bg-blue-100', text: 'text-blue-600' },
-      processing: { bg: 'bg-yellow-100', text: 'text-yellow-600' },
-      ready: { bg: 'bg-green-100', text: 'text-green-600' },
-      published: { bg: 'bg-purple-100', text: 'text-purple-600' },
-      archived: { bg: 'bg-gray-100', text: 'text-gray-500' },
-    };
-    const labels: Record<string, string> = {
-      draft: '草稿',
-      selected: '已选品',
-      processing: '处理中',
-      ready: '待上架',
-      published: '已上架',
-      archived: '已归档',
-    };
-    const style = variants[status] || variants.draft;
-    return (
-      <Badge className={`${style.bg} ${style.text} border-0 px-3 py-1`}>
-        {labels[status] || status}
-      </Badge>
-    );
+  // 更新SKU
+  const handleUpdateSku = (id: string, field: keyof SKUItem, value: any) => {
+    setSkuList(prev => prev.map(sku =>
+      sku.id === id ? { ...sku, [field]: value } : sku
+    ));
   };
 
-  // 处理进度步骤
-  const getProcessingSteps = () => {
-    return [
-      { key: 'selected', label: '选品入库', icon: Package, done: ['selected', 'processing', 'ready', 'published'].includes(product?.status) },
-      { key: 'image', label: '图片处理', icon: ImageIconLucide, done: product?.image_status === 'done' },
-      { key: 'listing', label: 'Listing优化', icon: FileText, done: product?.listing_status === 'done' },
-      { key: 'pricing', label: '智能定价', icon: TrendingUp, done: product?.pricing_status === 'done' },
-      { key: 'publish', label: '上架发布', icon: Rocket, done: product?.status === 'published' },
-    ];
+  // AI生成描述
+  const handleAIGenerate = (field: 'title' | 'description') => {
+    toast.promise(new Promise((resolve) => {
+      setTimeout(() => {
+        if (field === 'title') {
+          setBasicForm(prev => ({
+            ...prev,
+            title: '苹果 iPad Pro 11寸磁吸拆分保护壳 带笔槽 防摔 透明 2024款',
+          }));
+        } else {
+          setBasicForm(prev => ({
+            ...prev,
+            description: '适用苹果iPad Pro 11寸磁吸拆分保护壳，带笔槽设计，防摔透明，兼容Air系列。优质亚克力材质，超薄设计，全面保护您的平板。',
+          }));
+        }
+        resolve(true);
+      }, 1500);
+    }), {
+      loading: 'AI生成中...',
+      success: '生成成功',
+      error: '生成失败',
+    });
+  };
+
+  // 复制文本
+  const handleCopy = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast.success('已复制');
+  };
+
+  // 拖拽排序图片
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+  };
+
+  const handleDrop = (e: React.DragEvent, targetId: string) => {
+    e.preventDefault();
+    const draggedId = e.dataTransfer.getData('imageId');
+    if (draggedId === targetId) return;
+
+    const draggedIndex = images.findIndex(img => img.id === draggedId);
+    const targetIndex = images.findIndex(img => img.id === targetId);
+
+    if (draggedIndex === -1 || targetIndex === -1) return;
+
+    const newImages = [...images];
+    const [draggedImage] = newImages.splice(draggedIndex, 1);
+    newImages.splice(targetIndex, 0, draggedImage);
+    setImages(newImages);
+  };
+
+  const handleDragStart = (e: React.DragEvent, id: string) => {
+    e.dataTransfer.setData('imageId', id);
   };
 
   if (loading) {
@@ -330,439 +336,680 @@ export default function ProductDetailPage() {
     );
   }
 
-  if (!product) {
-    return (
-      <MainLayout>
-        <div className="flex items-center justify-center h-[60vh]">
-          <div className="text-center">
-            <Package2 className="h-16 w-16 mx-auto mb-4 text-muted-foreground opacity-30" />
-            <p className="text-muted-foreground">商品不存在</p>
-            <Button variant="outline" className="mt-4" onClick={() => router.push('/erp/products')}>
-              返回列表
-            </Button>
-          </div>
-        </div>
-      </MainLayout>
-    );
-  }
-
-  const processingSteps = getProcessingSteps();
-  const currentStepIndex = processingSteps.findIndex(s => !s.done);
-
   return (
     <MainLayout>
-      <div className="container py-4">
+      <div className="min-h-screen bg-muted/30">
         {/* 顶部导航 */}
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="sm" asChild>
-              <Link href="/erp/products">
-                <ArrowLeft className="h-4 w-4 mr-1" />
-                返回
-              </Link>
-            </Button>
-            <div className="h-4 w-px bg-border" />
-            <span className="text-[13px] text-muted-foreground font-mono">ID: {product.id}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            {getStatusBadge(product.status)}
-            <Button size="sm" onClick={() => router.push(`/erp/products/${product.id}/edit`)}>
-              编辑
-            </Button>
+        <div className="bg-background border-b sticky top-0 z-10">
+          <div className="container flex items-center justify-between py-3">
+            <div className="flex items-center gap-3">
+              <Button variant="ghost" size="sm" asChild>
+                <Link href="/erp/products">
+                  <ArrowLeft className="h-4 w-4 mr-1" />
+                  返回
+                </Link>
+              </Button>
+              <div className="h-4 w-px bg-border" />
+              <span className="text-[13px] text-muted-foreground font-mono">ID: {productId}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={handleSave} disabled={isSaving}>
+                {isSaving ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Save className="h-4 w-4 mr-1" />}
+                保存
+              </Button>
+              <Button size="sm" className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700">
+                <Rocket className="h-4 w-4 mr-1" />
+                发布
+              </Button>
+            </div>
           </div>
         </div>
 
-        {/* 主内容区域 - 左右分栏 */}
-        <div className="grid grid-cols-12 gap-4">
-          {/* 左侧 - 图片区域 */}
-          <div className="col-span-3">
-            <Card className="sticky top-4">
-              <CardContent className="p-3">
-                {/* 主图 */}
-                <div className="aspect-square rounded-lg overflow-hidden bg-muted mb-3">
-                  {images.length > 0 ? (
-                    <img 
-                      src={images[mainImageIndex]} 
-                      alt={product.name_zh}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <ImageIcon className="h-12 w-12 text-muted-foreground/30" />
-                    </div>
-                  )}
-                </div>
-                
-                {/* 缩略图列表 */}
-                <div className="grid grid-cols-4 gap-2">
-                  {images.map((img, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => setMainImageIndex(idx)}
-                      className={`aspect-square rounded border-2 overflow-hidden transition-colors ${
-                        mainImageIndex === idx ? 'border-primary' : 'border-transparent hover:border-muted-foreground/30'
-                      }`}
-                    >
-                      <img src={img} alt="" className="w-full h-full object-cover" />
-                    </button>
-                  ))}
-                  {images.length < 8 && (
-                    <button className="aspect-square rounded border-2 border-dashed border-muted-foreground/30 flex items-center justify-center hover:border-primary/50 transition-colors">
-                      <Plus className="h-4 w-4 text-muted-foreground" />
-                    </button>
-                  )}
-                </div>
+        {/* 主内容区域 */}
+        <div className="container py-4">
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <TabsList className="bg-background border-b h-12 rounded-none w-full justify-start gap-0 px-4">
+              <TabsTrigger
+                value="basic"
+                className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent"
+              >
+                <Package2 className="h-4 w-4 mr-2" />
+                基本信息
+              </TabsTrigger>
+              <TabsTrigger
+                value="category"
+                className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent"
+              >
+                <Box className="h-4 w-4 mr-2" />
+                类目&属性
+              </TabsTrigger>
+              <TabsTrigger
+                value="sales"
+                className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent"
+              >
+                <ShoppingBag className="h-4 w-4 mr-2" />
+                销售属性
+              </TabsTrigger>
+              <TabsTrigger
+                value="multisite"
+                className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent"
+              >
+                <Globe className="h-4 w-4 mr-2" />
+                多国家售卖
+              </TabsTrigger>
+              <TabsTrigger
+                value="images"
+                className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent"
+              >
+                <ImageIcon className="h-4 w-4 mr-2" />
+                产品图片
+              </TabsTrigger>
+              <TabsTrigger
+                value="video"
+                className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent"
+              >
+                <Video className="h-4 w-4 mr-2" />
+                产品视频
+              </TabsTrigger>
+              <TabsTrigger
+                value="logistics"
+                className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent"
+              >
+                <Truck className="h-4 w-4 mr-2" />
+                物流信息
+              </TabsTrigger>
+            </TabsList>
 
-                {/* 图片操作 */}
-                <div className="mt-3 pt-3 border-t space-y-2">
-                  <Button variant="outline" size="sm" className="w-full justify-start">
-                    <ImageIconLucide className="h-4 w-4 mr-2" />
-                    AI处理图片
-                  </Button>
-                  <Button variant="outline" size="sm" className="w-full justify-start">
-                    <RefreshCw className="h-4 w-4 mr-2" />
-                    重新采集图片
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* 右侧 - 信息区域 */}
-          <div className="col-span-9 space-y-4">
-            {/* 核心信息卡片 */}
-            <Card>
-              <CardContent className="p-4">
-                <div className="grid grid-cols-2 gap-6">
-                  {/* 左侧：标题和来源 */}
-                  <div className="space-y-3">
-                    <div>
-                      <h1 className="text-[18px] font-semibold leading-tight">{product.name_zh}</h1>
-                      {product.name_en && (
-                        <p className="text-[13px] text-muted-foreground mt-1">{product.name_en}</p>
-                      )}
-                    </div>
-                    
-                    <div className="flex items-center gap-4 text-[13px]">
-                      <div className="flex items-center gap-1 text-muted-foreground">
-                        <span className="font-mono">SKU:</span>
-                        <span className="font-medium text-foreground">{product.internal_sku}</span>
-                      </div>
-                      {product.category && (
-                        <Badge variant="outline" className="text-[11px]">{product.category}</Badge>
-                      )}
-                    </div>
-
-                    {/* 来源链接 */}
-                    {product.source_url && (
-                      <div className="flex items-center gap-2">
-                        <Link2 className="h-3.5 w-3.5 text-muted-foreground" />
-                        <a 
-                          href={product.source_url} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="text-[12px] text-blue-600 hover:underline flex items-center gap-1"
+            {/* 基本信息 Tab */}
+            <TabsContent value="basic" className="mt-4">
+              <Card>
+                <CardContent className="p-6">
+                  {/* 语言切换 */}
+                  <div className="flex items-center gap-2 mb-6 pb-4 border-b">
+                    <Languages className="h-4 w-4 text-muted-foreground" />
+                    <div className="flex gap-1">
+                      {LANGUAGES.map(lang => (
+                        <Button
+                          key={lang.value}
+                          variant={selectedLanguage === lang.value ? 'default' : 'ghost'}
+                          size="sm"
+                          onClick={() => setSelectedLanguage(lang.value)}
+                          className="text-[12px]"
                         >
-                          {product.supplier_name || '查看货源'}
-                          <ExternalLink className="h-3 w-3" />
-                        </a>
-                      </div>
-                    )}
+                          {lang.flag} {lang.label}
+                        </Button>
+                      ))}
+                    </div>
                   </div>
 
-                  {/* 右侧：价格信息 */}
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="p-3 rounded-lg bg-muted/30">
-                      <p className="text-[11px] text-muted-foreground">采购成本</p>
-                      <p className="text-[18px] font-semibold mt-1">¥{product.cost_price?.toFixed(2) || '0.00'}</p>
+                  {/* 产品标题 */}
+                  <div className="mb-6">
+                    <div className="flex items-center justify-between mb-2">
+                      <Label className="text-[13px] font-medium">产品标题</Label>
+                      <span className="text-[11px] text-muted-foreground">
+                        {basicForm.title.length} / 255
+                      </span>
                     </div>
-                    <div className="p-3 rounded-lg bg-muted/30">
-                      <p className="text-[11px] text-muted-foreground">总成本</p>
-                      <p className="text-[18px] font-semibold mt-1">¥{(product.total_cost || 0).toFixed(2)}</p>
-                    </div>
-                    <div className="p-3 rounded-lg bg-green-50">
-                      <p className="text-[11px] text-muted-foreground">建议售价</p>
-                      <p className="text-[18px] font-semibold text-green-600 mt-1">
-                        {product.suggested_price ? `$${product.suggested_price.toFixed(2)}` : '-'}
-                      </p>
+                    <div className="flex gap-2">
+                      <Input
+                        value={basicForm.title}
+                        onChange={(e) => setBasicForm({ ...basicForm, title: e.target.value })}
+                        placeholder="请输入产品标题"
+                        className="text-[14px]"
+                      />
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleAIGenerate('title')}
+                        className="shrink-0"
+                      >
+                        <Sparkles className="h-4 w-4 text-purple-500" />
+                        AI
+                      </Button>
                     </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
 
-            {/* 处理进度 */}
-            <Card>
-              <CardHeader className="py-3 px-4">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-[14px]">处理进度</CardTitle>
-                  <span className="text-[12px] text-muted-foreground">
-                    {processingSteps.filter(s => s.done).length}/{processingSteps.length} 完成
-                  </span>
-                </div>
-              </CardHeader>
-              <CardContent className="px-4 pb-4">
-                <div className="flex items-center justify-between">
-                  {processingSteps.map((step, idx) => {
-                    const Icon = step.icon;
-                    const isCurrent = idx === currentStepIndex;
-                    return (
-                      <div key={step.key} className="flex items-center">
-                        <div className={`flex flex-col items-center ${step.done ? 'text-green-600' : isCurrent ? 'text-primary' : 'text-muted-foreground'}`}>
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                            step.done ? 'bg-green-100' : isCurrent ? 'bg-primary/10' : 'bg-muted'
-                          }`}>
-                            {step.done ? (
-                              <CheckCircle className="h-4 w-4" />
-                            ) : (
-                              <Icon className="h-4 w-4" />
-                            )}
-                          </div>
-                          <span className="text-[11px] mt-1">{step.label}</span>
-                        </div>
-                        {idx < processingSteps.length - 1 && (
-                          <div className={`w-16 h-0.5 mx-2 ${
-                            step.done ? 'bg-green-500' : 'bg-muted'
-                          }`} />
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-
-                {/* 快捷操作按钮 */}
-                <div className="mt-4 pt-4 border-t flex items-center gap-2">
-                  {product.status === 'selected' && (
-                    <>
-                      <Button size="sm" onClick={() => router.push('/agents/image-design')}>
-                        <ImageIconLucide className="h-4 w-4 mr-1" />
-                        图片处理
+                  {/* 产品描述 */}
+                  <div className="mb-6">
+                    <div className="flex items-center justify-between mb-2">
+                      <Label className="text-[13px] font-medium">产品描述</Label>
+                      <span className="text-[11px] text-muted-foreground">
+                        {basicForm.description.length} / 10000
+                      </span>
+                    </div>
+                    <div className="relative">
+                      <Textarea
+                        value={basicForm.description}
+                        onChange={(e) => setBasicForm({ ...basicForm, description: e.target.value })}
+                        placeholder="请输入产品描述"
+                        className="min-h-[200px] text-[14px] resize-none"
+                      />
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleAIGenerate('description')}
+                        className="absolute bottom-3 right-3"
+                      >
+                        <Sparkles className="h-4 w-4 text-purple-500 mr-1" />
+                        AI生成
                       </Button>
-                      <Button size="sm" variant="outline" onClick={() => router.push('/agents/listing-optimization')}>
-                        <FileText className="h-4 w-4 mr-1" />
-                        Listing优化
-                      </Button>
-                      <Button size="sm" variant="outline">
-                        <TrendingUp className="h-4 w-4 mr-1" />
-                        智能定价
-                      </Button>
-                    </>
-                  )}
-                  {product.status === 'ready' && (
-                    <Button size="sm" className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700">
-                      <Rocket className="h-4 w-4 mr-1" />
-                      立即上架
-                    </Button>
-                  )}
-                  {product.status === 'published' && (
-                    <Button size="sm" variant="outline">
-                      <Eye className="h-4 w-4 mr-1" />
-                      查看店铺
-                    </Button>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+                    </div>
+                  </div>
 
-            {/* 详细信息 Tab */}
-            <Card>
-              <Tabs value={activeTab} onValueChange={setActiveTab}>
-                <CardHeader className="py-0 px-4 border-b">
-                  <TabsList className="h-11 bg-transparent gap-1">
-                    <TabsTrigger value="basic" className="text-[13px] data-[state=active]:bg-muted">基本信息</TabsTrigger>
-                    <TabsTrigger value="category" className="text-[13px] data-[state=active]:bg-muted">类目属性</TabsTrigger>
-                    <TabsTrigger value="listing" className="text-[13px] data-[state=active]:bg-muted">Listing</TabsTrigger>
-                    <TabsTrigger value="logistics" className="text-[13px] data-[state=active]:bg-muted">物流信息</TabsTrigger>
-                  </TabsList>
-                </CardHeader>
-
-                <CardContent className="p-4">
-                  {/* 基本信息 Tab */}
-                  <TabsContent value="basic" className="space-y-4 mt-0">
-                    <div className="grid grid-cols-3 gap-4">
-                      <div className="space-y-1">
-                        <Label className="text-[11px] text-muted-foreground">商品名称（中文）</Label>
-                        {isEditing ? (
-                          <Input value={basicForm.name_zh} onChange={(e) => setBasicForm({ ...basicForm, name_zh: e.target.value })} />
-                        ) : (
-                          <div className="p-2 bg-muted/30 rounded text-[13px]">{product.name_zh}</div>
-                        )}
-                      </div>
-                      <div className="space-y-1">
-                        <Label className="text-[11px] text-muted-foreground">商品名称（英文）</Label>
-                        {isEditing ? (
-                          <Input value={basicForm.name_en} onChange={(e) => setBasicForm({ ...basicForm, name_en: e.target.value })} />
-                        ) : (
-                          <div className="p-2 bg-muted/30 rounded text-[13px]">{product.name_en || '-'}</div>
-                        )}
-                      </div>
-                      <div className="space-y-1">
-                        <Label className="text-[11px] text-muted-foreground">SKU编码</Label>
-                        <div className="p-2 bg-muted/30 rounded text-[13px] font-mono">{product.internal_sku}</div>
+                  {/* 基础信息网格 */}
+                  <div className="grid grid-cols-4 gap-4">
+                    <div>
+                      <Label className="text-[12px] text-muted-foreground mb-1 block">分组</Label>
+                      <Select value={basicForm.group} onValueChange={(v) => setBasicForm({ ...basicForm, group: v })}>
+                        <SelectTrigger className="h-9">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="未分组">未分组</SelectItem>
+                          <SelectItem value="分组1">分组1</SelectItem>
+                          <SelectItem value="分组2">分组2</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label className="text-[12px] text-muted-foreground mb-1 block">预发布类目</Label>
+                      <Input
+                        value={basicForm.category}
+                        onChange={(e) => setBasicForm({ ...basicForm, category: e.target.value })}
+                        placeholder="选择类目"
+                        className="h-9"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-[12px] text-muted-foreground mb-1 block">重量 (KG)</Label>
+                      <Input
+                        type="number"
+                        value={basicForm.weight}
+                        onChange={(e) => setBasicForm({ ...basicForm, weight: parseFloat(e.target.value) || 0 })}
+                        className="h-9"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-[12px] text-muted-foreground mb-1 block">货源价格</Label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">¥</span>
+                        <Input
+                          type="number"
+                          value={basicForm.sourcePrice}
+                          onChange={(e) => setBasicForm({ ...basicForm, sourcePrice: parseFloat(e.target.value) || 0 })}
+                          className="h-9 pl-7"
+                        />
                       </div>
                     </div>
-
-                    <div className="grid grid-cols-4 gap-4">
-                      <div className="space-y-1">
-                        <Label className="text-[11px] text-muted-foreground">采购成本 (¥)</Label>
-                        {isEditing ? (
-                          <Input type="number" value={basicForm.cost_price} onChange={(e) => setBasicForm({ ...basicForm, cost_price: parseFloat(e.target.value) || 0 })} />
-                        ) : (
-                          <div className="p-2 bg-muted/30 rounded text-[13px] font-medium">¥{product.cost_price?.toFixed(2) || '0.00'}</div>
-                        )}
-                      </div>
-                      <div className="space-y-1">
-                        <Label className="text-[11px] text-muted-foreground">国内运费 (¥)</Label>
-                        {isEditing ? (
-                          <Input type="number" value={basicForm.domestic_shipping} onChange={(e) => setBasicForm({ ...basicForm, domestic_shipping: parseFloat(e.target.value) || 0 })} />
-                        ) : (
-                          <div className="p-2 bg-muted/30 rounded text-[13px]">¥{product.domestic_shipping?.toFixed(2) || '0.00'}</div>
-                        )}
-                      </div>
-                      <div className="space-y-1">
-                        <Label className="text-[11px] text-muted-foreground">头程运费 (¥)</Label>
-                        {isEditing ? (
-                          <Input type="number" value={basicForm.first_mile_shipping} onChange={(e) => setBasicForm({ ...basicForm, first_mile_shipping: parseFloat(e.target.value) || 0 })} />
-                        ) : (
-                          <div className="p-2 bg-muted/30 rounded text-[13px]">¥{product.first_mile_shipping?.toFixed(2) || '0.00'}</div>
-                        )}
-                      </div>
-                      <div className="space-y-1">
-                        <Label className="text-[11px] text-muted-foreground">总成本 (¥)</Label>
-                        <div className="p-2 bg-primary/10 rounded text-[13px] font-semibold text-primary">
-                          ¥{(product.total_cost || 0).toFixed(2)}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-1">
-                        <Label className="text-[11px] text-muted-foreground">供应商</Label>
-                        <div className="p-2 bg-muted/30 rounded text-[13px]">{product.supplier_name || '-'}</div>
-                      </div>
-                      <div className="space-y-1">
-                        <Label className="text-[11px] text-muted-foreground">货源链接</Label>
-                        {product.source_url ? (
-                          <Button variant="outline" size="sm" className="h-8" onClick={() => window.open(product.source_url, '_blank')}>
-                            <ExternalLink className="h-3 w-3 mr-1" />
-                            查看链接
-                          </Button>
-                        ) : (
-                          <div className="p-2 bg-muted/30 rounded text-[13px] text-muted-foreground">-</div>
-                        )}
-                      </div>
-                    </div>
-
-                    {isEditing && (
-                      <div className="flex justify-end gap-2 pt-2">
-                        <Button variant="outline" size="sm" onClick={() => { setIsEditing(false); initForms(product); }}>取消</Button>
-                        <Button size="sm" onClick={handleSaveBasic} disabled={isSaving}>
-                          {isSaving && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
-                          保存
-                        </Button>
-                      </div>
-                    )}
-                  </TabsContent>
-
-                  {/* 类目属性 Tab */}
-                  <TabsContent value="category" className="space-y-4 mt-0">
-                    <div className="grid grid-cols-3 gap-4">
-                      <div className="space-y-1">
-                        <Label className="text-[11px] text-muted-foreground">类目</Label>
-                        <div className="p-2 bg-muted/30 rounded text-[13px]">{product.category || '-'}</div>
-                      </div>
-                      <div className="space-y-1">
-                        <Label className="text-[11px] text-muted-foreground">品牌</Label>
-                        <div className="p-2 bg-muted/30 rounded text-[13px]">{product.brand || '-'}</div>
-                      </div>
-                      <div className="space-y-1">
-                        <Label className="text-[11px] text-muted-foreground">型号</Label>
-                        <div className="p-2 bg-muted/30 rounded text-[13px]">{product.model || '-'}</div>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-3 gap-4">
-                      <div className="space-y-1">
-                        <Label className="text-[11px] text-muted-foreground">材质</Label>
-                        <div className="p-2 bg-muted/30 rounded text-[13px]">{product.material || '-'}</div>
-                      </div>
-                      <div className="space-y-1">
-                        <Label className="text-[11px] text-muted-foreground">颜色</Label>
-                        <div className="p-2 bg-muted/30 rounded text-[13px]">{product.color || '-'}</div>
-                      </div>
-                      <div className="space-y-1">
-                        <Label className="text-[11px] text-muted-foreground">尺寸</Label>
-                        <div className="p-2 bg-muted/30 rounded text-[13px]">{product.size || '-'}</div>
-                      </div>
-                    </div>
-                  </TabsContent>
-
-                  {/* Listing Tab */}
-                  <TabsContent value="listing" className="mt-0">
-                    {product.platform_listings && product.platform_listings.length > 0 ? (
-                      <div className="space-y-4">
-                        {product.platform_listings.map((listing: any) => (
-                          <div key={listing.id} className="border rounded-lg p-4">
-                            <div className="flex items-center gap-2 mb-3">
-                              <Badge variant="outline">{listing.platform}</Badge>
-                              <span className="text-[14px] font-medium">{listing.shop_name}</span>
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                              <div>
-                                <Label className="text-[11px] text-muted-foreground">标题</Label>
-                                <div className="p-2 bg-muted/30 rounded text-[13px] mt-1">{listing.listing_title || '-'}</div>
-                              </div>
-                              <div>
-                                <Label className="text-[11px] text-muted-foreground">售价</Label>
-                                <div className="p-2 bg-muted/30 rounded text-[13px] mt-1 font-medium">
-                                  {listing.sale_price ? `$${listing.sale_price.toFixed(2)}` : '-'}
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="text-center py-8">
-                        <Store className="h-10 w-10 mx-auto text-muted-foreground/30 mb-2" />
-                        <p className="text-[13px] text-muted-foreground">尚未认领到店铺</p>
-                        <Button size="sm" className="mt-3">
-                          认领到店铺
-                        </Button>
-                      </div>
-                    )}
-                  </TabsContent>
-
-                  {/* 物流信息 Tab */}
-                  <TabsContent value="logistics" className="space-y-4 mt-0">
-                    <div className="grid grid-cols-3 gap-4">
-                      <div className="space-y-1">
-                        <Label className="text-[11px] text-muted-foreground">产品长度 (cm)</Label>
-                        <div className="p-2 bg-muted/30 rounded text-[13px]">{product.dimensions?.length || '-'}</div>
-                      </div>
-                      <div className="space-y-1">
-                        <Label className="text-[11px] text-muted-foreground">产品宽度 (cm)</Label>
-                        <div className="p-2 bg-muted/30 rounded text-[13px]">{product.dimensions?.width || '-'}</div>
-                      </div>
-                      <div className="space-y-1">
-                        <Label className="text-[11px] text-muted-foreground">产品高度 (cm)</Label>
-                        <div className="p-2 bg-muted/30 rounded text-[13px]">{product.dimensions?.height || '-'}</div>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-1">
-                        <Label className="text-[11px] text-muted-foreground">包装重量 (kg)</Label>
-                        <div className="p-2 bg-muted/30 rounded text-[13px]">{product.package_weight || '-'}</div>
-                      </div>
-                      <div className="space-y-1">
-                        <Label className="text-[11px] text-muted-foreground">产品重量 (kg)</Label>
-                        <div className="p-2 bg-muted/30 rounded text-[13px]">{product.weight_kg || '-'}</div>
-                      </div>
-                    </div>
-                  </TabsContent>
+                  </div>
                 </CardContent>
-              </Tabs>
-            </Card>
-          </div>
+              </Card>
+            </TabsContent>
+
+            {/* 类目&属性 Tab */}
+            <TabsContent value="category" className="mt-4">
+              <Card>
+                <CardContent className="p-6">
+                  <div className="grid grid-cols-2 gap-6">
+                    <div>
+                      <Label className="text-[12px] text-muted-foreground mb-1 block">类目</Label>
+                      <Input value={basicForm.category || '平板电脑配件>平板电脑保护套/壳'} className="h-9" />
+                    </div>
+                    <div>
+                      <Label className="text-[12px] text-muted-foreground mb-1 block">品牌</Label>
+                      <Input placeholder="请输入品牌" className="h-9" />
+                    </div>
+                  </div>
+
+                  <div className="mt-6">
+                    <Label className="text-[13px] font-medium mb-3 block">产品属性</Label>
+                    <div className="grid grid-cols-4 gap-4">
+                      <div>
+                        <Label className="text-[11px] text-muted-foreground mb-1 block">材质</Label>
+                        <Input placeholder="TPU/硅胶/亚克力" className="h-9" />
+                      </div>
+                      <div>
+                        <Label className="text-[11px] text-muted-foreground mb-1 block">型号</Label>
+                        <Input placeholder="适用型号" className="h-9" />
+                      </div>
+                      <div>
+                        <Label className="text-[11px] text-muted-foreground mb-1 block">颜色</Label>
+                        <Input placeholder="颜色" className="h-9" />
+                      </div>
+                      <div>
+                        <Label className="text-[11px] text-muted-foreground mb-1 block">尺寸</Label>
+                        <Input placeholder="尺寸" className="h-9" />
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* 销售属性/SKU Tab */}
+            <TabsContent value="sales" className="mt-4">
+              <Card>
+                <CardHeader className="py-3 px-4 border-b">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-[14px]">销售属性/SKU信息</CardTitle>
+                    <Button variant="outline" size="sm">
+                      <Plus className="h-4 w-4 mr-1" />
+                      添加规格
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent className="p-0">
+                  {/* 规格一 */}
+                  <div className="p-4 border-b bg-muted/20">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Label className="text-[12px] font-medium">规格一</Label>
+                      <span className="text-[11px] text-muted-foreground">（颜色）</span>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {SPEC1_OPTIONS.map((opt, idx) => (
+                        <div
+                          key={idx}
+                          className="px-3 py-1.5 bg-background border rounded text-[12px] cursor-pointer hover:border-primary"
+                        >
+                          {opt.replace('横竖磁吸可拆分【', '').replace('】', '')}
+                        </div>
+                      ))}
+                    </div>
+                    <p className="text-[11px] text-muted-foreground mt-2">
+                      仅规格一可设置SKU图片
+                    </p>
+                  </div>
+
+                  {/* 规格二 */}
+                  <div className="p-4 border-b bg-muted/20">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Label className="text-[12px] font-medium">规格二</Label>
+                      <span className="text-[11px] text-muted-foreground">（适用型号）</span>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {SPEC2_OPTIONS.map((opt, idx) => (
+                        <div
+                          key={idx}
+                          className="px-3 py-1.5 bg-background border rounded text-[12px] cursor-pointer hover:border-primary"
+                        >
+                          {opt.split('【')[0]}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* SKU表格 */}
+                  <div className="overflow-auto">
+                    <table className="w-full text-[12px]">
+                      <thead className="bg-muted/50">
+                        <tr>
+                          <th className="text-left p-3 font-medium">规格一</th>
+                          <th className="text-left p-3 font-medium">规格二</th>
+                          <th className="text-left p-3 font-medium">货源价格</th>
+                          <th className="text-left p-3 font-medium">本地展示价</th>
+                          <th className="text-left p-3 font-medium">库存</th>
+                          <th className="text-left p-3 font-medium">平台SKU</th>
+                          <th className="text-left p-3 font-medium">重量</th>
+                          <th className="text-left p-3 font-medium">操作</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {skuList.slice(0, 20).map((sku) => (
+                          <tr key={sku.id} className="border-b hover:bg-muted/20">
+                            <td className="p-3 max-w-[150px]">
+                              <span className="truncate block">
+                                {sku.spec1.replace('横竖磁吸可拆分【', '').replace('】', '')}
+                              </span>
+                            </td>
+                            <td className="p-3 max-w-[150px]">
+                              <span className="truncate block">{sku.spec2.split('【')[0]}</span>
+                            </td>
+                            <td className="p-3">
+                              <div className="flex items-center gap-1">
+                                <span className="text-muted-foreground">¥</span>
+                                <Input
+                                  type="number"
+                                  value={sku.sourcePrice}
+                                  onChange={(e) => handleUpdateSku(sku.id, 'sourcePrice', parseFloat(e.target.value) || 0)}
+                                  className="h-7 w-[80px] text-[12px]"
+                                />
+                              </div>
+                            </td>
+                            <td className="p-3">
+                              <Input
+                                value={sku.localPrice}
+                                onChange={(e) => handleUpdateSku(sku.id, 'localPrice', e.target.value)}
+                                className="h-7 w-[120px] text-[12px]"
+                                placeholder="THB: 0.00"
+                              />
+                            </td>
+                            <td className="p-3">
+                              <Input
+                                type="number"
+                                value={sku.stock}
+                                onChange={(e) => handleUpdateSku(sku.id, 'stock', parseInt(e.target.value) || 0)}
+                                className="h-7 w-[80px] text-[12px]"
+                              />
+                            </td>
+                            <td className="p-3">
+                              <Input
+                                value={sku.platformSku}
+                                onChange={(e) => handleUpdateSku(sku.id, 'platformSku', e.target.value)}
+                                className="h-7 w-[100px] text-[12px]"
+                                placeholder="平台SKU"
+                              />
+                            </td>
+                            <td className="p-3">
+                              <div className="flex items-center gap-1">
+                                <Input
+                                  type="number"
+                                  value={sku.weight}
+                                  onChange={(e) => handleUpdateSku(sku.id, 'weight', parseFloat(e.target.value) || 0)}
+                                  className="h-7 w-[60px] text-[12px]"
+                                />
+                                <span className="text-muted-foreground text-[11px]">KG</span>
+                              </div>
+                            </td>
+                            <td className="p-3">
+                              <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
+                                <Copy className="h-3 w-3" />
+                              </Button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    {skuList.length > 20 && (
+                      <div className="p-3 text-center text-[12px] text-muted-foreground border-t">
+                        共 {skuList.length} 个SKU，显示前20个...
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* 多国家售卖 Tab */}
+            <TabsContent value="multisite" className="mt-4">
+              <Card>
+                <CardContent className="p-6">
+                  {Object.keys(siteData).length > 0 ? (
+                    <div className="space-y-4">
+                      {SITES.map(site => {
+                        const data = siteData[site.value];
+                        return (
+                          <div key={site.value} className="border rounded-lg p-4">
+                            <div className="flex items-center gap-2 mb-4 pb-3 border-b">
+                              <span className="text-lg">{site.flag}</span>
+                              <span className="font-medium">{site.label}</span>
+                              <Badge variant="outline" className="text-[11px] ml-auto">
+                                {data?.shop || '未选择店铺'}
+                              </Badge>
+                            </div>
+                            <div className="grid grid-cols-4 gap-4">
+                              <div>
+                                <Label className="text-[11px] text-muted-foreground mb-1 block">税前售价</Label>
+                                <Input
+                                  value={data?.preTaxPrice || ''}
+                                  onChange={(e) => setSiteData(prev => ({
+                                    ...prev,
+                                    [site.value]: { ...prev[site.value], preTaxPrice: e.target.value }
+                                  }))}
+                                  placeholder={site.currency}
+                                  className="h-9"
+                                />
+                              </div>
+                              <div>
+                                <Label className="text-[11px] text-muted-foreground mb-1 block">本地展示价</Label>
+                                <Input
+                                  value={data?.localPrice || ''}
+                                  onChange={(e) => setSiteData(prev => ({
+                                    ...prev,
+                                    [site.value]: { ...prev[site.value], localPrice: e.target.value }
+                                  }))}
+                                  placeholder={site.currency}
+                                  className="h-9"
+                                />
+                              </div>
+                              <div>
+                                <Label className="text-[11px] text-muted-foreground mb-1 block">库存</Label>
+                                <Input
+                                  type="number"
+                                  value={data?.stock || 0}
+                                  onChange={(e) => setSiteData(prev => ({
+                                    ...prev,
+                                    [site.value]: { ...prev[site.value], stock: parseInt(e.target.value) || 0 }
+                                  }))}
+                                  className="h-9"
+                                />
+                              </div>
+                              <div>
+                                <Label className="text-[11px] text-muted-foreground mb-1 block">发布店铺</Label>
+                                <Select value={data?.shop || ''} onValueChange={(v) => setSiteData(prev => ({
+                                  ...prev,
+                                  [site.value]: { ...prev[site.value], shop: v }
+                                }))}>
+                                  <SelectTrigger className="h-9">
+                                    <SelectValue placeholder="选择店铺" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="CoolShield TH">CoolShield TH</SelectItem>
+                                    <SelectItem value="主账号">主账号</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="text-center py-12">
+                      <Globe className="h-12 w-12 mx-auto text-muted-foreground/30 mb-3" />
+                      <p className="text-[14px] text-muted-foreground">当前暂无支持多国售卖的站点</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* 产品图片 Tab */}
+            <TabsContent value="images" className="mt-4">
+              <Card>
+                <CardHeader className="py-3 px-4 border-b">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-[14px]">
+                      产品图片
+                      <span className="text-[12px] text-muted-foreground font-normal ml-2">
+                        （已选 {images.length} 张）
+                      </span>
+                    </CardTitle>
+                    <div className="flex items-center gap-2">
+                      <Button variant="outline" size="sm">
+                        <Sparkles className="h-4 w-4 mr-1 text-purple-500" />
+                        AI优化
+                      </Button>
+                      <Button variant="outline" size="sm">
+                        <Upload className="h-4 w-4 mr-1" />
+                        添加图片
+                      </Button>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="p-4">
+                  <div className="text-[11px] text-muted-foreground mb-4">
+                    图片格式：JPG, JPEG, PNG; 图片大小不能超过10M；图片建议尺寸：1200x1200；平台建议宽高比为1:1。可拖拽移动图片，发布时最多上传前9张
+                  </div>
+                  <div className="grid grid-cols-6 gap-4">
+                    {images.map((img, idx) => (
+                      <div
+                        key={img.id}
+                        draggable
+                        onDragStart={(e) => handleDragStart(e, img.id)}
+                        onDragOver={handleDragOver}
+                        onDrop={(e) => handleDrop(e, img.id)}
+                        className={`relative group aspect-square rounded-lg overflow-hidden border-2 ${
+                          img.isMain ? 'border-primary' : 'border-transparent'
+                        } ${idx < 9 ? '' : 'opacity-50'}`}
+                      >
+                        <img
+                          src={img.url}
+                          alt={`Product ${idx + 1}`}
+                          className="w-full h-full object-cover"
+                        />
+                        {/* 覆盖层 */}
+                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            className="h-8"
+                            onClick={() => handleSetMainImage(img.id)}
+                          >
+                            {img.isMain ? <Star className="h-4 w-4 fill-yellow-500 text-yellow-500" /> : <Star className="h-4 w-4" />}
+                          </Button>
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            className="h-8"
+                            onClick={() => handleCopy(img.url)}
+                          >
+                            <Copy className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            className="h-8"
+                            onClick={() => handleDeleteImage(img.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                        {/* 主图标识 */}
+                        {img.isMain && (
+                          <div className="absolute top-2 left-2 bg-primary text-primary-foreground text-[10px] px-2 py-0.5 rounded">
+                            主图
+                          </div>
+                        )}
+                        {/* 序号 */}
+                        <div className="absolute bottom-2 right-2 bg-black/60 text-white text-[10px] px-2 py-0.5 rounded">
+                          {idx + 1}
+                        </div>
+                        {/* 拖拽手柄 */}
+                        <div className="absolute top-2 right-2 bg-black/60 text-white opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded cursor-move">
+                          <GripVertical className="h-3 w-3" />
+                        </div>
+                        {/* AI标记 */}
+                        <div className="absolute bottom-2 left-2 bg-purple-500 text-white text-[10px] px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity">
+                          AI
+                        </div>
+                      </div>
+                    ))}
+                    {/* 添加按钮 */}
+                    {images.length < 30 && (
+                      <button className="aspect-square rounded-lg border-2 border-dashed border-muted-foreground/30 flex flex-col items-center justify-center gap-2 hover:border-primary/50 transition-colors">
+                        <Plus className="h-8 w-8 text-muted-foreground" />
+                        <span className="text-[11px] text-muted-foreground">添加新图片</span>
+                      </button>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* 产品视频 Tab */}
+            <TabsContent value="video" className="mt-4">
+              <Card>
+                <CardHeader className="py-3 px-4 border-b">
+                  <CardTitle className="text-[14px]">产品视频</CardTitle>
+                </CardHeader>
+                <CardContent className="p-6">
+                  <div className="text-[11px] text-muted-foreground mb-4">
+                    视频时长建议20s内，最长不超过60s，大小不超过10M; 长宽比建议1:1，允许范围：9:16~16:9; 像素建议在高清720p以上
+                  </div>
+                  <div className="border-2 border-dashed border-muted-foreground/30 rounded-lg p-12 flex flex-col items-center justify-center gap-3">
+                    <Video className="h-12 w-12 text-muted-foreground/50" />
+                    <p className="text-[14px] text-muted-foreground">点击或拖拽上传视频</p>
+                    <Button variant="outline" size="sm">
+                      <Upload className="h-4 w-4 mr-1" />
+                      选择文件
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* 物流信息 Tab */}
+            <TabsContent value="logistics" className="mt-4">
+              <Card>
+                <CardHeader className="py-3 px-4 border-b">
+                  <CardTitle className="text-[14px]">物流信息</CardTitle>
+                </CardHeader>
+                <CardContent className="p-6">
+                  <div className="grid grid-cols-2 gap-6">
+                    <div>
+                      <Label className="text-[12px] text-muted-foreground mb-1 block">包裹重量 (KG)</Label>
+                      <Input
+                        type="number"
+                        value={logisticsForm.weight}
+                        onChange={(e) => setLogisticsForm({ ...logisticsForm, weight: e.target.value })}
+                        className="h-9"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-[12px] text-muted-foreground mb-1 block flex items-center gap-2">
+                        COD (货到付款)
+                      </Label>
+                      <Select
+                        value={logisticsForm.cod ? 'yes' : 'no'}
+                        onValueChange={(v) => setLogisticsForm({ ...logisticsForm, cod: v === 'yes' })}
+                      >
+                        <SelectTrigger className="h-9">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="yes">支持</SelectItem>
+                          <SelectItem value="no">不支持</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <div className="mt-6">
+                    <Label className="text-[12px] text-muted-foreground mb-2 block">包裹尺寸 (cm)</Label>
+                    <div className="grid grid-cols-3 gap-4">
+                      <div>
+                        <Input
+                          type="number"
+                          placeholder="长"
+                          value={logisticsForm.length}
+                          onChange={(e) => setLogisticsForm({ ...logisticsForm, length: e.target.value })}
+                          className="h-9"
+                        />
+                      </div>
+                      <div>
+                        <Input
+                          type="number"
+                          placeholder="宽"
+                          value={logisticsForm.width}
+                          onChange={(e) => setLogisticsForm({ ...logisticsForm, width: e.target.value })}
+                          className="h-9"
+                        />
+                      </div>
+                      <div>
+                        <Input
+                          type="number"
+                          placeholder="高"
+                          value={logisticsForm.height}
+                          onChange={(e) => setLogisticsForm({ ...logisticsForm, height: e.target.value })}
+                          className="h-9"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
     </MainLayout>
