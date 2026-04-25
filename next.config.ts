@@ -39,14 +39,40 @@ const nextConfig: NextConfig = {
   async rewrites() {
     const BASE = 'http://localhost:8000';
     return [
-      // AI智能体API - 代理到Python后端
+      // ===== AI智能体API - 代理到Python后端 =====
+      
+      // 选品智能体
+      { source: '/api/v1/tools/selection', destination: BASE + '/api/v1/ai/select-products' },
+      
+      // 图片智能体
+      { source: '/api/v1/tools/image', destination: BASE + '/api/v1/ai/process-image' },
+      
+      // 视频智能体
+      { source: '/api/v1/tools/video', destination: BASE + '/api/v1/ai/generate-video' },
+      
+      // Listing优化智能体
+      { source: '/api/v1/tools/listing', destination: BASE + '/api/v1/ai/optimize-listing' },
+      
+      // 定价智能体
+      { source: '/api/v1/tools/pricing', destination: BASE + '/api/v1/ai/calculate-price' },
+      
+      // 客服智能体
+      { source: '/api/v1/tools/customer-service', destination: BASE + '/api/v1/ai/customer-reply' },
+      
+      // 采集1688商品
+      { source: '/api/v1/tools/scrape', destination: BASE + '/api/v1/ai/collect-1688' },
+      { source: '/api/v1/tools/scrape/batch', destination: BASE + '/api/v1/ai/collect-1688/batch' },
+      
+      // 广告投放
+      { source: '/api/v1/tools/ads/create', destination: BASE + '/api/v1/ai/create-ad' },
+      
+      // ===== 通用AI API =====
       { source: '/api/ai/:path*', destination: BASE + '/api/v1/ai/:path*' },
       { source: '/api/v1/ai/:path*', destination: BASE + '/api/v1/ai/:path*' },
-      // 视频生成API - 代理到Python后端
-      { source: '/api/v1/tools/video', destination: BASE + '/api/v1/ai/generate-video' },
-      { source: '/api/v1/tools/video/:path*', destination: BASE + '/api/v1/ai/generate-video/:path*' },
-      // 认证API - 使用前端路由（已实现）
+      
+      // ===== 认证API - 使用前端路由（已实现） =====
       { source: '/api/v1/auth/:path*', destination: '/api/v1/auth/:path*' },
+      { source: '/api/auth/:path*', destination: '/api/auth/:path*' },
     ];
   },
 };
