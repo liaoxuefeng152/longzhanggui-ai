@@ -28,6 +28,14 @@ PUBLIC_PATHS = [
     "/api/v1/1688/collect/batch",
     "/api/v1/1688/history",
     "/api/v1/1688/search",
+    # AI智能体API（视频、图片等不需要认证）
+    "/api/v1/ai/generate-video",
+    "/api/v1/ai/generate-image",
+    "/api/v1/ai/process-image",
+    "/api/v1/ai/select-products",
+    "/api/v1/ai/optimize-listing",
+    "/api/v1/ai/calculate-price",
+    "/api/v1/ai/customer-reply",
 ]
 
 # 正则匹配的公开路径

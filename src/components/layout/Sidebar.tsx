@@ -19,8 +19,13 @@ import {
   MessageSquare,
   Store,
   DollarSign,
+  Shield,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
+
+// 不需要登录的页面
+const PUBLIC_PATHS = ['/login', '/register', '/forgot-password', '/reset-password'];
 
 // AI智能体彩虹配色映射
 const agentColors = {
@@ -103,7 +108,7 @@ const clientMenuItems: MenuItem[] = [
   },
 ];
 
-// 管理端菜单（管理员使用）
+// 管理端菜单（管理员使用）- 不包含选品智能体
 const adminMenuItems: MenuItem[] = [
   {
     title: '控制台',
@@ -116,7 +121,6 @@ const adminMenuItems: MenuItem[] = [
     icon: Bot,
     submenu: [
       { title: '配置总览', href: '/agents/config' },
-      { title: '选品智能体', href: '/agents/product-selection/config', agentKey: 'product-selection' },
       { title: '图片设计', href: '/agents/image-design/config', agentKey: 'image-design' },
       { title: '视频生成', href: '/agents/video-generation/config', agentKey: 'video-generation' },
       { title: 'Listing优化', href: '/agents/listing-optimization/config', agentKey: 'listing-optimization' },
@@ -179,6 +183,11 @@ export default function Sidebar() {
   const pathname = usePathname();
   const [userRole, setUserRole] = useState<'client' | 'admin' | null>(null);
   const [isClientView, setIsClientView] = useState(false);
+  
+  // 从用户数据获取管理员状态
+  const userData = typeof window !== 'undefined' ? localStorage.getItem('user') : null;
+  const user = userData ? JSON.parse(userData) : null;
+  const isAdmin = user?.role === 'admin';
 
   useEffect(() => {
     // 从 localStorage 获取用户角色
@@ -190,18 +199,32 @@ export default function Sidebar() {
       setUserRole(savedRole as 'client' | 'admin');
       setIsClientView(savedRole === 'client');
     } else if (token) {
-      // 如果有 token 但没有保存角色，根据 token 类型判断
-      if (token === 'demo-token') {
-        // 演示模式默认显示客户端视图
+      // 如果有 token 但没有保存角色，根据用户角色决定默认视图
+      if (isAdmin) {
+        // 管理员默认进入管理端
+        setUserRole('admin');
+        setIsClientView(false);
+        localStorage.setItem('userRole', 'admin');
+      } else {
+        // 非管理员默认进入运营端
         setUserRole('client');
         setIsClientView(true);
         localStorage.setItem('userRole', 'client');
       }
+    } else if (!PUBLIC_PATHS.includes(window.location.pathname)) {
+      // 未登录且不在公开页面，跳转到登录页
+      window.location.href = '/login';
     }
-  }, []);
+  }, [isAdmin]);
 
-  // 切换视图模式
+  // 切换视图模式 - 只有管理员才能切换到管理端
   const toggleView = () => {
+    // 如果当前是运营端，且用户不是管理员，禁止切换到管理端
+    if (isClientView && !isAdmin) {
+      toast.error('只有管理员才能访问管理端');
+      return;
+    }
+
     const newRole = isClientView ? 'admin' : 'client';
     setIsClientView(!isClientView);
     setUserRole(newRole);
@@ -210,9 +233,12 @@ export default function Sidebar() {
     if (!isClientView) {
       window.location.href = '/dashboard';
     } else {
-      window.location.href = '/agents/product-selection';
+      window.location.href = '/workflows';
     }
   };
+
+  // 显示切换按钮的条件
+  const showSwitchButton = !isClientView || (isClientView && isAdmin);
 
   const isActive = (href: string) => {
     if (href === '/dashboard') {
@@ -234,16 +260,28 @@ export default function Sidebar() {
       "transition-all duration-300 ease-out"
     )}>
       <div className="p-4">
-        {/* 视图切换提示 */}
+        {/* 视图切换提示 - 非管理员在运营端时只显示当前视图，不显示切换按钮 */}
         <div className="mb-4 px-3 py-2 rounded-md bg-white/5 border border-white/10">
           <p className="text-[11px] text-muted-foreground mb-1">当前视图</p>
-          <p className="text-sm font-medium text-white">{currentViewName}</p>
-          <button
-            onClick={toggleView}
-            className="mt-2 text-[11px] text-primary hover:text-primary/80 transition-colors"
-          >
-            切换到{isClientView ? '管理端' : '客户端'}
-          </button>
+          <div className="flex items-center gap-2">
+            <p className="text-sm font-medium text-white">{currentViewName}</p>
+            {isClientView && !isAdmin && (
+              <Shield className="h-3 w-3 text-muted-foreground" title="运营人员" />
+            )}
+          </div>
+          {showSwitchButton && (
+            <button
+              onClick={toggleView}
+              className="mt-2 text-[11px] text-primary hover:text-primary/80 transition-colors"
+            >
+              切换到{isClientView ? '管理端' : '客户端'}
+            </button>
+          )}
+          {!isClientView && (
+            <p className="mt-2 text-[10px] text-muted-foreground/70">
+              管理员可切换到运营端
+            </p>
+          )}
         </div>
 
         <nav className="space-y-1">

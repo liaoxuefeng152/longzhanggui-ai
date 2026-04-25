@@ -37,7 +37,8 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: false,
   },
   async rewrites() {
-    const BASE = 'http://localhost:8000';
+    // 后端服务端口 (9000)
+    const BASE = 'http://localhost:9000';
     return [
       // ===== AI智能体API - 代理到Python后端 =====
       
