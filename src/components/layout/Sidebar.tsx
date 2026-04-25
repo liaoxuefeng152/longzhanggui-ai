@@ -108,7 +108,7 @@ const clientMenuItems: MenuItem[] = [
   },
 ];
 
-// 管理端菜单（管理员使用）- 不包含选品智能体
+// 管理端菜单（管理员使用）
 const adminMenuItems: MenuItem[] = [
   {
     title: '控制台',
@@ -121,6 +121,7 @@ const adminMenuItems: MenuItem[] = [
     icon: Bot,
     submenu: [
       { title: '配置总览', href: '/agents/config' },
+      { title: '选品智能体', href: '/agents/product-selection/config', agentKey: 'product-selection' },
       { title: '图片设计', href: '/agents/image-design/config', agentKey: 'image-design' },
       { title: '视频生成', href: '/agents/video-generation/config', agentKey: 'video-generation' },
       { title: 'Listing优化', href: '/agents/listing-optimization/config', agentKey: 'listing-optimization' },
