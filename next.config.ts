@@ -71,6 +71,10 @@ const nextConfig: NextConfig = {
       { source: '/api/ai/:path*', destination: BASE + '/api/v1/ai/:path*' },
       { source: '/api/v1/ai/:path*', destination: BASE + '/api/v1/ai/:path*' },
       
+      // ===== ERP系统API - 前端本地处理，不代理到后端 =====
+      // ERP 前端已有完整的 API 路由实现 (src/app/api/v1/erp/)
+      // 无需代理到后端
+      
       // ===== 认证API - 使用前端路由（已实现） =====
       { source: '/api/v1/auth/:path*', destination: '/api/v1/auth/:path*' },
       { source: '/api/auth/:path*', destination: '/api/auth/:path*' },
