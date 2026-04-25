@@ -93,17 +93,135 @@ class MiaoshouAPI:
         """登录妙手ERP"""
         try:
             await self.page.goto(f"{self.BASE_URL}/login", timeout=30000)
-            await asyncio.sleep(2)
+            await asyncio.sleep(3)
             
-            # 填写登录表单
-            await self.page.fill('input[type="text"]', phone)
-            await asyncio.sleep(0.5)
-            await self.page.fill('input[type="password"]', password)
+            # 等待页面加载
+            await self.page.wait_for_load_state("domcontentloaded")
+            await asyncio.sleep(1)
+            
+            # 尝试多种选择器
+            selectors = [
+                'input[type="text"]',
+                'input[placeholder*="手机"]',
+                'input[placeholder*="账号"]',
+                'input[name="phone"]',
+                'input[id*="phone"]',
+                '.el-input__inner[type="text"]',
+            ]
+            
+            phone_input = None
+            for sel in selectors:
+                try:
+                    await self.page.wait_for_selector(sel, timeout=2000)
+                    phone_input = sel
+                    print(f"找到手机号输入框: {sel}")
+                    break
+                except:
+                    continue
+            
+            if not phone_input:
+                # 截图看看页面
+                await self.page.screenshot(path='/tmp/miaoshou_login.png')
+                print("截图已保存到 /tmp/miaoshou_login.png")
+                # 获取页面HTML
+                html = await self.page.content()
+                print(f"页面HTML长度: {len(html)}")
+            
+            # 填写手机号
+            await self.page.fill(phone_input, phone)
             await asyncio.sleep(0.5)
             
-            # 点击登录
-            await self.page.click('button[type="submit"]')
-            await asyncio.sleep(5)
+            # 查找密码输入框
+            password_selectors = [
+                'input[type="password"]',
+                'input[placeholder*="密码"]',
+                'input[name="password"]',
+            ]
+            
+            for sel in password_selectors:
+                try:
+                    await self.page.fill(sel, password)
+                    print(f"找到密码输入框: {sel}")
+                    break
+                except:
+                    continue
+            
+            await asyncio.sleep(0.5)
+            
+            # 点击登录按钮
+            button_selectors = [
+                'button[type="submit"]',
+                'button:has-text("登录")',
+                'button:has-text("登 录")',
+                '.el-button--primary',
+                'button:has-text("确 定")',
+                'button[class*="login"]',
+            ]
+            
+            for sel in button_selectors:
+                try:
+                    await self.page.click(sel, timeout=3000)
+                    print(f"点击登录按钮: {sel}")
+                    break
+                except:
+                    continue
+            
+            # 等待登录处理（可能需要验证码）
+            print("等待登录处理...")
+            await asyncio.sleep(8)
+            
+            # 获取当前URL
+            current_url = self.page.url
+            print(f"登录后URL: {current_url}")
+            
+            # 检查是否有验证码
+            try:
+                captcha = await self.page.query_selector('img[src*="captcha"], .captcha, [class*="verify"]')
+                if captcha:
+                    print("⚠️ 检测到验证码，请手动处理")
+            except:
+                pass
+            
+            # 获取cookies
+            cookies = await self.context.cookies()
+            for c in cookies:
+                if 'authorization' in c['name'].lower() or 'token' in c['name'].lower():
+                    self.auth_token = c['value']
+                    print(f"找到Token: {c['name']} = {c['value'][:50]}...")
+            
+            # 获取localStorage中的token
+            token_js = """
+            () => {
+                const keys = Object.keys(localStorage);
+                const result = {};
+                for (const key of keys) {
+                    if (key.toLowerCase().includes('token') || key.toLowerCase().includes('auth')) {
+                        result[key] = localStorage.getItem(key);
+                    }
+                }
+                return JSON.stringify(result);
+            }
+            """
+            storage_result = await self.page.evaluate(token_js)
+            print(f"LocalStorage tokens: {storage_result}")
+            
+            if storage_result:
+                try:
+                    tokens = json.loads(storage_result)
+                    for key, value in tokens.items():
+                        if value and not self.auth_token:
+                            self.auth_token = value
+                except:
+                    pass
+            
+            logged_in = "login" not in current_url.lower() and self.auth_token
+            
+            return {
+                "success": True,
+                "logged_in": logged_in,
+                "has_token": bool(self.auth_token),
+                "current_url": current_url
+            }
             
             # 获取cookies
             cookies = await self.context.cookies()
