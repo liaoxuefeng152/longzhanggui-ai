@@ -42,6 +42,9 @@ const nextConfig: NextConfig = {
       // AI智能体API - 代理到Python后端
       { source: '/api/ai/:path*', destination: BASE + '/api/v1/ai/:path*' },
       { source: '/api/v1/ai/:path*', destination: BASE + '/api/v1/ai/:path*' },
+      // 视频生成API - 代理到Python后端
+      { source: '/api/v1/tools/video', destination: BASE + '/api/v1/ai/generate-video' },
+      { source: '/api/v1/tools/video/:path*', destination: BASE + '/api/v1/ai/generate-video/:path*' },
       // 认证API - 使用前端路由（已实现）
       { source: '/api/v1/auth/:path*', destination: '/api/v1/auth/:path*' },
     ];
