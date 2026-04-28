@@ -79,6 +79,24 @@ interface AIInsight {
   createdAt: string;
 }
 
+// 新增接口
+interface ReportData {
+  metrics: {
+    dailyMetrics: DailyMetric[];
+    productMetrics: ProductMetric[];
+    summary: {
+      totalSales: number;
+      totalOrders: number;
+      totalProfit: number;
+      totalAdSpend: number;
+      avgRoas: number;
+      avgConversionRate: number;
+    };
+  };
+  aiReport: string;
+  insights: AIInsight[];
+}
+
 export default function DataReviewPage() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
@@ -90,11 +108,13 @@ export default function DataReviewPage() {
   const [dailyMetrics, setDailyMetrics] = useState<DailyMetric[]>([]);
   const [productMetrics, setProductMetrics] = useState<ProductMetric[]>([]);
   const [insights, setInsights] = useState<AIInsight[]>([]);
+  const [aiReport, setAiReport] = useState<string>('');
   
   // 对话框状态
   const [isInsightOpen, setIsInsightOpen] = useState(false);
   const [selectedInsight, setSelectedInsight] = useState<AIInsight | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [reportLoading, setReportLoading] = useState(false);
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -109,80 +129,91 @@ export default function DataReviewPage() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      // 模拟数据
+      // 调用真实的API
+      const response = await fetch('/api/v1/tools/data-review');
+      const result = await response.json();
+      
+      if (result.success && result.data) {
+        setDailyMetrics(result.data.metrics.dailyMetrics || []);
+        setProductMetrics(result.data.metrics.productMetrics || []);
+        setInsights(result.data.insights || []);
+        toast.success('数据加载成功');
+      } else {
+        // API失败时使用模拟数据
+        console.warn('API调用失败，使用模拟数据:', result.error);
+        throw new Error(result.error || '获取数据失败');
+      }
+    } catch (error) {
+      console.error('获取数据失败:', error);
+      toast.error('获取数据失败，使用示例数据');
+      // 使用模拟数据作为兜底
       const mockDailyMetrics: DailyMetric[] = [
-        { date: '2026-03-21', sales: 15680.50, orders: 42, profit: 2838.12, adSpend: 1568.05, roas: 2.8, conversionRate: 3.2 },
-        { date: '2026-03-20', sales: 18450.00, orders: 51, profit: 3192.50, adSpend: 1845.00, roas: 3.1, conversionRate: 3.5 },
-        { date: '2026-03-19', sales: 12350.80, orders: 35, profit: 2117.68, adSpend: 1235.08, roas: 2.5, conversionRate: 2.8 },
+        { date: new Date().toISOString().split('T')[0], sales: 15680.50, orders: 42, profit: 2838.12, adSpend: 1568.05, roas: 2.8, conversionRate: 3.2 },
+        { date: new Date(Date.now() - 86400000).toISOString().split('T')[0], sales: 18450.00, orders: 51, profit: 3192.50, adSpend: 1845.00, roas: 3.1, conversionRate: 3.5 },
+        { date: new Date(Date.now() - 172800000).toISOString().split('T')[0], sales: 12350.80, orders: 35, profit: 2117.68, adSpend: 1235.08, roas: 2.5, conversionRate: 2.8 },
       ];
       
       const mockProductMetrics: ProductMetric[] = [
-        { 
-          id: 'PM001', product_id: 'PROD001', product_name: '宠物自动喂食器 5L大容量', platform: 'tiktok',
-          sales: 8520.00, orders: 23, profit: 1850.40, adSpend: 852.00, roas: 3.2, conversionRate: 4.1,
-          trend: 'up', insight: '销量持续增长，建议增加广告预算20%'
-        },
-        { 
-          id: 'PM002', product_id: 'PROD002', product_name: '便携式榨汁机 USB充电', platform: 'amazon',
-          sales: 6320.50, orders: 18, profit: 1320.30, adSpend: 632.05, roas: 2.8, conversionRate: 3.5,
-          trend: 'stable', insight: '表现稳定，可考虑拓展其他站点'
-        },
-        { 
-          id: 'PM003', product_id: 'PROD003', product_name: 'LED化妆镜 台式带灯', platform: 'tiktok',
-          sales: 3180.00, orders: 12, profit: 450.20, adSpend: 477.00, roas: 1.8, conversionRate: 2.2,
-          trend: 'down', insight: 'ROAS偏低，建议优化图片和Listing'
-        },
+        { id: 'PM001', product_id: 'PROD001', product_name: '蓝牙耳机无线降噪', platform: 'tiktok', sales: 15680.50, orders: 42, profit: 2838.12, adSpend: 1568.05, roas: 2.8, conversionRate: 3.2, trend: 'up', insight: '销量持续增长，建议增加广告预算20%' },
+        { id: 'PM002', product_id: 'PROD002', product_name: '宠物自动喂食器5L', platform: 'tiktok', sales: 12350.80, orders: 35, profit: 2117.68, adSpend: 1235.08, roas: 2.5, conversionRate: 3.5, trend: 'up', insight: '宠物品类表现优异' },
+        { id: 'PM003', product_id: 'PROD003', product_name: '便携式榨汁机USB', platform: 'amazon', sales: 8920.00, orders: 28, profit: 1650.40, adSpend: 892.00, roas: 3.2, conversionRate: 4.1, trend: 'stable', insight: '表现稳定，可考虑拓展其他站点' },
+        { id: 'PM004', product_id: 'PROD004', product_name: 'LED化妆镜台式带灯', platform: 'tiktok', sales: 5680.00, orders: 22, profit: 980.20, adSpend: 852.00, roas: 1.8, conversionRate: 2.2, trend: 'down', insight: 'ROAS偏低，建议优化图片和Listing' },
       ];
       
       const mockInsights: AIInsight[] = [
-        {
-          id: 'IN001',
-          type: 'opportunity',
-          title: '宠物用品品类增长机会',
-          description: '宠物自动喂食器近期销量持续增长，且ROAS达到3.2，建议扩大该品类的广告投入',
-          impact: '预计可提升20%的销售额',
-          action: '增加广告预算',
-          createdAt: '2026-03-21 14:30',
-        },
-        {
-          id: 'IN002',
-          type: 'warning',
-          title: 'LED化妆镜ROAS过低',
-          description: '该商品ROAS仅1.8，低于2.0的盈亏线，建议优化Listing或考虑下架',
-          impact: '每月亏损约$150',
-          action: '优化或下架',
-          createdAt: '2026-03-21 12:00',
-        },
-        {
-          id: 'IN003',
-          type: 'suggestion',
-          title: 'TikTok东南亚站点扩展建议',
-          description: '当前仅布局印尼站点，建议拓展至泰国、越南等站点，扩大市场覆盖',
-          impact: '预计可提升30%的流量',
-          action: '拓展新站点',
-          createdAt: '2026-03-21 10:00',
-        },
+        { id: 'IN001', type: 'opportunity', title: '蓝牙耳机品类增长机会', description: '该商品ROAS达到2.8，建议扩大该品类的广告投入', impact: '预计可提升20%的销售额', action: '增加广告预算', createdAt: new Date().toISOString().replace('T', ' ').substring(0, 16) },
+        { id: 'IN002', type: 'warning', title: 'LED化妆镜ROAS过低', description: '该商品ROAS仅1.8，低于2.0的盈亏线', impact: '每月亏损约$150', action: '优化或下架', createdAt: new Date().toISOString().replace('T', ' ').substring(0, 16) },
+        { id: 'IN003', type: 'suggestion', title: 'TikTok平台扩展建议', description: '建议拓展至泰国、越南等站点', impact: '预计可提升30%的流量', action: '拓展新站点', createdAt: new Date().toISOString().replace('T', ' ').substring(0, 16) },
       ];
       
       setDailyMetrics(mockDailyMetrics);
       setProductMetrics(mockProductMetrics);
       setInsights(mockInsights);
-    } catch (error) {
-      toast.error('获取数据失败');
     } finally {
       setLoading(false);
     }
   };
 
   // 生成AI报告
-  const handleGenerateReport = async () => {
+  const handleGenerateReport = async (reportType: 'daily' | 'weekly' | 'monthly' = 'weekly') => {
+    setReportLoading(true);
     setIsProcessing(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      toast.success('AI报告生成完成', { description: '已生成本周运营分析报告' });
-    } catch (error) {
-      toast.error('生成失败');
+      toast.info('正在生成AI分析报告...', { description: '请稍候，这可能需要10-30秒' });
+      
+      // 调用真实的AI复盘API
+      const response = await fetch('/api/v1/tools/data-review', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          dateRange: dateRange.start && dateRange.end ? dateRange : undefined,
+          reportType,
+        }),
+      });
+      
+      const result = await response.json();
+      
+      if (result.success && result.data) {
+        // 更新洞察
+        if (result.data.insights && result.data.insights.length > 0) {
+          setInsights(result.data.insights);
+        }
+        
+        // 设置AI报告
+        setAiReport(result.data.aiReport);
+        
+        // 切换到报告Tab显示
+        setActiveTab('reports');
+        
+        toast.success('AI报告生成完成', { description: '已生成详细的运营分析报告' });
+      } else {
+        throw new Error(result.error || '生成报告失败');
+      }
+    } catch (error: any) {
+      console.error('生成报告失败:', error);
+      toast.error('生成报告失败', { description: error.message || '请稍后重试' });
     } finally {
+      setReportLoading(false);
       setIsProcessing(false);
     }
   };
@@ -287,8 +318,12 @@ export default function DataReviewPage() {
               )}
               导出
             </Button>
-            <Button onClick={handleGenerateReport} disabled={isProcessing}>
-              <FileText className="h-4 w-4 mr-2" />
+            <Button onClick={() => handleGenerateReport('weekly')} disabled={isProcessing}>
+              {isProcessing ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <FileText className="h-4 w-4 mr-2" />
+              )}
               生成报告
             </Button>
           </div>
@@ -552,8 +587,25 @@ export default function DataReviewPage() {
 
           {/* 报告中心 */}
           <TabsContent value="reports" className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <Card className="bg-white border-border shadow-sm hover:shadow-md transition-shadow cursor-pointer">
+            <div className="grid grid-cols-3 gap-4">
+              <Card className="bg-white border-border shadow-sm hover:shadow-md transition-shadow cursor-pointer" onClick={() => handleGenerateReport('daily')}>
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-lg bg-amber-100 flex items-center justify-center">
+                      <Activity className="h-6 w-6 text-amber-600" />
+                    </div>
+                    <div>
+                      <div className="text-[14px] font-medium">日报</div>
+                      <div className="text-[12px] text-muted-foreground">今日运营数据汇总</div>
+                    </div>
+                  </div>
+                  <Button variant="outline" className="w-full mt-4" disabled={reportLoading} onClick={(e) => { e.stopPropagation(); handleGenerateReport('daily'); }}>
+                    {reportLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+                    生成报告
+                  </Button>
+                </CardContent>
+              </Card>
+              <Card className="bg-white border-border shadow-sm hover:shadow-md transition-shadow cursor-pointer" onClick={() => handleGenerateReport('weekly')}>
                 <CardContent className="p-4">
                   <div className="flex items-center gap-3">
                     <div className="w-12 h-12 rounded-lg bg-indigo-100 flex items-center justify-center">
@@ -564,12 +616,13 @@ export default function DataReviewPage() {
                       <div className="text-[12px] text-muted-foreground">本周运营数据汇总</div>
                     </div>
                   </div>
-                  <Button variant="outline" className="w-full mt-4" onClick={handleGenerateReport}>
+                  <Button variant="outline" className="w-full mt-4" disabled={reportLoading} onClick={(e) => { e.stopPropagation(); handleGenerateReport('weekly'); }}>
+                    {reportLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
                     生成报告
                   </Button>
                 </CardContent>
               </Card>
-              <Card className="bg-white border-border shadow-sm hover:shadow-md transition-shadow cursor-pointer">
+              <Card className="bg-white border-border shadow-sm hover:shadow-md transition-shadow cursor-pointer" onClick={() => handleGenerateReport('monthly')}>
                 <CardContent className="p-4">
                   <div className="flex items-center gap-3">
                     <div className="w-12 h-12 rounded-lg bg-success/10 flex items-center justify-center">
@@ -580,12 +633,44 @@ export default function DataReviewPage() {
                       <div className="text-[12px] text-muted-foreground">本月详细分析报告</div>
                     </div>
                   </div>
-                  <Button variant="outline" className="w-full mt-4">
+                  <Button variant="outline" className="w-full mt-4" disabled={reportLoading} onClick={(e) => { e.stopPropagation(); handleGenerateReport('monthly'); }}>
+                    {reportLoading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
                     生成报告
                   </Button>
                 </CardContent>
               </Card>
             </div>
+            
+            {/* AI报告展示 */}
+            {aiReport && (
+              <Card className="bg-white border-border shadow-sm">
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="text-[15px] flex items-center gap-2">
+                        <Zap className="h-4 w-4 text-indigo-600" />
+                        AI运营分析报告
+                      </CardTitle>
+                      <CardDescription>基于数据分析生成的智能洞察</CardDescription>
+                    </div>
+                    <Button variant="outline" size="sm" onClick={() => {
+                      navigator.clipboard.writeText(aiReport);
+                      toast.success('报告已复制到剪贴板');
+                    }}>
+                      <Download className="h-4 w-4 mr-2" />
+                      复制
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="prose prose-sm max-w-none p-4 bg-muted/30 rounded-lg">
+                    <pre className="whitespace-pre-wrap text-[13px] font-sans text-foreground leading-relaxed">
+                      {aiReport}
+                    </pre>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </TabsContent>
 
           {/* 配置设置 */}
