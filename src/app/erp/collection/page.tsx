@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import MainLayout from '@/components/layout/MainLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -347,10 +348,18 @@ export default function CollectionCenterPage() {
               <p className="text-[14px] text-muted-foreground">采集1688商品 · 公用采集箱 · 认领到店铺</p>
             </div>
           </div>
-          <Button variant="outline" className="bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white">
-            <Sparkles className="h-4 w-4 mr-2" />
-            支持批量采集
-          </Button>
+          <div className="flex items-center gap-3">
+            <Button variant="outline" asChild>
+              <Link href="/platform/miaoshou">
+                <Settings className="h-4 w-4 mr-2" />
+                配置妙手ERP
+              </Link>
+            </Button>
+            <Button variant="outline" className="bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white">
+              <Sparkles className="h-4 w-4 mr-2" />
+              支持批量采集
+            </Button>
+          </div>
         </div>
 
         {/* 统计卡片 - 工作台风格 */}

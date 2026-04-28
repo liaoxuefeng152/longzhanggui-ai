@@ -12,6 +12,7 @@ from app.api import api_router
 from app.services.init_service import init_system
 from app.exceptions.handlers import setup_exception_handlers
 from app.middleware.logging_middleware import LoggingMiddleware
+from app.middleware.auth_middleware import AuthMiddleware
 from app.services.scheduler_service import task_scheduler
 
 # 导入工作流执行器以注册
@@ -75,6 +76,9 @@ setup_exception_handlers(app)
 
 # 添加日志中间件
 app.add_middleware(LoggingMiddleware)
+
+# 添加认证中间件
+app.add_middleware(AuthMiddleware)
 
 # 配置CORS
 app.add_middleware(

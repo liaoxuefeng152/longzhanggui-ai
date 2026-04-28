@@ -11,24 +11,11 @@ from app.core.config import settings
 from loguru import logger
 
 
-# 不需要认证的路径
-PUBLIC_PATHS = [
-    "/",
-    "/health",
-    "/docs",
-    "/redoc",
-    "/openapi.json",
-    "/api/v1/auth/login",
-    "/api/v1/auth/register",
-    "/api/v1/auth/send-sms",
-    "/api/v1/auth/verify-sms",
-    # 1688采集API（临时公开，生产环境需要认证）
-    "/api/v1/1688/collect",
-    "/api/v1/1688/collect/preview",
-    "/api/v1/1688/collect/batch",
-    "/api/v1/1688/history",
-    "/api/v1/1688/search",
-    # AI智能体API（视频、图片等不需要认证）
+# 不需要认证的路径（前缀）
+PUBLIC_PATH_PREFIXES = [
+    "/api/v1/auth/",
+    "/api/v1/1688/",
+    "/api/v1/miaoshou/",
     "/api/v1/ai/generate-video",
     "/api/v1/ai/generate-image",
     "/api/v1/ai/process-image",
@@ -36,6 +23,15 @@ PUBLIC_PATHS = [
     "/api/v1/ai/optimize-listing",
     "/api/v1/ai/calculate-price",
     "/api/v1/ai/customer-reply",
+]
+
+# 不需要认证的路径（精确匹配）
+PUBLIC_PATHS = [
+    "/",
+    "/health",
+    "/docs",
+    "/redoc",
+    "/openapi.json",
 ]
 
 # 正则匹配的公开路径
@@ -106,6 +102,11 @@ class AuthMiddleware(BaseHTTPMiddleware):
         # 精确匹配
         if path in PUBLIC_PATHS:
             return True
+        
+        # 前缀匹配
+        for prefix in PUBLIC_PATH_PREFIXES:
+            if path.startswith(prefix):
+                return True
         
         # 正则匹配
         for pattern in PUBLIC_PATTERNS:

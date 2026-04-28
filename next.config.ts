@@ -78,6 +78,9 @@ const nextConfig: NextConfig = {
       // ===== 认证API - 使用前端路由（已实现） =====
       { source: '/api/v1/auth/:path*', destination: '/api/v1/auth/:path*' },
       { source: '/api/auth/:path*', destination: '/api/auth/:path*' },
+      
+      // ===== 妙手ERP API - 代理到Python后端 =====
+      { source: '/api/miaoshou/:path*', destination: BASE + '/api/v1/miaoshou/:path*' },
     ];
   },
 };

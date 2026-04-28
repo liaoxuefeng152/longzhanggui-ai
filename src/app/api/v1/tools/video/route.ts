@@ -102,11 +102,25 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       );
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('Video generation error:', error);
-    const errorMessage = error instanceof Error ? error.message : '视频生成失败';
+    
+    // 提取更详细的错误信息
+    let errorMessage = '视频生成失败';
+    if (error?.response?.data) {
+      // axios错误，包含响应数据
+      errorMessage = error.response.data?.message || error.response.data?.error || JSON.stringify(error.response.data);
+      console.error('API Response Data:', error.response.data);
+    } else if (error?.response) {
+      // HTTP响应错误
+      errorMessage = `HTTP ${error.response.status}: ${error.response.statusText}`;
+      console.error('HTTP Response:', error.response);
+    } else if (error instanceof Error) {
+      errorMessage = error.message;
+    }
+    
     return NextResponse.json(
-      { success: false, error: errorMessage },
+      { success: false, error: errorMessage, details: error?.response?.data },
       { status: 500 }
     );
   }
