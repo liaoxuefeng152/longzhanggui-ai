@@ -35,6 +35,7 @@ import {
   X,
   Package,
   AlertCircle,
+  Settings,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
