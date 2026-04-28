@@ -782,18 +782,24 @@ export async function generateSelectionReport(request: {
 
 export async function createAdCampaign(request: any): Promise<{ success: boolean; data?: any }> {
   try {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
     const response = await fetch('/api/v1/tools/ads/create', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+      },
       body: JSON.stringify(request),
     });
     
     if (!response.ok) {
-      return { success: false, data: {} };
+      const errorData = await response.json().catch(() => ({}));
+      return { success: false, data: errorData };
     }
     
     return { success: true, data: await response.json() };
   } catch (error) {
-    return { success: true, data: {} };
+    console.error('创建广告失败:', error);
+    return { success: false, data: { error: String(error) } };
   }
 }

@@ -244,7 +244,7 @@ export default function AdvertisingAgentPage() {
 
       if (result.success && result.data) {
         const newCampaign: AdCampaign = {
-          id: result.data.campaign_id,
+          id: result.data.campaign_id || result.data.id || `campaign-${Date.now()}`,
           name: `广告计划-${newAd.product_id}`,
           platform: newAd.platform === 'tiktok' ? 'TK Ads' : 'Amazon PPC',
           status: 'active',
@@ -266,6 +266,10 @@ export default function AdvertisingAgentPage() {
           daily_budget: 100,
           target_acos: 0.2,
         });
+      } else {
+        // 显示具体错误信息
+        const errorMsg = result.data?.error || result.data?.message || '创建广告失败';
+        toast.error(errorMsg);
       }
     } catch (error: any) {
       console.error('创建广告失败:', error);

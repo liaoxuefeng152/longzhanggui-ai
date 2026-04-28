@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
       prompt,              // 文本描述（必填）
       firstFrameImage,     // 首帧图片URL（可选）
       lastFrameImage,      // 尾帧图片URL（可选）
-      duration = 5,        // 视频时长（秒），4-12 或 -1 自动选择
+      duration = -1,       // 视频时长（秒），-1自动选择，或 5/10
       resolution = '720p', // 分辨率：480p、720p、1080p
       ratio = '16:9',      // 宽高比：16:9、9:16、1:1、4:3、3:4、21:9、adaptive
       watermark = false,   // 是否添加水印

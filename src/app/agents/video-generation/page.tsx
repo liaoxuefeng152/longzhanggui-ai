@@ -173,9 +173,10 @@ export default function VideoAgentPage() {
 
     try {
       // 将产品名称作为视频描述传递给后端
+      // duration: -1 表示自动选择时长（模型要求）
       const request: GenerateVideoRequest = {
         prompt: newVideo.product_name,
-        duration: newVideo.duration,
+        duration: -1, // 使用-1自动选择时长
         resolution: '720p',
         ratio: '16:9',
       };

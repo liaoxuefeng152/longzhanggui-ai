@@ -84,7 +84,11 @@ class AuthMiddleware(BaseHTTPMiddleware):
                 )
             
             # 将用户信息存储到请求状态
-            request.state.user_id = int(user_id)
+            # user_id 可能是字符串或整数
+            try:
+                request.state.user_id = int(user_id)
+            except (ValueError, TypeError):
+                request.state.user_id = user_id  # 如果是字符串UUID，直接使用
             request.state.user_role = role
             
         except Exception as e:
