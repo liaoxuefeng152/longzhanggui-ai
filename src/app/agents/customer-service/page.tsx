@@ -310,12 +310,25 @@ export default function CustomerServicePage() {
 
   // 回复模板管理
   const handleUseTemplate = (template: ReplyTemplate) => {
+    // 如果没有选中工单，自动选择第一个待处理的工单
+    let ticketToUse = selectedTicket;
+    if (!ticketToUse) {
+      const pendingTicket = tickets.find(t => t.status === 'pending');
+      if (pendingTicket) {
+        ticketToUse = pendingTicket;
+        setSelectedTicket(ticketToUse);
+      } else {
+        toast.error('请先选择一个工单', { description: '在工单列表中选择要回复的工单' });
+        return;
+      }
+    }
+    
     setReplyForm(prev => ({
       ...prev,
       message: template.content,
     }));
     setIsReplyOpen(true);
-    toast.success('模板已应用', { description: template.name });
+    toast.success('模板已应用', { description: `${template.name} - 将回复: ${ticketToUse.customer}` });
   };
 
   const handleAddTemplate = () => {
