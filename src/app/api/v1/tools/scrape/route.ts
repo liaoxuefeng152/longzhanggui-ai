@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 调用后端1688采集API
-    const backendUrl = process.env.BACKEND_URL || 'http://localhost:8000';
+    const backendUrl = process.env.BACKEND_URL || 'http://localhost:9000';
     const response = await fetch(`${backendUrl}/api/v1/1688/collect/preview`, {
       method: 'POST',
       headers,
@@ -123,7 +123,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // 调用后端批量采集API
-    const backendUrl = process.env.BACKEND_URL || 'http://localhost:8000';
+    const backendUrl = process.env.BACKEND_URL || 'http://localhost:9000';
     const response = await fetch(`${backendUrl}/api/v1/1688/collect/batch`, {
       method: 'POST',
       headers,
