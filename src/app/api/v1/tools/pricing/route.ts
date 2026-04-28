@@ -1,234 +1,316 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-/**
- * 智能定价工具 API
- * 
- * 功能：
- * - 保本价计算
- * - 利润空间验证
- * - 多种定价方案
- * - 价格战预警
- */
+// 定价配置
+const PRICING_CONFIG = {
+  // 平台佣金率
+  commissionRates: {
+    shopee: 0.06,      // 6%
+    lazada: 0.08,      // 8%
+    tiktok: 0.05,      // 5%
+    amazon: 0.15,       // 15%
+    ebay: 0.12,         // 12%
+  },
+  // 物流费用（单位：CNY）
+  logistics: {
+    shopee: { normal: 25, fast: 45 },
+    lazada: { normal: 30, fast: 55 },
+    tiktok: { normal: 20, fast: 40 },
+    amazon: { normal: 35, fast: 60 },
+    ebay: { normal: 28, fast: 50 },
+  },
+  // VAT税率
+  vatRates: {
+    id: 0.11,    // 印尼 11%
+    th: 0.07,    // 泰国 7%
+    vn: 0.10,    // 越南 10%
+    my: 0.06,    // 马来西亚 6%
+    ph: 0.12,    // 菲律宾 12%
+    sg: 0.09,    // 新加坡 9%
+  },
+  // 最低利润率
+  minProfitRates: {
+    safe: 0.25,    // 安全 25%
+    warning: 0.15, // 警告 15%
+    danger: 0.05,  // 危险 5%
+  },
+};
 
-interface PricingRequest {
-  costPrice: number;           // 采购成本（元）
-  domesticShipping: number;    // 国内运费（元）
-  internationalShipping: number; // 国际运费（元）
-  targetPlatform: 'shopee' | 'lazada' | 'tiktok' | 'amazon';
-  targetMarket: 'TH' | 'VN' | 'MY' | 'ID' | 'PH';
-  productWeight: number;       // 产品重量（kg）
-  productCategory?: string;    // 产品类目
-  targetProfitRate?: number;   // 目标利润率（小数，如0.2表示20%）
-  competitorPrice?: number;    // 竞品价格（当地货币）
+// 竞品价格数据（模拟）
+const mockCompetitorPrices: Record<string, any[]> = {
+  'P001': [
+    { id: 'C1', name: '小米充电宝 20000mAh', price: 149, currency: 'CNY', platform: 'shopee', trend: 'down', lastUpdated: new Date().toISOString() },
+    { id: 'C2', name: '华为充电宝 20000mAh', price: 169, currency: 'CNY', platform: 'lazada', trend: 'up', lastUpdated: new Date().toISOString() },
+    { id: 'C3', name: '罗马仕充电宝', price: 139, currency: 'CNY', platform: 'tiktok', trend: 'stable', lastUpdated: new Date().toISOString() },
+  ],
+  'P002': [
+    { id: 'C4', name: '小米蓝牙耳机', price: 129, currency: 'CNY', platform: 'shopee', trend: 'down', lastUpdated: new Date().toISOString() },
+    { id: 'C5', name: '华为FreeBuds', price: 199, currency: 'CNY', platform: 'lazada', trend: 'stable', lastUpdated: new Date().toISOString() },
+  ],
+  'P003': [
+    { id: 'C6', name: '小米手环8', price: 229, currency: 'CNY', platform: 'shopee', trend: 'up', lastUpdated: new Date().toISOString() },
+    { id: 'C7', name: '华为手环8', price: 249, currency: 'CNY', platform: 'lazada', trend: 'stable', lastUpdated: new Date().toISOString() },
+  ],
+};
+
+// 模拟商品数据
+const mockProducts = [
+  {
+    id: 'P001',
+    name: '便携充电宝 20000mAh',
+    sku: 'SKU-P001',
+    costPrice: 45,
+    sellingPrice: 159,
+    platform: 'shopee',
+    country: 'id',
+    weight: 0.35,
+  },
+  {
+    id: 'P002',
+    name: '无线蓝牙耳机',
+    sku: 'SKU-P002',
+    costPrice: 68,
+    sellingPrice: 128,
+    platform: 'tiktok',
+    country: 'th',
+    weight: 0.15,
+  },
+  {
+    id: 'P003',
+    name: '智能手环运动手表',
+    sku: 'SKU-P003',
+    costPrice: 120,
+    sellingPrice: 199,
+    platform: 'lazada',
+    country: 'my',
+    weight: 0.25,
+  },
+];
+
+// 计算成本
+function calculateCost(product: any, targetPrice: number, config: typeof PRICING_CONFIG) {
+  const platform = product.platform || 'shopee';
+  const country = product.country || 'id';
+  const weight = product.weight || 0.2;
+  
+  const commissionRate = config.commissionRates[platform] || 0.06;
+  const logisticsFee = config.logistics[platform]?.normal || 25;
+  const vatRate = config.vatRates[country] || 0.10;
+  
+  // 销售额 = 售价 + VAT
+  const salesAmount = targetPrice * (1 + vatRate);
+  
+  // 平台佣金 = 销售额 * 佣金率
+  const commission = salesAmount * commissionRate;
+  
+  // 物流费
+  const logistics = logisticsFee;
+  
+  // 包装费（按重量估算）
+  const packingFee = weight * 5; // 每克0.005元
+  
+  // 汇率损耗（假设1.5%）
+  const exchangeLoss = salesAmount * 0.015;
+  
+  // 总成本
+  const totalCost = product.costPrice + logistics + packingFee + exchangeLoss;
+  
+  // 实际利润
+  const actualProfit = targetPrice - totalCost - commission;
+  
+  // 利润率
+  const profitRate = actualProfit / targetPrice;
+  
+  // 保本价（利润为0时的价格）
+  const breakEvenPrice = totalCost / (1 - commissionRate - vatRate * commissionRate);
+  
+  return {
+    salesAmount,
+    commission,
+    logistics,
+    packingFee,
+    exchangeLoss,
+    totalCost,
+    actualProfit,
+    profitRate,
+    breakEvenPrice,
+    roi: actualProfit / product.costPrice,
+  };
 }
 
-interface PricingResult {
-  breakEvenPrice: number;      // 保本价
-  suggestedPrices: Array<{
-    name: string;
-    price: number;
-    profit: number;
-    profitRate: number;
-    description: string;
-  }>;
-  costBreakdown: {
-    item: string;
-    amount: number;
-    currency: string;
-  }[];
-  warnings: string[];
-  recommendations: string[];
+// 智能定价算法
+function calculateOptimalPrice(product: any, competitors: any[], targetProfitRate: number, config: typeof PRICING_CONFIG) {
+  const platform = product.platform || 'shopee';
+  const country = product.country || 'id';
+  
+  const commissionRate = config.commissionRates[platform] || 0.06;
+  const vatRate = config.vatRates[country] || 0.10;
+  const logisticsFee = config.logistics[platform]?.normal || 25;
+  const weight = product.weight || 0.2;
+  
+  // 计算保本价
+  const packingFee = weight * 5;
+  const exchangeLossRate = 0.015;
+  const totalFixedCost = product.costPrice + logisticsFee + packingFee;
+  
+  // 保本价 = (成本 + 物流 + 包装) / (1 - 佣金率 - VAT影响 - 汇率损耗)
+  const breakEvenPrice = totalFixedCost / (1 - commissionRate * (1 + vatRate) - exchangeLossRate);
+  
+  // 获取竞品价格范围
+  const competitorPrices = competitors.map(c => c.price).filter(p => p > 0);
+  const minCompetitorPrice = Math.min(...competitorPrices);
+  const maxCompetitorPrice = Math.max(...competitorPrices);
+  const avgCompetitorPrice = competitorPrices.reduce((a, b) => a + b, 0) / competitorPrices.length;
+  
+  // 目标利润率定价
+  // 售价 = 成本 / (1 - 佣金率 - 汇率损耗 - 目标利润率)
+  const targetPriceByProfit = totalFixedCost / (1 - commissionRate - exchangeLossRate - targetProfitRate);
+  
+  // 竞品竞争力定价（在竞品均价基础上浮动）
+  const competitivePrice = avgCompetitorPrice * 0.95; // 比竞品低5%
+  
+  // 取两者中的较低者，但不低于保本价
+  const optimalPrice = Math.max(breakEvenPrice, Math.min(targetPriceByProfit, competitivePrice));
+  
+  // 计算各方案
+  const profitPlan = calculateCost(product, targetPriceByProfit, config);
+  const competitivePlan = calculateCost(product, competitivePrice, config);
+  const optimalPlan = calculateCost(product, optimalPrice, config);
+  
+  return {
+    breakEvenPrice: Math.round(breakEvenPrice * 100) / 100,
+    targetPrice: Math.round(targetPriceByProfit * 100) / 100,
+    competitivePrice: Math.round(competitivePrice * 100) / 100,
+    optimalPrice: Math.round(optimalPrice * 100) / 100,
+    minCompetitorPrice,
+    maxCompetitorPrice,
+    avgCompetitorPrice: Math.round(avgCompetitorPrice * 100) / 100,
+    plans: {
+      profit: { price: Math.round(targetPriceByProfit * 100) / 100, ...profitPlan },
+      competitive: { price: Math.round(competitivePrice * 100) / 100, ...competitivePlan },
+      optimal: { price: Math.round(optimalPrice * 100) / 100, ...optimalPlan },
+    },
+  };
 }
 
-// 平台费率配置
-const PLATFORM_FEES = {
-  shopee: {
-    commission: 0.05,      // 交易佣金
-    transactionFee: 0.02,  // 交易手续费
-    freeShipping: 0.03,    // 免运活动费
-  },
-  lazada: {
-    commission: 0.04,
-    transactionFee: 0.02,
-    freeShipping: 0.025,
-  },
-  tiktok: {
-    commission: 0.05,
-    transactionFee: 0.015,
-    freeShipping: 0.02,
-  },
-  amazon: {
-    commission: 0.15,      // 亚马逊佣金较高
-    transactionFee: 0,
-    freeShipping: 0,
-  }
-};
-
-// 汇率配置（示例）
-const EXCHANGE_RATES: Record<string, number> = {
-  'CNY-THB': 4.8,   // 人民币转泰铢
-  'CNY-VND': 3400,  // 人民币转越南盾
-  'CNY-MYR': 0.65,  // 人民币转马币
-  'CNY-IDR': 2100,  // 人民币转印尼盾
-  'CNY-PHP': 7.8,   // 人民币转菲律宾比索
-};
-
-// VAT税率
-const VAT_RATES: Record<string, number> = {
-  'TH': 0.07,   // 泰国7%
-  'VN': 0.10,   // 越南10%
-  'MY': 0.06,   // 马来西亚6%
-  'ID': 0.11,   // 印尼11%
-  'PH': 0.12,   // 菲律宾12%
-};
-
-// 货币符号
-const CURRENCY_SYMBOLS: Record<string, string> = {
-  'TH': '฿',
-  'VN': '₫',
-  'MY': 'RM',
-  'ID': 'Rp',
-  'PH': '₱',
-};
-
-export async function POST(request: NextRequest) {
+// GET - 获取商品列表和竞品价格
+export async function GET(request: NextRequest) {
   try {
-    const body: PricingRequest = await request.json();
-    const {
-      costPrice,
-      domesticShipping,
-      internationalShipping,
-      targetPlatform,
-      targetMarket,
-      productWeight,
-      productCategory,
-      targetProfitRate = 0.20,
-      competitorPrice
-    } = body;
-
-    // 参数验证
-    if (!costPrice || costPrice <= 0) {
-      return NextResponse.json(
-        { success: false, error: '请输入有效的采购成本' },
-        { status: 400 }
-      );
-    }
-
-    // 获取平台费率
-    const platformFee = PLATFORM_FEES[targetPlatform] || PLATFORM_FEES.shopee;
-    const exchangeRate = EXCHANGE_RATES[`CNY-${targetMarket}`] || 1;
-    const vatRate = VAT_RATES[targetMarket] || 0.1;
-    const currencySymbol = CURRENCY_SYMBOLS[targetMarket] || '$';
-
-    // 计算总成本（人民币）
-    const totalCostCNY = costPrice + domesticShipping + internationalShipping;
+    const { searchParams } = new URL(request.url);
+    const productId = searchParams.get('productId');
     
-    // 转换为当地货币
-    const totalCostLocal = totalCostCNY * exchangeRate;
-
-    // 计算保本价（不考虑利润）
-    // 保本价 = 成本 + 平台费用 + VAT
-    // 设售价为P，则：P - P*(佣金+手续费) - P*VAT = 成本
-    // P = 成本 / (1 - 佣金 - 手续费 - VAT)
-    const totalFeeRate = platformFee.commission + platformFee.transactionFee + platformFee.freeShipping + vatRate;
-    const breakEvenPrice = totalCostLocal / (1 - totalFeeRate);
-
-    // 生成多种定价方案
-    const suggestedPrices = [
-      {
-        name: '保本价',
-        price: Math.ceil(breakEvenPrice),
-        profit: 0,
-        profitRate: 0,
-        description: '仅覆盖成本，不推荐'
-      },
-      {
-        name: '低利润方案',
-        price: Math.ceil(breakEvenPrice * 1.10),
-        profit: Math.ceil(breakEvenPrice * 0.10),
-        profitRate: 0.10,
-        description: '薄利多销，适合新店'
-      },
-      {
-        name: '推荐方案',
-        price: Math.ceil(breakEvenPrice * (1 + targetProfitRate)),
-        profit: Math.ceil(breakEvenPrice * targetProfitRate),
-        profitRate: targetProfitRate,
-        description: `目标利润率${(targetProfitRate * 100).toFixed(0)}%`
-      },
-      {
-        name: '高利润方案',
-        price: Math.ceil(breakEvenPrice * 1.35),
-        profit: Math.ceil(breakEvenPrice * 0.35),
-        profitRate: 0.35,
-        description: '高溢价，需品牌支撑'
+    if (productId) {
+      // 获取单个商品详情
+      const product = mockProducts.find(p => p.id === productId);
+      if (!product) {
+        return NextResponse.json({ success: false, error: '商品不存在' }, { status: 404 });
       }
-    ];
-
-    // 成本拆分
-    const costBreakdown = [
-      { item: '采购成本', amount: costPrice * exchangeRate, currency: currencySymbol },
-      { item: '国内运费', amount: domesticShipping * exchangeRate, currency: currencySymbol },
-      { item: '国际运费', amount: internationalShipping * exchangeRate, currency: currencySymbol },
-      { item: `平台佣金(${(platformFee.commission * 100).toFixed(0)}%)`, amount: breakEvenPrice * platformFee.commission, currency: currencySymbol },
-      { item: `交易手续费(${(platformFee.transactionFee * 100).toFixed(0)}%)`, amount: breakEvenPrice * platformFee.transactionFee, currency: currencySymbol },
-      { item: `VAT税费(${(vatRate * 100).toFixed(0)}%)`, amount: breakEvenPrice * vatRate, currency: currencySymbol },
-    ];
-
-    // 预警信息
-    const warnings: string[] = [];
-    
-    if (breakEvenPrice > 1000) {
-      warnings.push(`⚠️ 保本价较高(${currencySymbol}${Math.ceil(breakEvenPrice)})，请评估市场接受度`);
+      
+      const competitors = mockCompetitorPrices[productId] || [];
+      const pricing = calculateOptimalPrice(product, competitors, 0.25, PRICING_CONFIG);
+      
+      return NextResponse.json({
+        success: true,
+        data: {
+          product,
+          competitors,
+          pricing,
+        },
+      });
     }
     
-    if (competitorPrice && breakEvenPrice > competitorPrice * 0.8) {
-      warnings.push(`⚠️ 保本价接近竞品价格，利润空间有限`);
-    }
+    // 获取所有商品
+    const productsWithPricing = mockProducts.map(product => {
+      const competitors = mockCompetitorPrices[product.id] || [];
+      const pricing = calculateOptimalPrice(product, competitors, 0.25, PRICING_CONFIG);
+      return {
+        ...product,
+        competitors,
+        pricing,
+      };
+    });
     
-    if (productWeight > 1) {
-      warnings.push(`⚠️ 产品较重(${productWeight}kg)，国际运费可能较高`);
-    }
-
-    // 推荐建议
-    const recommendations: string[] = [
-      `💡 建议定价：${currencySymbol}${suggestedPrices[2].price}（利润率${(targetProfitRate * 100).toFixed(0)}%）`,
-      `💡 可通过优化包装降低运费成本`,
-      `💡 建议参加平台免运活动提升转化率`,
-    ];
-
-    if (competitorPrice) {
-      const priceGap = ((competitorPrice - suggestedPrices[2].price) / competitorPrice * 100).toFixed(1);
-      if (parseFloat(priceGap) > 0) {
-        recommendations.push(`💡 竞品价格为${currencySymbol}${competitorPrice}，你有${priceGap}%的价格优势`);
-      } else {
-        recommendations.push(`💡 竞品价格为${currencySymbol}${competitorPrice}，建议优化成本或差异化定位`);
-      }
-    }
-
-    const result: PricingResult = {
-      breakEvenPrice: Math.ceil(breakEvenPrice),
-      suggestedPrices,
-      costBreakdown,
-      warnings,
-      recommendations
-    };
-
     return NextResponse.json({
       success: true,
-      data: result,
-      meta: {
-        platform: targetPlatform,
-        market: targetMarket,
-        currency: currencySymbol,
-        exchangeRate
-      }
+      data: productsWithPricing,
     });
   } catch (error) {
-    console.error('Pricing calculation error:', error);
-    return NextResponse.json(
-      { success: false, error: '定价计算失败' },
-      { status: 500 }
-    );
+    console.error('获取定价数据失败:', error);
+    return NextResponse.json({ success: false, error: '获取数据失败' }, { status: 500 });
+  }
+}
+
+// POST - 批量定价计算
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { action, products, targetProfitRate, platform, country } = body;
+    
+    // 合并配置
+    const config = { ...PRICING_CONFIG };
+    if (platform) {
+      Object.keys(config.commissionRates).forEach(p => {
+        if (p !== platform) delete config.commissionRates[p as keyof typeof config.commissionRates];
+      });
+    }
+    
+    if (action === 'calculate') {
+      // 计算定价
+      const results = [];
+      for (const item of products) {
+        const product = mockProducts.find(p => p.id === item.productId) || item;
+        const competitors = mockCompetitorPrices[product.id] || [];
+        const pricing = calculateOptimalPrice(
+          { ...product, platform: platform || product.platform, country: country || product.country },
+          competitors,
+          targetProfitRate || 0.25,
+          config
+        );
+        
+        const currentCost = calculateCost(product, product.sellingPrice, config);
+        
+        results.push({
+          productId: product.id,
+          productName: product.name,
+          currentPrice: product.sellingPrice,
+          currentProfitRate: currentCost.profitRate,
+          suggestedPrice: pricing.optimalPrice,
+          suggestedProfitRate: pricing.plans.optimal.profitRate,
+          priceChange: pricing.optimalPrice - product.sellingPrice,
+          priceChangePercent: ((pricing.optimalPrice - product.sellingPrice) / product.sellingPrice * 100).toFixed(1) + '%',
+          pricing,
+          riskLevel: pricing.plans.optimal.profitRate >= config.minProfitRates.safe ? 'safe' :
+                     pricing.plans.optimal.profitRate >= config.minProfitRates.warning ? 'warning' : 'danger',
+        });
+      }
+      
+      return NextResponse.json({
+        success: true,
+        data: results,
+      });
+    }
+    
+    if (action === 'apply') {
+      // 应用定价（模拟）
+      const applied = products.map((item: any) => ({
+        productId: item.productId,
+        oldPrice: mockProducts.find(p => p.id === item.productId)?.sellingPrice || 0,
+        newPrice: item.newPrice,
+        status: 'applied',
+        appliedAt: new Date().toISOString(),
+      }));
+      
+      return NextResponse.json({
+        success: true,
+        data: {
+          applied,
+          total: applied.length,
+        },
+      });
+    }
+    
+    return NextResponse.json({ success: false, error: '未知操作' }, { status: 400 });
+  } catch (error) {
+    console.error('定价计算失败:', error);
+    return NextResponse.json({ success: false, error: '计算失败' }, { status: 500 });
   }
 }

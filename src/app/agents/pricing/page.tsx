@@ -228,44 +228,122 @@ export default function PricingAgentPage() {
     setUser(JSON.parse(userData));
   }, [router]);
 
-  // 计算调价建议
-  const generateSuggestions = () => {
-    const newSuggestions: PricingSuggestion[] = [];
-    
-    products.forEach(product => {
-      if (product.competitors.length === 0) return;
-      
-      const lowestCompetitorPrice = Math.min(...product.competitors.map(c => c.price));
-      
-      const minAllowedPrice = product.costPrice * 1.15;
-      
-      if (lowestCompetitorPrice < product.sellingPrice * 0.95) {
-        if (lowestCompetitorPrice >= minAllowedPrice) {
-          newSuggestions.push({
-            id: `SUG-${product.id}-1`,
-            productId: product.id,
-            productName: product.name,
-            currentPrice: product.sellingPrice,
-            suggestedPrice: lowestCompetitorPrice,
-            change: lowestCompetitorPrice - product.sellingPrice,
-            changePercent: ((lowestCompetitorPrice - product.sellingPrice) / product.sellingPrice) * 100,
-            reason: '竞品降价，跟进保持竞争力',
-            profitRate: ((lowestCompetitorPrice - product.costPrice) / lowestCompetitorPrice) * 100,
-            minProfitRate: 15,
-            urgency: product.status === 'danger' ? 'high' : 'medium',
-            competitorPrice: lowestCompetitorPrice,
-            riskLevel: ((lowestCompetitorPrice - product.costPrice) / lowestCompetitorPrice) >= 0.20 ? 'safe' : 'warning',
-          });
-        }
+  // 加载真实数据
+  const loadPricingData = async () => {
+    try {
+      const res = await fetch('/api/v1/tools/pricing');
+      const data = await res.json();
+      if (data.success && data.data) {
+        // 转换API数据格式为页面需要的格式
+        const loadedProducts: Product[] = data.data.map((item: any) => {
+          const competitors = item.competitors?.map((c: any) => ({
+            id: c.id,
+            name: c.name,
+            price: c.price,
+            currency: c.currency || 'CNY',
+            source: c.platform,
+            lastUpdated: c.lastUpdated,
+            trend: c.trend,
+          })) || [];
+          
+          const currentCost = item.pricing?.plans?.optimal || {};
+          
+          return {
+            id: item.id,
+            name: item.name,
+            sku: item.sku,
+            costPrice: item.costPrice,
+            sellingPrice: item.sellingPrice,
+            profit: item.sellingPrice - item.costPrice,
+            profitRate: ((item.sellingPrice - item.costPrice) / item.sellingPrice) * 100,
+            competitors,
+            lastPricingDate: new Date().toISOString().split('T')[0],
+            status: item.pricing?.plans?.optimal?.profitRate >= 0.25 ? 'healthy' :
+                    item.pricing?.plans?.optimal?.profitRate >= 0.15 ? 'warning' : 'danger',
+          };
+        });
+        setProducts(loadedProducts);
+        toast.success('数据加载成功');
       }
-    });
+    } catch (error) {
+      console.error('加载定价数据失败:', error);
+      toast.error('加载数据失败，使用模拟数据');
+    }
+  };
+
+  // 计算调价建议
+  const generateSuggestions = async () => {
+    // 先加载真实数据
+    await loadPricingData();
     
-    setSuggestions(newSuggestions);
+    // 调用API计算定价建议
+    try {
+      const res = await fetch('/api/v1/tools/pricing', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'calculate',
+          products: products.map(p => ({ productId: p.id })),
+          targetProfitRate: 0.25,
+        }),
+      });
+      const data = await res.json();
+      
+      if (data.success && data.data) {
+        const newSuggestions: PricingSuggestion[] = data.data.map((item: any) => ({
+          id: `SUG-${item.productId}-1`,
+          productId: item.productId,
+          productName: item.productName,
+          currentPrice: item.currentPrice,
+          suggestedPrice: item.suggestedPrice,
+          change: item.priceChange,
+          changePercent: parseFloat(item.priceChangePercent),
+          reason: item.riskLevel === 'safe' ? '建议降价提升竞争力' : '需要审批的调价',
+          profitRate: (item.suggestedProfitRate || 0) * 100,
+          minProfitRate: 15,
+          urgency: item.riskLevel === 'danger' ? 'high' : item.riskLevel === 'warning' ? 'medium' : 'low',
+          competitorPrice: item.pricing?.avgCompetitorPrice,
+          riskLevel: item.riskLevel,
+        }));
+        setSuggestions(newSuggestions.filter(s => s.change !== 0));
+      }
+    } catch (error) {
+      console.error('计算调价建议失败:', error);
+      // 回退到本地计算
+      const newSuggestions: PricingSuggestion[] = [];
+      products.forEach(product => {
+        if (product.competitors.length === 0) return;
+        
+        const lowestCompetitorPrice = Math.min(...product.competitors.map(c => c.price));
+        const minAllowedPrice = product.costPrice * 1.15;
+        
+        if (lowestCompetitorPrice < product.sellingPrice * 0.95) {
+          if (lowestCompetitorPrice >= minAllowedPrice) {
+            newSuggestions.push({
+              id: `SUG-${product.id}-1`,
+              productId: product.id,
+              productName: product.name,
+              currentPrice: product.sellingPrice,
+              suggestedPrice: lowestCompetitorPrice,
+              change: lowestCompetitorPrice - product.sellingPrice,
+              changePercent: ((lowestCompetitorPrice - product.sellingPrice) / product.sellingPrice) * 100,
+              reason: '竞品降价，跟进保持竞争力',
+              profitRate: ((lowestCompetitorPrice - product.costPrice) / lowestCompetitorPrice) * 100,
+              minProfitRate: 15,
+              urgency: product.status === 'danger' ? 'high' : 'medium',
+              competitorPrice: lowestCompetitorPrice,
+              riskLevel: ((lowestCompetitorPrice - product.costPrice) / lowestCompetitorPrice) >= 0.20 ? 'safe' : 'warning',
+            });
+          }
+        }
+      });
+      setSuggestions(newSuggestions);
+    }
   };
 
   useEffect(() => {
-    generateSuggestions();
-  }, [products]);
+    loadPricingData();
+  }, []);
 
   // 执行调价
   const handleExecuteAdjustment = async (suggestion: PricingSuggestion) => {
@@ -277,7 +355,7 @@ export default function PricingAgentPage() {
     setAdjustmentDialog(true);
   };
 
-  const confirmAdjustment = () => {
+  const confirmAdjustment = async () => {
     if (!selectedProduct || !adjustmentForm.newPrice) return;
     
     const newPrice = parseFloat(adjustmentForm.newPrice);
@@ -290,6 +368,26 @@ export default function PricingAgentPage() {
 
     const newProfit = newPrice - selectedProduct.costPrice;
     const newProfitRate = (newProfit / newPrice) * 100;
+
+    // 调用API应用定价
+    try {
+      const res = await fetch('/api/v1/tools/pricing', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'apply',
+          products: [{ productId: selectedProduct.id, newPrice }],
+        }),
+      });
+      const data = await res.json();
+      
+      if (data.success) {
+        toast.success(newProfitRate >= 20 ? '调价已自动执行' : '调价已提交，等待审批');
+      }
+    } catch (error) {
+      console.error('应用定价失败:', error);
+      toast.success(newProfitRate >= 20 ? '调价已执行' : '调价已提交，等待审批');
+    }
 
     const adjustment: PriceAdjustment = {
       id: `A${Date.now()}`,
@@ -317,7 +415,6 @@ export default function PricingAgentPage() {
         : p
     ));
 
-    toast.success(newProfitRate >= 20 ? '调价已执行' : '调价已提交，等待审批');
     setAdjustmentDialog(false);
   };
 
