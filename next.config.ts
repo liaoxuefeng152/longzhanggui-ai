@@ -41,7 +41,7 @@ const nextConfig: NextConfig = {
     const BASE = 'http://localhost:8000';
     return [
       // ===== 飞书Webhook回调 - 代理到Python后端 =====
-      { source: '/api/webhook/event', destination: BASE + '/feishu/callback' },
+      { source: '/api/webhook/event', destination: BASE + '/api/v1/feishu/callback' },
       
       // ===== AI智能体API - 代理到Python后端 =====
       
