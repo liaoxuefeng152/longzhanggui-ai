@@ -289,20 +289,23 @@ export async function POST(request: NextRequest) {
     
     // URL验证（飞书第一次配置回调地址时会发送challenge）
     if (data.challenge) {
-      console.log('飞书URL验证成功');
+      console.log('[飞书] URL验证成功');
       return NextResponse.json({ challenge: data.challenge });
     }
     
     // 处理事件
-    console.log('飞书事件数据:', JSON.stringify(data).substring(0, 500));
+    console.log('[飞书] 1. 收到事件数据, keys:', Object.keys(data));
+    console.log('[飞书] 2. event存在:', !!data.event);
+    console.log('[飞书] 3. event.type:', data.event?.type);
     
     if (data.event && data.event.type === 'im.message.receive_v1') {
       const message = data.event.message;
-      console.log('收到消息事件, message_type:', message.message_type);
+      console.log('[飞书] 4. message存在:', !!message);
+      console.log('[飞书] 5. message_type:', message?.message_type);
       
       // 只处理文本消息
       if (message.message_type !== 'text') {
-        console.log('非文本消息，忽略');
+        console.log('[飞书] 非文本消息，忽略');
         return NextResponse.json({ status: 'ignored', reason: 'not text' });
       }
       
@@ -311,20 +314,23 @@ export async function POST(request: NextRequest) {
       try {
         const content = JSON.parse(message.content);
         textContent = content.text || '';
-      } catch {
+        console.log('[飞书] 6. 解析后文本:', textContent);
+      } catch (e) {
         textContent = message.content;
+        console.log('[飞书] 6. 原始文本:', textContent);
       }
       
-      console.log('消息内容:', textContent);
-      console.log('发送者ID:', message.sender?.sender_id?.open_id);
+      console.log('[飞书] 7. 发送者ID:', message.sender?.sender_id?.open_id);
       
       // 识别意图
+      console.log('[飞书] 8. 开始识别意图...');
       const { intent, action } = recognizeIntent(textContent);
-      console.log('识别意图:', intent, action);
+      console.log('[飞书] 9. 识别结果:', intent, action);
       
       // 生成回复
+      console.log('[飞书] 10. 开始生成回复...');
       const reply = generateReply(textContent, intent, action);
-      console.log('生成回复:', reply.substring(0, 100));
+      console.log('[飞书] 11. 回复内容:', reply.substring(0, 100));
       
       // 获取tenant_access_token
       console.log('获取access_token...');
