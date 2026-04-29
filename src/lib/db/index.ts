@@ -56,6 +56,14 @@ function initTables(database: Database.Database) {
     )
   `);
 
+  // 迁移：添加app_key和app_secret列（如果不存在）
+  try {
+    database.exec('ALTER TABLE miaoshou_config ADD COLUMN app_key TEXT');
+    database.exec('ALTER TABLE miaoshou_config ADD COLUMN app_secret TEXT');
+  } catch (e) {
+    // 列可能已存在，忽略错误
+  }
+
   // 用户表
   database.exec(`
     CREATE TABLE IF NOT EXISTS users (

@@ -86,6 +86,8 @@ export const MiaoshouDAL = {
         phone: row.phone,
         password: row.password,
         cookies: row.cookies,
+        appKey: row.app_key,
+        appSecret: row.app_secret,
         status: row.status,
         lastSync: row.last_sync,
         updated_at: row.updated_at
@@ -95,16 +97,16 @@ export const MiaoshouDAL = {
   },
 
   // 保存配置
-  save(data: { phone: string; password: string; cookies?: string }): boolean {
+  save(data: { phone: string; password: string; cookies?: string; appKey?: string; appSecret?: string }): boolean {
     const db = getDb();
     try {
       // 先删除旧配置
       db.prepare('DELETE FROM miaoshou_config').run();
       // 插入新配置
       db.prepare(`
-        INSERT INTO miaoshou_config (phone, password, cookies, status, updated_at)
-        VALUES (?, ?, ?, 'disconnected', datetime('now'))
-      `).run(data.phone, data.password, data.cookies || null);
+        INSERT INTO miaoshou_config (phone, password, cookies, app_key, app_secret, status, updated_at)
+        VALUES (?, ?, ?, ?, ?, 'disconnected', datetime('now'))
+      `).run(data.phone, data.password, data.cookies || null, data.appKey || null, data.appSecret || null);
       return true;
     } catch (error) {
       console.error('[DAL] Miaoshou save error:', error);

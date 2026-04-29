@@ -13,6 +13,8 @@ interface MiaoshouConfig {
   phone: string;
   password: string;
   cookies: string;
+  appKey: string;
+  appSecret: string;
   status: 'connected' | 'disconnected' | 'testing' | 'error';
   lastSync?: string;
 }
@@ -22,6 +24,8 @@ export default function MiaoshouConfigPage() {
     phone: '',
     password: '',
     cookies: '',
+    appKey: '',
+    appSecret: '',
     status: 'disconnected',
     lastSync: undefined,
   });
@@ -40,6 +44,8 @@ export default function MiaoshouConfigPage() {
               phone: data.data.phone || '',
               password: data.data.password || '',
               cookies: data.data.cookies || '',
+              appKey: data.data.appKey || '',
+              appSecret: data.data.appSecret || '',
               status: data.data.status || 'disconnected',
               lastSync: data.data.lastSync,
             });
@@ -128,24 +134,56 @@ export default function MiaoshouConfigPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">手机号</label>
-                <Input
-                  type="tel"
-                  placeholder="请输入妙手ERP注册手机号"
-                  value={config.phone}
-                  onChange={(e) => setConfig(prev => ({ ...prev, phone: e.target.value }))}
-                />
+            <div className="p-4 rounded-lg bg-blue-50 border border-blue-200">
+              <h3 className="font-medium text-blue-800 mb-2 flex items-center gap-2">
+                <Settings className="h-4 w-4" />
+                开放平台API配置（用于商品采集）
+              </h3>
+              <p className="text-sm text-blue-600 mb-4">
+                如需使用妙手ERP进行1688商品采集，请先在妙手开放平台申请API权限。
+              </p>
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">AppKey</label>
+                  <Input
+                    placeholder="请输入妙手开放平台AppKey"
+                    value={config.appKey}
+                    onChange={(e) => setConfig(prev => ({ ...prev, appKey: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">AppSecret</label>
+                  <Input
+                    type="password"
+                    placeholder="请输入妙手开放平台AppSecret"
+                    value={config.appSecret}
+                    onChange={(e) => setConfig(prev => ({ ...prev, appSecret: e.target.value }))}
+                  />
+                </div>
               </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium">密码</label>
-                <Input
-                  type="password"
-                  placeholder="请输入密码"
-                  value={config.password}
-                  onChange={(e) => setConfig(prev => ({ ...prev, password: e.target.value }))}
-                />
+            </div>
+
+            <div className="border-t pt-4">
+              <h3 className="font-medium mb-4">或使用账号密码登录</h3>
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">手机号</label>
+                  <Input
+                    type="tel"
+                    placeholder="请输入妙手ERP注册手机号"
+                    value={config.phone}
+                    onChange={(e) => setConfig(prev => ({ ...prev, phone: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">密码</label>
+                  <Input
+                    type="password"
+                    placeholder="请输入密码"
+                    value={config.password}
+                    onChange={(e) => setConfig(prev => ({ ...prev, password: e.target.value }))}
+                  />
+                </div>
               </div>
             </div>
 

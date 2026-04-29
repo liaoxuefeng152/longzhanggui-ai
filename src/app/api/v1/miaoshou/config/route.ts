@@ -20,16 +20,27 @@ export async function GET() {
 export async function PUT(request: Request) {
   try {
     const body = await request.json();
-    const { phone, password } = body;
+    const { phone, password, cookies, appKey, appSecret } = body;
 
-    if (!phone || !password) {
+    // appKey和appSecret至少要有一个
+    if (!appKey && !appSecret && !phone && !password) {
       return NextResponse.json({ 
         success: false, 
-        error: '缺少必要参数：phone, password' 
+        error: '请至少填写AppKey/AppSecret或手机号/密码' 
       }, { status: 400 });
     }
 
-    const success = MiaoshouDAL.save({ phone, password });
+    const config = {
+      phone: phone || '',
+      password: password || '',
+      cookies: cookies || '',
+      appKey: appKey || '',
+      appSecret: appSecret || '',
+      status: 'disconnected' as const,
+      updated_at: new Date().toISOString(),
+    };
+
+    const success = MiaoshouDAL.save(config);
 
     if (success) {
       return NextResponse.json({ success: true, message: '配置保存成功' });

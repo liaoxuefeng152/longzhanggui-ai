@@ -1685,6 +1685,8 @@ export interface MiaoshouConfig {
   phone: string;
   password: string;
   cookies?: string;
+  appKey?: string;
+  appSecret?: string;
   status?: 'connected' | 'disconnected' | 'testing' | 'error';
   lastSync?: string;
   updated_at?: string;
