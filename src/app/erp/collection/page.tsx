@@ -229,19 +229,16 @@ export default function CollectionCenterPage() {
       const { default: store } = await import('@/lib/store');
       
       const collectData = results.map((item: any) => ({
-        id: `COL-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        collection_id: `COL-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         product_id: item.productId || '',
-        url: item.url,
+        source_url: item.url,
         product_name: item.title || '待补充商品名称',
         product_name_en: '',
-        price: item.price || 0,
-        supplier: item.shop_name || '待补充供应商',
+        source: '1688' as const,
+        supplier_name: item.shop_name || '待补充供应商',
+        cost_price: item.price || 0,
         images: item.images || [],
-        claimed: false,
-        claimed_platform: '',
-        claimed_at: '',
-        created_at: new Date().toISOString(),
-        collect_method: item.collect_method || 'api',
+        category: '',
       }));
 
       collectData.forEach((item: any) => {
@@ -617,9 +614,9 @@ export default function CollectionCenterPage() {
                           {item.product_name || '未知商品'}
                         </div>
                         <div className="flex items-center gap-3 mt-1">
-                          <span className="text-[14px] font-semibold text-orange-500">¥{item.price || '0.00'}</span>
+                          <span className="text-[14px] font-semibold text-orange-500">¥{item.cost_price || item.price || '0.00'}</span>
                           <span className="text-[12px] text-muted-foreground">
-                            {item.supplier || '未知供应商'}
+                            {item.supplier_name || item.supplier || '未知供应商'}
                           </span>
                         </div>
                       </div>

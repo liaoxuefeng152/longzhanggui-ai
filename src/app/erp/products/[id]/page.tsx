@@ -117,14 +117,70 @@ export default function ProductDetailPage() {
   const fetchProductDetail = async () => {
     try {
       setLoading(true);
+      
+      // 优先从商品详情API获取
       const res = await fetch(`/api/v1/erp/products/${productId}`);
       const data = await res.json();
-      if (data.success) {
-        setProduct(data.data);
-        setEditData(data.data);
+      
+      if (data.success && data.data) {
+        // 转换字段格式以匹配 ProductDetail 接口
+        const apiData = data.data;
+        const convertedData: ProductDetail = {
+          id: apiData.id,
+          offer_id: apiData.source_id || apiData.offer_id,
+          source_url: apiData.source_url,
+          title: apiData.title || apiData.name_zh || apiData.product_name || '未命名商品',
+          price: apiData.price || apiData.cost_price || 0,
+          original_price: apiData.original_price || apiData.cost_price,
+          images: apiData.images || [],
+          videos: apiData.videos || [],
+          supplier: apiData.supplier || apiData.supplier_name,
+          location: apiData.location || '',
+          sales: apiData.sales || 0,
+          min_order: apiData.min_order || 1,
+          weight: apiData.weight,
+          description: apiData.description || apiData.details || '',
+          status: apiData.status || 'draft',
+          claimed: apiData.claimed || false,
+          claimed_platform: apiData.claimed_platform || apiData.claimed_shop_id,
+          created_at: apiData.created_at,
+          updated_at: apiData.updated_at,
+        };
+        setProduct(convertedData);
+        setEditData(convertedData);
       } else {
-        toast.error('获取商品详情失败');
-        router.push('/erp/products');
+        // 如果商品不存在，尝试从采集箱获取
+        const { default: store } = await import('@/lib/store');
+        const collectionItem = store.getPublicCollection(productId);
+        
+        if (collectionItem) {
+          // 转换为商品详情格式
+          const productFromCollection: ProductDetail = {
+            id: collectionItem.id,
+            offer_id: collectionItem.source_id,
+            source_url: collectionItem.source_url,
+            title: collectionItem.product_name || '未命名商品',
+            price: collectionItem.cost_price || 0,
+            original_price: collectionItem.cost_price,
+            images: collectionItem.images || [],
+            videos: [],
+            supplier: collectionItem.supplier_name,
+            location: '',
+            sales: 0,
+            min_order: 1,
+            description: '',
+            status: collectionItem.claimed ? 'selected' : 'draft',
+            claimed: collectionItem.claimed,
+            claimed_platform: collectionItem.claimed_shop_id,
+            created_at: collectionItem.created_at,
+            updated_at: collectionItem.updated_at,
+          };
+          setProduct(productFromCollection);
+          setEditData(productFromCollection);
+        } else {
+          toast.error('获取商品详情失败');
+          router.push('/erp/products');
+        }
       }
     } catch (error) {
       console.error('获取商品详情失败:', error);
