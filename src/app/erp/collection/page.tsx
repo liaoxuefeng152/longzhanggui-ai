@@ -60,6 +60,10 @@ export default function CollectionCenterPage() {
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   
   // 认领弹窗
+  
+  // 商品详情弹窗
+  const [detailDialogOpen, setDetailDialogOpen] = useState(false);
+  const [detailItem, setDetailItem] = useState<any>(null);
   const [claimDialogOpen, setClaimDialogOpen] = useState(false);
   const [claimItem, setClaimItem] = useState<any>(null);
   const [claimPlatform, setClaimPlatform] = useState('tiktok');
@@ -273,6 +277,11 @@ export default function CollectionCenterPage() {
   };
 
   // 认领到店铺
+  const handleViewDetail = (item: any) => {
+    setDetailItem(item);
+    setDetailDialogOpen(true);
+  };
+
   const handleClaimToShop = async () => {
     setClaimLoading(true);
     try {
@@ -626,26 +635,35 @@ export default function CollectionCenterPage() {
                             待认领
                           </Badge>
                         )}
-                      </div>
-                      {!item.claimed && (
                         <div className="flex gap-1">
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => openClaimDialog(item)}
+                            onClick={() => handleViewDetail(item)}
                           >
-                            认领
+                            详情
                           </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDelete(item.id)}
-                            className="text-destructive hover:text-destructive"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                          {!item.claimed && (
+                            <>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => openClaimDialog(item)}
+                              >
+                                认领
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDelete(item.id)}
+                                className="text-destructive hover:text-destructive"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </>
+                          )}
                         </div>
-                      )}
+                      </div>
                     </div>
                   ))}
                 </div>
