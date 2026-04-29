@@ -295,10 +295,10 @@ export async function POST(request: NextRequest) {
     
     // 处理事件
     console.log('[飞书] 1. 收到事件数据, keys:', Object.keys(data));
-    console.log('[飞书] 2. event存在:', !!data.event);
-    console.log('[飞书] 3. event.type:', data.event?.type);
+    console.log('[飞书] 2. event_type:', data.header?.event_type);
+    console.log('[飞书] 3. event.message存在:', !!data.event?.message);
     
-    if (data.event && data.event.type === 'im.message.receive_v1') {
+    if (data.header?.event_type === 'im.message.receive_v1') {
       const message = data.event.message;
       console.log('[飞书] 4. message存在:', !!message);
       console.log('[飞书] 5. message_type:', message?.message_type);
