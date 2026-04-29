@@ -389,7 +389,7 @@ body {
   animation: shimmer 3s infinite;
 }
 
-/* 智能体卡片颜色 */
+/* SKILL卡片颜色 */
 .agent-blue {
   background: linear-gradient(135deg, rgba(22, 97, 255, 0.05) 0%, rgba(22, 97, 255, 0.1) 100%);
   border-color: rgba(22, 97, 255, 0.2);

@@ -55,9 +55,9 @@ const todoItems = [
   { id: 5, type: 'listing', text: '10个商品待上架', priority: 'low', link: '/erp/products?status=ready' },
 ];
 
-// AI智能体配置
+// AISKILL配置
 const aiAgents = [
-  { id: 'product-selection', name: '选品智能体', icon: <Search className="h-5 w-5" />, color: 'bg-blue-500', href: '/agents/product-selection', desc: 'AI选品分析' },
+  { id: 'product-selection', name: '选品SKILL', icon: <Search className="h-5 w-5" />, color: 'bg-blue-500', href: '/agents/product-selection', desc: 'AI选品分析' },
   { id: 'image-design', name: '图片设计', icon: <Image className="h-5 w-5" />, color: 'bg-purple-500', href: '/agents/image-design', desc: '图片翻译优化' },
   { id: 'video-generation', name: '视频生成', icon: <Video className="h-5 w-5" />, color: 'bg-pink-500', href: '/agents/video-generation', desc: 'AI视频创作' },
   { id: 'listing-optimization', name: 'Listing优化', icon: <FileText className="h-5 w-5" />, color: 'bg-green-500', href: '/agents/listing-optimization', desc: '标题描述优化' },
@@ -160,7 +160,7 @@ export default function WorkflowsPage() {
   const handleOpenWizard = (workflowId: string) => {
     switch (workflowId) {
       case 'new-product':
-        // 新品上架：跳转到选品智能体
+        // 新品上架：跳转到选品SKILL
         toast.success('开始新品上架流程', { description: '正在跳转到选品分析...' });
         router.push('/agents/product-selection');
         break;
@@ -415,13 +415,13 @@ export default function WorkflowsPage() {
               </CardContent>
             </Card>
 
-            {/* AI智能体入口 */}
+            {/* AISKILL入口 */}
             <Card className="bg-white border-border shadow-sm">
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Bot className="h-5 w-5 text-primary" />
-                    <CardTitle className="text-[16px]">AI智能体</CardTitle>
+                    <CardTitle className="text-[16px]">AISKILL</CardTitle>
                   </div>
                   <Button variant="ghost" size="sm" onClick={() => router.push('/agents/product-selection')}>
                     查看全部

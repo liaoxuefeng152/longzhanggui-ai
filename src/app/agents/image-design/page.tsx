@@ -565,7 +565,7 @@ export default function ImageDesignPage() {
               <Image className="h-7 w-7 text-purple-600" />
             </div>
             <div>
-              <h1 className="text-[18px] font-semibold text-foreground">图片设计智能体</h1>
+              <h1 className="text-[18px] font-semibold text-foreground">图片设计SKILL</h1>
               <p className="text-[14px] text-muted-foreground">AI生图 · 批量处理 · 合规校验 · 跨平台适配</p>
             </div>
           </div>
@@ -865,7 +865,7 @@ export default function ImageDesignPage() {
           <TabsContent value="config" className="space-y-4">
             <Card className="bg-white border-border shadow-sm">
               <CardHeader>
-                <CardTitle className="text-[15px]">智能体配置</CardTitle>
+                <CardTitle className="text-[15px]">SKILL配置</CardTitle>
                 <CardDescription>模型选择、Prompt模板、处理参数配置</CardDescription>
               </CardHeader>
               <CardContent>

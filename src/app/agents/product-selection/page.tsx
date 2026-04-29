@@ -918,7 +918,7 @@ ${report.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
               <ShoppingCart className="h-7 w-7 text-blue-500" />
             </div>
             <div>
-              <h1 className="text-[24px] font-semibold text-foreground">选品智能体</h1>
+              <h1 className="text-[24px] font-semibold text-foreground">选品SKILL</h1>
               <p className="text-[14px] text-muted-foreground">基于合规的智能选品决策辅助工具</p>
             </div>
           </div>

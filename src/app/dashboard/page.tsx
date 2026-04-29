@@ -242,7 +242,7 @@ export default function DashboardPage() {
     },
   ];
 
-  // 智能体活跃度数据（近7日调用次数）- 使用API数据或默认数据
+  // SKILL活跃度数据（近7日调用次数）- 使用API数据或默认数据
   const agentActivityData = stats?.callTrend?.map((item, index) => ({
     name: item.date,
     calls: item.calls,
@@ -270,14 +270,14 @@ export default function DashboardPage() {
   };
 
   const recentTasks = [
-    { id: 'T202402200001', type: '选品智能体', status: 'completed', time: '14:32:15', user: '张明' },
+    { id: 'T202402200001', type: '选品SKILL', status: 'completed', time: '14:32:15', user: '张明' },
     { id: 'T202402200002', type: '图片设计', status: 'running', time: '14:30:08', user: '李华' },
     { id: 'T202402200003', type: 'Listing优化', status: 'completed', time: '14:28:45', user: '王芳' },
     { id: 'T202402200004', type: '广告投放', status: 'blocked', time: '14:25:33', user: '赵伟' },
     { id: 'T202402200005', type: 'AI客服', status: 'completed', time: '14:22:18', user: '刘静' },
     { id: 'T202402200006', type: '视频生成', status: 'error', time: '14:20:05', user: '陈强' },
     { id: 'T202402200007', type: '数据复盘', status: 'completed', time: '14:15:42', user: '周敏' },
-    { id: 'T202402200008', type: '选品智能体', status: 'pending', time: '14:10:28', user: '吴洋' },
+    { id: 'T202402200008', type: '选品SKILL', status: 'pending', time: '14:10:28', user: '吴洋' },
     { id: 'T202402200009', type: '智能助理-问询', status: 'completed', time: '14:08:15', user: '阿峰' },
     { id: 'T202402200010', type: '智能助理-日报', status: 'completed', time: '14:05:00', user: '系统' },
   ];

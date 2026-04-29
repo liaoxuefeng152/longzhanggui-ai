@@ -1,10 +1,10 @@
 /**
- * 智能体API
+ * SKILLAPI
  */
 import { apiClient, PaginatedResponse } from './client';
 import { API_ENDPOINTS } from './config';
 
-// 智能体类型
+// SKILL类型
 export interface Agent {
   id: string;
   name: string;
@@ -35,7 +35,7 @@ export interface Task {
 }
 
 /**
- * 获取智能体列表
+ * 获取SKILL列表
  */
 export async function getAgents(params?: {
   page?: number;
@@ -52,14 +52,14 @@ export async function getAgents(params?: {
 }
 
 /**
- * 获取智能体详情
+ * 获取SKILL详情
  */
 export async function getAgent(id: string): Promise<Agent> {
   return apiClient.get<Agent>(API_ENDPOINTS.agents.detail(id));
 }
 
 /**
- * 更新智能体配置
+ * 更新SKILL配置
  */
 export async function updateAgentConfig(
   id: string,
@@ -69,7 +69,7 @@ export async function updateAgentConfig(
 }
 
 /**
- * 启动智能体任务
+ * 启动SKILL任务
  */
 export async function startAgentTask(
   agentId: string,
@@ -82,7 +82,7 @@ export async function startAgentTask(
 }
 
 /**
- * 停止智能体任务
+ * 停止SKILL任务
  */
 export async function stopAgentTask(
   agentId: string,

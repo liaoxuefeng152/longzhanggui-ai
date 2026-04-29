@@ -103,7 +103,7 @@ export default function CustomerServicePage() {
   const [keyword, setKeyword] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   
-  // 智能体在线状态
+  // SKILL在线状态
   const [agentStatus, setAgentStatus] = useState<'online' | 'offline'>('online');
   
   // 回复模板
@@ -144,7 +144,7 @@ export default function CustomerServicePage() {
   const [isDisputeDialogOpen, setIsDisputeDialogOpen] = useState(false);
   const [isGeneratingSolution, setIsGeneratingSolution] = useState(false);
   
-  // 智能体配置
+  // SKILL配置
   const [agentConfig, setAgentConfig] = useState<AgentConfig>({
     model: 'doubao-mini',
     autoTranslate: true,
@@ -171,13 +171,13 @@ export default function CustomerServicePage() {
     }
     setUser(JSON.parse(userData));
     
-    // 加载智能体状态
+    // 加载SKILL状态
     const savedAgentStatus = localStorage.getItem('agentStatus') as 'online' | 'offline' | null;
     if (savedAgentStatus) {
       setAgentStatus(savedAgentStatus);
     }
     
-    // 加载智能体配置
+    // 加载SKILL配置
     const savedConfig = localStorage.getItem('agentConfig');
     if (savedConfig) {
       setAgentConfig(JSON.parse(savedConfig));
@@ -287,7 +287,7 @@ export default function CustomerServicePage() {
     }
   };
 
-  // 切换智能体状态
+  // 切换SKILL状态
   const toggleAgentStatus = () => {
     const newStatus = agentStatus === 'online' ? 'offline' : 'online';
     
@@ -302,9 +302,9 @@ export default function CustomerServicePage() {
     localStorage.setItem('agentStatus', newStatus);
     
     if (newStatus === 'online') {
-      toast.success('智能体已上线', { description: 'AI将自动处理新工单' });
+      toast.success('SKILL已上线', { description: 'AI将自动处理新工单' });
     } else {
-      toast.warning('智能体已离线', { description: '新工单将不会自动处理' });
+      toast.warning('SKILL已离线', { description: '新工单将不会自动处理' });
     }
   };
 
@@ -429,7 +429,7 @@ export default function CustomerServicePage() {
   // AI自动回复
   const handleAIReply = async (ticket: CustomerTicket) => {
     if (agentStatus === 'offline') {
-      toast.error('智能体离线中', { description: '请先切换到在线状态' });
+      toast.error('SKILL离线中', { description: '请先切换到在线状态' });
       return;
     }
 
@@ -595,7 +595,7 @@ export default function CustomerServicePage() {
               <Headphones className="h-7 w-7 text-cyan-600" />
             </div>
             <div>
-              <h1 className="text-[18px] font-semibold text-foreground">客服智能体</h1>
+              <h1 className="text-[18px] font-semibold text-foreground">客服SKILL</h1>
               <p className="text-[14px] text-muted-foreground">AI客服 · 多语言翻译 · 纠纷处理 · 合规回复</p>
             </div>
           </div>
@@ -782,7 +782,7 @@ export default function CustomerServicePage() {
                                   size="sm" 
                                   onClick={() => handleAIReply(ticket)}
                                   disabled={isProcessing === ticket.id || agentStatus === 'offline'}
-                                  title={agentStatus === 'offline' ? '智能体离线中，无法自动回复' : 'AI自动回复'}
+                                  title={agentStatus === 'offline' ? 'SKILL离线中，无法自动回复' : 'AI自动回复'}
                                 >
                                   {isProcessing === ticket.id ? (
                                     <Loader2 className="h-3 w-3 mr-1 animate-spin" />
@@ -973,7 +973,7 @@ export default function CustomerServicePage() {
           <TabsContent value="config" className="space-y-4">
             <Card className="bg-white border-border shadow-sm">
               <CardHeader>
-                <CardTitle className="text-[15px]">智能体配置</CardTitle>
+                <CardTitle className="text-[15px]">SKILL配置</CardTitle>
                 <CardDescription>模型选择、回复模板、多语言配置</CardDescription>
               </CardHeader>
               <CardContent>

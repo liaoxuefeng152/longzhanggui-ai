@@ -39,7 +39,7 @@ interface AgentConfig {
 const agentConfigs: AgentConfig[] = [
   {
     id: 'product-selection',
-    name: '选品智能体',
+    name: '选品SKILL',
     description: 'AI驱动选品分析，支持爆款挖掘、竞品分析、合规校验和供应商匹配',
     icon: <Search className="h-6 w-6" />,
     color: 'text-blue-600',
@@ -109,7 +109,7 @@ const agentConfigs: AgentConfig[] = [
   },
   {
     id: 'customer-service',
-    name: '客服智能体',
+    name: '客服SKILL',
     description: 'AI客服处理，支持智能回复、差评预防、纠纷处理和工单管理',
     icon: <Headphones className="h-6 w-6" />,
     color: 'text-cyan-600',
@@ -165,9 +165,9 @@ export default function AgentConfigPage() {
               <Bot className="h-7 w-7 text-purple-500" />
             </div>
             <div>
-              <h1 className="text-[24px] font-semibold">智能体配置</h1>
+              <h1 className="text-[24px] font-semibold">SKILL配置</h1>
               <p className="text-[14px] text-muted-foreground">
-                统一管理7大AI智能体的模型参数和功能配置
+                统一管理7大AISKILL的模型参数和功能配置
               </p>
             </div>
           </div>
@@ -248,7 +248,7 @@ export default function AgentConfigPage() {
           <CardHeader>
             <CardTitle className="text-[15px]">模型分配策略</CardTitle>
             <CardDescription className="text-[13px]">
-              根据不同智能体的任务特点，分配最适合的AI模型以达到最佳效果和成本平衡
+              根据不同SKILL的任务特点，分配最适合的AI模型以达到最佳效果和成本平衡
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -294,7 +294,7 @@ export default function AgentConfigPage() {
               </Button>
               <Button variant="outline" size="sm" onClick={() => router.push('/agents')}>
                 <BarChart3 className="h-4 w-4 mr-2" />
-                查看智能体
+                查看SKILL
               </Button>
               <Button variant="outline" size="sm" onClick={() => router.push('/task-logs')}>
                 <Settings className="h-4 w-4 mr-2" />

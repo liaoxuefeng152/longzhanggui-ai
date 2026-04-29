@@ -266,7 +266,7 @@ async function handleQueryStatus(receiveId: string): Promise<WorkflowResult> {
         '系统状态',
         [
           `✅ **系统运行**: 正常`,
-          `🤖 **AI智能体**: 7/7 在线`,
+          `🤖 **AISKILL**: 7/7 在线`,
           `⚡ **工作流引擎**: 运行中`,
           `⏰ **定时任务**: 5 个任务已调度`,
           `📊 **API状态**: 正常`,

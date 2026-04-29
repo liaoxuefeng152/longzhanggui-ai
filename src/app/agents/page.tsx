@@ -30,7 +30,7 @@ import { toast } from 'sonner';
 import { getAgents, Agent as AgentType } from '@/lib/api/agents';
 import { logout } from '@/lib/api/auth';
 
-// 智能体图标映射
+// SKILL图标映射
 const agentIcons: Record<string, any> = {
   'product-selection': ShoppingCart,
   'image-design': Image,
@@ -42,7 +42,7 @@ const agentIcons: Record<string, any> = {
   'pricing': DollarSign,
 };
 
-// 智能体彩虹配色映射
+// SKILL彩虹配色映射
 const agentColors: Record<string, { bg: string; text: string; gradient: string }> = {
   'product-selection': { bg: 'bg-blue-500/10', text: 'text-blue-500', gradient: 'from-blue-500/20 to-cyan-400/5' },
   'image-design': { bg: 'bg-purple-500/10', text: 'text-purple-500', gradient: 'from-purple-500/20 to-pink-400/5' },
@@ -54,7 +54,7 @@ const agentColors: Record<string, { bg: string; text: string; gradient: string }
   'pricing': { bg: 'bg-emerald-500/10', text: 'text-emerald-500', gradient: 'from-emerald-500/20 to-teal-400/5' },
 };
 
-// 智能体描述映射
+// SKILL描述映射
 const agentDescriptions: Record<string, { description: string; platform: string; features: string[]; compliance: boolean; riskControl: boolean }> = {
   'product-selection': {
     description: '爆款挖掘、竞品分析、利润核算、合规+供应链校验',
@@ -122,7 +122,7 @@ export default function AgentsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  // 获取智能体列表
+  // 获取SKILL列表
   const fetchAgents = async () => {
     setIsLoading(true);
     try {
@@ -132,8 +132,8 @@ export default function AgentsPage() {
       const total = response.items.reduce((sum, a) => sum + (a.total_calls || 0), 0);
       setTotalCalls(total);
     } catch (error) {
-      console.error('获取智能体列表失败:', error);
-      toast.error('获取智能体列表失败');
+      console.error('获取SKILL列表失败:', error);
+      toast.error('获取SKILL列表失败');
     } finally {
       setIsLoading(false);
     }
@@ -149,7 +149,7 @@ export default function AgentsPage() {
     fetchAgents();
   }, [router]);
 
-  // 过滤智能体
+  // 过滤SKILL
   const filteredAgents = agents.filter((agent) =>
     agent.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     agent.type.toLowerCase().includes(searchTerm.toLowerCase())
@@ -187,9 +187,9 @@ export default function AgentsPage() {
               <Bot className="h-7 w-7 text-purple-500" />
             </div>
             <div>
-              <h1 className="text-[24px] font-semibold text-foreground">智能体调度配置</h1>
+              <h1 className="text-[24px] font-semibold text-foreground">SKILL调度配置</h1>
               <p className="text-[14px] text-muted-foreground">
-                AI智能体工厂 · 7大核心智能体 · 合规+风控
+                AISKILL工厂 · 7大核心SKILL · 合规+风控
               </p>
             </div>
           </div>
@@ -198,7 +198,7 @@ export default function AgentsPage() {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <input
                 type="text"
-                placeholder="搜索智能体"
+                placeholder="搜索SKILL"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10 pr-4 py-2 border border-border rounded-md text-[14px] w-[200px] focus:outline-none focus:ring-2 focus:ring-primary/50"
@@ -220,7 +220,7 @@ export default function AgentsPage() {
                   <Bot className="h-6 w-6 text-green-600" />
                 </div>
                 <div>
-                  <p className="text-[12px] text-muted-foreground">在线智能体</p>
+                  <p className="text-[12px] text-muted-foreground">在线SKILL</p>
                   <p className="text-[26px] font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
                     {agents.filter(a => a.status === 'active').length}/{agents.length}
                   </p>
@@ -248,7 +248,7 @@ export default function AgentsPage() {
                   <Settings className="h-6 w-6 text-purple-600" />
                 </div>
                 <div>
-                  <p className="text-[12px] text-muted-foreground">智能体类型</p>
+                  <p className="text-[12px] text-muted-foreground">SKILL类型</p>
                   <p className="text-[26px] font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">{agents.length}</p>
                 </div>
               </div>
@@ -269,14 +269,14 @@ export default function AgentsPage() {
           </Card>
         </div>
 
-        {/* 智能体卡片列表 */}
+        {/* SKILL卡片列表 */}
         {isLoading ? (
           <div className="flex items-center justify-center py-12">
             <div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
           </div>
         ) : filteredAgents.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground">
-            暂无智能体数据
+            暂无SKILL数据
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-6">

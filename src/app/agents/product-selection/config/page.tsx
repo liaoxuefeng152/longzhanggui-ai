@@ -36,7 +36,7 @@ export default function ProductSelectionAgentConfigPage() {
 
   // 基本信息配置
   const [config, setConfig] = useState({
-    name: '选品智能体',
+    name: '选品SKILL',
     enabled: true,
     model: 'doubao-seed-1-8-251228',
   });
@@ -100,8 +100,8 @@ export default function ProductSelectionAgentConfigPage() {
               <Package className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <h1 className="text-xl font-semibold">选品智能体配置</h1>
-              <p className="text-sm text-muted-foreground">配置选品智能体的运行参数</p>
+              <h1 className="text-xl font-semibold">选品SKILL配置</h1>
+              <p className="text-sm text-muted-foreground">配置选品SKILL的运行参数</p>
             </div>
           </div>
           <div className="flex items-center gap-4">
@@ -140,7 +140,7 @@ export default function ProductSelectionAgentConfigPage() {
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label>智能体名称</Label>
+                    <Label>SKILL名称</Label>
                     <Input
                       value={config.name}
                       onChange={(e) => setConfig({ ...config, name: e.target.value })}
@@ -452,7 +452,7 @@ export default function ProductSelectionAgentConfigPage() {
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                  <span className="text-sm">智能体状态</span>
+                  <span className="text-sm">SKILL状态</span>
                   <Badge variant={config.enabled ? 'default' : 'secondary'}>
                     {config.enabled ? '运行中' : '已停止'}
                   </Badge>

@@ -152,7 +152,7 @@ export default function ReportsPage() {
         ['使用情况', '', '', ''],
         ['总调用次数', usage.total_calls || 0, '次', ''],
         ['总Tokens消耗', usage.total_tokens || 0, 'tokens', ''],
-        ['智能体数量', agents.agents?.length || 0, '个', ''],
+        ['SKILL数量', agents.agents?.length || 0, '个', ''],
         ['', '', '', ''],
         ['销售趋势', '', '', ''],
         ['日期', '销售额', '订单数', ''],
@@ -162,8 +162,8 @@ export default function ReportsPage() {
         ['平台', '占比', '', ''],
         ...(overview.platform_distribution || []).map(p => [p.name, `${p.value}%`, '', '']),
         ['', '', '', ''],
-        ['智能体效能', '', '', ''],
-        ['智能体名称', '任务数', '成功率', ''],
+        ['SKILL效能', '', '', ''],
+        ['SKILL名称', '任务数', '成功率', ''],
         ...(agents.agents || []).map(a => [a.name, a.total_tasks || 0, `${(a.success_rate || 0).toFixed(1)}%`]),
       ]
         .map(row => row.join(','))
@@ -183,7 +183,7 @@ export default function ReportsPage() {
     }
   };
 
-  // 转换智能体效能数据
+  // 转换SKILL效能数据
   const agentPerformanceData = agents?.agents?.map(a => ({
     name: a.name,
     tasks: a.total_tasks,
@@ -204,7 +204,7 @@ export default function ReportsPage() {
             <div>
               <h1 className="text-[24px] font-semibold text-foreground">数据报表</h1>
               <p className="text-[14px] text-muted-foreground">
-                销售分析 · 智能体效能 · 自动化任务转化
+                销售分析 · SKILL效能 · 自动化任务转化
               </p>
             </div>
           </div>
@@ -416,7 +416,7 @@ export default function ReportsPage() {
           </Card>
           <Card className="bg-white border-border shadow-sm">
             <CardContent className="p-4">
-              <div className="text-[13px] text-muted-foreground mb-1">智能体数量</div>
+              <div className="text-[13px] text-muted-foreground mb-1">SKILL数量</div>
               <div className="text-[24px] font-semibold text-foreground">
                 {agents?.agents?.length || 0}
               </div>
@@ -424,10 +424,10 @@ export default function ReportsPage() {
           </Card>
         </div>
 
-        {/* 智能体效能 */}
+        {/* SKILL效能 */}
         <Card className="bg-white border-border shadow-sm">
           <CardHeader className="px-6 py-4 border-b border-border">
-            <CardTitle className="text-[15px] font-medium">智能体效能分析</CardTitle>
+            <CardTitle className="text-[15px] font-medium">SKILL效能分析</CardTitle>
           </CardHeader>
           <CardContent className="p-6">
             <div className="h-[300px]">
@@ -437,7 +437,7 @@ export default function ReportsPage() {
                 </div>
               ) : agentPerformanceData.length === 0 ? (
                 <div className="flex items-center justify-center h-full text-muted-foreground">
-                  暂无智能体数据
+                  暂无SKILL数据
                 </div>
               ) : (
                 <ResponsiveContainer width="100%" height="100%">

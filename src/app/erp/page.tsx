@@ -104,7 +104,7 @@ export default function ERPDashboardPage() {
       status: 'pending',
     },
     {
-      title: '图片智能体',
+      title: '图片SKILL',
       description: '翻译+优化图片处理',
       icon: Sparkles,
       status: 'pending',
@@ -235,7 +235,7 @@ export default function ERPDashboardPage() {
                 开发中
               </Badge>
             </div>
-            <CardDescription>基于LangGraph的AI智能体，助力跨境电商运营</CardDescription>
+            <CardDescription>基于LangGraph的AISKILL，助力跨境电商运营</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-4 gap-4">
@@ -269,21 +269,21 @@ export default function ERPDashboardPage() {
         <Card className="bg-white border-border shadow-sm">
           <CardHeader className="pb-3">
             <CardTitle className="text-[15px]">系统架构</CardTitle>
-            <CardDescription>ERP模块作为数据中枢和执行中枢，与AI智能体协同工作</CardDescription>
+            <CardDescription>ERP模块作为数据中枢和执行中枢，与AISKILL协同工作</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="flex items-center gap-4">
               <div className="flex-1 p-4 bg-muted/30 rounded-lg">
                 <div className="text-[13px] font-medium text-foreground mb-2">数据中枢</div>
                 <div className="text-[12px] text-muted-foreground">
-                  商品库、订单数据、库存数据、财务数据统一管理，为AI智能体提供数据支撑
+                  商品库、订单数据、库存数据、财务数据统一管理，为AISKILL提供数据支撑
                 </div>
               </div>
               <ArrowRight className="h-5 w-5 text-muted-foreground" />
               <div className="flex-1 p-4 bg-primary/5 rounded-lg border border-primary/10">
-                <div className="text-[13px] font-medium text-primary mb-2">AI智能体</div>
+                <div className="text-[13px] font-medium text-primary mb-2">AISKILL</div>
                 <div className="text-[12px] text-muted-foreground">
-                  选品、图片、Listing、广告、客服、复盘等7大AI智能体协同工作
+                  选品、图片、Listing、广告、客服、复盘等7大AISKILL协同工作
                 </div>
               </div>
               <ArrowRight className="h-5 w-5 text-muted-foreground" />

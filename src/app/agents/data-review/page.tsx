@@ -301,7 +301,7 @@ export default function DataReviewPage() {
               <BarChart3 className="h-7 w-7 text-indigo-600" />
             </div>
             <div>
-              <h1 className="text-[18px] font-semibold text-foreground">数据复盘智能体</h1>
+              <h1 className="text-[18px] font-semibold text-foreground">数据复盘SKILL</h1>
               <p className="text-[14px] text-muted-foreground">数据分析 · AI洞察 · 运营优化 · 自动报告</p>
             </div>
           </div>
@@ -677,7 +677,7 @@ export default function DataReviewPage() {
           <TabsContent value="config" className="space-y-4">
             <Card className="bg-white border-border shadow-sm">
               <CardHeader>
-                <CardTitle className="text-[15px]">智能体配置</CardTitle>
+                <CardTitle className="text-[15px]">SKILL配置</CardTitle>
                 <CardDescription>模型选择、分析维度、报告模板配置</CardDescription>
               </CardHeader>
               <CardContent>

@@ -457,7 +457,7 @@ export default function PricingAgentPage() {
               <DollarSign className="h-7 w-7 text-emerald-500" />
             </div>
             <div>
-              <h1 className="text-[24px] font-semibold text-foreground">定价智能体</h1>
+              <h1 className="text-[24px] font-semibold text-foreground">定价SKILL</h1>
               <p className="text-[14px] text-muted-foreground">基于盈亏保护的智能调价决策工具</p>
             </div>
           </div>

@@ -37,7 +37,7 @@ export const API_ENDPOINTS = {
     detail: (id: string) => `/api/prompts/${id}`,
   },
   
-  // 智能体
+  // SKILL
   agents: {
     list: '/agents',
     detail: (id: string) => `/agents/${id}`,

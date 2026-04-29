@@ -354,7 +354,7 @@ export default function VideoAgentPage() {
               <Video className="h-7 w-7 text-pink-600" />
             </div>
             <div>
-              <h1 className="text-[18px] font-semibold text-foreground">视频生成智能体</h1>
+              <h1 className="text-[18px] font-semibold text-foreground">视频生成SKILL</h1>
               <p className="text-[14px] text-muted-foreground">脚本生成 · AI配音 · 图文轮播 · TK合规预检</p>
             </div>
           </div>
@@ -654,7 +654,7 @@ export default function VideoAgentPage() {
           <TabsContent value="config" className="space-y-4">
             <Card className="bg-white border-border shadow-sm">
               <CardHeader>
-                <CardTitle className="text-[15px]">智能体配置</CardTitle>
+                <CardTitle className="text-[15px]">SKILL配置</CardTitle>
                 <CardDescription>模型选择、Prompt模板、输出参数配置</CardDescription>
               </CardHeader>
               <CardContent>

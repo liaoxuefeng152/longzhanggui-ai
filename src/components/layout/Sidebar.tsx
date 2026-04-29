@@ -27,7 +27,7 @@ import { toast } from 'sonner';
 // 不需要登录的页面
 const PUBLIC_PATHS = ['/login', '/register', '/forgot-password', '/reset-password'];
 
-// AI智能体彩虹配色映射
+// AISKILL彩虹配色映射
 const agentColors = {
   'product-selection': { primary: 'blue', gradient: 'from-blue-500 to-cyan-400', bg: 'bg-blue-500', text: 'text-blue-400', hover: 'hover:bg-blue-500/20' },
   'image-design': { primary: 'purple', gradient: 'from-purple-500 to-pink-400', bg: 'bg-purple-500', text: 'text-purple-400', hover: 'hover:bg-purple-500/20' },
@@ -58,18 +58,18 @@ const clientMenuItems: MenuItem[] = [
     icon: Zap,
   },
   {
-    title: '智能体中心',
+    title: 'SKILL中心',
     href: '/agents/product-selection',
     icon: Bot,
     submenu: [
-      { title: '选品智能体', href: '/agents/product-selection', agentKey: 'product-selection' },
-      { title: '图片智能体', href: '/agents/image-design', agentKey: 'image-design' },
-      { title: '视频生成智能体', href: '/agents/video-generation', agentKey: 'video-generation' },
+      { title: '选品SKILL', href: '/agents/product-selection', agentKey: 'product-selection' },
+      { title: '图片SKILL', href: '/agents/image-design', agentKey: 'image-design' },
+      { title: '视频生成SKILL', href: '/agents/video-generation', agentKey: 'video-generation' },
       { title: 'Listing优化', href: '/agents/listing-optimization', agentKey: 'listing-optimization' },
-      { title: '广告投放智能体', href: '/agents/advertising', agentKey: 'advertising' },
-      { title: 'AI客服智能体', href: '/agents/customer-service', agentKey: 'customer-service' },
-      { title: '数据复盘智能体', href: '/agents/data-review', agentKey: 'data-review' },
-      { title: '定价智能体', href: '/agents/pricing', agentKey: 'pricing' },
+      { title: '广告投放SKILL', href: '/agents/advertising', agentKey: 'advertising' },
+      { title: 'AI客服SKILL', href: '/agents/customer-service', agentKey: 'customer-service' },
+      { title: '数据复盘SKILL', href: '/agents/data-review', agentKey: 'data-review' },
+      { title: '定价SKILL', href: '/agents/pricing', agentKey: 'pricing' },
     ],
   },
   {
@@ -116,19 +116,19 @@ const adminMenuItems: MenuItem[] = [
     icon: LayoutDashboard,
   },
   {
-    title: '智能体配置',
+    title: 'SKILL配置',
     href: '/agents/config',
     icon: Bot,
     submenu: [
       { title: '配置总览', href: '/agents/config' },
-      { title: '选品智能体', href: '/agents/product-selection/config', agentKey: 'product-selection' },
+      { title: '选品SKILL', href: '/agents/product-selection/config', agentKey: 'product-selection' },
       { title: '图片设计', href: '/agents/image-design/config', agentKey: 'image-design' },
       { title: '视频生成', href: '/agents/video-generation/config', agentKey: 'video-generation' },
       { title: 'Listing优化', href: '/agents/listing-optimization/config', agentKey: 'listing-optimization' },
       { title: '广告投放', href: '/agents/advertising/config', agentKey: 'advertising' },
       { title: 'AI客服', href: '/agents/customer-service/config', agentKey: 'customer-service' },
       { title: '数据复盘', href: '/agents/data-review/config', agentKey: 'data-review' },
-      { title: '定价智能体', href: '/agents/pricing/config', agentKey: 'pricing' },
+      { title: '定价SKILL', href: '/agents/pricing/config', agentKey: 'pricing' },
     ],
   },
   {
@@ -292,10 +292,10 @@ export default function Sidebar() {
             const Icon = item.icon;
             const active = isActive(item.href);
             
-            // 判断是否为智能体相关路径
+            // 判断是否为SKILL相关路径
   const isAgentPath = pathname.startsWith('/agents/') && pathname !== '/agents';
   
-  // 智能体中心主菜单：根据当前选中的智能体显示对应颜色
+  // SKILL中心主菜单：根据当前选中的SKILL显示对应颜色
   const isAgentMenu = item.href === '/agents/product-selection' || item.href === '/agents/config';
   const currentAgentKey = isAgentPath ? (
     pathname.includes('product-selection') ? 'product-selection'
@@ -309,7 +309,7 @@ export default function Sidebar() {
   ) : null;
   const menuColors = isAgentMenu && currentAgentKey ? agentColors[currentAgentKey as keyof typeof agentColors] : null;
   
-  // 智能体中心菜单：在任何智能体子页面都显示为 active
+  // SKILL中心菜单：在任何SKILL子页面都显示为 active
   const isActiveAgentMenu = isAgentMenu && isAgentPath;
   
   return (

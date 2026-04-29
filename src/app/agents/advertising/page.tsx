@@ -352,7 +352,7 @@ export default function AdvertisingAgentPage() {
               <Megaphone className="h-7 w-7 text-orange-600" />
             </div>
             <div>
-              <h1 className="text-[18px] font-semibold text-foreground">广告投放智能体</h1>
+              <h1 className="text-[18px] font-semibold text-foreground">广告投放SKILL</h1>
               <p className="text-[14px] text-muted-foreground">预算分配 · 出价建议 · 关键词挖掘 · 广告风控引擎</p>
             </div>
           </div>
@@ -697,7 +697,7 @@ export default function AdvertisingAgentPage() {
           <TabsContent value="config" className="space-y-4">
             <Card className="bg-white border-border shadow-sm">
               <CardHeader>
-                <CardTitle className="text-[15px]">智能体配置</CardTitle>
+                <CardTitle className="text-[15px]">SKILL配置</CardTitle>
                 <CardDescription>模型选择、风控阈值、平台API配置</CardDescription>
               </CardHeader>
               <CardContent>

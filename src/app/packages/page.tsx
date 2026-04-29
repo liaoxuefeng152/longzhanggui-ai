@@ -47,7 +47,7 @@ export default function PackagesPage() {
           call_quota: 100,
           duration: 7,
           duration_days: 7,
-          features: ['选品智能体', '每日100次调用', '基础客服支持'],
+          features: ['选品SKILL', '每日100次调用', '基础客服支持'],
           agent_access: ['product-selection'],
           is_active: true,
           created_at: '',
@@ -62,7 +62,7 @@ export default function PackagesPage() {
           call_quota: 1000,
           duration: 30,
           duration_days: 30,
-          features: ['选品智能体', '图片设计智能体', '每日1000次调用', '基础客服支持'],
+          features: ['选品SKILL', '图片设计SKILL', '每日1000次调用', '基础客服支持'],
           agent_access: ['product-selection', 'image-design'],
           is_active: true,
           created_at: '',
@@ -77,7 +77,7 @@ export default function PackagesPage() {
           call_quota: 999999,
           duration: 30,
           duration_days: 30,
-          features: ['全部AI智能体', '无限调用次数', '优先技术支持', '专属客服'],
+          features: ['全部AISKILL', '无限调用次数', '优先技术支持', '专属客服'],
           agent_access: ['all'],
           is_active: true,
           created_at: '',
@@ -92,7 +92,7 @@ export default function PackagesPage() {
           call_quota: 999999,
           duration: 30,
           duration_days: 30,
-          features: ['全部AI智能体', '无限调用次数', '7x24技术支持', '私有化部署支持', 'SLA保障'],
+          features: ['全部AISKILL', '无限调用次数', '7x24技术支持', '私有化部署支持', 'SLA保障'],
           agent_access: ['all'],
           is_active: true,
           created_at: '',
@@ -176,7 +176,7 @@ export default function PackagesPage() {
             <div>
               <h1 className="text-[24px] font-semibold text-foreground">选择适合您的套餐</h1>
               <p className="text-[14px] text-muted-foreground">
-                灵活定价，畅享AI智能体带来的效率提升
+                灵活定价，畅享AISKILL带来的效率提升
               </p>
             </div>
           </div>

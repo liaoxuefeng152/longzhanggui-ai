@@ -299,7 +299,7 @@ export default function ListingAgentPage() {
               <FileText className="h-7 w-7 text-green-600" />
             </div>
             <div>
-              <h1 className="text-[18px] font-semibold text-foreground">Listing优化智能体</h1>
+              <h1 className="text-[18px] font-semibold text-foreground">Listing优化SKILL</h1>
               <p className="text-[14px] text-muted-foreground">标题/五点/A+优化 · 关键词挖掘 · 平台差异化合规校验</p>
             </div>
           </div>
@@ -676,7 +676,7 @@ export default function ListingAgentPage() {
           <TabsContent value="config" className="space-y-4">
             <Card className="bg-white border-border shadow-sm">
               <CardHeader>
-                <CardTitle className="text-[15px]">智能体配置</CardTitle>
+                <CardTitle className="text-[15px]">SKILL配置</CardTitle>
                 <CardDescription>模型选择、Prompt模板、输出参数配置</CardDescription>
               </CardHeader>
               <CardContent>

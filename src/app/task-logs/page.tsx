@@ -116,7 +116,7 @@ export default function TaskLogsPage() {
       id: '1',
       task_id: 'TASK-20240320-001',
       agent_id: 'product-selection',
-      agent_name: '选品智能体',
+      agent_name: '选品SKILL',
       action: 'AI选品分析',
       status: 'success',
       duration: 3250,
@@ -131,7 +131,7 @@ export default function TaskLogsPage() {
       id: '2',
       task_id: 'TASK-20240320-002',
       agent_id: 'image-design',
-      agent_name: '图片智能体',
+      agent_name: '图片SKILL',
       action: '图片翻译处理',
       status: 'success',
       duration: 5200,
@@ -259,7 +259,7 @@ export default function TaskLogsPage() {
 
   // 导出日志
   const handleExport = () => {
-    const headers = ['任务ID', '智能体', '操作', '状态', '耗时(ms)', 'Tokens', '成本(元)', '时间'];
+    const headers = ['任务ID', 'SKILL', '操作', '状态', '耗时(ms)', 'Tokens', '成本(元)', '时间'];
     const rows = filteredLogs.map((log) => [
       log.task_id,
       log.agent_name,
@@ -306,7 +306,7 @@ export default function TaskLogsPage() {
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-foreground">任务日志</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            记录智能体执行日志，便于问题排查和运营分析
+            记录SKILL执行日志，便于问题排查和运营分析
           </p>
         </div>
 
@@ -364,7 +364,7 @@ export default function TaskLogsPage() {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="搜索任务ID/智能体/操作..."
+                placeholder="搜索任务ID/SKILL/操作..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-9 w-72"
@@ -383,12 +383,12 @@ export default function TaskLogsPage() {
             </Select>
             <Select value={filterAgent} onValueChange={setFilterAgent}>
               <SelectTrigger className="w-40">
-                <SelectValue placeholder="智能体" />
+                <SelectValue placeholder="SKILL" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">全部智能体</SelectItem>
-                <SelectItem value="product-selection">选品智能体</SelectItem>
-                <SelectItem value="image-design">图片智能体</SelectItem>
+                <SelectItem value="all">全部SKILL</SelectItem>
+                <SelectItem value="product-selection">选品SKILL</SelectItem>
+                <SelectItem value="image-design">图片SKILL</SelectItem>
                 <SelectItem value="video-generation">视频生成</SelectItem>
                 <SelectItem value="listing-optimization">Listing优化</SelectItem>
                 <SelectItem value="advertising">广告投放</SelectItem>
@@ -425,7 +425,7 @@ export default function TaskLogsPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>任务ID</TableHead>
-                    <TableHead>智能体</TableHead>
+                    <TableHead>SKILL</TableHead>
                     <TableHead>操作</TableHead>
                     <TableHead>状态</TableHead>
                     <TableHead>耗时</TableHead>
@@ -487,7 +487,7 @@ export default function TaskLogsPage() {
                     <p className="font-mono">{selectedLog.task_id}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground">智能体</p>
+                    <p className="text-sm text-muted-foreground">SKILL</p>
                     <p>{selectedLog.agent_name}</p>
                   </div>
                   <div>

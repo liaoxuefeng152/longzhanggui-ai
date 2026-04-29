@@ -32,7 +32,7 @@ export interface ReportRevenue {
   package_distribution: Array<{ name: string; count: number; revenue: number }>;
 }
 
-// 智能体效能
+// SKILL效能
 export interface ReportAgents {
   agents: Array<{
     id: string;
@@ -91,7 +91,7 @@ export async function getReportRevenue(params?: {
 }
 
 /**
- * 获取智能体效能报表
+ * 获取SKILL效能报表
  */
 export async function getReportAgents(params?: {
   start_date?: string;

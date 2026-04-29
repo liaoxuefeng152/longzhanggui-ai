@@ -33,7 +33,7 @@ export default function CustomerServiceAgentConfigPage() {
   const [loading, setLoading] = useState(false);
 
   const [config, setConfig] = useState({
-    name: 'AI客服智能体',
+    name: 'AI客服SKILL',
     enabled: true,
     model: 'doubao-mini',
   });
@@ -81,7 +81,7 @@ export default function CustomerServiceAgentConfigPage() {
               <Headphones className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <h1 className="text-xl font-semibold">AI客服智能体配置</h1>
+              <h1 className="text-xl font-semibold">AI客服SKILL配置</h1>
               <p className="text-sm text-muted-foreground">配置客服回复和纠纷处理的规则</p>
             </div>
           </div>
@@ -120,7 +120,7 @@ export default function CustomerServiceAgentConfigPage() {
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label>智能体名称</Label>
+                    <Label>SKILL名称</Label>
                     <Input value={config.name} onChange={(e) => setConfig({ ...config, name: e.target.value })} />
                   </div>
                   <div className="space-y-2">
@@ -304,7 +304,7 @@ export default function CustomerServiceAgentConfigPage() {
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                  <span className="text-sm">智能体状态</span>
+                  <span className="text-sm">SKILL状态</span>
                   <Badge variant={config.enabled ? 'default' : 'secondary'}>
                     {config.enabled ? '运行中' : '已停止'}
                   </Badge>

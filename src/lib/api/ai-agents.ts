@@ -1,10 +1,10 @@
 /**
- * AI智能体服务 API - 更新版本
+ * AISKILL服务 API - 更新版本
  * 包含选品、图片处理、Listing优化、智能定价、广告、客服、数据复盘
  */
 import { apiClient } from './client';
 
-// 选品智能体
+// 选品SKILL
 
 export interface SelectProductsRequest {
   platform?: string;
@@ -138,7 +138,7 @@ export async function selectProductsStream(request: SelectProductsRequest, callb
   }
 }
 
-// 图片智能体
+// 图片SKILL
 
 export type ImageProcessMode = 'translate' | 'optimize' | 'remove_watermark' | 'white_background' | 'text_to_image' | 'image_to_image';
 
@@ -185,7 +185,7 @@ export async function processImage(request: ProcessImageRequest): Promise<ImageP
   return response.json();
 }
 
-// 视频生成智能体
+// 视频生成SKILL
 
 export interface GenerateVideoRequest {
   prompt: string;
@@ -231,7 +231,7 @@ export async function generateVideo(request: GenerateVideoRequest): Promise<Vide
   return response.json();
 }
 
-// Listing优化智能体
+// Listing优化SKILL
 
 export interface OptimizeListingRequest {
   productName: string;
@@ -379,7 +379,7 @@ export async function calculatePrice(request: CalculatePriceRequest): Promise<Pr
   return response.json();
 }
 
-// AI客服智能体
+// AI客服SKILL
 
 export interface CustomerReplyRequest {
   customerMessage: string;
