@@ -48,16 +48,17 @@ export async function PUT(request: NextRequest) {
     
     // 使用REPLACE INTO确保存在则更新，不存在则插入
     db.prepare(`
-      INSERT OR REPLACE INTO feishu_config (id, app_id, app_secret, bot_name, enabled, updated_at)
+      INSERT OR REPLACE INTO feishu_config (id, app_id, app_secret, bot_name, enabled, verification_token, updated_at)
       VALUES (
         1,
         ?,
         ?,
         ?,
         ?,
+        ?,
         datetime('now')
       )
-    `).run(appId, appSecret, botName || '龙掌柜跨境AI全能助手', enabled ? 1 : 0);
+    `).run(appId, appSecret, botName || '龙掌柜跨境AI全能助手', enabled ? 1 : 0, body.verificationToken || null);
     
     return NextResponse.json({
       success: true,
