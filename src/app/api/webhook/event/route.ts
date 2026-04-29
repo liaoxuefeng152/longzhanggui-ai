@@ -246,7 +246,10 @@ export async function GET(request: NextRequest) {
   const config = db.prepare('SELECT * FROM feishu_config WHERE id = 1').get() as any;
   
   if (!config) {
-    return NextResponse.json({ error: '飞书配置未找到' }, { status: 404 });
+    return NextResponse.json(
+      { code: 400, msg: '飞书配置未找到' },
+      { status: 404, headers: { 'Content-Type': 'application/json' } }
+    );
   }
   
   // 飞书URL验证
@@ -254,11 +257,18 @@ export async function GET(request: NextRequest) {
   const challenge = url.searchParams.get('challenge');
   
   if (challenge) {
-    // 返回挑战值进行验证
-    return NextResponse.json({ challenge });
+    // 返回挑战值进行验证 - 飞书要求必须返回 challenge 字段
+    console.log('飞书URL验证 challenge:', challenge);
+    return NextResponse.json(
+      { challenge },
+      { status: 200, headers: { 'Content-Type': 'application/json' } }
+    );
   }
   
-  return NextResponse.json({ status: 'ok' });
+  return NextResponse.json(
+    { code: 0, msg: 'ok' },
+    { status: 200, headers: { 'Content-Type': 'application/json' } }
+  );
 }
 
 // POST 请求 - 用于接收飞书事件
