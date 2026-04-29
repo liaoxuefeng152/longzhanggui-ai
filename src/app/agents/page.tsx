@@ -189,7 +189,7 @@ export default function AgentsPage() {
             <div>
               <h1 className="text-[24px] font-semibold text-foreground">SKILL调度配置</h1>
               <p className="text-[14px] text-muted-foreground">
-                AISKILL工厂 · 7大核心SKILL · 合规+风控
+                AISKILL工厂 · 8大核心SKILL · 合规+风控
               </p>
             </div>
           </div>

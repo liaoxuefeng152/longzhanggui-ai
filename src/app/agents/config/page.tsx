@@ -15,6 +15,7 @@ import {
   Megaphone,
   Headphones,
   BarChart3,
+  DollarSign,
   ChevronRight,
   CheckCircle,
   AlertTriangle,
@@ -122,6 +123,20 @@ const agentConfigs: AgentConfig[] = [
     ],
   },
   {
+    id: 'pricing',
+    name: '智能定价',
+    description: '智能定价策略，支持保本价计算、利润方案优化和竞品价格参考',
+    icon: <DollarSign className="h-6 w-6" />,
+    color: 'text-emerald-600',
+    bgColor: 'bg-emerald-100',
+    configPath: '/agents/pricing',
+    status: 'pending',
+    stats: [
+      { label: '定价模型', value: '未配置' },
+      { label: '成本项', value: '待设置' },
+    ],
+  },
+  {
     id: 'data-review',
     name: '数据复盘',
     description: '智能数据分析，支持日报周报生成、异常诊断和行动项建议',
@@ -167,7 +182,7 @@ export default function AgentConfigPage() {
             <div>
               <h1 className="text-[24px] font-semibold">SKILL配置</h1>
               <p className="text-[14px] text-muted-foreground">
-                统一管理7大AISKILL的模型参数和功能配置
+                统一管理8大AISKILL的模型参数和功能配置
               </p>
             </div>
           </div>
