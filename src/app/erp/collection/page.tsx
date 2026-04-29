@@ -337,7 +337,7 @@ export default function CollectionCenterPage() {
 
   return (
     <MainLayout user={user} onLogout={() => router.push('/login')}>
-      <div className="container py-6 space-y-6">
+      <div className="space-y-6">
         {/* 页面头部 */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
