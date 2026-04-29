@@ -144,7 +144,7 @@ export default function PaymentPage() {
 
   return (
     <MainLayout user={user} onLogout={handleLogout}>
-      <div className="max-w-5xl mx-auto space-y-6">
+      <div className="lg:col-span-2 space-y-6">
         {/* 页面标题 */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
@@ -166,7 +166,7 @@ export default function PaymentPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* 左侧：订单信息 */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="lg:col-span-1 space-y-6">
             {/* 订单详情卡片 */}
             <Card className="bg-white border-border shadow-sm">
               <CardHeader className="px-6 py-4 border-b border-border">
@@ -276,7 +276,7 @@ export default function PaymentPage() {
           </div>
 
           {/* 右侧：支付辅助信息 */}
-          <div className="space-y-6">
+          <div className="lg:col-span-2 space-y-6">
             {/* 优惠码 */}
             <Card className="bg-white border-border shadow-sm">
               <CardHeader className="px-6 py-4 border-b border-border">
