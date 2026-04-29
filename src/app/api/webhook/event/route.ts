@@ -294,12 +294,16 @@ export async function POST(request: NextRequest) {
     }
     
     // 处理事件
+    console.log('飞书事件数据:', JSON.stringify(data).substring(0, 500));
+    
     if (data.event && data.event.type === 'im.message.receive_v1') {
       const message = data.event.message;
+      console.log('收到消息事件, message_type:', message.message_type);
       
       // 只处理文本消息
       if (message.message_type !== 'text') {
-        return NextResponse.json({ status: 'ignored' });
+        console.log('非文本消息，忽略');
+        return NextResponse.json({ status: 'ignored', reason: 'not text' });
       }
       
       // 解析消息内容
@@ -311,7 +315,8 @@ export async function POST(request: NextRequest) {
         textContent = message.content;
       }
       
-      console.log('收到飞书消息:', textContent);
+      console.log('消息内容:', textContent);
+      console.log('发送者ID:', message.sender?.sender_id?.open_id);
       
       // 识别意图
       const { intent, action } = recognizeIntent(textContent);
@@ -319,31 +324,43 @@ export async function POST(request: NextRequest) {
       
       // 生成回复
       const reply = generateReply(textContent, intent, action);
+      console.log('生成回复:', reply.substring(0, 100));
       
       // 获取tenant_access_token
+      console.log('获取access_token...');
       const accessToken = await getTenantAccessToken(config.app_id, config.app_secret);
       
       if (!accessToken) {
         console.error('获取access_token失败');
         return NextResponse.json({ error: '获取access_token失败' }, { status: 500 });
       }
+      console.log('access_token获取成功');
       
       // 发送回复消息
+      const senderOpenId = message.sender?.sender_id?.open_id;
+      console.log('发送给:', senderOpenId);
+      
+      if (!senderOpenId) {
+        console.error('无法获取发送者open_id');
+        return NextResponse.json({ error: 'no sender open_id' }, { status: 400 });
+      }
+      
       const success = await sendMessage(
         accessToken,
         'open_id',
-        message.sender.sender_id.open_id,
+        senderOpenId,
         'text',
         JSON.stringify({ text: reply })
       );
       
+      console.log('发送结果:', success);
       if (success) {
         console.log('消息发送成功');
       } else {
         console.error('消息发送失败');
       }
       
-      return NextResponse.json({ status: 'ok' });
+      return NextResponse.json({ status: 'ok', success });
     }
     
     return NextResponse.json({ status: 'ignored' });
