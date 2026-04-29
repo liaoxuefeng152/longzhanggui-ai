@@ -51,6 +51,7 @@ export default function CollectionCenterPage() {
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [collectUrls, setCollectUrls] = useState('');
+  const [collectSource, setCollectSource] = useState('auto');
   const [previewData, setPreviewData] = useState<any>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
   
@@ -126,7 +127,7 @@ export default function CollectionCenterPage() {
       const response = await fetch('/api/v1/tools/scrape', {
         method: 'POST',
         headers,
-        body: JSON.stringify({ url: firstUrl }),
+        body: JSON.stringify({ url: firstUrl, source: collectSource === 'auto' ? undefined : collectSource }),
       });
 
       const result = await response.json();
@@ -193,7 +194,7 @@ export default function CollectionCenterPage() {
         const response = await fetch('/api/v1/tools/scrape', {
           method: 'POST',
           headers,
-          body: JSON.stringify({ url: urls[0] }),
+          body: JSON.stringify({ url: urls[0], source: collectSource === 'auto' ? undefined : collectSource }),
         });
         const result = await response.json();
         if (result.success) {
@@ -201,14 +202,18 @@ export default function CollectionCenterPage() {
             url: urls[0],
             ...result.data,
             productId: result.productId,
+            source: result.source || '1688',
           });
+        } else {
+          toast.error(result.error || '采集失败');
+          return;
         }
       } else {
         // 批量采集
         const response = await fetch('/api/v1/tools/scrape', {
           method: 'PUT',
           headers,
-          body: JSON.stringify({ urls }),
+          body: JSON.stringify({ urls, source: collectSource === 'auto' ? undefined : collectSource }),
         });
         const result = await response.json();
         if (result.success && result.results) {
@@ -216,7 +221,11 @@ export default function CollectionCenterPage() {
             url: urls[i],
             ...r.data,
             productId: r.productId,
+            source: r.source || '1688',
           }));
+        } else {
+          toast.error(result.error || '批量采集失败');
+          return;
         }
       }
 
@@ -425,6 +434,35 @@ export default function CollectionCenterPage() {
             <CardDescription>支持单条或多条链接采集（每行一个链接）</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            {/* 采集来源选择 */}
+            <div className="flex items-center gap-4 pb-3 border-b border-border">
+              <span className="text-[13px] text-muted-foreground">采集来源：</span>
+              <Select value={collectSource} onValueChange={setCollectSource}>
+                <SelectTrigger className="w-[200px] h-8 text-[13px]">
+                  <SelectValue placeholder="选择采集来源" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="auto">
+                    <div className="flex items-center gap-2">
+                      <Sparkles className="h-4 w-4" />
+                      自动选择
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="miaoshou">
+                    <div className="flex items-center gap-2">
+                      <Settings className="h-4 w-4" />
+                      妙手ERP
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+              {collectSource === 'miaoshou' && (
+                <Link href="/platform/miaoshou" className="text-[12px] text-blue-500 hover:underline">
+                  配置妙手ERP
+                </Link>
+              )}
+            </div>
+            
             <textarea
               className="w-full h-32 p-3 border border-border rounded-md text-[13px] resize-none focus:outline-none focus:ring-2 focus:ring-primary/20"
               placeholder="每行一个1688商品链接&#10;例如:&#10;https://detail.1688.com/offer/xxx1.html&#10;https://detail.1688.com/offer/xxx2.html"

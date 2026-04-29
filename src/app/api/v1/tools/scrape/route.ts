@@ -220,24 +220,13 @@ function generateMockProduct(offerId: string, url: string): any {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { url } = body;
+    const { url, source } = body;
 
     if (!url) {
       return NextResponse.json(
         { success: false, error: '请提供商品链接' },
         { status: 400 }
       );
-    }
-
-    // 检查是否配置了1688 API凭证
-    if (!ALI_1688_CONFIG.appKey || !ALI_1688_CONFIG.appSecret) {
-      return NextResponse.json({
-        success: false,
-        error: '请先在平台配置中设置1688 API凭证',
-        needConfig: true,
-        configPath: '/platform/datasources',
-        hint: '需要配置 AppKey 和 AppSecret',
-      });
     }
 
     // 解析商品链接
@@ -249,7 +238,61 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    console.log('[1688 Collect] 开始采集商品:', offerId);
+    console.log('[采集] 开始采集商品:', offerId, '来源:', source || 'auto');
+
+    // 优先使用妙手ERP采集（如果配置了）
+    if (source === 'miaoshou' || !ALI_1688_CONFIG.appKey || !ALI_1688_CONFIG.appSecret) {
+      try {
+        const miaoshouResponse = await fetch(new URL('/api/v1/miaoshou/product', request.url).toString(), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url, offerId }),
+        });
+        
+        if (miaoshouResponse.ok) {
+          const miaoshouResult = await miaoshouResponse.json();
+          if (miaoshouResult.success) {
+            return NextResponse.json({
+              success: true,
+              platform: '1688',
+              source: 'miaoshou',
+              productId: offerId,
+              data: {
+                title: miaoshouResult.data.title || '',
+                price: parseFloat(String(miaoshouResult.data.price || 0).split('-')[0]) || 0,
+                original_price: miaoshouResult.data.original_price || miaoshouResult.data.price,
+                price_range: miaoshouResult.data.price_range,
+                main_image: miaoshouResult.data.images?.[0] || '',
+                images: miaoshouResult.data.images || [],
+                description: miaoshouResult.data.description || '',
+                shop_name: miaoshouResult.data.supplier?.name || '',
+                shop_url: miaoshouResult.data.supplier?.url || '',
+                specifications: miaoshouResult.data.attributes || {},
+                skus: miaoshouResult.data.skus || [],
+                sales: miaoshouResult.data.sales || 0,
+                min_order: miaoshouResult.data.min_order || 1,
+                weight: miaoshouResult.data.weight,
+                location: miaoshouResult.data.location || '',
+                collect_method: 'miaoshou',
+              },
+            });
+          }
+        }
+      } catch (e) {
+        console.error('[采集] 妙手ERP采集失败:', e);
+      }
+    }
+
+    // 检查是否配置了1688 API凭证
+    if (!ALI_1688_CONFIG.appKey || !ALI_1688_CONFIG.appSecret) {
+      return NextResponse.json({
+        success: false,
+        error: '请先配置采集来源：\n1. 在妙手ERP配置中填写AppKey和AppSecret\n2. 或在平台凭证中配置1688 API凭证',
+        needConfig: true,
+        configPath: '/platform/miaoshou',
+        hint: '需要配置采集凭证才能采集真实商品',
+      });
+    }
 
     // 调用1688 API采集商品
     const result = await collectProduct(url);
