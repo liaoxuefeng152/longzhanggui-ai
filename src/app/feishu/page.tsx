@@ -55,7 +55,7 @@ export default function FeishuPage() {
   }>({
     appId: FEISHU_CONFIG.appId as string,
     appSecret: FEISHU_CONFIG.appSecret as string,
-    botName: '龙掌柜',
+    botName: '龙掌柜跨境AI全能助手',
     enabled: true,
   });
 
@@ -98,7 +98,30 @@ export default function FeishuPage() {
       return;
     }
     setUser(JSON.parse(userData));
+    
+    // 加载飞书配置
+    loadFeishuConfig();
   }, [router]);
+
+  // 加载飞书配置
+  const loadFeishuConfig = async () => {
+    try {
+      const response = await fetch('/api/feishu/config');
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.data) {
+          setFeishuConfig({
+            appId: data.data.app_id || '',
+            appSecret: data.data.app_secret || '',
+            botName: data.data.bot_name || '龙掌柜跨境AI全能助手',
+            enabled: data.data.enabled === 1 || data.data.enabled === true,
+          });
+        }
+      }
+    } catch (error) {
+      console.error('加载飞书配置失败:', error);
+    }
+  };
 
   const webhookUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/api/v1/feishu/webhook`;
 
@@ -106,9 +129,26 @@ export default function FeishuPage() {
   const handleSaveConfig = async () => {
     setIsSaving(true);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      toast.success('配置已保存！');
+      const response = await fetch('/api/feishu/config', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          appId: feishuConfig.appId,
+          appSecret: feishuConfig.appSecret,
+          botName: feishuConfig.botName,
+          enabled: feishuConfig.enabled,
+        }),
+      });
+      
+      if (response.ok) {
+        toast.success('配置已保存！');
+      } else {
+        toast.error('保存失败');
+      }
     } catch (error) {
+      console.error('保存飞书配置失败:', error);
       toast.error('保存失败');
     }
     setIsSaving(false);
@@ -117,11 +157,33 @@ export default function FeishuPage() {
   // 测试连接
   const handleTestConnection = async () => {
     setIsTesting(true);
+    setConnectionStatus('idle');
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-      setConnectionStatus('success');
-      toast.success('连接成功！');
+      // 先保存配置
+      await fetch('/api/feishu/config', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          appId: feishuConfig.appId,
+          appSecret: feishuConfig.appSecret,
+          botName: feishuConfig.botName,
+          enabled: feishuConfig.enabled,
+        }),
+      });
+      
+      // 测试WebSocket连接
+      const response = await fetch('/api/v1/feishu/webhook');
+      if (response.ok) {
+        setConnectionStatus('success');
+        toast.success('连接成功！');
+      } else {
+        setConnectionStatus('error');
+        toast.error('连接失败');
+      }
     } catch (error) {
+      console.error('测试连接失败:', error);
       setConnectionStatus('error');
       toast.error('连接失败，请检查配置');
     }

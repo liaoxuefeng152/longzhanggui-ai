@@ -177,7 +177,7 @@ function initTables(database: Database.Database) {
     database.prepare(`
       INSERT INTO feishu_config (app_id, app_secret, bot_name, push_enabled, alert_enabled)
       VALUES (?, ?, ?, ?, ?)
-    `).run('cli_a954ed9674789cd3', '', '龙掌柜智能助理', 0, 1);
+    `).run('', '', '龙掌柜跨境AI全能助手', 0, 1);
   }
 
   console.log('[DB] Database tables initialized');
