@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import MainLayout from '@/components/layout/MainLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -27,6 +27,30 @@ export default function MiaoshouConfigPage() {
   });
   const [loading, setLoading] = useState(false);
   const [testing, setTesting] = useState(false);
+
+  // 加载配置
+  useEffect(() => {
+    const loadConfig = async () => {
+      try {
+        const response = await fetch('/api/v1/miaoshou/config');
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.data) {
+            setConfig({
+              phone: data.data.phone || '',
+              password: data.data.password || '',
+              cookies: data.data.cookies || '',
+              status: data.data.status || 'disconnected',
+              lastSync: data.data.lastSync,
+            });
+          }
+        }
+      } catch (error) {
+        console.error('加载配置失败:', error);
+      }
+    };
+    loadConfig();
+  }, []);
 
   // 保存配置
   const handleSave = async () => {
