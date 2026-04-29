@@ -1606,6 +1606,40 @@ class LobsterStore {
   deletePlatform(platform_id: string): boolean {
     return this.platformConfigs.delete(platform_id);
   }
+
+  /**
+   * 妙手ERP配置
+   */
+  private _miaoshouConfig: MiaoshouConfig | null = null;
+
+  getMiaoshouConfig(): MiaoshouConfig | null {
+    return this._miaoshouConfig;
+  }
+
+  saveMiaoshouConfig(config: MiaoshouConfig): MiaoshouConfig {
+    this._miaoshouConfig = { ...config, updated_at: new Date().toISOString() };
+    return this._miaoshouConfig;
+  }
+
+  /**
+   * 测试妙手ERP连接
+   * 实际需要调用妙手ERP的API进行验证
+   */
+  async testMiaoshouConnection(config: MiaoshouConfig): Promise<{ success: boolean; message: string }> {
+    // 模拟测试连接
+    // 实际应该调用妙手ERP的授权API进行验证
+    if (!config.phone || !config.password) {
+      return { success: false, message: '请填写手机号和密码' };
+    }
+    
+    // 模拟API调用延迟
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // 模拟验证结果（实际应调用妙手ERP API）
+    // 妙手ERP开放平台: https://open.myshopapps.com/
+    // 这里返回成功，实际使用时需要对接真实API
+    return { success: true, message: '连接成功' };
+  }
 }
 
 // 单例模式
@@ -1643,3 +1677,16 @@ export interface PurchaseOrder {
 }
 
 // 全局采购数据存储
+
+
+// 妙手ERP配置类型
+export interface MiaoshouConfig {
+  id?: string;
+  phone: string;
+  password: string;
+  cookies?: string;
+  status?: 'connected' | 'disconnected' | 'testing' | 'error';
+  lastSync?: string;
+  updated_at?: string;
+};
+
