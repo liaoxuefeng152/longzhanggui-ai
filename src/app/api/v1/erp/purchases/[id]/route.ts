@@ -21,11 +21,6 @@ interface PurchaseOrder {
   notes?: string;
 }
 
-// 获取全局存储
-declare global {
-  var __erp_purchases: PurchaseOrder[] | undefined;
-}
-
 function getPurchases(): PurchaseOrder[] {
   if (!global.__erp_purchases) {
     global.__erp_purchases = [];

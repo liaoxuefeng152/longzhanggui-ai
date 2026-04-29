@@ -21,10 +21,6 @@ interface PurchaseOrder {
   notes?: string;
 }
 
-// 全局存储
-declare global {
-  var __erp_purchases: PurchaseOrder[] | undefined;
-}
 
 // 初始化数据
 function getPurchases(): PurchaseOrder[] {

@@ -268,7 +268,7 @@ export default function Sidebar() {
           <div className="flex items-center gap-2">
             <p className="text-sm font-medium text-white">{currentViewName}</p>
             {isClientView && !isAdmin && (
-              <Shield className="h-3 w-3 text-muted-foreground" title="运营人员" />
+              <Shield className="h-3 w-3 text-muted-foreground" aria-label="运营人员" />
             )}
           </div>
           {showSwitchButton && (

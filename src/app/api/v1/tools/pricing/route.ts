@@ -87,10 +87,11 @@ const mockProducts = [
 ];
 
 // 计算成本
-function calculateCost(product: any, targetPrice: number, config: typeof PRICING_CONFIG) {
-  const platform = product.platform || 'shopee';
-  const country = product.country || 'id';
+function calculateCost(product: { costPrice?: number; platform?: string; country?: string; weight?: number }, targetPrice: number, config: typeof PRICING_CONFIG) {
+  const platform = (product.platform || 'shopee') as keyof typeof config.commissionRates;
+  const country = (product.country || 'id') as keyof typeof config.vatRates;
   const weight = product.weight || 0.2;
+  const costPrice = product.costPrice || 0;
   
   const commissionRate = config.commissionRates[platform] || 0.06;
   const logisticsFee = config.logistics[platform]?.normal || 25;
@@ -112,7 +113,7 @@ function calculateCost(product: any, targetPrice: number, config: typeof PRICING
   const exchangeLoss = salesAmount * 0.015;
   
   // 总成本
-  const totalCost = product.costPrice + logistics + packingFee + exchangeLoss;
+  const totalCost = costPrice + logistics + packingFee + exchangeLoss;
   
   // 实际利润
   const actualProfit = targetPrice - totalCost - commission;
@@ -133,24 +134,25 @@ function calculateCost(product: any, targetPrice: number, config: typeof PRICING
     actualProfit,
     profitRate,
     breakEvenPrice,
-    roi: actualProfit / product.costPrice,
+    roi: actualProfit / (product.costPrice || 1),
   };
 }
 
 // 智能定价算法
-function calculateOptimalPrice(product: any, competitors: any[], targetProfitRate: number, config: typeof PRICING_CONFIG) {
-  const platform = product.platform || 'shopee';
-  const country = product.country || 'id';
+function calculateOptimalPrice(product: { costPrice?: number; platform?: string; country?: string; weight?: number }, competitors: { price: number }[], targetProfitRate: number, config: typeof PRICING_CONFIG) {
+  const platform = (product.platform || 'shopee') as keyof typeof config.commissionRates;
+  const country = (product.country || 'id') as keyof typeof config.vatRates;
   
   const commissionRate = config.commissionRates[platform] || 0.06;
   const vatRate = config.vatRates[country] || 0.10;
   const logisticsFee = config.logistics[platform]?.normal || 25;
   const weight = product.weight || 0.2;
+  const costPrice = product.costPrice || 0;
   
   // 计算保本价
   const packingFee = weight * 5;
   const exchangeLossRate = 0.015;
-  const totalFixedCost = product.costPrice + logisticsFee + packingFee;
+  const totalFixedCost = costPrice + logisticsFee + packingFee;
   
   // 保本价 = (成本 + 物流 + 包装) / (1 - 佣金率 - VAT影响 - 汇率损耗)
   const breakEvenPrice = totalFixedCost / (1 - commissionRate * (1 + vatRate) - exchangeLossRate);

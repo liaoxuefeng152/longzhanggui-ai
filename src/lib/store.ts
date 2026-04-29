@@ -358,6 +358,8 @@ export interface PublicCollectionItem {
 
 declare global {
   // eslint-disable-next-line no-var
+  // eslint-disable-next-line no-var
+  var __erp_purchases: PurchaseOrder[] | undefined;
   var __LOBSTER_STORE__: LobsterStore | undefined;
 }
 
@@ -1532,3 +1534,26 @@ function getStore(): LobsterStore {
 
 export const store = getStore();
 export default store;
+
+// 采购单类型（供 API routes 使用）
+export interface PurchaseOrder {
+  id: string;
+  po_number: string;
+  supplier_id: string;
+  supplier_name: string;
+  products: {
+    product_id: string;
+    product_name: string;
+    sku: string;
+    quantity: number;
+    unit_price: number;
+  }[];
+  total_amount: number;
+  status: 'pending' | 'confirmed' | 'shipped' | 'received' | 'cancelled';
+  expected_arrival?: string;
+  created_at: string;
+  updated_at: string;
+  notes?: string;
+}
+
+// 全局采购数据存储

@@ -31,7 +31,7 @@ export default function LoginPage() {
     try {
       // 调用真实登录API
       const response = await login({
-        username: username || phone,
+        username: username,
         password: password,
       });
 

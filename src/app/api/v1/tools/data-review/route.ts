@@ -106,20 +106,21 @@ ${data.platformMetrics.map(p => `- ${p.platform}: 销售额$${p.sales.toFixed(2)
 // 调用AI模型进行数据复盘分析
 async function invokeAIAnalysis(prompt: string) {
   try {
-    const { LLMClient, Message } = await import('coze-coding-dev-sdk');
+    const { LLMClient, Config } = await import('coze-coding-dev-sdk');
     
     const apiKey = process.env.COZE_API_KEY || process.env.NEXT_PUBLIC_COZE_API_KEY;
     if (!apiKey) {
       throw new Error('未配置API密钥');
     }
 
-    const client = new LLMClient({
+    const config = new Config({
       apiKey,
-      baseURL: process.env.COZE_API_BASE_URL || 'https://api.coze.cn',
+      baseUrl: process.env.COZE_API_BASE_URL || 'https://api.coze.cn',
     });
+    const client = new LLMClient(config);
 
-    const messages: Message[] = [
-      { role: 'user', content: prompt }
+    const messages = [
+      { role: 'user' as const, content: prompt }
     ];
 
     const response = await client.invoke(messages, {
@@ -185,9 +186,9 @@ function generateAIInsights(data: ReturnType<typeof getMockBusinessData>) {
     insights.push({
       id: `INS-${Date.now()}-4`,
       type: growthRate.startsWith('-') ? 'warning' : 'opportunity',
-      title: `今日销售额${growthRate > 0 ? '增长' : '下降'} ${Math.abs(parseFloat(growthRate))}%`,
+      title: `今日销售额${parseFloat(growthRate) > 0 ? '增长' : '下降'} ${Math.abs(parseFloat(growthRate))}%`,
       description: `昨日销售额$${prevDay.sales.toFixed(2)}，今日销售额$${recentDay.sales.toFixed(2)}。`,
-      impact: `环比 ${growthRate > 0 ? '正' : '负'}增长`,
+      impact: `环比 ${parseFloat(growthRate) > 0 ? '正' : '负'}增长`,
       action: growthRate.startsWith('-') ? '分析下降原因，调整运营策略' : '保持当前策略，继续观察',
       createdAt: new Date().toISOString().replace('T', ' ').substring(0, 16),
     });
