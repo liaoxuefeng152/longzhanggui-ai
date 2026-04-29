@@ -1,39 +1,43 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { store } from '@/lib/store';
+import { NextResponse } from 'next/server';
+import { MiaoshouDAL } from '@/lib/db/dal';
+
+// 初始化数据库连接
+import '@/lib/db';
 
 export async function GET() {
   try {
-    const config = store.getMiaoshouConfig();
-    return NextResponse.json({
-      success: true,
-      data: config || {
-        phone: '',
-        password: '',
-        cookies: '',
-        status: 'disconnected',
-      },
+    const config = MiaoshouDAL.get();
+    return NextResponse.json({ 
+      success: true, 
+      data: config || { phone: '', password: '', status: 'not_configured' }
     });
   } catch (error) {
-    return NextResponse.json(
-      { success: false, message: '获取配置失败' },
-      { status: 500 }
-    );
+    console.error('[API] GET /api/v1/miaoshou/config error:', error);
+    return NextResponse.json({ success: false, error: '获取配置失败' }, { status: 500 });
   }
 }
 
-export async function PUT(request: NextRequest) {
+export async function PUT(request: Request) {
   try {
     const body = await request.json();
-    const config = store.saveMiaoshouConfig(body);
-    return NextResponse.json({
-      success: true,
-      data: config,
-      message: '配置保存成功',
-    });
+    const { phone, password } = body;
+
+    if (!phone || !password) {
+      return NextResponse.json({ 
+        success: false, 
+        error: '缺少必要参数：phone, password' 
+      }, { status: 400 });
+    }
+
+    const success = MiaoshouDAL.save({ phone, password });
+
+    if (success) {
+      return NextResponse.json({ success: true, message: '配置保存成功' });
+    } else {
+      return NextResponse.json({ success: false, error: '保存失败' }, { status: 500 });
+    }
   } catch (error) {
-    return NextResponse.json(
-      { success: false, message: '保存配置失败' },
-      { status: 500 }
-    );
+    console.error('[API] PUT /api/v1/miaoshou/config error:', error);
+    return NextResponse.json({ success: false, error: '保存配置失败' }, { status: 500 });
   }
 }

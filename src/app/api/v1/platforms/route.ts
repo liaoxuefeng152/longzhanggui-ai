@@ -1,68 +1,51 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { store } from '@/lib/store';
+import { NextResponse } from 'next/server';
+import { PlatformDAL } from '@/lib/db/dal';
 
-// 获取所有平台配置
+// 初始化数据库连接
+import '@/lib/db';
+
 export async function GET() {
   try {
-    const platforms = store.getPlatforms();
-    return NextResponse.json({
-      success: true,
-      data: {
-        platforms: platforms,
-      },
+    const platforms = PlatformDAL.getAll();
+    return NextResponse.json({ 
+      success: true, 
+      data: platforms.map(p => ({
+        ...p,
+        credentials: JSON.parse(p.credentials || '{}')
+      }))
     });
   } catch (error) {
-    console.error('Error getting platforms:', error);
-    return NextResponse.json(
-      { success: false, error: '获取平台配置失败' },
-      { status: 500 }
-    );
+    console.error('[API] GET /api/v1/platforms error:', error);
+    return NextResponse.json({ success: false, error: '获取平台配置失败' }, { status: 500 });
   }
 }
 
-// 创建或更新平台配置
-export async function POST(request: NextRequest) {
+export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { platform, platform_id, name, credentials, config } = body;
+    const { platform, name, credentials } = body;
 
-    // 支持 platform 或 platform_id 参数
-    const platformId = platform_id || platform;
-    
-    if (!platformId) {
-      return NextResponse.json(
-        { success: false, error: '缺少平台ID参数' },
-        { status: 400 }
-      );
+    if (!platform || !credentials) {
+      return NextResponse.json({ 
+        success: false, 
+        error: '缺少必要参数：platform, credentials' 
+      }, { status: 400 });
     }
 
-    // 从 PLATFORMS 获取平台名称，或使用传入的名称
-    const platformName = name || `平台 ${platformId}`;
-
-    // 构建配置对象
-    const platformConfig = {
-      ...(config || {}),
-      ...(credentials ? {
-        api_key: credentials.api_key,
-        api_secret: credentials.api_secret,
-        webhook_secret: credentials.webhook_secret,
-      } : {}),
-    };
-
-    const updated = store.updatePlatform(platformId, {
-      name: platformName,
-      config: platformConfig,
+    const success = PlatformDAL.upsert({
+      id: platform,
+      name: name || platform,
+      platform,
+      credentials: JSON.stringify(credentials)
     });
 
-    return NextResponse.json({
-      success: true,
-      data: updated,
-    });
+    if (success) {
+      return NextResponse.json({ success: true, message: '保存成功' });
+    } else {
+      return NextResponse.json({ success: false, error: '保存失败' }, { status: 500 });
+    }
   } catch (error) {
-    console.error('Error updating platform:', error);
-    return NextResponse.json(
-      { success: false, error: '更新平台配置失败' },
-      { status: 500 }
-    );
+    console.error('[API] POST /api/v1/platforms error:', error);
+    return NextResponse.json({ success: false, error: '保存平台配置失败' }, { status: 500 });
   }
 }
