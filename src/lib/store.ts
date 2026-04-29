@@ -1520,6 +1520,92 @@ class LobsterStore {
       item => item.source_url === source_url
     );
   }
+
+  // 平台凭证配置方法
+
+  /**
+   * 平台凭证配置
+   */
+  private platformConfigs: Map<string, {
+    id: string;
+    platform_id: string;
+    name: string;
+    config: Record<string, string>;
+    created_at: string;
+    updated_at: string;
+  }> = new Map();
+
+  /**
+   * 获取所有平台配置
+   */
+  getPlatforms(): Array<{
+    id: string;
+    platform_id: string;
+    name: string;
+    config: Record<string, string>;
+    created_at: string;
+    updated_at: string;
+  }> {
+    return Array.from(this.platformConfigs.values());
+  }
+
+  /**
+   * 获取单个平台配置
+   */
+  getPlatform(platform_id: string): {
+    id: string;
+    platform_id: string;
+    name: string;
+    config: Record<string, string>;
+    created_at: string;
+    updated_at: string;
+  } | undefined {
+    return this.platformConfigs.get(platform_id);
+  }
+
+  /**
+   * 更新或创建平台配置
+   */
+  updatePlatform(platform_id: string, data: {
+    name: string;
+    config?: Record<string, string>;
+  }): {
+    id: string;
+    platform_id: string;
+    name: string;
+    config: Record<string, string>;
+    created_at: string;
+    updated_at: string;
+  } {
+    const now = this.now();
+    const existing = this.platformConfigs.get(platform_id);
+    
+    const platform: {
+      id: string;
+      platform_id: string;
+      name: string;
+      config: Record<string, string>;
+      created_at: string;
+      updated_at: string;
+    } = {
+      id: existing?.id || this.generateId('PLT'),
+      platform_id,
+      name: data.name,
+      config: data.config || existing?.config || {},
+      created_at: existing?.created_at || now,
+      updated_at: now,
+    };
+    
+    this.platformConfigs.set(platform_id, platform);
+    return platform;
+  }
+
+  /**
+   * 删除平台配置
+   */
+  deletePlatform(platform_id: string): boolean {
+    return this.platformConfigs.delete(platform_id);
+  }
 }
 
 // 单例模式

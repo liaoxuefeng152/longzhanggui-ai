@@ -142,6 +142,7 @@ const adminMenuItems: MenuItem[] = [
     icon: Settings,
     submenu: [
       { title: '配置总览', href: '/platform' },
+      { title: '平台凭证', href: '/shops/platforms' },
       { title: '数据源配置', href: '/platform/datasources' },
       { title: '妙手ERP', href: '/platform/miaoshou' },
     ],

@@ -56,6 +56,15 @@ interface PlatformConfig {
 
 // 平台配置数据
 const PLATFORMS: Record<string, Omit<PlatformConfig, 'has_credentials' | 'credentials' | 'status' | 'last_updated'>> = {
+  '1688': {
+    id: '1688',
+    name: '1688批发网',
+    icon: '🏭',
+    color: '#E54D17',
+    api_doc_url: 'https://open.1688.com',
+    regions: ['中国'],
+    currencies: ['CNY'],
+  },
   tiktok: {
     id: 'tiktok',
     name: 'TikTok Shop',
@@ -153,8 +162,34 @@ export default function PlatformConfigPage() {
         headers: token ? { 'Authorization': `Bearer ${token}` } : {},
       });
       const data = await response.json();
-      if (data.success) {
-        setPlatformConfigs(data.data.platforms);
+      if (data.success && data.data) {
+        // 将平台配置数组转换为 Record<string, PlatformConfig> 格式
+        const configs: Record<string, PlatformConfig> = {};
+        const platforms = data.data.platforms || [];
+        
+        for (const p of platforms) {
+          const hasCredentials = !!(p.config?.api_key || p.config?.api_secret);
+          configs[p.platform_id] = {
+            ...PLATFORMS[p.platform_id] || {
+              id: p.platform_id,
+              name: p.name || `平台 ${p.platform_id}`,
+              icon: '🌐',
+              color: '#666666',
+              api_doc_url: '',
+              regions: [],
+              currencies: [],
+            },
+            has_credentials: hasCredentials,
+            credentials: {
+              api_key: p.config?.api_key,
+              api_secret: p.config?.api_secret,
+              webhook_secret: p.config?.webhook_secret,
+            },
+            status: hasCredentials ? 'configured' : 'unconfigured',
+            last_updated: p.updated_at,
+          };
+        }
+        setPlatformConfigs(configs);
       }
     } catch (error) {
       console.error('获取平台配置失败:', error);
