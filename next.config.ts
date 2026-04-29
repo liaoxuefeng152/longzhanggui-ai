@@ -37,9 +37,12 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: false,
   },
   async rewrites() {
-    // 后端服务端口 (9000)
-    const BASE = 'http://localhost:9000';
+    // 后端服务端口 (8000)
+    const BASE = 'http://localhost:8000';
     return [
+      // ===== 飞书Webhook回调 - 代理到Python后端 =====
+      { source: '/api/webhook/event', destination: BASE + '/feishu/callback' },
+      
       // ===== AI智能体API - 代理到Python后端 =====
       
       // 选品智能体
