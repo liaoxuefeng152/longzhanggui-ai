@@ -302,6 +302,9 @@ export async function POST(request: NextRequest) {
       const message = data.event.message;
       console.log('[飞书] 4. message存在:', !!message);
       console.log('[飞书] 5. message_type:', message?.message_type);
+      console.log('[飞书] 5b. sender完整数据:', JSON.stringify(message?.sender));
+      console.log('[飞书] 5c. sender_id数据:', JSON.stringify(message?.sender?.sender_id));
+      console.log('[飞书] 5d. event完整结构:', JSON.stringify(data.event).substring(0, 500));
       
       // 只处理文本消息
       if (message.message_type !== 'text') {
@@ -342,19 +345,32 @@ export async function POST(request: NextRequest) {
       }
       console.log('access_token获取成功');
       
-      // 发送回复消息
-      const senderOpenId = message.sender?.sender_id?.open_id;
-      console.log('发送给:', senderOpenId);
+      // 群聊使用chat_id回复，私聊使用open_id回复
+      const chatType = message.chat_type;
+      let receiveId: string;
+      let receiveIdType: string;
       
-      if (!senderOpenId) {
-        console.error('无法获取发送者open_id');
-        return NextResponse.json({ error: 'no sender open_id' }, { status: 400 });
+      if (chatType === 'group') {
+        // 群聊：回复到群里
+        receiveId = message.chat_id;
+        receiveIdType = 'chat_id';
+        console.log('群聊消息，使用chat_id回复:', receiveId);
+      } else {
+        // 私聊：使用sender的open_id
+        receiveId = message.sender?.sender_id?.open_id || message.sender?.sender_id?.user_id;
+        receiveIdType = 'open_id';
+        console.log('私聊消息，使用open_id回复:', receiveId);
+      }
+      
+      if (!receiveId) {
+        console.error('无法获取回复目标ID');
+        return NextResponse.json({ error: 'no receive_id' }, { status: 400 });
       }
       
       const success = await sendMessage(
         accessToken,
-        'open_id',
-        senderOpenId,
+        receiveIdType,
+        receiveId,
         'text',
         JSON.stringify({ text: reply })
       );
