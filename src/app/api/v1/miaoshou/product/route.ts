@@ -32,17 +32,26 @@ async function callMiaoshouApi(
   method: string,
   params: Record<string, string>
 ): Promise<any> {
-  const appKey = MIAOSHOU_CONFIG.appKey;
-  const appSecret = MIAOSHOU_CONFIG.appSecret;
+  let appKey = MIAOSHOU_CONFIG.appKey;
+  let appSecret = MIAOSHOU_CONFIG.appSecret;
   
+  // 如果环境变量为空，尝试从数据库获取
   if (!appKey || !appSecret) {
-    // 尝试从数据库获取配置
-    const dbConfig = MiaoshouDAL.get();
-    if (dbConfig && (dbConfig as any).appKey) {
-      // 使用数据库中的配置
-    } else {
-      throw new Error('请先在妙手ERP配置中填写AppKey和AppSecret');
+    try {
+      const dbConfig = MiaoshouDAL.get();
+      if (dbConfig) {
+        appKey = dbConfig.appKey || '';
+        appSecret = dbConfig.appSecret || '';
+        console.log('[妙手] 使用数据库配置:', appKey ? '已获取AppKey' : '无AppKey');
+      }
+    } catch (e) {
+      console.error('[妙手] 获取数据库配置失败:', e);
     }
+  }
+  
+  // 如果都没有，返回错误
+  if (!appKey || !appSecret) {
+    throw new Error('请先在妙手ERP配置中填写AppKey和AppSecret');
   }
 
   const timestamp = Date.now().toString();
