@@ -4,12 +4,12 @@ import './globals.css';
 
 export const metadata: Metadata = {
   title: {
-    default: '阿峰｜跨境AI中台',
-    template: '%s | 阿峰｜跨境AI中台',
+    default: '龙掌柜智能运营系统',
+    template: '%s | 龙掌柜智能运营系统',
   },
-  description: '专为TK东南亚跨境场景设计的AI能力中台，提供智能体、模型调用、Prompt管理等核心能力',
+  description: '专为TK东南亚跨境场景设计的智能运营平台，提供智能体、模型调用、Prompt管理等核心能力',
   keywords: [
-    '阿峰',
+    '老板',
     '跨境AI',
     'AI中台',
     'TK东南亚',

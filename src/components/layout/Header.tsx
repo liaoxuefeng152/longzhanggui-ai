@@ -70,7 +70,7 @@ export default function Header({ user, onLogout }: HeaderProps) {
               </Avatar>
               <div className="flex flex-col items-start">
                 <span className="text-[14px] font-medium text-foreground">
-                  {user?.nickname || '阿峰'}
+                  {user?.nickname || '老板'}
                 </span>
                 <span className="text-[11px] text-muted-foreground">
                   超级管理员
