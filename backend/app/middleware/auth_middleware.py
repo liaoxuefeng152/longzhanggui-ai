@@ -32,6 +32,7 @@ PUBLIC_PATHS = [
     "/docs",
     "/redoc",
     "/openapi.json",
+    "/feishu/callback",
 ]
 
 # 正则匹配的公开路径
