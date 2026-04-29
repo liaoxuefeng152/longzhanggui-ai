@@ -636,13 +636,14 @@ export default function CollectionCenterPage() {
                           </Badge>
                         )}
                         <div className="flex gap-1">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleViewDetail(item)}
-                          >
-                            详情
-                          </Button>
+                          <Link href={`/erp/products/${item.id}`}>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                            >
+                              详情
+                            </Button>
+                          </Link>
                           {!item.claimed && (
                             <>
                               <Button
