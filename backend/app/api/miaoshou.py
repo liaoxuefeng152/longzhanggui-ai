@@ -3,13 +3,13 @@
 使用妙手ERP官方API采集商品
 """
 from typing import Optional
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from loguru import logger
 
 from app.services.miaoshou_collection_service import MiaoshouCollectionService, get_miaoshou_service
 
-router = APIRouter(prefix="/api/v1/miaoshou", tags=["妙手ERP"])
+router = APIRouter(prefix="/miaoshou", tags=["妙手ERP"])
 
 
 class CollectRequest(BaseModel):

@@ -32,7 +32,7 @@ export default function MiaoshouConfigPage() {
   const handleSave = async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/miaoshou/config', {
+      const response = await fetch('/api/v1/miaoshou/config', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(config),
@@ -54,7 +54,7 @@ export default function MiaoshouConfigPage() {
   const handleTest = async () => {
     setTesting(true);
     try {
-      const response = await fetch('/api/miaoshou/test', {
+      const response = await fetch('/api/v1/miaoshou/test', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(config),

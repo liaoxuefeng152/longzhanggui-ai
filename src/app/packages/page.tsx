@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import MainLayout from '@/components/layout/MainLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -20,10 +20,13 @@ import { getPackages, Package } from '@/lib/api/packages';
 
 export default function PackagesPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [user, setUser] = useState<any>(null);
   const [packages, setPackages] = useState<Package[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedPackage, setSelectedPackage] = useState<string | null>(null);
+
+  // 检查是否是支付成功返回
 
   // 获取套餐列表
   const fetchPackages = async () => {
@@ -109,7 +112,14 @@ export default function PackagesPage() {
     }
     setUser(JSON.parse(userData));
     fetchPackages();
-  }, [router]);
+
+    // 支付成功提示（从URL参数检查）
+    if (searchParams.get('success') === 'true') {
+      toast.success('支付成功！您的套餐已激活。');
+      // 清理 URL 参数并刷新
+      router.replace('/packages');
+    }
+  }, [router, searchParams]);
 
   // 获取套餐图标
   const getTypeIcon = (name: string) => {
@@ -131,14 +141,21 @@ export default function PackagesPage() {
 
   // 购买套餐
   const handlePurchase = (pkg: Package) => {
-    setSelectedPackage(pkg.id);
-    toast.success(`已选择 ${pkg.name}，即将跳转到支付页面...`);
+    // 免费套餐直接激活
+    if (pkg.price === 0) {
+      toast.success(`已激活 ${pkg.name}！`);
+      return;
+    }
     
-    // 模拟支付流程
-    setTimeout(() => {
-      toast.success(`${pkg.name} 购买成功！`);
-      setSelectedPackage(null);
-    }, 1500);
+    // 跳转到支付页面，传递套餐信息
+    const params = new URLSearchParams({
+      package: pkg.id,
+      name: encodeURIComponent(pkg.name),
+      price: pkg.price.toString(),
+      duration: pkg.duration_days.toString(),
+    });
+    
+    router.push(`/packages/payment?${params.toString()}`);
   };
 
   const handleLogout = async () => {
