@@ -190,14 +190,13 @@ async def invoke_ai(
 @router.post("/chat")
 async def chat(
     request: dict,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    db: AsyncSession = Depends(get_db)
 ):
-    """AI聊天接口 - 供前端AI助手调用"""
+    """AI聊天接口 - 供前端AI助手调用（无需认证）"""
     user_message = request.get("message", "")
     scene = request.get("scene", "agent")
     stream = request.get("stream", True)
-    session_id = request.get("session_id") or f"user_{current_user.id}"
+    session_id = request.get("session_id") or "feishu_user"
     
     if not user_message:
         raise HTTPException(
