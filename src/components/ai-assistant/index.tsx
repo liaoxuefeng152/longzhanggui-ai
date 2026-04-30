@@ -156,17 +156,21 @@ export default function AIAssistant({ onNavigate }: AIAssistantProps) {
   // 拖拽状态 - 使用百分比位置
   const [isDragging, setIsDragging] = useState(false);
   const [isMoved, setIsMoved] = useState(false);
-  const dragRef = useRef<{ startX: number; startY: number } | null>(null);
+  const [position, setPosition] = useState({ right: 24, bottom: 24 });
+  const dragRef = useRef<{ startX: number; startY: number; startRight: number; startBottom: number } | null>(null);
 
   // 拖拽开始
   const handleDragStart = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     setIsDragging(true);
     dragRef.current = {
       startX: e.clientX,
       startY: e.clientY,
+      startRight: position.right,
+      startBottom: position.bottom,
     };
-  }, []);
+  }, [position]);
 
   // 拖拽中
   useEffect(() => {
@@ -179,22 +183,18 @@ export default function AIAssistant({ onNavigate }: AIAssistantProps) {
       const deltaX = e.clientX - dragRef.current.startX;
       const deltaY = e.clientY - dragRef.current.startY;
       
-      // 获取元素当前位置
-      const element = document.getElementById('ai-assistant-float');
-      if (!element) return;
-      
-      const rect = element.getBoundingClientRect();
-      let newRight = window.innerWidth - rect.right - deltaX;
-      let newBottom = window.innerHeight - rect.bottom - deltaY;
+      // 计算新位置
+      let newRight = dragRef.current.startRight - deltaX;
+      let newBottom = dragRef.current.startBottom - deltaY;
       
       // 限制范围
-      newRight = Math.max(24, Math.min(window.innerWidth - rect.width - 24, newRight));
-      newBottom = Math.max(24, Math.min(window.innerHeight - rect.height - 24, newBottom));
+      const maxRight = window.innerWidth - 420 - 24; // 默认宽度420
+      const maxBottom = window.innerHeight - 600 - 24; // 默认高度600
       
-      element.style.right = `${newRight}px`;
-      element.style.bottom = `${newBottom}px`;
-      element.style.left = 'auto';
-      element.style.top = 'auto';
+      newRight = Math.max(24, Math.min(maxRight, newRight));
+      newBottom = Math.max(24, Math.min(maxBottom, newBottom));
+      
+      setPosition({ right: newRight, bottom: newBottom });
     };
 
     const handleMouseUp = () => {
@@ -489,15 +489,13 @@ export default function AIAssistant({ onNavigate }: AIAssistantProps) {
     return (
       <div 
         id="ai-assistant-float"
-        className={`fixed z-50 flex items-center gap-3 ${isDragging ? '' : 'transition-all duration-300'} ${isMoved ? '' : 'right-6 bottom-6'}`}
+        className={`fixed z-50 flex items-center gap-3 cursor-move select-none ${isDragging ? '' : 'transition-all duration-300'}`}
+        style={{ 
+          right: position.right, 
+          bottom: position.bottom 
+        }}
+        onMouseDown={handleDragStart}
       >
-        {/* 拖拽手柄 */}
-        <div 
-          className="cursor-move p-1 hover:bg-slate-100 rounded-lg transition-colors"
-          onMouseDown={handleDragStart}
-        >
-          <GripHorizontal className="h-5 w-5 text-slate-400" />
-        </div>
         {/* 文字提示 */}
         <div className="bg-white text-slate-700 text-sm px-4 py-2.5 rounded-xl shadow-lg border border-slate-100 whitespace-nowrap">
           <span className="font-medium">试试龙掌柜跨境AI全能助手</span>
@@ -505,7 +503,7 @@ export default function AIAssistant({ onNavigate }: AIAssistantProps) {
         </div>
         {/* 悬浮按钮 */}
         <Button
-          onClick={() => setIsOpen(true)}
+          onClick={(e) => { e.stopPropagation(); setIsOpen(true); }}
           className="h-14 w-14 rounded-full shadow-lg bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 relative shrink-0"
           size="icon"
         >
@@ -518,13 +516,23 @@ export default function AIAssistant({ onNavigate }: AIAssistantProps) {
   }
 
   return (
-    <div className={`fixed bottom-6 right-6 bg-background border rounded-2xl shadow-2xl z-50 flex flex-col overflow-hidden transition-all duration-300 ${
-      isExpanded 
-        ? 'w-[800px] h-[700px]' 
-        : 'w-[420px] h-[600px]'
-    }`}>
-      {/* Header */}
-      <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white p-4 flex items-center justify-between shrink-0">
+    <div 
+      className={`fixed z-50 flex flex-col overflow-hidden transition-all duration-300 bg-background border rounded-2xl shadow-2xl ${
+        isDragging ? '' : 'transition-all duration-300'
+      }`}
+      style={{ 
+        right: position.right, 
+        bottom: position.bottom,
+        width: isExpanded ? '800px' : '420px',
+        height: isExpanded ? '700px' : '600px',
+      }}
+    >
+      {/* Header - 整个头部作为拖拽区域 */}
+      <div 
+        className="bg-gradient-to-r from-blue-500 to-purple-600 text-white p-4 flex items-center justify-between shrink-0 cursor-move select-none rounded-t-2xl"
+        onMouseDown={handleDragStart}
+        onDoubleClick={() => setIsExpanded(!isExpanded)}
+      >
         <div className="flex items-center gap-3">
           <img 
             src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix&backgroundColor=ffdfbf" 
@@ -537,12 +545,14 @@ export default function AIAssistant({ onNavigate }: AIAssistantProps) {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          {/* 拖拽提示 */}
+          <span className="text-xs text-white/60 mr-2">拖动移动</span>
           {/* 放大/缩小按钮 */}
           <Button
             variant="ghost"
             size="icon"
             className="h-8 w-8 text-white hover:bg-white/20"
-            onClick={() => setIsExpanded(!isExpanded)}
+            onClick={(e) => { e.stopPropagation(); setIsExpanded(!isExpanded); }}
             title={isExpanded ? '缩小窗口' : '放大窗口'}
           >
             {isExpanded ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
@@ -551,7 +561,7 @@ export default function AIAssistant({ onNavigate }: AIAssistantProps) {
             variant="ghost"
             size="icon"
             className="h-8 w-8 text-white hover:bg-white/20"
-            onClick={() => setIsMinimized(!isMinimized)}
+            onClick={(e) => { e.stopPropagation(); setIsMinimized(!isMinimized); }}
           >
             {isMinimized ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
           </Button>
@@ -559,7 +569,7 @@ export default function AIAssistant({ onNavigate }: AIAssistantProps) {
             variant="ghost"
             size="icon"
             className="h-8 w-8 text-white hover:bg-white/20"
-            onClick={() => setIsOpen(false)}
+            onClick={(e) => { e.stopPropagation(); setIsOpen(false); }}
           >
             <X className="h-4 w-4" />
           </Button>
