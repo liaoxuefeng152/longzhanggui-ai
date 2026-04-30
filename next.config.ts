@@ -71,7 +71,8 @@ const nextConfig: NextConfig = {
       { source: '/api/v1/tools/ads/create', destination: BASE + '/api/v1/ai/create-ad' },
       
       // ===== 通用AI API =====
-      { source: '/api/ai/:path*', destination: BASE + '/api/v1/ai/:path*' },
+      // 注意：/api/ai/process-image 由 Next.js 路由处理 (src/app/api/ai/process-image/route.ts)
+      // 其他 /api/v1/ai/* 路径代理到后端
       { source: '/api/v1/ai/:path*', destination: BASE + '/api/v1/ai/:path*' },
       
       // ===== ERP系统API - 前端本地处理，不代理到后端 =====
