@@ -1,0 +1,32 @@
+#!/bin/bash
+
+# ==========================================
+# 阿里云 ECS - Git 自动部署脚本
+# 安装到 /root/zhuangxiu-agent/.git/hooks/post-receive
+# ==========================================
+
+set -e
+
+GIT_DIR="/root/zhuangxiu-agent"
+APP_DIR="/root/zhuangxiu-agent"
+LOG_FILE="/var/log/git-deploy.log"
+
+echo "===== $(date) - Git push received =====" >> $LOG_FILE
+
+cd $GIT_DIR
+
+# 拉取最新代码
+echo "Pulling latest code..." >> $LOG_FILE
+git pull origin main >> $LOG_FILE 2>&1
+
+# 停止旧容器
+echo "Stopping old containers..." >> $LOG_FILE
+docker-compose -f docker-compose.prod.yml down >> $LOG_FILE 2>&1 || true
+
+# 构建并启动新容器
+echo "Building and starting containers..." >> $LOG_FILE
+docker-compose -f docker-compose.prod.yml build --no-cache >> $LOG_FILE 2>&1
+docker-compose -f docker-compose.prod.yml up -d >> $LOG_FILE 2>&1
+
+echo "Deployment completed at $(date)" >> $LOG_FILE
+echo "===== Deployment finished =====" >> $LOG_FILE

@@ -90691,7 +90691,7 @@
   {
     "timestamp": "2026-04-26T05:37:57.555Z",
     "requestId": "331123",
-    "url": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F1327f8ca-4132-11f1-8fd2-00163e1c14f3.jpg?OSSAccessKeyId=LTAI5tSEGjGp5wixZgHLc3bV&Expires=4993853875&Signature=kI4VfFu%2BcyX9NzHNeRj0%2FS%2FWj8I%3D",
+    "url": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F1327f8ca-4132-11f1-8fd2-00163e1c14f3.jpg?OSSAccessKeyId=REMOVED&Expires=4993853875&Signature=REMOVED",
     "method": "GET",
     "type": "image",
     "tabId": 4978227,
@@ -90854,15 +90854,15 @@
         {
           "result": "success",
           "oriImageUrl": "https://cbu01.alicdn.com/img/ibank/O1CN01ukCq8L1i88HHmZzsY_!!2872284367-0-cib.jpg",
-          "newImageUrl": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F1327f8ca-4132-11f1-8fd2-00163e1c14f3.jpg?OSSAccessKeyId=LTAI5tSEGjGp5wixZgHLc3bV&Expires=4993853875&Signature=kI4VfFu%2BcyX9NzHNeRj0%2FS%2FWj8I%3D",
+          "newImageUrl": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F1327f8ca-4132-11f1-8fd2-00163e1c14f3.jpg?OSSAccessKeyId=REMOVED&Expires=4993853875&Signature=REMOVED",
           "pictureEditor": "",
           "oriRet": {
             "result": "success",
-            "url": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F1327f8ca-4132-11f1-8fd2-00163e1c14f3.jpg?OSSAccessKeyId=LTAI5tSEGjGp5wixZgHLc3bV&Expires=4993853875&Signature=kI4VfFu%2BcyX9NzHNeRj0%2FS%2FWj8I%3D",
+            "url": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F1327f8ca-4132-11f1-8fd2-00163e1c14f3.jpg?OSSAccessKeyId=REMOVED&Expires=4993853875&Signature=REMOVED",
             "apiResp": {
               "result": "success",
               "data": {
-                "imageUrl": "https://aib-image.oss-ap-southeast-1.aliyuncs.com/tufan%2F1327f8ca-4132-11f1-8fd2-00163e1c14f3.jpg?OSSAccessKeyId=LTAI5tSEGjGp5wixZgHLc3bV&Expires=4993853875&Signature=kI4VfFu%2BcyX9NzHNeRj0%2FS%2FWj8I%3D",
+                "imageUrl": "https://aib-image.oss-ap-southeast-1.aliyuncs.com/tufan%2F1327f8ca-4132-11f1-8fd2-00163e1c14f3.jpg?OSSAccessKeyId=REMOVED&Expires=4993853875&Signature=REMOVED",
                 "imageEditorId": "130669da-4132-11f1-8fd2-00163e1c14f3"
               },
               "requestId": "0b1ffcad17771818725311327ebbe4",
@@ -90878,7 +90878,7 @@
             "validCache": false,
             "oriUrl": "https://cbu01.alicdn.com/img/ibank/O1CN01ukCq8L1i88HHmZzsY_!!2872284367-0-cib.jpg",
             "oriImageUrl": "https://cbu01.alicdn.com/img/ibank/O1CN01ukCq8L1i88HHmZzsY_!!2872284367-0-cib.jpg",
-            "newImageUrl": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F1327f8ca-4132-11f1-8fd2-00163e1c14f3.jpg?OSSAccessKeyId=LTAI5tSEGjGp5wixZgHLc3bV&Expires=4993853875&Signature=kI4VfFu%2BcyX9NzHNeRj0%2FS%2FWj8I%3D",
+            "newImageUrl": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F1327f8ca-4132-11f1-8fd2-00163e1c14f3.jpg?OSSAccessKeyId=REMOVED&Expires=4993853875&Signature=REMOVED",
             "mcUrl": "http://api.mc-erp-intra-web.91miaoshou.com/inner_open/translate/translate_image?appAccountId=13257815&imageUrlBase64=aHR0cHM6Ly9jYnUwMS5hbGljZG4uY29tL2ltZy9pYmFuay9PMUNOMDF1a0NxOEwxaTg4SEhtWnpzWV8hITI4NzIyODQzNjctMC1jaWIuanBn&sourceLang=zh&targetLang=th&translatePlatform=aeAi&isFromWeb=1&fromApp=mserp&needPictureEditor=1&aiVersion=2&translatingTextInTheProduct=1&translatingBrandInTheProduct=1",
             "pictureEditor": ""
           }
@@ -90886,15 +90886,15 @@
         {
           "result": "success",
           "oriImageUrl": "https://cbu01.alicdn.com/img/ibank/O1CN01MKjNHp1i88HKjhJ2c_!!2872284367-0-cib.jpg",
-          "newImageUrl": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F134a855c-4132-11f1-acef-00163e17c944.jpg?OSSAccessKeyId=LTAI5tSEGjGp5wixZgHLc3bV&Expires=4993853875&Signature=GgyuR9aSJx9giJ43jUnFUrBBouc%3D",
+          "newImageUrl": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F134a855c-4132-11f1-acef-00163e17c944.jpg?OSSAccessKeyId=REMOVED&Expires=4993853875&Signature=REMOVED",
           "pictureEditor": "",
           "oriRet": {
             "result": "success",
-            "url": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F134a855c-4132-11f1-acef-00163e17c944.jpg?OSSAccessKeyId=LTAI5tSEGjGp5wixZgHLc3bV&Expires=4993853875&Signature=GgyuR9aSJx9giJ43jUnFUrBBouc%3D",
+            "url": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F134a855c-4132-11f1-acef-00163e17c944.jpg?OSSAccessKeyId=REMOVED&Expires=4993853875&Signature=REMOVED",
             "apiResp": {
               "result": "success",
               "data": {
-                "imageUrl": "https://aib-image.oss-ap-southeast-1.aliyuncs.com/tufan%2F134a855c-4132-11f1-acef-00163e17c944.jpg?OSSAccessKeyId=LTAI5tSEGjGp5wixZgHLc3bV&Expires=4993853875&Signature=GgyuR9aSJx9giJ43jUnFUrBBouc%3D",
+                "imageUrl": "https://aib-image.oss-ap-southeast-1.aliyuncs.com/tufan%2F134a855c-4132-11f1-acef-00163e17c944.jpg?OSSAccessKeyId=REMOVED&Expires=4993853875&Signature=REMOVED",
                 "imageEditorId": "130bcbe6-4132-11f1-acef-00163e17c944"
               },
               "requestId": "213db7b317771818725692506ef803",
@@ -90910,7 +90910,7 @@
             "validCache": false,
             "oriUrl": "https://cbu01.alicdn.com/img/ibank/O1CN01MKjNHp1i88HKjhJ2c_!!2872284367-0-cib.jpg",
             "oriImageUrl": "https://cbu01.alicdn.com/img/ibank/O1CN01MKjNHp1i88HKjhJ2c_!!2872284367-0-cib.jpg",
-            "newImageUrl": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F134a855c-4132-11f1-acef-00163e17c944.jpg?OSSAccessKeyId=LTAI5tSEGjGp5wixZgHLc3bV&Expires=4993853875&Signature=GgyuR9aSJx9giJ43jUnFUrBBouc%3D",
+            "newImageUrl": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F134a855c-4132-11f1-acef-00163e17c944.jpg?OSSAccessKeyId=REMOVED&Expires=4993853875&Signature=REMOVED",
             "mcUrl": "http://api.mc-erp-intra-web.91miaoshou.com/inner_open/translate/translate_image?appAccountId=13257815&imageUrlBase64=aHR0cHM6Ly9jYnUwMS5hbGljZG4uY29tL2ltZy9pYmFuay9PMUNOMDFNS2pOSHAxaTg4SEtqaEoyY18hITI4NzIyODQzNjctMC1jaWIuanBn&sourceLang=zh&targetLang=th&translatePlatform=aeAi&isFromWeb=1&fromApp=mserp&needPictureEditor=1&aiVersion=2&translatingTextInTheProduct=1&translatingBrandInTheProduct=1",
             "pictureEditor": ""
           }
@@ -90918,15 +90918,15 @@
         {
           "result": "success",
           "oriImageUrl": "https://cbu01.alicdn.com/img/ibank/O1CN01M2Vcte1i88HK1fkgW_!!2872284367-0-cib.jpg",
-          "newImageUrl": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F13cfe396-4132-11f1-bc48-00163e13d89b.jpg?OSSAccessKeyId=LTAI5tSEGjGp5wixZgHLc3bV&Expires=4993853876&Signature=swwUJweCbSonIXCNxCu7e9R%2FTzU%3D",
+          "newImageUrl": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F13cfe396-4132-11f1-bc48-00163e13d89b.jpg?OSSAccessKeyId=REMOVED&Expires=4993853876&Signature=REMOVED",
           "pictureEditor": "",
           "oriRet": {
             "result": "success",
-            "url": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F13cfe396-4132-11f1-bc48-00163e13d89b.jpg?OSSAccessKeyId=LTAI5tSEGjGp5wixZgHLc3bV&Expires=4993853876&Signature=swwUJweCbSonIXCNxCu7e9R%2FTzU%3D",
+            "url": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F13cfe396-4132-11f1-bc48-00163e13d89b.jpg?OSSAccessKeyId=REMOVED&Expires=4993853876&Signature=REMOVED",
             "apiResp": {
               "result": "success",
               "data": {
-                "imageUrl": "https://aib-image.oss-ap-southeast-1.aliyuncs.com/tufan%2F13cfe396-4132-11f1-bc48-00163e13d89b.jpg?OSSAccessKeyId=LTAI5tSEGjGp5wixZgHLc3bV&Expires=4993853876&Signature=swwUJweCbSonIXCNxCu7e9R%2FTzU%3D",
+                "imageUrl": "https://aib-image.oss-ap-southeast-1.aliyuncs.com/tufan%2F13cfe396-4132-11f1-bc48-00163e13d89b.jpg?OSSAccessKeyId=REMOVED&Expires=4993853876&Signature=REMOVED",
                 "imageEditorId": "13ae75c6-4132-11f1-bc48-00163e13d89b"
               },
               "requestId": "2136637717771818725164677ec97e",
@@ -90942,7 +90942,7 @@
             "validCache": false,
             "oriUrl": "https://cbu01.alicdn.com/img/ibank/O1CN01M2Vcte1i88HK1fkgW_!!2872284367-0-cib.jpg",
             "oriImageUrl": "https://cbu01.alicdn.com/img/ibank/O1CN01M2Vcte1i88HK1fkgW_!!2872284367-0-cib.jpg",
-            "newImageUrl": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F13cfe396-4132-11f1-bc48-00163e13d89b.jpg?OSSAccessKeyId=LTAI5tSEGjGp5wixZgHLc3bV&Expires=4993853876&Signature=swwUJweCbSonIXCNxCu7e9R%2FTzU%3D",
+            "newImageUrl": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F13cfe396-4132-11f1-bc48-00163e13d89b.jpg?OSSAccessKeyId=REMOVED&Expires=4993853876&Signature=REMOVED",
             "mcUrl": "http://api.mc-erp-intra-web.91miaoshou.com/inner_open/translate/translate_image?appAccountId=13257815&imageUrlBase64=aHR0cHM6Ly9jYnUwMS5hbGljZG4uY29tL2ltZy9pYmFuay9PMUNOMDFNMlZjdGUxaTg4SEsxZmtnV18hITI4NzIyODQzNjctMC1jaWIuanBn&sourceLang=zh&targetLang=th&translatePlatform=aeAi&isFromWeb=1&fromApp=mserp&needPictureEditor=1&aiVersion=2&translatingTextInTheProduct=1&translatingBrandInTheProduct=1",
             "pictureEditor": ""
           }
@@ -90950,15 +90950,15 @@
         {
           "result": "success",
           "oriImageUrl": "https://cbu01.alicdn.com/img/ibank/O1CN01dTYcHW1i88HM6lFt4_!!2872284367-0-cib.jpg",
-          "newImageUrl": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F13852860-4132-11f1-905f-00163e1e52dd.jpg?OSSAccessKeyId=LTAI5tSEGjGp5wixZgHLc3bV&Expires=4993853875&Signature=4FsrfI%2Bzh4FW3K9eskpf0Q%2Bm6oY%3D",
+          "newImageUrl": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F13852860-4132-11f1-905f-00163e1e52dd.jpg?OSSAccessKeyId=REMOVED&Expires=4993853875&Signature=REMOVED",
           "pictureEditor": "",
           "oriRet": {
             "result": "success",
-            "url": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F13852860-4132-11f1-905f-00163e1e52dd.jpg?OSSAccessKeyId=LTAI5tSEGjGp5wixZgHLc3bV&Expires=4993853875&Signature=4FsrfI%2Bzh4FW3K9eskpf0Q%2Bm6oY%3D",
+            "url": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F13852860-4132-11f1-905f-00163e1e52dd.jpg?OSSAccessKeyId=REMOVED&Expires=4993853875&Signature=REMOVED",
             "apiResp": {
               "result": "success",
               "data": {
-                "imageUrl": "https://aib-image.oss-ap-southeast-1.aliyuncs.com/tufan%2F13852860-4132-11f1-905f-00163e1e52dd.jpg?OSSAccessKeyId=LTAI5tSEGjGp5wixZgHLc3bV&Expires=4993853875&Signature=4FsrfI%2Bzh4FW3K9eskpf0Q%2Bm6oY%3D",
+                "imageUrl": "https://aib-image.oss-ap-southeast-1.aliyuncs.com/tufan%2F13852860-4132-11f1-905f-00163e1e52dd.jpg?OSSAccessKeyId=REMOVED&Expires=4993853875&Signature=REMOVED",
                 "imageEditorId": "1340a348-4132-11f1-905f-00163e1e52dd"
               },
               "requestId": "0b1ffcad17771818725053339ebba2",
@@ -90974,7 +90974,7 @@
             "validCache": false,
             "oriUrl": "https://cbu01.alicdn.com/img/ibank/O1CN01dTYcHW1i88HM6lFt4_!!2872284367-0-cib.jpg",
             "oriImageUrl": "https://cbu01.alicdn.com/img/ibank/O1CN01dTYcHW1i88HM6lFt4_!!2872284367-0-cib.jpg",
-            "newImageUrl": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F13852860-4132-11f1-905f-00163e1e52dd.jpg?OSSAccessKeyId=LTAI5tSEGjGp5wixZgHLc3bV&Expires=4993853875&Signature=4FsrfI%2Bzh4FW3K9eskpf0Q%2Bm6oY%3D",
+            "newImageUrl": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F13852860-4132-11f1-905f-00163e1e52dd.jpg?OSSAccessKeyId=REMOVED&Expires=4993853875&Signature=REMOVED",
             "mcUrl": "http://api.mc-erp-intra-web.91miaoshou.com/inner_open/translate/translate_image?appAccountId=13257815&imageUrlBase64=aHR0cHM6Ly9jYnUwMS5hbGljZG4uY29tL2ltZy9pYmFuay9PMUNOMDFkVFljSFcxaTg4SE02bEZ0NF8hITI4NzIyODQzNjctMC1jaWIuanBn&sourceLang=zh&targetLang=th&translatePlatform=aeAi&isFromWeb=1&fromApp=mserp&needPictureEditor=1&aiVersion=2&translatingTextInTheProduct=1&translatingBrandInTheProduct=1",
             "pictureEditor": ""
           }
@@ -90982,15 +90982,15 @@
         {
           "result": "success",
           "oriImageUrl": "https://cbu01.alicdn.com/img/ibank/O1CN01QxkGu91i88HM7aY2F_!!2872284367-0-cib.jpg",
-          "newImageUrl": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F13fbe374-4132-11f1-aaba-00163e1a4dbf.jpg?OSSAccessKeyId=LTAI5tSEGjGp5wixZgHLc3bV&Expires=4993853876&Signature=O6a4%2FgDjVa8fmWAQ71NqgVjBfSM%3D",
+          "newImageUrl": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F13fbe374-4132-11f1-aaba-00163e1a4dbf.jpg?OSSAccessKeyId=REMOVED&Expires=4993853876&Signature=REMOVED",
           "pictureEditor": "",
           "oriRet": {
             "result": "success",
-            "url": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F13fbe374-4132-11f1-aaba-00163e1a4dbf.jpg?OSSAccessKeyId=LTAI5tSEGjGp5wixZgHLc3bV&Expires=4993853876&Signature=O6a4%2FgDjVa8fmWAQ71NqgVjBfSM%3D",
+            "url": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F13fbe374-4132-11f1-aaba-00163e1a4dbf.jpg?OSSAccessKeyId=REMOVED&Expires=4993853876&Signature=REMOVED",
             "apiResp": {
               "result": "success",
               "data": {
-                "imageUrl": "https://aib-image.oss-ap-southeast-1.aliyuncs.com/tufan%2F13fbe374-4132-11f1-aaba-00163e1a4dbf.jpg?OSSAccessKeyId=LTAI5tSEGjGp5wixZgHLc3bV&Expires=4993853876&Signature=O6a4%2FgDjVa8fmWAQ71NqgVjBfSM%3D",
+                "imageUrl": "https://aib-image.oss-ap-southeast-1.aliyuncs.com/tufan%2F13fbe374-4132-11f1-aaba-00163e1a4dbf.jpg?OSSAccessKeyId=REMOVED&Expires=4993853876&Signature=REMOVED",
                 "imageEditorId": "13a5e528-4132-11f1-aaba-00163e1a4dbf"
               },
               "requestId": "216661c117771818725257715e1691",
@@ -91006,7 +91006,7 @@
             "validCache": false,
             "oriUrl": "https://cbu01.alicdn.com/img/ibank/O1CN01QxkGu91i88HM7aY2F_!!2872284367-0-cib.jpg",
             "oriImageUrl": "https://cbu01.alicdn.com/img/ibank/O1CN01QxkGu91i88HM7aY2F_!!2872284367-0-cib.jpg",
-            "newImageUrl": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F13fbe374-4132-11f1-aaba-00163e1a4dbf.jpg?OSSAccessKeyId=LTAI5tSEGjGp5wixZgHLc3bV&Expires=4993853876&Signature=O6a4%2FgDjVa8fmWAQ71NqgVjBfSM%3D",
+            "newImageUrl": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F13fbe374-4132-11f1-aaba-00163e1a4dbf.jpg?OSSAccessKeyId=REMOVED&Expires=4993853876&Signature=REMOVED",
             "mcUrl": "http://api.mc-erp-intra-web.91miaoshou.com/inner_open/translate/translate_image?appAccountId=13257815&imageUrlBase64=aHR0cHM6Ly9jYnUwMS5hbGljZG4uY29tL2ltZy9pYmFuay9PMUNOMDFReGtHdTkxaTg4SE03YVkyRl8hITI4NzIyODQzNjctMC1jaWIuanBn&sourceLang=zh&targetLang=th&translatePlatform=aeAi&isFromWeb=1&fromApp=mserp&needPictureEditor=1&aiVersion=2&translatingTextInTheProduct=1&translatingBrandInTheProduct=1",
             "pictureEditor": ""
           }
@@ -91014,15 +91014,15 @@
         {
           "result": "success",
           "oriImageUrl": "https://cbu01.alicdn.com/img/ibank/O1CN01b55RBD1i88HBCzGTh_!!2872284367-0-cib.jpg",
-          "newImageUrl": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F14470aca-4132-11f1-aba5-00163e23cb89.jpg?OSSAccessKeyId=LTAI5tSEGjGp5wixZgHLc3bV&Expires=4993853877&Signature=FaNFo5WHmV2wyHMpc0ZCk81FnUE%3D",
+          "newImageUrl": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F14470aca-4132-11f1-aba5-00163e23cb89.jpg?OSSAccessKeyId=REMOVED&Expires=4993853877&Signature=REMOVED",
           "pictureEditor": "",
           "oriRet": {
             "result": "success",
-            "url": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F14470aca-4132-11f1-aba5-00163e23cb89.jpg?OSSAccessKeyId=LTAI5tSEGjGp5wixZgHLc3bV&Expires=4993853877&Signature=FaNFo5WHmV2wyHMpc0ZCk81FnUE%3D",
+            "url": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F14470aca-4132-11f1-aba5-00163e23cb89.jpg?OSSAccessKeyId=REMOVED&Expires=4993853877&Signature=REMOVED",
             "apiResp": {
               "result": "success",
               "data": {
-                "imageUrl": "https://aib-image.oss-ap-southeast-1.aliyuncs.com/tufan%2F14470aca-4132-11f1-aba5-00163e23cb89.jpg?OSSAccessKeyId=LTAI5tSEGjGp5wixZgHLc3bV&Expires=4993853877&Signature=FaNFo5WHmV2wyHMpc0ZCk81FnUE%3D",
+                "imageUrl": "https://aib-image.oss-ap-southeast-1.aliyuncs.com/tufan%2F14470aca-4132-11f1-aba5-00163e23cb89.jpg?OSSAccessKeyId=REMOVED&Expires=4993853877&Signature=REMOVED",
                 "imageEditorId": "140dcd0a-4132-11f1-aba5-00163e23cb89"
               },
               "requestId": "213db7b317771818725242505ef803",
@@ -91038,7 +91038,7 @@
             "validCache": false,
             "oriUrl": "https://cbu01.alicdn.com/img/ibank/O1CN01b55RBD1i88HBCzGTh_!!2872284367-0-cib.jpg",
             "oriImageUrl": "https://cbu01.alicdn.com/img/ibank/O1CN01b55RBD1i88HBCzGTh_!!2872284367-0-cib.jpg",
-            "newImageUrl": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F14470aca-4132-11f1-aba5-00163e23cb89.jpg?OSSAccessKeyId=LTAI5tSEGjGp5wixZgHLc3bV&Expires=4993853877&Signature=FaNFo5WHmV2wyHMpc0ZCk81FnUE%3D",
+            "newImageUrl": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F14470aca-4132-11f1-aba5-00163e23cb89.jpg?OSSAccessKeyId=REMOVED&Expires=4993853877&Signature=REMOVED",
             "mcUrl": "http://api.mc-erp-intra-web.91miaoshou.com/inner_open/translate/translate_image?appAccountId=13257815&imageUrlBase64=aHR0cHM6Ly9jYnUwMS5hbGljZG4uY29tL2ltZy9pYmFuay9PMUNOMDFiNTVSQkQxaTg4SEJDekdUaF8hITI4NzIyODQzNjctMC1jaWIuanBn&sourceLang=zh&targetLang=th&translatePlatform=aeAi&isFromWeb=1&fromApp=mserp&needPictureEditor=1&aiVersion=2&translatingTextInTheProduct=1&translatingBrandInTheProduct=1",
             "pictureEditor": ""
           }
@@ -91091,7 +91091,7 @@
       "type": "formData",
       "data": {
         "transferUrls[0]": [
-          "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F1327f8ca-4132-11f1-8fd2-00163e1c14f3.jpg?OSSAccessKeyId=LTAI5tSEGjGp5wixZgHLc3bV&Expires=4993853875&Signature=kI4VfFu%2BcyX9NzHNeRj0%2FS%2FWj8I%3D"
+          "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F1327f8ca-4132-11f1-8fd2-00163e1c14f3.jpg?OSSAccessKeyId=REMOVED&Expires=4993853875&Signature=REMOVED"
         ],
         "translatePlatform": [
           "aeAi"
@@ -91258,7 +91258,7 @@
       "type": "formData",
       "data": {
         "transferUrls[0]": [
-          "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F134a855c-4132-11f1-acef-00163e17c944.jpg?OSSAccessKeyId=LTAI5tSEGjGp5wixZgHLc3bV&Expires=4993853875&Signature=GgyuR9aSJx9giJ43jUnFUrBBouc%3D"
+          "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F134a855c-4132-11f1-acef-00163e17c944.jpg?OSSAccessKeyId=REMOVED&Expires=4993853875&Signature=REMOVED"
         ],
         "translatePlatform": [
           "aeAi"
@@ -91347,11 +91347,11 @@
     "responseData": {
       "result": "success",
       "urlAndTransferMap": {
-        "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F1327f8ca-4132-11f1-8fd2-00163e1c14f3.jpg?OSSAccessKeyId=LTAI5tSEGjGp5wixZgHLc3bV&Expires=4993853875&Signature=kI4VfFu%2BcyX9NzHNeRj0%2FS%2FWj8I%3D": {
-          "newUrl": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F1327f8ca-4132-11f1-8fd2-00163e1c14f3.jpg?OSSAccessKeyId=LTAI5tSEGjGp5wixZgHLc3bV&Expires=4993853875&Signature=kI4VfFu%2BcyX9NzHNeRj0%2FS%2FWj8I%3D",
+        "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F1327f8ca-4132-11f1-8fd2-00163e1c14f3.jpg?OSSAccessKeyId=REMOVED&Expires=4993853875&Signature=REMOVED": {
+          "newUrl": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F1327f8ca-4132-11f1-8fd2-00163e1c14f3.jpg?OSSAccessKeyId=REMOVED&Expires=4993853875&Signature=REMOVED",
           "transferRet": {
             "result": "success",
-            "url": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F1327f8ca-4132-11f1-8fd2-00163e1c14f3.jpg?OSSAccessKeyId=LTAI5tSEGjGp5wixZgHLc3bV&Expires=4993853875&Signature=kI4VfFu%2BcyX9NzHNeRj0%2FS%2FWj8I%3D"
+            "url": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F1327f8ca-4132-11f1-8fd2-00163e1c14f3.jpg?OSSAccessKeyId=REMOVED&Expires=4993853875&Signature=REMOVED"
           }
         }
       }
@@ -91395,7 +91395,7 @@
       "type": "formData",
       "data": {
         "transferUrls[0]": [
-          "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F13852860-4132-11f1-905f-00163e1e52dd.jpg?OSSAccessKeyId=LTAI5tSEGjGp5wixZgHLc3bV&Expires=4993853875&Signature=4FsrfI%2Bzh4FW3K9eskpf0Q%2Bm6oY%3D"
+          "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F13852860-4132-11f1-905f-00163e1e52dd.jpg?OSSAccessKeyId=REMOVED&Expires=4993853875&Signature=REMOVED"
         ],
         "translatePlatform": [
           "aeAi"
@@ -91484,11 +91484,11 @@
     "responseData": {
       "result": "success",
       "urlAndTransferMap": {
-        "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F134a855c-4132-11f1-acef-00163e17c944.jpg?OSSAccessKeyId=LTAI5tSEGjGp5wixZgHLc3bV&Expires=4993853875&Signature=GgyuR9aSJx9giJ43jUnFUrBBouc%3D": {
-          "newUrl": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F134a855c-4132-11f1-acef-00163e17c944.jpg?OSSAccessKeyId=LTAI5tSEGjGp5wixZgHLc3bV&Expires=4993853875&Signature=GgyuR9aSJx9giJ43jUnFUrBBouc%3D",
+        "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F134a855c-4132-11f1-acef-00163e17c944.jpg?OSSAccessKeyId=REMOVED&Expires=4993853875&Signature=REMOVED": {
+          "newUrl": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F134a855c-4132-11f1-acef-00163e17c944.jpg?OSSAccessKeyId=REMOVED&Expires=4993853875&Signature=REMOVED",
           "transferRet": {
             "result": "success",
-            "url": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F134a855c-4132-11f1-acef-00163e17c944.jpg?OSSAccessKeyId=LTAI5tSEGjGp5wixZgHLc3bV&Expires=4993853875&Signature=GgyuR9aSJx9giJ43jUnFUrBBouc%3D"
+            "url": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F134a855c-4132-11f1-acef-00163e17c944.jpg?OSSAccessKeyId=REMOVED&Expires=4993853875&Signature=REMOVED"
           }
         }
       }
@@ -91509,7 +91509,7 @@
       "type": "formData",
       "data": {
         "transferUrls[0]": [
-          "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F13cfe396-4132-11f1-bc48-00163e13d89b.jpg?OSSAccessKeyId=LTAI5tSEGjGp5wixZgHLc3bV&Expires=4993853876&Signature=swwUJweCbSonIXCNxCu7e9R%2FTzU%3D"
+          "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F13cfe396-4132-11f1-bc48-00163e13d89b.jpg?OSSAccessKeyId=REMOVED&Expires=4993853876&Signature=REMOVED"
         ],
         "translatePlatform": [
           "aeAi"
@@ -91598,11 +91598,11 @@
     "responseData": {
       "result": "success",
       "urlAndTransferMap": {
-        "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F13852860-4132-11f1-905f-00163e1e52dd.jpg?OSSAccessKeyId=LTAI5tSEGjGp5wixZgHLc3bV&Expires=4993853875&Signature=4FsrfI%2Bzh4FW3K9eskpf0Q%2Bm6oY%3D": {
-          "newUrl": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F13852860-4132-11f1-905f-00163e1e52dd.jpg?OSSAccessKeyId=LTAI5tSEGjGp5wixZgHLc3bV&Expires=4993853875&Signature=4FsrfI%2Bzh4FW3K9eskpf0Q%2Bm6oY%3D",
+        "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F13852860-4132-11f1-905f-00163e1e52dd.jpg?OSSAccessKeyId=REMOVED&Expires=4993853875&Signature=REMOVED": {
+          "newUrl": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F13852860-4132-11f1-905f-00163e1e52dd.jpg?OSSAccessKeyId=REMOVED&Expires=4993853875&Signature=REMOVED",
           "transferRet": {
             "result": "success",
-            "url": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F13852860-4132-11f1-905f-00163e1e52dd.jpg?OSSAccessKeyId=LTAI5tSEGjGp5wixZgHLc3bV&Expires=4993853875&Signature=4FsrfI%2Bzh4FW3K9eskpf0Q%2Bm6oY%3D"
+            "url": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F13852860-4132-11f1-905f-00163e1e52dd.jpg?OSSAccessKeyId=REMOVED&Expires=4993853875&Signature=REMOVED"
           }
         }
       }
@@ -91623,7 +91623,7 @@
       "type": "formData",
       "data": {
         "transferUrls[0]": [
-          "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F14470aca-4132-11f1-aba5-00163e23cb89.jpg?OSSAccessKeyId=LTAI5tSEGjGp5wixZgHLc3bV&Expires=4993853877&Signature=FaNFo5WHmV2wyHMpc0ZCk81FnUE%3D"
+          "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F14470aca-4132-11f1-aba5-00163e23cb89.jpg?OSSAccessKeyId=REMOVED&Expires=4993853877&Signature=REMOVED"
         ],
         "translatePlatform": [
           "aeAi"
@@ -91712,11 +91712,11 @@
     "responseData": {
       "result": "success",
       "urlAndTransferMap": {
-        "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F13cfe396-4132-11f1-bc48-00163e13d89b.jpg?OSSAccessKeyId=LTAI5tSEGjGp5wixZgHLc3bV&Expires=4993853876&Signature=swwUJweCbSonIXCNxCu7e9R%2FTzU%3D": {
-          "newUrl": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F13cfe396-4132-11f1-bc48-00163e13d89b.jpg?OSSAccessKeyId=LTAI5tSEGjGp5wixZgHLc3bV&Expires=4993853876&Signature=swwUJweCbSonIXCNxCu7e9R%2FTzU%3D",
+        "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F13cfe396-4132-11f1-bc48-00163e13d89b.jpg?OSSAccessKeyId=REMOVED&Expires=4993853876&Signature=REMOVED": {
+          "newUrl": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F13cfe396-4132-11f1-bc48-00163e13d89b.jpg?OSSAccessKeyId=REMOVED&Expires=4993853876&Signature=REMOVED",
           "transferRet": {
             "result": "success",
-            "url": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F13cfe396-4132-11f1-bc48-00163e13d89b.jpg?OSSAccessKeyId=LTAI5tSEGjGp5wixZgHLc3bV&Expires=4993853876&Signature=swwUJweCbSonIXCNxCu7e9R%2FTzU%3D"
+            "url": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F13cfe396-4132-11f1-bc48-00163e13d89b.jpg?OSSAccessKeyId=REMOVED&Expires=4993853876&Signature=REMOVED"
           }
         }
       }
@@ -91737,7 +91737,7 @@
       "type": "formData",
       "data": {
         "transferUrls[0]": [
-          "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F13fbe374-4132-11f1-aaba-00163e1a4dbf.jpg?OSSAccessKeyId=LTAI5tSEGjGp5wixZgHLc3bV&Expires=4993853876&Signature=O6a4%2FgDjVa8fmWAQ71NqgVjBfSM%3D"
+          "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F13fbe374-4132-11f1-aaba-00163e1a4dbf.jpg?OSSAccessKeyId=REMOVED&Expires=4993853876&Signature=REMOVED"
         ],
         "translatePlatform": [
           "aeAi"
@@ -91826,11 +91826,11 @@
     "responseData": {
       "result": "success",
       "urlAndTransferMap": {
-        "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F14470aca-4132-11f1-aba5-00163e23cb89.jpg?OSSAccessKeyId=LTAI5tSEGjGp5wixZgHLc3bV&Expires=4993853877&Signature=FaNFo5WHmV2wyHMpc0ZCk81FnUE%3D": {
-          "newUrl": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F14470aca-4132-11f1-aba5-00163e23cb89.jpg?OSSAccessKeyId=LTAI5tSEGjGp5wixZgHLc3bV&Expires=4993853877&Signature=FaNFo5WHmV2wyHMpc0ZCk81FnUE%3D",
+        "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F14470aca-4132-11f1-aba5-00163e23cb89.jpg?OSSAccessKeyId=REMOVED&Expires=4993853877&Signature=REMOVED": {
+          "newUrl": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F14470aca-4132-11f1-aba5-00163e23cb89.jpg?OSSAccessKeyId=REMOVED&Expires=4993853877&Signature=REMOVED",
           "transferRet": {
             "result": "success",
-            "url": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F14470aca-4132-11f1-aba5-00163e23cb89.jpg?OSSAccessKeyId=LTAI5tSEGjGp5wixZgHLc3bV&Expires=4993853877&Signature=FaNFo5WHmV2wyHMpc0ZCk81FnUE%3D"
+            "url": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F14470aca-4132-11f1-aba5-00163e23cb89.jpg?OSSAccessKeyId=REMOVED&Expires=4993853877&Signature=REMOVED"
           }
         }
       }
@@ -91842,7 +91842,7 @@
   {
     "timestamp": "2026-04-26T05:38:00.524Z",
     "requestId": "331132",
-    "url": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F134a855c-4132-11f1-acef-00163e17c944.jpg?OSSAccessKeyId=LTAI5tSEGjGp5wixZgHLc3bV&Expires=4993853875&Signature=GgyuR9aSJx9giJ43jUnFUrBBouc%3D",
+    "url": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F134a855c-4132-11f1-acef-00163e17c944.jpg?OSSAccessKeyId=REMOVED&Expires=4993853875&Signature=REMOVED",
     "method": "GET",
     "type": "image",
     "tabId": 4978227,
@@ -91889,7 +91889,7 @@
   {
     "timestamp": "2026-04-26T05:38:00.524Z",
     "requestId": "331133",
-    "url": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F13852860-4132-11f1-905f-00163e1e52dd.jpg?OSSAccessKeyId=LTAI5tSEGjGp5wixZgHLc3bV&Expires=4993853875&Signature=4FsrfI%2Bzh4FW3K9eskpf0Q%2Bm6oY%3D",
+    "url": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F13852860-4132-11f1-905f-00163e1e52dd.jpg?OSSAccessKeyId=REMOVED&Expires=4993853875&Signature=REMOVED",
     "method": "GET",
     "type": "image",
     "tabId": 4978227,
@@ -91936,7 +91936,7 @@
   {
     "timestamp": "2026-04-26T05:38:00.524Z",
     "requestId": "331134",
-    "url": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F13cfe396-4132-11f1-bc48-00163e13d89b.jpg?OSSAccessKeyId=LTAI5tSEGjGp5wixZgHLc3bV&Expires=4993853876&Signature=swwUJweCbSonIXCNxCu7e9R%2FTzU%3D",
+    "url": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F13cfe396-4132-11f1-bc48-00163e13d89b.jpg?OSSAccessKeyId=REMOVED&Expires=4993853876&Signature=REMOVED",
     "method": "GET",
     "type": "image",
     "tabId": 4978227,
@@ -91983,7 +91983,7 @@
   {
     "timestamp": "2026-04-26T05:38:00.525Z",
     "requestId": "331135",
-    "url": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F14470aca-4132-11f1-aba5-00163e23cb89.jpg?OSSAccessKeyId=LTAI5tSEGjGp5wixZgHLc3bV&Expires=4993853877&Signature=FaNFo5WHmV2wyHMpc0ZCk81FnUE%3D",
+    "url": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F14470aca-4132-11f1-aba5-00163e23cb89.jpg?OSSAccessKeyId=REMOVED&Expires=4993853877&Signature=REMOVED",
     "method": "GET",
     "type": "image",
     "tabId": 4978227,
@@ -92030,7 +92030,7 @@
   {
     "timestamp": "2026-04-26T05:38:00.525Z",
     "requestId": "331136",
-    "url": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F13fbe374-4132-11f1-aaba-00163e1a4dbf.jpg?OSSAccessKeyId=LTAI5tSEGjGp5wixZgHLc3bV&Expires=4993853876&Signature=O6a4%2FgDjVa8fmWAQ71NqgVjBfSM%3D",
+    "url": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F13fbe374-4132-11f1-aaba-00163e1a4dbf.jpg?OSSAccessKeyId=REMOVED&Expires=4993853876&Signature=REMOVED",
     "method": "GET",
     "type": "image",
     "tabId": 4978227,
@@ -92091,11 +92091,11 @@
     "responseData": {
       "result": "success",
       "urlAndTransferMap": {
-        "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F13fbe374-4132-11f1-aaba-00163e1a4dbf.jpg?OSSAccessKeyId=LTAI5tSEGjGp5wixZgHLc3bV&Expires=4993853876&Signature=O6a4%2FgDjVa8fmWAQ71NqgVjBfSM%3D": {
-          "newUrl": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F13fbe374-4132-11f1-aaba-00163e1a4dbf.jpg?OSSAccessKeyId=LTAI5tSEGjGp5wixZgHLc3bV&Expires=4993853876&Signature=O6a4%2FgDjVa8fmWAQ71NqgVjBfSM%3D",
+        "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F13fbe374-4132-11f1-aaba-00163e1a4dbf.jpg?OSSAccessKeyId=REMOVED&Expires=4993853876&Signature=REMOVED": {
+          "newUrl": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F13fbe374-4132-11f1-aaba-00163e1a4dbf.jpg?OSSAccessKeyId=REMOVED&Expires=4993853876&Signature=REMOVED",
           "transferRet": {
             "result": "success",
-            "url": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F13fbe374-4132-11f1-aaba-00163e1a4dbf.jpg?OSSAccessKeyId=LTAI5tSEGjGp5wixZgHLc3bV&Expires=4993853876&Signature=O6a4%2FgDjVa8fmWAQ71NqgVjBfSM%3D"
+            "url": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F13fbe374-4132-11f1-aaba-00163e1a4dbf.jpg?OSSAccessKeyId=REMOVED&Expires=4993853876&Signature=REMOVED"
           }
         }
       }
@@ -92116,22 +92116,22 @@
       "type": "formData",
       "data": {
         "imageUrls[0]": [
-          "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F1327f8ca-4132-11f1-8fd2-00163e1c14f3.jpg?OSSAccessKeyId=LTAI5tSEGjGp5wixZgHLc3bV&Expires=4993853875&Signature=kI4VfFu%2BcyX9NzHNeRj0%2FS%2FWj8I%3D"
+          "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F1327f8ca-4132-11f1-8fd2-00163e1c14f3.jpg?OSSAccessKeyId=REMOVED&Expires=4993853875&Signature=REMOVED"
         ],
         "imageUrls[1]": [
-          "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F134a855c-4132-11f1-acef-00163e17c944.jpg?OSSAccessKeyId=LTAI5tSEGjGp5wixZgHLc3bV&Expires=4993853875&Signature=GgyuR9aSJx9giJ43jUnFUrBBouc%3D"
+          "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F134a855c-4132-11f1-acef-00163e17c944.jpg?OSSAccessKeyId=REMOVED&Expires=4993853875&Signature=REMOVED"
         ],
         "imageUrls[2]": [
-          "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F13852860-4132-11f1-905f-00163e1e52dd.jpg?OSSAccessKeyId=LTAI5tSEGjGp5wixZgHLc3bV&Expires=4993853875&Signature=4FsrfI%2Bzh4FW3K9eskpf0Q%2Bm6oY%3D"
+          "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F13852860-4132-11f1-905f-00163e1e52dd.jpg?OSSAccessKeyId=REMOVED&Expires=4993853875&Signature=REMOVED"
         ],
         "imageUrls[3]": [
-          "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F13cfe396-4132-11f1-bc48-00163e13d89b.jpg?OSSAccessKeyId=LTAI5tSEGjGp5wixZgHLc3bV&Expires=4993853876&Signature=swwUJweCbSonIXCNxCu7e9R%2FTzU%3D"
+          "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F13cfe396-4132-11f1-bc48-00163e13d89b.jpg?OSSAccessKeyId=REMOVED&Expires=4993853876&Signature=REMOVED"
         ],
         "imageUrls[4]": [
-          "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F14470aca-4132-11f1-aba5-00163e23cb89.jpg?OSSAccessKeyId=LTAI5tSEGjGp5wixZgHLc3bV&Expires=4993853877&Signature=FaNFo5WHmV2wyHMpc0ZCk81FnUE%3D"
+          "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F14470aca-4132-11f1-aba5-00163e23cb89.jpg?OSSAccessKeyId=REMOVED&Expires=4993853877&Signature=REMOVED"
         ],
         "imageUrls[5]": [
-          "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F13fbe374-4132-11f1-aaba-00163e1a4dbf.jpg?OSSAccessKeyId=LTAI5tSEGjGp5wixZgHLc3bV&Expires=4993853876&Signature=O6a4%2FgDjVa8fmWAQ71NqgVjBfSM%3D"
+          "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F13fbe374-4132-11f1-aaba-00163e1a4dbf.jpg?OSSAccessKeyId=REMOVED&Expires=4993853876&Signature=REMOVED"
         ]
       }
     },
@@ -92540,7 +92540,7 @@
   {
     "timestamp": "2026-04-26T05:38:05.020Z",
     "requestId": "331141",
-    "url": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F1327f8ca-4132-11f1-8fd2-00163e1c14f3.jpg?OSSAccessKeyId=LTAI5tSEGjGp5wixZgHLc3bV&Expires=4993853875&Signature=kI4VfFu%2BcyX9NzHNeRj0%2FS%2FWj8I%3D",
+    "url": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F1327f8ca-4132-11f1-8fd2-00163e1c14f3.jpg?OSSAccessKeyId=REMOVED&Expires=4993853875&Signature=REMOVED",
     "method": "GET",
     "type": "image",
     "tabId": 4978227,
@@ -92586,7 +92586,7 @@
   {
     "timestamp": "2026-04-26T05:38:05.021Z",
     "requestId": "331142",
-    "url": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F134a855c-4132-11f1-acef-00163e17c944.jpg?OSSAccessKeyId=LTAI5tSEGjGp5wixZgHLc3bV&Expires=4993853875&Signature=GgyuR9aSJx9giJ43jUnFUrBBouc%3D",
+    "url": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F134a855c-4132-11f1-acef-00163e17c944.jpg?OSSAccessKeyId=REMOVED&Expires=4993853875&Signature=REMOVED",
     "method": "GET",
     "type": "image",
     "tabId": 4978227,
@@ -92632,7 +92632,7 @@
   {
     "timestamp": "2026-04-26T05:38:05.021Z",
     "requestId": "331143",
-    "url": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F13852860-4132-11f1-905f-00163e1e52dd.jpg?OSSAccessKeyId=LTAI5tSEGjGp5wixZgHLc3bV&Expires=4993853875&Signature=4FsrfI%2Bzh4FW3K9eskpf0Q%2Bm6oY%3D",
+    "url": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F13852860-4132-11f1-905f-00163e1e52dd.jpg?OSSAccessKeyId=REMOVED&Expires=4993853875&Signature=REMOVED",
     "method": "GET",
     "type": "image",
     "tabId": 4978227,
@@ -92678,7 +92678,7 @@
   {
     "timestamp": "2026-04-26T05:38:05.022Z",
     "requestId": "331144",
-    "url": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F13cfe396-4132-11f1-bc48-00163e13d89b.jpg?OSSAccessKeyId=LTAI5tSEGjGp5wixZgHLc3bV&Expires=4993853876&Signature=swwUJweCbSonIXCNxCu7e9R%2FTzU%3D",
+    "url": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F13cfe396-4132-11f1-bc48-00163e13d89b.jpg?OSSAccessKeyId=REMOVED&Expires=4993853876&Signature=REMOVED",
     "method": "GET",
     "type": "image",
     "tabId": 4978227,
@@ -92724,7 +92724,7 @@
   {
     "timestamp": "2026-04-26T05:38:05.022Z",
     "requestId": "331145",
-    "url": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F14470aca-4132-11f1-aba5-00163e23cb89.jpg?OSSAccessKeyId=LTAI5tSEGjGp5wixZgHLc3bV&Expires=4993853877&Signature=FaNFo5WHmV2wyHMpc0ZCk81FnUE%3D",
+    "url": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F14470aca-4132-11f1-aba5-00163e23cb89.jpg?OSSAccessKeyId=REMOVED&Expires=4993853877&Signature=REMOVED",
     "method": "GET",
     "type": "image",
     "tabId": 4978227,
@@ -92770,7 +92770,7 @@
   {
     "timestamp": "2026-04-26T05:38:05.022Z",
     "requestId": "331146",
-    "url": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F13fbe374-4132-11f1-aaba-00163e1a4dbf.jpg?OSSAccessKeyId=LTAI5tSEGjGp5wixZgHLc3bV&Expires=4993853876&Signature=O6a4%2FgDjVa8fmWAQ71NqgVjBfSM%3D",
+    "url": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F13fbe374-4132-11f1-aaba-00163e1a4dbf.jpg?OSSAccessKeyId=REMOVED&Expires=4993853876&Signature=REMOVED",
     "method": "GET",
     "type": "image",
     "tabId": 4978227,
@@ -92816,7 +92816,7 @@
   {
     "timestamp": "2026-04-26T05:38:05.085Z",
     "requestId": "331147",
-    "url": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F13fbe374-4132-11f1-aaba-00163e1a4dbf.jpg?OSSAccessKeyId=LTAI5tSEGjGp5wixZgHLc3bV&Expires=4993853876&Signature=O6a4%2FgDjVa8fmWAQ71NqgVjBfSM%3D",
+    "url": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F13fbe374-4132-11f1-aaba-00163e1a4dbf.jpg?OSSAccessKeyId=REMOVED&Expires=4993853876&Signature=REMOVED",
     "method": "GET",
     "type": "image",
     "tabId": 4978227,
@@ -92862,7 +92862,7 @@
   {
     "timestamp": "2026-04-26T05:38:05.086Z",
     "requestId": "331148",
-    "url": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F14470aca-4132-11f1-aba5-00163e23cb89.jpg?OSSAccessKeyId=LTAI5tSEGjGp5wixZgHLc3bV&Expires=4993853877&Signature=FaNFo5WHmV2wyHMpc0ZCk81FnUE%3D",
+    "url": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F14470aca-4132-11f1-aba5-00163e23cb89.jpg?OSSAccessKeyId=REMOVED&Expires=4993853877&Signature=REMOVED",
     "method": "GET",
     "type": "image",
     "tabId": 4978227,
@@ -92908,7 +92908,7 @@
   {
     "timestamp": "2026-04-26T05:38:05.086Z",
     "requestId": "331149",
-    "url": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F13cfe396-4132-11f1-bc48-00163e13d89b.jpg?OSSAccessKeyId=LTAI5tSEGjGp5wixZgHLc3bV&Expires=4993853876&Signature=swwUJweCbSonIXCNxCu7e9R%2FTzU%3D",
+    "url": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F13cfe396-4132-11f1-bc48-00163e13d89b.jpg?OSSAccessKeyId=REMOVED&Expires=4993853876&Signature=REMOVED",
     "method": "GET",
     "type": "image",
     "tabId": 4978227,
@@ -92954,7 +92954,7 @@
   {
     "timestamp": "2026-04-26T05:38:05.103Z",
     "requestId": "331150",
-    "url": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F13852860-4132-11f1-905f-00163e1e52dd.jpg?OSSAccessKeyId=LTAI5tSEGjGp5wixZgHLc3bV&Expires=4993853875&Signature=4FsrfI%2Bzh4FW3K9eskpf0Q%2Bm6oY%3D",
+    "url": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F13852860-4132-11f1-905f-00163e1e52dd.jpg?OSSAccessKeyId=REMOVED&Expires=4993853875&Signature=REMOVED",
     "method": "GET",
     "type": "image",
     "tabId": 4978227,
@@ -93000,7 +93000,7 @@
   {
     "timestamp": "2026-04-26T05:38:05.103Z",
     "requestId": "331151",
-    "url": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F134a855c-4132-11f1-acef-00163e17c944.jpg?OSSAccessKeyId=LTAI5tSEGjGp5wixZgHLc3bV&Expires=4993853875&Signature=GgyuR9aSJx9giJ43jUnFUrBBouc%3D",
+    "url": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F134a855c-4132-11f1-acef-00163e17c944.jpg?OSSAccessKeyId=REMOVED&Expires=4993853875&Signature=REMOVED",
     "method": "GET",
     "type": "image",
     "tabId": 4978227,
@@ -93046,7 +93046,7 @@
   {
     "timestamp": "2026-04-26T05:38:05.103Z",
     "requestId": "331152",
-    "url": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F1327f8ca-4132-11f1-8fd2-00163e1c14f3.jpg?OSSAccessKeyId=LTAI5tSEGjGp5wixZgHLc3bV&Expires=4993853875&Signature=kI4VfFu%2BcyX9NzHNeRj0%2FS%2FWj8I%3D",
+    "url": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F1327f8ca-4132-11f1-8fd2-00163e1c14f3.jpg?OSSAccessKeyId=REMOVED&Expires=4993853875&Signature=REMOVED",
     "method": "GET",
     "type": "image",
     "tabId": 4978227,
@@ -105371,7 +105371,7 @@
         "itemNum": "迷你线",
         "oriItemNum": "迷你线",
         "sourceAddress": null,
-        "notes": "<div><div></div><p>พารามิเตอร์ผลิตภัณฑ์:</p>\r\n<p>สี: แดงจีน, ทองหรูหรา, ดำเปียโน, เงินสง่างาม, น้ำเงิน, ชมพูเจ้าหญิง, สามสี, สามารถปรับแต่งสีอื่นๆ ได้<br>วัสดุ: ไนลอนทอ<br>ข้อมูลจำเพาะของแกนลวด: 30*0.1*2<br>ความยาว: 1.2 เมตร<br>ความเร็วในการชาร์จ: กระแสไฟ 2.4A<br>ขอบเขตการใช้งาน: อินเทอร์เฟซ Android, รองรับอินเทอร์เฟซ Apple, TYPE-C (Huawei, Xiaomi, LeTV, OPPO) ใช้ได้กับสมาร์ทโฟนทุกรุ่น<br>ข้อดีของผลิตภัณฑ์: ชาร์จเร็ว รองรับการใช้งานกับพอร์ตชาร์จโทรศัพท์มือถือทั้งในประเทศและต่างประเทศ สามารถชาร์จโทรศัพท์ได้พร้อมกัน 3 เครื่องด้วยพอร์ตชาร์จที่แตกต่างกัน และไม่พันกันง่าย</p>\r\n<p><span><span>ข้อควรระวัง: ลิงก์นี้ใช้สำหรับการชาร์จเร็วทั่วไป ไม่ใช่การชาร์จเร็วพิเศษ หากคุณต้องการการชาร์จเร็วพิเศษ คุณสามารถเลือกผลิตภัณฑ์การชาร์จเร็วพิเศษอื่นๆ จากร้านค้าได้</span></span></p>\r\n<p> </p>\r\n<p><img src=\"https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F1327f8ca-4132-11f1-8fd2-00163e1c14f3.jpg?OSSAccessKeyId=LTAI5tSEGjGp5wixZgHLc3bV&Expires=4993853875&Signature=kI4VfFu%2BcyX9NzHNeRj0%2FS%2FWj8I%3D\" width=\"790\" height=\"1082.858585858586\"><img src=\"https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F134a855c-4132-11f1-acef-00163e17c944.jpg?OSSAccessKeyId=LTAI5tSEGjGp5wixZgHLc3bV&Expires=4993853875&Signature=GgyuR9aSJx9giJ43jUnFUrBBouc%3D\" width=\"790\" height=\"1094.828282828283\"><img src=\"https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F13852860-4132-11f1-905f-00163e1e52dd.jpg?OSSAccessKeyId=LTAI5tSEGjGp5wixZgHLc3bV&Expires=4993853875&Signature=4FsrfI%2Bzh4FW3K9eskpf0Q%2Bm6oY%3D\" width=\"790\" height=\"790\"><img src=\"https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F13cfe396-4132-11f1-bc48-00163e13d89b.jpg?OSSAccessKeyId=LTAI5tSEGjGp5wixZgHLc3bV&Expires=4993853876&Signature=swwUJweCbSonIXCNxCu7e9R%2FTzU%3D\" width=\"790\" height=\"790\"><img src=\"https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F14470aca-4132-11f1-aba5-00163e23cb89.jpg?OSSAccessKeyId=LTAI5tSEGjGp5wixZgHLc3bV&Expires=4993853877&Signature=FaNFo5WHmV2wyHMpc0ZCk81FnUE%3D\"><br><br><br><br>,<br><img src=\"https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F13fbe374-4132-11f1-aaba-00163e1a4dbf.jpg?OSSAccessKeyId=LTAI5tSEGjGp5wixZgHLc3bV&Expires=4993853876&Signature=O6a4%2FgDjVa8fmWAQ71NqgVjBfSM%3D\"><img src=\"https://cbu01.alicdn.com/img/ibank/O1CN01gWVZXq1i88fox8vso_!!2872284367-0-cib.jpg?__r__=1746881881142\"><br><br><br><br></p></div>\n",
+        "notes": "<div><div></div><p>พารามิเตอร์ผลิตภัณฑ์:</p>\r\n<p>สี: แดงจีน, ทองหรูหรา, ดำเปียโน, เงินสง่างาม, น้ำเงิน, ชมพูเจ้าหญิง, สามสี, สามารถปรับแต่งสีอื่นๆ ได้<br>วัสดุ: ไนลอนทอ<br>ข้อมูลจำเพาะของแกนลวด: 30*0.1*2<br>ความยาว: 1.2 เมตร<br>ความเร็วในการชาร์จ: กระแสไฟ 2.4A<br>ขอบเขตการใช้งาน: อินเทอร์เฟซ Android, รองรับอินเทอร์เฟซ Apple, TYPE-C (Huawei, Xiaomi, LeTV, OPPO) ใช้ได้กับสมาร์ทโฟนทุกรุ่น<br>ข้อดีของผลิตภัณฑ์: ชาร์จเร็ว รองรับการใช้งานกับพอร์ตชาร์จโทรศัพท์มือถือทั้งในประเทศและต่างประเทศ สามารถชาร์จโทรศัพท์ได้พร้อมกัน 3 เครื่องด้วยพอร์ตชาร์จที่แตกต่างกัน และไม่พันกันง่าย</p>\r\n<p><span><span>ข้อควรระวัง: ลิงก์นี้ใช้สำหรับการชาร์จเร็วทั่วไป ไม่ใช่การชาร์จเร็วพิเศษ หากคุณต้องการการชาร์จเร็วพิเศษ คุณสามารถเลือกผลิตภัณฑ์การชาร์จเร็วพิเศษอื่นๆ จากร้านค้าได้</span></span></p>\r\n<p> </p>\r\n<p><img src=\"https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F1327f8ca-4132-11f1-8fd2-00163e1c14f3.jpg?OSSAccessKeyId=REMOVED&Expires=4993853875&Signature=REMOVED" width=\"790\" height=\"1082.858585858586\"><img src=\"https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F134a855c-4132-11f1-acef-00163e17c944.jpg?OSSAccessKeyId=REMOVED&Expires=4993853875&Signature=REMOVED" width=\"790\" height=\"1094.828282828283\"><img src=\"https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F13852860-4132-11f1-905f-00163e1e52dd.jpg?OSSAccessKeyId=REMOVED&Expires=4993853875&Signature=REMOVED" width=\"790\" height=\"790\"><img src=\"https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F13cfe396-4132-11f1-bc48-00163e13d89b.jpg?OSSAccessKeyId=REMOVED&Expires=4993853876&Signature=REMOVED" width=\"790\" height=\"790\"><img src=\"https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F14470aca-4132-11f1-aba5-00163e23cb89.jpg?OSSAccessKeyId=REMOVED&Expires=4993853877&Signature=REMOVED"><br><br><br><br>,<br><img src=\"https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F13fbe374-4132-11f1-aaba-00163e1a4dbf.jpg?OSSAccessKeyId=REMOVED&Expires=4993853876&Signature=REMOVED"><img src=\"https://cbu01.alicdn.com/img/ibank/O1CN01gWVZXq1i88fox8vso_!!2872284367-0-cib.jpg?__r__=1746881881142\"><br><br><br><br></p></div>\n",
         "imgUrls": [
           "https://cbu01.alicdn.com/img/ibank/O1CN01xEB1dU1i88Wix7rPs_!!2872284367-0-cib.jpg",
           "https://cbu01.alicdn.com/img/ibank/O1CN01zqMNmc1i88Wi87lLh_!!2872284367-0-cib.jpg",
@@ -105713,7 +105713,7 @@
   {
     "timestamp": "2026-04-26T05:38:33.647Z",
     "requestId": "331176",
-    "url": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F1327f8ca-4132-11f1-8fd2-00163e1c14f3.jpg?OSSAccessKeyId=LTAI5tSEGjGp5wixZgHLc3bV&Expires=4993853875&Signature=kI4VfFu%2BcyX9NzHNeRj0%2FS%2FWj8I%3D",
+    "url": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F1327f8ca-4132-11f1-8fd2-00163e1c14f3.jpg?OSSAccessKeyId=REMOVED&Expires=4993853875&Signature=REMOVED",
     "method": "GET",
     "type": "image",
     "tabId": 4978227,
@@ -105759,7 +105759,7 @@
   {
     "timestamp": "2026-04-26T05:38:33.647Z",
     "requestId": "331177",
-    "url": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F134a855c-4132-11f1-acef-00163e17c944.jpg?OSSAccessKeyId=LTAI5tSEGjGp5wixZgHLc3bV&Expires=4993853875&Signature=GgyuR9aSJx9giJ43jUnFUrBBouc%3D",
+    "url": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F134a855c-4132-11f1-acef-00163e17c944.jpg?OSSAccessKeyId=REMOVED&Expires=4993853875&Signature=REMOVED",
     "method": "GET",
     "type": "image",
     "tabId": 4978227,
@@ -105805,7 +105805,7 @@
   {
     "timestamp": "2026-04-26T05:38:33.648Z",
     "requestId": "331178",
-    "url": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F13852860-4132-11f1-905f-00163e1e52dd.jpg?OSSAccessKeyId=LTAI5tSEGjGp5wixZgHLc3bV&Expires=4993853875&Signature=4FsrfI%2Bzh4FW3K9eskpf0Q%2Bm6oY%3D",
+    "url": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F13852860-4132-11f1-905f-00163e1e52dd.jpg?OSSAccessKeyId=REMOVED&Expires=4993853875&Signature=REMOVED",
     "method": "GET",
     "type": "image",
     "tabId": 4978227,
@@ -105851,7 +105851,7 @@
   {
     "timestamp": "2026-04-26T05:38:33.648Z",
     "requestId": "331179",
-    "url": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F13cfe396-4132-11f1-bc48-00163e13d89b.jpg?OSSAccessKeyId=LTAI5tSEGjGp5wixZgHLc3bV&Expires=4993853876&Signature=swwUJweCbSonIXCNxCu7e9R%2FTzU%3D",
+    "url": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F13cfe396-4132-11f1-bc48-00163e13d89b.jpg?OSSAccessKeyId=REMOVED&Expires=4993853876&Signature=REMOVED",
     "method": "GET",
     "type": "image",
     "tabId": 4978227,
@@ -105897,7 +105897,7 @@
   {
     "timestamp": "2026-04-26T05:38:33.648Z",
     "requestId": "331180",
-    "url": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F14470aca-4132-11f1-aba5-00163e23cb89.jpg?OSSAccessKeyId=LTAI5tSEGjGp5wixZgHLc3bV&Expires=4993853877&Signature=FaNFo5WHmV2wyHMpc0ZCk81FnUE%3D",
+    "url": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F14470aca-4132-11f1-aba5-00163e23cb89.jpg?OSSAccessKeyId=REMOVED&Expires=4993853877&Signature=REMOVED",
     "method": "GET",
     "type": "image",
     "tabId": 4978227,
@@ -105943,7 +105943,7 @@
   {
     "timestamp": "2026-04-26T05:38:33.648Z",
     "requestId": "331181",
-    "url": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F13fbe374-4132-11f1-aaba-00163e1a4dbf.jpg?OSSAccessKeyId=LTAI5tSEGjGp5wixZgHLc3bV&Expires=4993853876&Signature=O6a4%2FgDjVa8fmWAQ71NqgVjBfSM%3D",
+    "url": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F13fbe374-4132-11f1-aaba-00163e1a4dbf.jpg?OSSAccessKeyId=REMOVED&Expires=4993853876&Signature=REMOVED",
     "method": "GET",
     "type": "image",
     "tabId": 4978227,
@@ -105989,7 +105989,7 @@
   {
     "timestamp": "2026-04-26T05:38:33.737Z",
     "requestId": "331182",
-    "url": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F13fbe374-4132-11f1-aaba-00163e1a4dbf.jpg?OSSAccessKeyId=LTAI5tSEGjGp5wixZgHLc3bV&Expires=4993853876&Signature=O6a4%2FgDjVa8fmWAQ71NqgVjBfSM%3D",
+    "url": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F13fbe374-4132-11f1-aaba-00163e1a4dbf.jpg?OSSAccessKeyId=REMOVED&Expires=4993853876&Signature=REMOVED",
     "method": "GET",
     "type": "image",
     "tabId": 4978227,
@@ -106035,7 +106035,7 @@
   {
     "timestamp": "2026-04-26T05:38:33.737Z",
     "requestId": "331183",
-    "url": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F14470aca-4132-11f1-aba5-00163e23cb89.jpg?OSSAccessKeyId=LTAI5tSEGjGp5wixZgHLc3bV&Expires=4993853877&Signature=FaNFo5WHmV2wyHMpc0ZCk81FnUE%3D",
+    "url": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F14470aca-4132-11f1-aba5-00163e23cb89.jpg?OSSAccessKeyId=REMOVED&Expires=4993853877&Signature=REMOVED",
     "method": "GET",
     "type": "image",
     "tabId": 4978227,
@@ -106081,7 +106081,7 @@
   {
     "timestamp": "2026-04-26T05:38:33.737Z",
     "requestId": "331184",
-    "url": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F13cfe396-4132-11f1-bc48-00163e13d89b.jpg?OSSAccessKeyId=LTAI5tSEGjGp5wixZgHLc3bV&Expires=4993853876&Signature=swwUJweCbSonIXCNxCu7e9R%2FTzU%3D",
+    "url": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F13cfe396-4132-11f1-bc48-00163e13d89b.jpg?OSSAccessKeyId=REMOVED&Expires=4993853876&Signature=REMOVED",
     "method": "GET",
     "type": "image",
     "tabId": 4978227,
@@ -106127,7 +106127,7 @@
   {
     "timestamp": "2026-04-26T05:38:33.737Z",
     "requestId": "331185",
-    "url": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F13852860-4132-11f1-905f-00163e1e52dd.jpg?OSSAccessKeyId=LTAI5tSEGjGp5wixZgHLc3bV&Expires=4993853875&Signature=4FsrfI%2Bzh4FW3K9eskpf0Q%2Bm6oY%3D",
+    "url": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F13852860-4132-11f1-905f-00163e1e52dd.jpg?OSSAccessKeyId=REMOVED&Expires=4993853875&Signature=REMOVED",
     "method": "GET",
     "type": "image",
     "tabId": 4978227,
@@ -106173,7 +106173,7 @@
   {
     "timestamp": "2026-04-26T05:38:33.737Z",
     "requestId": "331186",
-    "url": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F134a855c-4132-11f1-acef-00163e17c944.jpg?OSSAccessKeyId=LTAI5tSEGjGp5wixZgHLc3bV&Expires=4993853875&Signature=GgyuR9aSJx9giJ43jUnFUrBBouc%3D",
+    "url": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F134a855c-4132-11f1-acef-00163e17c944.jpg?OSSAccessKeyId=REMOVED&Expires=4993853875&Signature=REMOVED",
     "method": "GET",
     "type": "image",
     "tabId": 4978227,
@@ -106219,7 +106219,7 @@
   {
     "timestamp": "2026-04-26T05:38:33.737Z",
     "requestId": "331187",
-    "url": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F1327f8ca-4132-11f1-8fd2-00163e1c14f3.jpg?OSSAccessKeyId=LTAI5tSEGjGp5wixZgHLc3bV&Expires=4993853875&Signature=kI4VfFu%2BcyX9NzHNeRj0%2FS%2FWj8I%3D",
+    "url": "https://aib-image.oss-accelerate.aliyuncs.com/tufan%2F1327f8ca-4132-11f1-8fd2-00163e1c14f3.jpg?OSSAccessKeyId=REMOVED&Expires=4993853875&Signature=REMOVED",
     "method": "GET",
     "type": "image",
     "tabId": 4978227,
