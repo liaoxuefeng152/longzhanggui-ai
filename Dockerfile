@@ -1,0 +1,79 @@
+# ==========================================
+# 阿峰跨境AI中台 - Docker 镜像
+# 适用于阿里云 ECS、ACK、ECI 部署
+# ==========================================
+
+# 阶段1: 依赖安装
+FROM node:24-alpine AS deps
+
+RUN apk add --no-cache libc6-compat
+
+WORKDIR /app
+
+# 安装 pnpm
+RUN corepack enable && corepack prepare pnpm@9 --activate
+
+# 复制依赖文件
+COPY package.json pnpm-lock.yaml ./
+
+# 安装依赖
+RUN pnpm install --frozen-lockfile
+
+# ==========================================
+# 阶段2: 构建
+FROM node:24-alpine AS builder
+
+WORKDIR /app
+
+# 安装 pnpm
+RUN corepack enable && corepack prepare pnpm@9 --activate
+
+# 复制依赖
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+
+# 设置环境变量
+ENV NODE_ENV production
+ENV NEXT_TELEMETRY_DISABLED 1
+
+# 构建应用
+RUN pnpm build
+
+# ==========================================
+# 阶段3: 运行时镜像
+FROM node:24-alpine AS runner
+
+WORKDIR /app
+
+ENV NODE_ENV production
+ENV NEXT_TELEMETRY_DISABLED 1
+
+# 创建非 root 用户
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
+
+# 安装 pnpm
+RUN corepack enable && corepack prepare pnpm@9 --activate
+
+# 复制必要的文件
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
+
+# 复制 node_modules（生产依赖）
+COPY --from=builder /app/node_modules ./node_modules
+
+# 修改文件权限
+RUN chown -R nextjs:nodejs /app
+
+USER nextjs
+
+# 暴露端口
+EXPOSE 5000
+
+# 环境变量
+ENV PORT 5000
+ENV HOSTNAME "0.0.0.0"
+
+# 启动命令
+CMD ["node", "server.js"]

@@ -1,0 +1,16 @@
+node_modules
+.next
+.git
+.gitignore
+*.md
+!README.md
+.env*.local
+.env
+.vscode
+.idea
+*.log
+data/
+*.db
+*.db-journal
+coverage
+.nyc_output

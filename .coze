@@ -1,0 +1,12 @@
+[project]
+requires = ["nodejs-24"]
+
+[dev]
+build = ["bash", "./scripts/prepare.sh"]
+run = ["bash", "./scripts/dev-all.sh"]
+deps = ["git"]
+
+[deploy]
+build = ["bash","./scripts/build.sh"]
+run = ["node", "./scripts/start_server.js"]
+deps = ["git"]
