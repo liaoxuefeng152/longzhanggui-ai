@@ -88,6 +88,12 @@ class Settings(BaseSettings):
     COZE_SITE_TOKEN: str = "" # Bearer Token
     COZE_PROJECT_ID: str = "" # project_id，如 7603691852046368804
     COZE_SESSION_ID: str = "" # 可选，不填则每次请求生成新 session
+
+    # 跨境电商API配置
+    KUAJING_API_URL: str = ""
+    KUAJING_API_TOKEN: str = ""
+    KUAJING_PROJECT_ID: str = ""
+
     # 扣子站点（coze.site）内部工作流若使用 langgraph，可能触发递归深度限制。
     # 若站点支持透传该配置，可用此项提高上限；不支持时不会生效，但也不影响调用。
     COZE_SITE_RECURSION_LIMIT: int = 50
@@ -294,3 +300,8 @@ class Settings(BaseSettings):
 # 创建配置实例并验证
 settings = Settings()
 settings.validate(settings)
+
+
+# 获取配置实例的函数（用于需要动态获取最新配置的场合）
+def get_settings() -> Settings:
+    return settings

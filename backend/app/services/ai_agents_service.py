@@ -277,7 +277,7 @@ class ListingOptimizationAgent:
 目标语言: {language}
 
 商品特点:
-{chr(10).join([f"- {f}" for f in features]) if features else "- 高性价比\n- 质量优良\n- 实用性强"}
+{chr(10).join([f"- {f}" for f in features]) if features else "- 高性价比" + chr(10) + "- 质量优良" + chr(10) + "- 实用性强"}
 
 目标关键词: {', '.join(keywords) if keywords else 'trending, popular, quality, affordable'}
 

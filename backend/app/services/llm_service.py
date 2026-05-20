@@ -6,19 +6,13 @@ import os
 from typing import List, Optional, Dict, Any, Union, AsyncIterator
 from enum import Enum
 from loguru import logger
+import httpx
 
-# CRITICAL: 在导入SDK之前设置环境变量
-# coze-coding-dev-sdk需要COZE_WORKSPACE_ID
-if not os.environ.get("COZE_WORKSPACE_ID"):
-    workspace_id = os.environ.get("COZE_PROJECT_SPACE_ID", "7597647832174657536")
-    os.environ["COZE_WORKSPACE_ID"] = workspace_id
-    logger.debug(f"设置COZE_WORKSPACE_ID={workspace_id}")
+# 从环境变量获取豆包API配置
+DOUBAO_API_KEY = os.environ.get("DOUBAO_API_KEY", os.environ.get("COZE_API_TOKEN", ""))
+DOUBAO_API_BASE = os.environ.get("DOUBAO_API_BASE", "https://ark.cn-beijing.volces.com/api/v3")
 
 from langchain_core.messages import BaseMessage, HumanMessage, AIMessage, SystemMessage
-
-# 使用 coze-coding-dev-sdk 调用豆包大模型
-from coze_coding_dev_sdk import LLMClient
-from coze_coding_utils.runtime_ctx.context import Context, new_context
 
 
 class LLMModel(str, Enum):
@@ -69,6 +63,8 @@ class LLMService:
         self,
         model: str = None,
         temperature: float = 0.7,
+        api_key: str = None,
+        api_base: str = None,
         thinking: str = "disabled",
         caching: str = "disabled"
     ):
@@ -85,34 +81,36 @@ class LLMService:
         self.temperature = temperature
         self.thinking = thinking
         self.caching = caching
+        self.api_key = api_key or DOUBAO_API_KEY
+        self.api_base = api_base or DOUBAO_API_BASE
         
-        # 创建客户端
-        self._ctx = new_context(method="invoke")
-        self._client = LLMClient(ctx=self._ctx)
+        # 创建HTTP客户端
+        self._client = httpx.AsyncClient(
+            base_url=self.api_base,
+            headers={
+                "Authorization": f"Bearer {self.api_key}",
+                "Content-Type": "application/json"
+            },
+            timeout=120.0
+        )
     
-    @classmethod
-    def for_agent(cls, agent_type: str, **kwargs) -> "LLMService":
-        """
-        为特定智能体创建LLM服务
-        
-        Args:
-            agent_type: 智能体类型 (product_selection, image_design, etc.)
-            **kwargs: 其他参数 (temperature, thinking等)
-        
-        Returns:
-            配置好的LLMService实例
-        """
-        model = cls.AGENT_MODEL_MAP.get(agent_type, LLMModel.DOUBAO_AGENT)
-        return cls(model=model.value, **kwargs)
+    def _convert_messages(self, messages: List[BaseMessage]) -> List[Dict]:
+        """将LangChain消息转换为API格式"""
+        result = []
+        for msg in messages:
+            if isinstance(msg, HumanMessage):
+                result.append({"role": "user", "content": msg.content})
+            elif isinstance(msg, AIMessage):
+                result.append({"role": "assistant", "content": msg.content})
+            elif isinstance(msg, SystemMessage):
+                result.append({"role": "system", "content": msg.content})
+            else:
+                result.append({"role": "user", "content": str(msg.content)})
+        return result
     
     def _get_text_content(self, content: Union[str, List]) -> str:
         """
-        安全地从AIMessage.content提取文本
-        
-        AIMessage.content 可能是：
-        - str: 纯文本
-        - list[str]: 字符串列表
-        - list[dict]: 多模态响应块
+        安全地从响应中提取文本
         """
         if isinstance(content, str):
             return content
@@ -120,12 +118,14 @@ class LLMService:
             if content and isinstance(content[0], str):
                 return " ".join(content)
             else:
-                # 多模态响应，提取text块
                 text_parts = []
                 for item in content:
-                    if isinstance(item, dict) and item.get("type") == "text":
-                        text_parts.append(item.get("text", ""))
-                return " ".join(text_parts)
+                    if isinstance(item, dict):
+                        if item.get("type") == "text":
+                            text_parts.append(item.get("text", ""))
+                        elif "text" in item:
+                            text_parts.append(str(item["text"]))
+                return " ".join(text_parts) if text_parts else str(content)
         return str(content)
     
     async def chat(
@@ -142,25 +142,31 @@ class LLMService:
             messages: 消息列表，使用LangChain消息格式
             temperature: 覆盖默认温度
             model: 覆盖默认模型
-            **kwargs: 其他参数 (thinking, caching等)
+            **kwargs: 其他参数
         
         Returns:
             AI回复文本
         """
         try:
-            response = self._client.invoke(
-                messages=messages,
-                model=model or self.model,
-                temperature=temperature if temperature is not None else self.temperature,
-                thinking=kwargs.get("thinking", self.thinking),
-                caching=kwargs.get("caching", self.caching),
-                max_completion_tokens=kwargs.get("max_completion_tokens", 32768)
-            )
+            payload = {
+                "model": model or self.model,
+                "messages": self._convert_messages(messages),
+                "temperature": temperature if temperature is not None else self.temperature,
+                "max_tokens": kwargs.get("max_completion_tokens", 32768)
+            }
             
-            return self._get_text_content(response.content)
+            response = await self._client.post("/chat/completions", json=payload)
+            response.raise_for_status()
+            data = response.json()
+            
+            return self._get_text_content(data["choices"][0]["message"]["content"])
             
         except Exception as e:
             logger.error(f"LLM调用失败: {e}")
+            # 如果API未配置，返回模拟响应
+            if not self.api_key:
+                logger.warning("未配置DOUBAO_API_KEY，返回模拟响应")
+                return "【模拟响应】AI服务暂未配置，请联系管理员配置豆包API密钥。"
             raise
     
     async def stream_chat(
@@ -183,20 +189,36 @@ class LLMService:
             文本块
         """
         try:
-            for chunk in self._client.stream(
-                messages=messages,
-                model=model or self.model,
-                temperature=temperature if temperature is not None else self.temperature,
-                thinking=kwargs.get("thinking", self.thinking),
-                caching=kwargs.get("caching", self.caching),
-                max_completion_tokens=kwargs.get("max_completion_tokens", 32768)
-            ):
-                if chunk.content:
-                    yield self._get_text_content(chunk.content)
-                    
+            payload = {
+                "model": model or self.model,
+                "messages": self._convert_messages(messages),
+                "temperature": temperature if temperature is not None else self.temperature,
+                "max_tokens": kwargs.get("max_completion_tokens", 32768),
+                "stream": True
+            }
+            
+            async with self._client.stream("POST", "/chat/completions", json=payload) as response:
+                response.raise_for_status()
+                async for line in response.aiter_lines():
+                    if line.startswith("data: "):
+                        data = line[6:]
+                        if data == "[DONE]":
+                            break
+                        try:
+                            import json
+                            chunk = json.loads(data)
+                            content = chunk.get("choices", [{}])[0].get("delta", {}).get("content", "")
+                            if content:
+                                yield content
+                        except:
+                            pass
+                            
         except Exception as e:
             logger.error(f"LLM流式调用失败: {e}")
-            raise
+            if not self.api_key:
+                yield "【模拟响应】AI服务暂未配置，请联系管理员配置豆包API密钥。"
+            else:
+                raise
     
     async def simple_chat(
         self,
@@ -243,10 +265,8 @@ class LLMService:
         response = await self.chat(messages, temperature=temperature, **kwargs)
         
         try:
-            # 尝试提取JSON
             text = response.strip()
             
-            # 尝试找到JSON块
             if "```json" in text:
                 start = text.find("```json") + 7
                 end = text.find("```", start)
@@ -258,7 +278,6 @@ class LLMService:
             
             return json.loads(text)
         except json.JSONDecodeError:
-            # 返回原始文本作为error字段
             return {"error": "JSON解析失败", "raw_response": response}
 
 
@@ -276,14 +295,6 @@ class AgentLLMWrapper:
         model: str = None,
         temperature: float = 0.7
     ):
-        """
-        初始化包装器
-        
-        Args:
-            agent_type: 智能体类型，自动选择合适模型
-            model: 直接指定模型
-            temperature: 温度
-        """
         if agent_type:
             self.llm = LLMService.for_agent(agent_type, temperature=temperature)
         else:
@@ -293,61 +304,23 @@ class AgentLLMWrapper:
         self.temperature = temperature
     
     async def ainvoke(self, messages: List[BaseMessage], **kwargs) -> AIMessage:
-        """
-        异步调用 - 兼容LangChain ChatOpenAI接口
-        
-        Args:
-            messages: 消息列表
-            **kwargs: 其他参数
-        
-        Returns:
-            AIMessage对象
-        """
         temperature = kwargs.get("temperature", self.temperature)
-        
         response_text = await self.llm.chat(messages, temperature=temperature)
-        
         return AIMessage(content=response_text)
     
     def invoke(self, messages: List[BaseMessage], **kwargs) -> AIMessage:
-        """
-        同步调用 - 注意：这是一个阻塞方法，仅用于兼容
-        """
         import asyncio
-        
         try:
             loop = asyncio.get_event_loop()
         except RuntimeError:
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
-        
         return loop.run_until_complete(self.ainvoke(messages, **kwargs))
 
 
-# 便捷工厂函数
 def get_llm_for_agent(agent_type: str, temperature: float = 0.7) -> AgentLLMWrapper:
-    """
-    为智能体获取LLM实例
-    
-    Args:
-        agent_type: 智能体类型
-        temperature: 温度
-    
-    Returns:
-        AgentLLMWrapper实例
-    """
     return AgentLLMWrapper(agent_type=agent_type, temperature=temperature)
 
 
 def get_llm(model: str = None, temperature: float = 0.7) -> AgentLLMWrapper:
-    """
-    获取通用LLM实例
-    
-    Args:
-        model: 模型ID
-        temperature: 温度
-    
-    Returns:
-        AgentLLMWrapper实例
-    """
     return AgentLLMWrapper(model=model, temperature=temperature)
