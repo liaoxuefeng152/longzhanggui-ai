@@ -56,6 +56,13 @@ class Settings(BaseSettings):
     FEISHU_VERIFICATION_TOKEN: Optional[str] = None
     
     # ========================================
+    # 1688开放平台配置
+    # ========================================
+    ALIBABA_APP_KEY: Optional[str] = None
+    ALIBABA_APP_SECRET: Optional[str] = None
+    ALIBABA_ACCESS_TOKEN: Optional[str] = None
+
+    # ========================================
     # TikTok Shop配置
     # ========================================
     TIKTOK_APP_KEY: Optional[str] = None

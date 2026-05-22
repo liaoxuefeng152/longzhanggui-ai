@@ -1,11 +1,19 @@
 """
 1688采集API路由
+
+采集策略优先级:
+1. 1688开放平台API（alibaba_1688_service，签名认证）
+2. HTTPX爬虫（collection_1688_service，页面解析）
+3. Playwright浏览器（JS渲染）
+4. 模拟数据兜底
 """
 from fastapi import APIRouter, HTTPException, Depends, Body
 from pydantic import BaseModel, HttpUrl
 from typing import Optional, List, Dict, Any
 
+from app.services.alibaba_1688_service import alibaba_1688_service
 from app.services.collection_1688_service import collection_1688_service
+from app.tools.product_scrape_tool import product_scrape_tool
 from loguru import logger
 
 
@@ -29,27 +37,43 @@ class SearchRequest(BaseModel):
     page_size: int = 20
 
 
+class TokenConfigRequest(BaseModel):
+    """1688 API Token配置"""
+    app_key: Optional[str] = None
+    app_secret: Optional[str] = None
+    access_token: Optional[str] = None
+
+
 @router.post("/collect")
 async def collect_product(request: CollectRequest):
     """
     采集单个1688商品
-    
-    采集商品信息并保存到ERP商品库
+
+    采集策略: API优先 → 爬虫降级 → 浏览器降级
+    采集成功后自动保存到ERP商品库
     """
     try:
-        product_id = await collection_1688_service.collect_and_save(request.url)
+        # 使用 ProductScrapeTool（三级降级 + 自动保存）
+        result = await product_scrape_tool.run(
+            url=request.url,
+            save_to_erp=True,
+        )
         
-        if product_id:
+        if result.get("success"):
             return {
                 "success": True,
                 "message": "采集成功",
-                "product_id": product_id
+                "product_id": result.get("product_id"),
+                "data": result,
             }
         else:
-            raise HTTPException(status_code=500, detail="采集失败")
+            return {
+                "success": False,
+                "message": result.get("error", "采集失败"),
+                "error_type": result.get("error_type", "unknown"),
+            }
             
     except ValueError as e:
-        # 友好的错误消息（URL格式问题）
         logger.warning(f"URL格式错误: {e}")
         return {
             "success": False,
@@ -65,22 +89,30 @@ async def collect_product(request: CollectRequest):
 async def preview_product(request: CollectRequest):
     """
     预览采集商品
-    
+
     只采集信息，不保存到数据库
+    采集策略: API优先 → 爬虫降级
     """
     try:
-        data = await collection_1688_service.collect_product(request.url)
+        # 策略1: 尝试1688开放平台API
+        api_result = await alibaba_1688_service.collect_by_url(request.url)
+        if api_result.get("success"):
+            return {
+                "success": True,
+                "data": api_result,
+            }
         
+        # 策略2: 降级到爬虫
+        data = await collection_1688_service.collect_product(request.url)
         if data:
             return {
                 "success": True,
-                "data": data
+                "data": data,
             }
-        else:
-            raise HTTPException(status_code=400, detail="无效的商品链接")
+        
+        raise HTTPException(status_code=400, detail="无效的商品链接")
             
     except ValueError as e:
-        # 友好的错误消息
         logger.warning(f"URL格式错误: {e}")
         return {
             "success": False,
@@ -94,14 +126,21 @@ async def preview_product(request: CollectRequest):
 
 @router.post("/collect/batch")
 async def batch_collect(request: BatchCollectRequest):
-    """批量采集商品"""
+    """
+    批量采集商品
+
+    使用 ProductScrapeTool 三级降级策略，采集并保存到ERP
+    """
     try:
-        results = await collection_1688_service.collect_batch(request.urls)
+        results = await product_scrape_tool.batch_run(
+            urls=request.urls,
+            save_to_erp=True,
+        )
         
         return {
             "success": True,
             "total": len(results),
-            "items": results
+            "items": results,
         }
         
     except Exception as e:
@@ -111,17 +150,35 @@ async def batch_collect(request: BatchCollectRequest):
 
 @router.post("/search")
 async def search_products(request: SearchRequest):
-    """搜索1688商品"""
+    """
+    搜索1688商品
+
+    优先使用1688开放平台API搜索，失败降级到爬虫
+    """
     try:
+        # 策略1: 1688开放平台API搜索
+        api_result = await alibaba_1688_service.search_products(
+            keyword=request.keyword,
+            page=request.page,
+            page_size=request.page_size,
+        )
+        
+        if api_result.get("success") and api_result.get("items"):
+            return {
+                "success": True,
+                "data": api_result,
+            }
+        
+        # 策略2: 降级到爬虫搜索
         results = await collection_1688_service.search_products(
             keyword=request.keyword,
             page=request.page,
-            page_size=request.page_size
+            page_size=request.page_size,
         )
         
         return {
             "success": True,
-            "data": results
+            "data": results,
         }
         
     except Exception as e:
@@ -279,3 +336,98 @@ async def get_collection_history(
             logger.error(f"获取采集历史失败: {e}")
             raise HTTPException(status_code=500, detail=str(e))
         break
+
+
+@router.get("/token-config")
+async def get_token_config():
+    """获取1688 API Token配置（脱敏显示）"""
+    try:
+        from app.core.config import settings
+        
+        return {
+            "success": True,
+            "data": {
+                "app_key": getattr(settings, 'ALIBABA_APP_KEY', '') or '',
+                "app_secret_set": bool(getattr(settings, 'ALIBABA_APP_SECRET', '')),
+                "access_token_set": bool(getattr(settings, 'ALIBABA_ACCESS_TOKEN', '')),
+                "app_secret_masked": "****" + (getattr(settings, 'ALIBABA_APP_SECRET', '')[-4:] if getattr(settings, 'ALIBABA_APP_SECRET', '') else ''),
+                "access_token_masked": "****" + (getattr(settings, 'ALIBABA_ACCESS_TOKEN', '')[-8:] if getattr(settings, 'ALIBABA_ACCESS_TOKEN', '') else ''),
+            }
+        }
+    except Exception as e:
+        logger.error(f"获取Token配置失败: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/token-config")
+async def update_token_config(request: TokenConfigRequest):
+    """更新1688 API Token配置（运行时更新，重启后失效）"""
+    try:
+        from app.core.config import settings
+        from app.services.alibaba_1688_service import alibaba_1688_service
+        
+        updated = []
+        
+        if request.app_key is not None:
+            settings.ALIBABA_APP_KEY = request.app_key
+            alibaba_1688_service.app_key = request.app_key
+            updated.append("app_key")
+        
+        if request.app_secret is not None:
+            settings.ALIBABA_APP_SECRET = request.app_secret
+            alibaba_1688_service.app_secret = request.app_secret
+            updated.append("app_secret")
+        
+        if request.access_token is not None:
+            settings.ALIBABA_ACCESS_TOKEN = request.access_token
+            alibaba_1688_service.access_token = request.access_token
+            updated.append("access_token")
+        
+        logger.info(f"1688 API Token配置已更新: {updated}")
+        
+        return {
+            "success": True,
+            "message": f"已更新: {', '.join(updated)}",
+            "updated": updated
+        }
+    except Exception as e:
+        logger.error(f"更新Token配置失败: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/token-config/test")
+async def test_token_config():
+    """测试当前1688 API Token是否有效"""
+    try:
+        from app.services.alibaba_1688_service import alibaba_1688_service
+        
+        # 使用一个测试offerId来验证Token
+        result = await alibaba_1688_service.get_product_info("1049118574787")
+        
+        if result.get("success"):
+            return {
+                "success": True,
+                "message": "Token有效，API调用成功",
+                "test_product_title": result.get("title", "")[:50],
+            }
+        else:
+            error_msg = result.get("error", "未知错误")
+            if "401" in str(error_msg) or "authorized" in str(error_msg).lower():
+                return {
+                    "success": False,
+                    "message": "Token已过期或无效，请重新获取",
+                    "error_type": "token_expired"
+                }
+            else:
+                return {
+                    "success": False,
+                    "message": f"API调用失败: {error_msg}",
+                    "error_type": "api_error"
+                }
+    except Exception as e:
+        logger.error(f"测试Token失败: {e}")
+        return {
+            "success": False,
+            "message": f"测试失败: {str(e)}",
+            "error_type": "connection_error"
+        }
