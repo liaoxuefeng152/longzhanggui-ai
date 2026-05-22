@@ -285,18 +285,33 @@ class Alibaba1688Service:
                     img_url = re.sub(r"_\d+x\d+\.", ".", img_url)
                     images.append(img_url)
 
+        # 从description HTML中提取图片作为补充
+        desc = product.get("description", "")
+        if desc and not images:
+            img_matches = re.findall(r'src="(https?://[^"]+?(?:alicdn|1688)[^"]*)"', desc)
+            for img_url in img_matches:
+                if img_url not in images:
+                    images.append(img_url)
+
         # 解析价格
+        # 分销版API用referencePrice，通用版用saleInfo.price或price
         price = "0"
         price_range = ""
-        price_obj = product.get("price") or (product.get("saleInfo", {}).get("price") if isinstance(product.get("saleInfo"), dict) else None)
-        if isinstance(price_obj, (int, float)):
-            price = str(price_obj)
-        elif isinstance(price_obj, str):
-            price = price_obj
-        elif isinstance(price_obj, dict):
-            price = str(price_obj.get("price", "0"))
-            if "priceRange" in price_obj:
-                price_range = str(price_obj["priceRange"])
+
+        # 优先用referencePrice（分销版API直接返回参考价）
+        ref_price = product.get("referencePrice")
+        if ref_price:
+            price = str(ref_price)
+        else:
+            price_obj = product.get("price") or (product.get("saleInfo", {}).get("price") if isinstance(product.get("saleInfo"), dict) else None)
+            if isinstance(price_obj, (int, float)):
+                price = str(price_obj)
+            elif isinstance(price_obj, str):
+                price = price_obj
+            elif isinstance(price_obj, dict):
+                price = str(price_obj.get("price", "0"))
+                if "priceRange" in price_obj:
+                    price_range = str(price_obj["priceRange"])
 
         # 解析SKU列表
         skus = []
@@ -319,12 +334,18 @@ class Alibaba1688Service:
 
         # 解析属性
         attributes = {}
-        attr_list = product.get("attributes") or product.get("productFeatureList") or []
+        # 分销版API用productAttribute，通用版用attributes
+        attr_list = product.get("productAttribute") or product.get("attributes") or product.get("productFeatureList") or []
         if isinstance(attr_list, list):
             for attr in attr_list:
                 if isinstance(attr, dict):
                     key = attr.get("attributeName") or attr.get("name", "")
-                    value = attr.get("attributeValueName") or attr.get("value", "")
+                    # 分销版API: values是列表
+                    values = attr.get("values") or attr.get("attributeValueName") or attr.get("value", "")
+                    if isinstance(values, list):
+                        value = "/".join(str(v) for v in values if v)
+                    else:
+                        value = str(values) if values else ""
                     if key and value:
                         attributes[key] = value
 
@@ -339,6 +360,20 @@ class Alibaba1688Service:
                 "years": supplier_info.get("yearsOnPlatform", 0),
                 "member_type": supplier_info.get("memberType", ""),
             }
+        else:
+            # 分销版API直接在product根级提供supplierLoginId/sellerLoginId
+            supplier_name = product.get("supplierLoginId") or product.get("sellerLoginId") or ""
+            if supplier_name:
+                supplier = {
+                    "name": supplier_name,
+                    "url": f"https://{supplier_name}.1688.com" if supplier_name else "",
+                    "rating": 0,
+                    "years": 0,
+                    "member_type": "",
+                }
+
+        # 解析类目
+        category_name = product.get("categoryName", "")
 
         return {
             "success": True,
@@ -348,6 +383,7 @@ class Alibaba1688Service:
             "images": images[:10],
             "skus": skus,
             "attributes": attributes,
+            "category_name": category_name,
             "supplier": supplier,
             "weight": float(product.get("weight", 0) or 0),
             "details": product.get("description", ""),
