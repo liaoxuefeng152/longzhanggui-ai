@@ -1,12 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import {
-  collectProduct,
-  parseOfferIdFromUrl,
-  ALI_1688_CONFIG,
-} from '@/lib/ali1688';
+
+const BACKEND_URL = 'http://localhost:8000';
 
 /**
- * 1688 商品采集 API
+ * 1688 商品采集 API - 代理到Python后端
+ * Python后端已实现HMAC-SHA1签名算法，成功对接1688开放平台API
  */
 export async function POST(request: NextRequest) {
   try {
@@ -20,69 +18,66 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const hasCredentials = ALI_1688_CONFIG.appKey && ALI_1688_CONFIG.appSecret;
-    
-    if (!hasCredentials) {
-      return NextResponse.json({
-        success: false,
-        error: '请先在平台配置中设置1688 API凭证',
-        needConfig: true,
-        configPath: '/platform/datasources',
-        hint: '需要配置 AppKey 和 AppSecret',
-      });
+    console.log('[1688 Collect] 代理采集请求到后端:', url);
+
+    // 代理到Python后端
+    const backendResp = await fetch(`${BACKEND_URL}/api/v1/1688/collect`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url }),
+      signal: AbortSignal.timeout(30000),
+    });
+
+    const data = await backendResp.json();
+
+    if (!backendResp.ok) {
+      console.error('[1688 Collect] 后端返回错误:', data);
+      return NextResponse.json(
+        { success: false, error: data.error || data.detail || '后端采集失败' },
+        { status: backendResp.status }
+      );
     }
 
-    const offerId = parseOfferIdFromUrl(url);
-    if (!offerId) {
-      return NextResponse.json({
-        success: false,
-        error: '无法解析1688商品链接，请检查链接格式',
-      });
-    }
-
-    console.log('[1688 Collect] 开始采集商品:', offerId);
-
-    const result = await collectProduct(url);
-
-    if (result.success && result.data) {
-      const product = result.data;
-      
-      return NextResponse.json({
-        success: true,
-        platform: '1688',
-        productId: offerId,
-        data: {
-          title: product.title || '',
-          price: parseFloat(String(product.price || 0).split('-')[0]) || 0,
-          price_range: product.priceRange,
-          main_image: product.images?.[0] || '',
-          images: product.images || [],
-          description: product.details || '',
-          shop_name: product.supplier?.name || '',
-          shop_url: product.supplier?.url || '',
-          specifications: product.attributes || {},
-          skus: product.skus || [],
-          sales: product.sales || 0,
-          min_order: product.minOrder || 1,
-          location: product.location || '',
-        },
-      });
-    }
+    // 转换后端返回格式为前端期望的格式
+    const product = data.data || {};
+    const offerId = product.offer_id || '';
 
     return NextResponse.json({
-      success: false,
-      error: '采集失败，请稍后重试',
+      success: true,
+      platform: '1688',
+      productId: offerId,
+      data: {
+        title: product.title || '',
+        price: parseFloat(String(product.price || 0).split('-')[0]) || 0,
+        price_range: product.price_range || '',
+        main_image: product.images?.[0] || '',
+        images: product.images || [],
+        description: product.details || '',
+        shop_name: product.supplier?.name || '',
+        shop_url: product.supplier?.url || '',
+        specifications: product.attributes || {},
+        skus: product.skus || [],
+        sales: product.sales || 0,
+        min_order: product.min_order || 1,
+        location: product.location || '',
+        collect_method: product.collect_method || '',
+        note: product.note || '',
+      },
     });
 
   } catch (error: any) {
     console.error('[1688 Collect] 采集异常:', error);
+    // 后端不可用时，返回明确错误而非模拟数据
     return NextResponse.json(
-      { success: false, error: error.message || '采集服务异常' },
-      { status: 500 }
+      { success: false, error: '后端采集服务不可用，请确保Python后端已启动 (port 8000)' },
+      { status: 503 }
     );
   }
 }
 
+/**
+ * 批量采集 - 代理到Python后端
+ */
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json();
@@ -102,35 +97,27 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const hasCredentials = ALI_1688_CONFIG.appKey && ALI_1688_CONFIG.appSecret;
-    if (!hasCredentials) {
-      return NextResponse.json({
-        success: false,
-        error: '请先在平台配置中设置1688 API凭证',
-        needConfig: true,
-      });
-    }
+    console.log('[1688 Batch Collect] 代理批量采集到后端, 数量:', urls.length);
 
+    // 逐个代理到后端
     const results = [];
     for (const url of urls) {
       try {
-        const offerId = parseOfferIdFromUrl(url);
-        if (!offerId) {
-          results.push({
-            success: false,
-            url,
-            error: '无法解析链接',
-          });
-          continue;
-        }
+        const resp = await fetch(`${BACKEND_URL}/api/v1/1688/collect`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url }),
+          signal: AbortSignal.timeout(30000),
+        });
 
-        const result = await collectProduct(url);
-        if (result.success && result.data) {
-          const product = result.data;
+        const data = await resp.json();
+        const product = data.data || {};
+
+        if (data.success && product) {
           results.push({
             success: true,
             url,
-            productId: offerId,
+            productId: product.offer_id || '',
             data: {
               title: product.title || '',
               price: parseFloat(String(product.price || 0).split('-')[0]) || 0,
@@ -142,14 +129,14 @@ export async function PUT(request: NextRequest) {
           results.push({
             success: false,
             url,
-            error: '采集失败',
+            error: data.error || '采集失败',
           });
         }
-      } catch (error: any) {
+      } catch (err: any) {
         results.push({
           success: false,
           url,
-          error: error.message || '采集异常',
+          error: err.message || '采集异常',
         });
       }
     }
