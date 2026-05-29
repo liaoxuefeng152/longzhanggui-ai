@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
-import { getFeishuConfig } from '@/lib/feishu/config';
-import { sendFeishuMessage } from '@/lib/feishu/client';
+import { FEISHU_CONFIG } from '@/lib/feishu/config';
+import { sendMessage } from '@/lib/feishu/client';
 
 // 获取飞书配置
-async function getFeishuConfigFromDb() {
+async function getFeishuConfigFromDb(): Promise<Record<string, string> | null> {
   try {
     const db = getDb();
-    const config = db.prepare('SELECT * FROM feishu_config WHERE id = 1').get();
+    const config = db.prepare('SELECT * FROM feishu_config WHERE id = 1').get() as Record<string, string> | undefined;
     return config || null;
   } catch (error) {
     console.error('[飞书] 获取配置失败:', error);
@@ -145,8 +145,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: '未配置飞书' }, { status: 500 });
     }
     
-    const appId = config.app_id;
-    const appSecret = config.app_secret;
+    const appId = config.app_id || config.appId || '';
+    const appSecret = config.app_secret || config.appSecret || '';
     
     // 获取token
     const tokenResponse = await fetch('https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal', {
