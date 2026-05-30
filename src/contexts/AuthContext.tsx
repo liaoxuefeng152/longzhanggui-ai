@@ -39,32 +39,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // 初始化时从localStorage恢复登录状态
+  // 初始化时从localStorage恢复登录状态（仅执行一次）
   useEffect(() => {
-    const initAuth = () => {
-      try {
-        const savedToken = localStorage.getItem('token');
-        const savedUser = localStorage.getItem('user');
+    try {
+      const savedToken = localStorage.getItem('token');
+      const savedUser = localStorage.getItem('user');
 
-        if (savedToken && savedUser) {
-          const parsedUser = JSON.parse(savedUser);
-          setToken(savedToken);
-          setUser(parsedUser);
-        } else if (!PUBLIC_PATHS.includes(pathname)) {
-          // 未登录且不在公开页面，跳转到登录页
-          router.push('/login');
-        }
-      } catch (error) {
-        console.error('初始化登录状态失败:', error);
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-      } finally {
-        setIsLoading(false);
+      if (savedToken && savedUser) {
+        const parsedUser = JSON.parse(savedUser);
+        setToken(savedToken);
+        setUser(parsedUser);
       }
-    };
+    } catch (error) {
+      console.error('初始化登录状态失败:', error);
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
-    initAuth();
-  }, [pathname, router]);
+  // 路径保护：未登录且不在公开页面时跳转登录页
+  useEffect(() => {
+    if (!isLoading && !token && !user && !PUBLIC_PATHS.includes(pathname)) {
+      router.push('/login');
+    }
+  }, [pathname, isLoading, token, user, router]);
 
   // 登录
   const login = (newToken: string, newUser: User) => {

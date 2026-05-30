@@ -18,8 +18,9 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const { isAuthenticated, isLoading } = useAuth();
 
   useEffect(() => {
+    // AuthContext 已处理路径保护，这里仅做兜底
     if (!isLoading && !isAuthenticated && !PUBLIC_PATHS.includes(pathname)) {
-      router.push('/login');
+      router.replace('/login');
     }
   }, [isAuthenticated, isLoading, pathname, router]);
 

@@ -155,9 +155,13 @@ export default function LoginPage() {
 
         {/* 底部信息 */}
         <div className="text-center mt-6 space-y-2">
-          <a href="/" className="text-sm text-muted-foreground hover:text-primary transition-colors inline-flex items-center gap-1">
+          <button
+            type="button"
+            onClick={() => router.push('/')}
+            className="text-sm text-muted-foreground hover:text-primary transition-colors inline-flex items-center gap-1"
+          >
             ← 返回首页
-          </a>
+          </button>
           <p className="text-[12px] text-muted-foreground">
             © 2024 龙掌柜智能运营系统 · 版权所有
           </p>
