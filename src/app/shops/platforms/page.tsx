@@ -48,6 +48,7 @@ interface PlatformConfig {
   credentials?: {
     api_key?: string;
     api_secret?: string;
+    access_token?: string;
     webhook_secret?: string;
   };
   status: 'configured' | 'unconfigured' | 'error';
@@ -209,6 +210,7 @@ export default function PlatformConfigPage() {
       platform: platformId,
       api_key: existing?.credentials?.api_key || '',
       api_secret: existing?.credentials?.api_secret || '',
+      access_token: existing?.credentials?.access_token || '',
       webhook_secret: existing?.credentials?.webhook_secret || '',
     });
     setIsConfigOpen(true);
