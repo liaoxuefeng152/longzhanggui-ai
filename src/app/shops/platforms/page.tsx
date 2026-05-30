@@ -126,11 +126,13 @@ export default function PlatformConfigPage() {
     platform: string;
     api_key: string;
     api_secret: string;
+    access_token: string;
     webhook_secret: string;
   }>({
     platform: '',
     api_key: '',
     api_secret: '',
+    access_token: '',
     webhook_secret: '',
   });
 
@@ -228,6 +230,7 @@ export default function PlatformConfigPage() {
           credentials: {
             api_key: configForm.api_key,
             api_secret: configForm.api_secret,
+            access_token: configForm.access_token,
             webhook_secret: configForm.webhook_secret,
           },
         }),
@@ -238,6 +241,12 @@ export default function PlatformConfigPage() {
         toast.success(`${PLATFORMS[configForm.platform].name} 配置已保存`);
         setIsConfigOpen(false);
         fetchPlatformConfigs();
+        // 清除1688配置缓存，使下次采集使用新配置
+        if (configForm.platform === '1688') {
+          try {
+            await fetch('/api/v1/platforms/1688/clear-cache', { method: 'POST' });
+          } catch { /* ignore */ }
+        }
       } else {
         toast.error(data.error || data.detail || '保存失败');
       }
@@ -549,17 +558,36 @@ export default function PlatformConfigPage() {
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="webhook_secret">Webhook Secret <span className="text-muted-foreground font-normal">(可选)</span></Label>
-                <Input
-                  id="webhook_secret"
-                  type={showCredentials[configForm.platform] ? 'text' : 'password'}
-                  placeholder="输入 Webhook 回调密钥"
-                  value={configForm.webhook_secret}
-                  onChange={(e) => setConfigForm({ ...configForm, webhook_secret: e.target.value })}
-                  className="font-mono"
-                />
-              </div>
+              {configForm.platform === '1688' && (
+                <div className="space-y-2">
+                  <Label htmlFor="access_token">Access Token</Label>
+                  <Input
+                    id="access_token"
+                    type={showCredentials[configForm.platform] ? 'text' : 'password'}
+                    placeholder="输入授权获取的 Access Token"
+                    value={configForm.access_token}
+                    onChange={(e) => setConfigForm({ ...configForm, access_token: e.target.value })}
+                    className="font-mono"
+                  />
+                  <p className="text-[11px] text-muted-foreground">
+                    通过1688开放平台OAuth授权获取，有效期通常为2小时~1天，过期需重新获取
+                  </p>
+                </div>
+              )}
+
+              {configForm.platform !== '1688' && (
+                <div className="space-y-2">
+                  <Label htmlFor="webhook_secret">Webhook Secret <span className="text-muted-foreground font-normal">(可选)</span></Label>
+                  <Input
+                    id="webhook_secret"
+                    type={showCredentials[configForm.platform] ? 'text' : 'password'}
+                    placeholder="输入 Webhook 回调密钥"
+                    value={configForm.webhook_secret}
+                    onChange={(e) => setConfigForm({ ...configForm, webhook_secret: e.target.value })}
+                    className="font-mono"
+                  />
+                </div>
+              )}
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setIsConfigOpen(false)}>

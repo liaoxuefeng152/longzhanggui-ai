@@ -6,13 +6,77 @@
 
 import crypto from 'crypto';
 
-// 1688 API 配置
-const ALI_1688_CONFIG = {
-  appKey: process.env.ALI_1688_APP_KEY || '',
-  appSecret: process.env.ALI_1688_APP_SECRET || '',
-  accessToken: process.env.ALI_1688_ACCESS_TOKEN || '',
-  apiBaseUrl: 'https://gw.open.1688.com/openapi',
-};
+// 1688 API 配置 - 缓存动态配置
+let _cachedConfig: {
+  appKey: string;
+  appSecret: string;
+  accessToken: string;
+  apiBaseUrl: string;
+  fetchedAt: number;
+} | null = null;
+
+const CONFIG_CACHE_TTL = 5 * 60 * 1000; // 5分钟缓存
+
+/**
+ * 获取1688 API配置
+ * 优先从平台配置API读取，环境变量作为fallback
+ */
+async function getAli1688Config(): Promise<{
+  appKey: string;
+  appSecret: string;
+  accessToken: string;
+  apiBaseUrl: string;
+}> {
+  // 检查缓存
+  if (_cachedConfig && Date.now() - _cachedConfig.fetchedAt < CONFIG_CACHE_TTL) {
+    return _cachedConfig;
+  }
+
+  // 尝试从平台配置API获取
+  try {
+    const baseUrl = process.env.DEPLOY_RUN_PORT 
+      ? `http://localhost:${process.env.DEPLOY_RUN_PORT}` 
+      : 'http://localhost:5000';
+    const resp = await fetch(`${baseUrl}/api/v1/platforms`, {
+      cache: 'no-store',
+    });
+    if (resp.ok) {
+      const data = await resp.json();
+      const platforms = data.data || data.platforms || [];
+      const platform = platforms.find((p: any) => p.id === '1688' || p.platform === '1688');
+      if (platform?.credentials?.api_key && platform?.credentials?.api_secret) {
+        _cachedConfig = {
+          appKey: platform.credentials.api_key,
+          appSecret: platform.credentials.api_secret,
+          accessToken: platform.credentials.access_token || process.env.ALI_1688_ACCESS_TOKEN || '',
+          apiBaseUrl: 'https://gw.open.1688.com/openapi',
+          fetchedAt: Date.now(),
+        };
+        return _cachedConfig;
+      }
+    }
+  } catch {
+    // 平台配置API不可用，使用环境变量fallback
+  }
+
+  // Fallback: 环境变量
+  const envConfig = {
+    appKey: process.env.ALI_1688_APP_KEY || '',
+    appSecret: process.env.ALI_1688_APP_SECRET || '',
+    accessToken: process.env.ALI_1688_ACCESS_TOKEN || '',
+    apiBaseUrl: 'https://gw.open.1688.com/openapi' as const,
+  };
+  
+  _cachedConfig = { ...envConfig, fetchedAt: Date.now() };
+  return _cachedConfig;
+}
+
+/**
+ * 清除配置缓存（配置更新后调用）
+ */
+export function clearAli1688ConfigCache() {
+  _cachedConfig = null;
+}
 
 /**
  * 生成 1688 API HMAC-SHA1 签名
@@ -46,12 +110,14 @@ function generateHmacSha1Sign(
  * API: alibaba.fenxiao.productInfo.get
  */
 async function getFenxiaoProductInfo(offerId: string): Promise<any> {
-  if (!ALI_1688_CONFIG.appKey || !ALI_1688_CONFIG.appSecret) {
-    throw new Error('请先配置1688 API凭证（ALI_1688_APP_KEY / ALI_1688_APP_SECRET）');
+  const config = await getAli1688Config();
+  
+  if (!config.appKey || !config.appSecret) {
+    throw new Error('请先配置1688 API凭证（AppKey / AppSecret），在平台配置中填写');
   }
 
-  if (!ALI_1688_CONFIG.accessToken) {
-    throw new Error('请先配置1688 Access Token（ALI_1688_ACCESS_TOKEN）');
+  if (!config.accessToken) {
+    throw new Error('请先配置1688 Access Token，在平台配置中填写');
   }
 
   // API路径定义
@@ -62,26 +128,26 @@ async function getFenxiaoProductInfo(offerId: string): Promise<any> {
 
   // 业务参数（按key字母排序用于签名）
   const bizParams: Record<string, string> = {
-    access_token: ALI_1688_CONFIG.accessToken,
+    access_token: config.accessToken,
     offerId: offerId,
   };
 
   // 生成签名
   const sign = generateHmacSha1Sign(
     apiPath,
-    ALI_1688_CONFIG.appKey,
+    config.appKey,
     bizParams,
-    ALI_1688_CONFIG.appSecret
+    config.appSecret
   );
 
   // 构建请求URL
   const queryString = Object.entries(bizParams)
     .map(([key, value]) => `${key}=${encodeURIComponent(value)}`)
     .join('&');
-  const requestUrl = `${ALI_1688_CONFIG.apiBaseUrl}/${apiPath}/${ALI_1688_CONFIG.appKey}?${queryString}&_aop_signature=${sign}`;
+  const requestUrl = `${config.apiBaseUrl}/${apiPath}/${config.appKey}?${queryString}&_aop_signature=${sign}`;
 
   console.log('[1688 API] 采集商品:', offerId);
-  console.log('[1688 API] 签名串:', `${apiPath}${ALI_1688_CONFIG.appKey}access_token***offerId${offerId}`);
+  console.log('[1688 API] 签名串:', `${apiPath}${config.appKey}access_token***offerId${offerId}`);
   console.log('[1688 API] 签名:', sign);
 
   const response = await fetch(requestUrl, {
@@ -323,4 +389,4 @@ export async function searchOffers(
   };
 }
 
-export { ALI_1688_CONFIG };
+// Config is now loaded dynamically via getAli1688Config()
