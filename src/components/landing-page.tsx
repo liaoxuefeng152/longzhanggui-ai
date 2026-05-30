@@ -24,6 +24,10 @@ import {
   ChevronRight,
   Menu,
   X,
+  MessageCircle,
+  Sparkles,
+  Command,
+  Send,
 } from "lucide-react";
 
 /* ─── 动画 Hook ─── */
@@ -100,6 +104,7 @@ export default function LandingPage() {
           <div className="hidden md:flex items-center gap-8 text-sm text-muted-foreground">
             <a href="#features" className="hover:text-white transition">核心能力</a>
             <a href="#agents" className="hover:text-white transition">AI智能体</a>
+            <a href="#assistant" className="hover:text-white transition">AI助手</a>
             <a href="#erp" className="hover:text-white transition">ERP系统</a>
             <a href="#flow" className="hover:text-white transition">全链路</a>
           </div>
@@ -120,6 +125,7 @@ export default function LandingPage() {
           <div className="md:hidden bg-[#0a0a0f]/95 backdrop-blur-xl border-b border-white/5 px-6 py-4 space-y-3">
             <a href="#features" className="block text-sm text-muted-foreground hover:text-white" onClick={() => setMobileMenuOpen(false)}>核心能力</a>
             <a href="#agents" className="block text-sm text-muted-foreground hover:text-white" onClick={() => setMobileMenuOpen(false)}>AI智能体</a>
+            <a href="#assistant" className="block text-sm text-muted-foreground hover:text-white" onClick={() => setMobileMenuOpen(false)}>AI助手</a>
             <a href="#erp" className="block text-sm text-muted-foreground hover:text-white" onClick={() => setMobileMenuOpen(false)}>ERP系统</a>
             <a href="#flow" className="block text-sm text-muted-foreground hover:text-white" onClick={() => setMobileMenuOpen(false)}>全链路</a>
             <button onClick={() => router.push("/login")} className="w-full px-4 py-2 text-sm font-medium rounded-lg bg-gradient-to-r from-orange-500 to-amber-600">登录系统</button>
@@ -261,6 +267,174 @@ export default function LandingPage() {
               </FadeIn>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* ─── 跨境AI助手 ─── */}
+      <section id="assistant" className="py-24 sm:py-32 relative">
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-violet-500/[0.02] to-transparent" />
+        <div className="relative max-w-7xl mx-auto px-6">
+          <FadeIn>
+            <div className="text-center mb-16">
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-violet-500/10 border border-violet-500/20 text-violet-400 text-sm mb-6">
+                <Sparkles size={14} /> 跨境AI助手
+              </div>
+              <h2 className="text-3xl sm:text-4xl font-bold mb-4">你的AI运营搭子，随叫随到</h2>
+              <p className="text-white/40 text-lg">一句话说清需求，AI自动识别意图、跳转功能、给出建议</p>
+            </div>
+          </FadeIn>
+
+          <div className="grid lg:grid-cols-2 gap-8 items-center">
+            {/* 左侧：对话模拟 */}
+            <FadeIn delay={100}>
+              <div className="relative rounded-2xl bg-white/[0.03] border border-white/10 p-6 sm:p-8 overflow-hidden">
+                {/* 模拟对话窗口 */}
+                <div className="space-y-4">
+                  {/* 用户消息 */}
+                  <div className="flex justify-end">
+                    <div className="max-w-[80%] px-4 py-2.5 rounded-2xl rounded-tr-md bg-orange-500/20 text-orange-300 text-sm">
+                      帮我选几款宠物用品爆款
+                    </div>
+                  </div>
+                  {/* AI回复 */}
+                  <div className="flex justify-start">
+                    <div className="max-w-[85%] space-y-3">
+                      <div className="flex items-center gap-2 mb-1">
+                        <div className="w-6 h-6 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
+                          <Bot size={12} className="text-white" />
+                        </div>
+                        <span className="text-xs text-white/50">跨境AI助手</span>
+                      </div>
+                      <div className="px-4 py-3 rounded-2xl rounded-tl-md bg-white/[0.05] text-sm text-white/70 leading-relaxed">
+                        好的，我来为您分析宠物用品市场趋势。当前热门方向有：
+                        <br /><br />
+                        <span className="text-blue-400">1. 宠物智能喂食器</span> — 增长率 128%，东南亚需求旺盛
+                        <br />
+                        <span className="text-blue-400">2. 猫爬架/猫树</span> — 稳定品类，利润率 45%+
+                        <br />
+                        <span className="text-blue-400">3. 宠物车载安全带</span> — 蓝海品类，竞争度低
+                      </div>
+                      {/* 快捷操作按钮 */}
+                      <div className="flex flex-wrap gap-2 ml-0">
+                        <span className="px-3 py-1 rounded-full text-xs bg-blue-500/10 text-blue-400 border border-blue-500/20 cursor-default">
+                          查看选品详情
+                        </span>
+                        <span className="px-3 py-1 rounded-full text-xs bg-green-500/10 text-green-400 border border-green-500/20 cursor-default">
+                          利润测算
+                        </span>
+                        <span className="px-3 py-1 rounded-full text-xs bg-purple-500/10 text-purple-400 border border-purple-500/20 cursor-default">
+                          竞品分析
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  {/* 第二轮对话 */}
+                  <div className="flex justify-end">
+                    <div className="max-w-[80%] px-4 py-2.5 rounded-2xl rounded-tr-md bg-orange-500/20 text-orange-300 text-sm">
+                      生成今日运营日报
+                    </div>
+                  </div>
+                  <div className="flex justify-start">
+                    <div className="max-w-[85%] space-y-3">
+                      <div className="flex items-center gap-2 mb-1">
+                        <div className="w-6 h-6 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
+                          <Bot size={12} className="text-white" />
+                        </div>
+                        <span className="text-xs text-white/50">跨境AI助手</span>
+                      </div>
+                      <div className="px-4 py-3 rounded-2xl rounded-tl-md bg-white/[0.05] text-sm text-white/70 leading-relaxed">
+                        今日运营日报已生成：
+                        <br /><br />
+                        <span className="text-green-400">GMV ¥32,580</span> ↑12.5%&ensp;|&ensp;订单 <span className="text-green-400">186</span> ↑8.3%
+                        <br />
+                        <span className="text-orange-400">库存预警</span>：3款商品库存不足&ensp;|&ensp;<span className="text-red-400">1条差评</span>需处理
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                {/* 输入框模拟 */}
+                <div className="mt-5 flex items-center gap-3 px-4 py-3 rounded-xl bg-white/[0.03] border border-white/5">
+                  <MessageCircle size={16} className="text-white/20" />
+                  <span className="text-sm text-white/20 flex-1">输入你想了解的运营问题...</span>
+                  <div className="w-8 h-8 rounded-lg bg-gradient-to-r from-violet-500 to-purple-600 flex items-center justify-center">
+                    <Send size={14} className="text-white" />
+                  </div>
+                </div>
+                {/* 装饰光晕 */}
+                <div className="absolute -top-20 -right-20 w-40 h-40 bg-violet-500/10 rounded-full blur-3xl pointer-events-none" />
+              </div>
+            </FadeIn>
+
+            {/* 右侧：能力介绍 */}
+            <div className="space-y-5">
+              {[
+                {
+                  icon: Command,
+                  title: "自然语言指令",
+                  desc: "不需要记菜单路径，用日常语言描述需求，AI自动识别意图并执行。支持选品、定价、Listing、客服、数据等9大意图类型。",
+                  gradient: "from-violet-500/20 to-purple-500/5",
+                  iconColor: "text-violet-400",
+                },
+                {
+                  icon: Zap,
+                  title: "快捷操作跳转",
+                  desc: "AI回复自带快捷操作按钮，一键跳转到选品智能体、Listing优化、库存管理等对应功能页面，无缝衔接。",
+                  gradient: "from-orange-500/20 to-amber-500/5",
+                  iconColor: "text-orange-400",
+                },
+                {
+                  icon: Sparkles,
+                  title: "流式打字机输出",
+                  desc: "AI回复实时流式输出，打字机效果逐字呈现，不用等待完整生成，第一时间看到分析结果。",
+                  gradient: "from-cyan-500/20 to-blue-500/5",
+                  iconColor: "text-cyan-400",
+                },
+                {
+                  icon: TrendingUp,
+                  title: "运营数据随时问",
+                  desc: "\"今天卖了多少？\"\"库存够不够？\"\"哪个广告ROI最高？\"——运营数据随问随答，日报/周报/预警一目了然。",
+                  gradient: "from-green-500/20 to-emerald-500/5",
+                  iconColor: "text-green-400",
+                },
+              ].map((item, i) => (
+                <FadeIn key={i} delay={200 + i * 80}>
+                  <div className="group flex gap-4 p-5 rounded-xl bg-white/[0.02] border border-white/5 hover:border-white/10 transition-all hover:bg-white/[0.04]">
+                    <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${item.gradient} flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform`}>
+                      <item.icon className={`w-5 h-5 ${item.iconColor}`} />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold mb-1">{item.title}</h3>
+                      <p className="text-sm text-white/40 leading-relaxed">{item.desc}</p>
+                    </div>
+                  </div>
+                </FadeIn>
+              ))}
+            </div>
+          </div>
+
+          {/* 快捷指令示例 */}
+          <FadeIn delay={400}>
+            <div className="mt-12 p-6 sm:p-8 rounded-2xl bg-gradient-to-r from-violet-500/5 to-purple-500/5 border border-violet-500/10">
+              <h3 className="text-lg font-semibold mb-4 text-center">常用指令，开口即达</h3>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {[
+                  { cmd: "帮我选品分析", tag: "选品", tagColor: "bg-blue-500/10 text-blue-400 border-blue-500/20" },
+                  { cmd: "翻译图片", tag: "图片", tagColor: "bg-purple-500/10 text-purple-400 border-purple-500/20" },
+                  { cmd: "优化这个Listing", tag: "Listing", tagColor: "bg-green-500/10 text-green-400 border-green-500/20" },
+                  { cmd: "生成今日日报", tag: "数据", tagColor: "bg-indigo-500/10 text-indigo-400 border-indigo-500/20" },
+                  { cmd: "查看库存预警", tag: "库存", tagColor: "bg-orange-500/10 text-orange-400 border-orange-500/20" },
+                  { cmd: "帮我回复这个客户", tag: "客服", tagColor: "bg-cyan-500/10 text-cyan-400 border-cyan-500/20" },
+                  { cmd: "广告ROI怎么样", tag: "广告", tagColor: "bg-yellow-500/10 text-yellow-400 border-yellow-500/20" },
+                  { cmd: "这个品能卖多少钱", tag: "定价", tagColor: "bg-red-500/10 text-red-400 border-red-500/20" },
+                ].map((item, i) => (
+                  <div key={i} className="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-white/[0.03] border border-white/5">
+                    <span className={`px-2 py-0.5 rounded text-[10px] font-medium border ${item.tagColor} shrink-0`}>{item.tag}</span>
+                    <span className="text-xs text-white/50 truncate">{item.cmd}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </FadeIn>
         </div>
       </section>
 
