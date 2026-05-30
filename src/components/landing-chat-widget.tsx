@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { MessageCircle, Send, X, Bot, Sparkles, ChevronRight, Loader2 } from 'lucide-react';
 import { isUsageExceeded, incrementUsage, getRemainingCount, getMaxFreeMessages } from '@/lib/chat-usage';
 import { WechatGuideOverlay } from './wechat-guide-overlay';
@@ -208,7 +209,12 @@ export default function LandingChatWidget({ open: externalOpen, onClose: externa
   // 是否由外部控制开关（落地页模式）
   const isControlled = externalOpen !== undefined;
 
-  return (
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); return () => setMounted(false); }, []);
+
+  if (!mounted) return null;
+
+  return createPortal(
     <>
       {/* ─── 浮窗触发按钮（仅非受控模式显示） ─── */}
       {!isControlled && !open && (
@@ -340,6 +346,7 @@ export default function LandingChatWidget({ open: externalOpen, onClose: externa
           )}
         </div>
       )}
-    </>
+    </>,
+    document.body
   );
 }

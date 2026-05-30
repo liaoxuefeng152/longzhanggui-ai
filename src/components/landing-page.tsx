@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import LandingChatWidget from "@/components/landing-chat-widget";
 import {
@@ -93,6 +94,8 @@ export default function LandingPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
   const [prefillQuery, setPrefillQuery] = useState("");
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
 
   return (
     <>
@@ -551,8 +554,8 @@ export default function LandingPage() {
       </footer>
     </div>
 
-    {/* ─── 右下角浮动按钮（聊天窗口关闭时显示） ─── */}
-    {!chatOpen && (
+    {/* ─── 右下角浮动按钮（通过 Portal 渲染到 body） ─── */}
+    {!chatOpen && mounted && createPortal(
       <button
         onClick={() => setChatOpen(true)}
         className="fixed z-40 w-14 h-14 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 text-white shadow-lg shadow-violet-500/30 hover:shadow-xl hover:shadow-violet-500/40 hover:scale-105 transition-all flex items-center justify-center"
@@ -560,10 +563,11 @@ export default function LandingPage() {
         aria-label="打开AI助手"
       >
         <MessageCircle size={24} />
-      </button>
+      </button>,
+      document.body
     )}
 
-    {/* ─── AI助手浮窗（放在根 div 外部，避免 overflow 影响 fixed 定位） ─── */}
+    {/* ─── AI助手浮窗（通过 Portal 渲染到 body，避免 overflow 影响 fixed 定位） ─── */}
     <LandingChatWidget
       key="landing-chat-widget"
       open={chatOpen}
