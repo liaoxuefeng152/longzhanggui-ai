@@ -170,7 +170,7 @@ export default function PlatformConfigPage() {
         const platforms = data.data.platforms || [];
         
         for (const p of platforms) {
-          const hasCredentials = !!(p.config?.api_key || p.config?.api_secret);
+          const hasCredentials = !!(p.credentials?.api_key || p.credentials?.api_secret);
           configs[p.platform_id] = {
             ...PLATFORMS[p.platform_id] || {
               id: p.platform_id,
@@ -183,9 +183,10 @@ export default function PlatformConfigPage() {
             },
             has_credentials: hasCredentials,
             credentials: {
-              api_key: p.config?.api_key,
-              api_secret: p.config?.api_secret,
-              webhook_secret: p.config?.webhook_secret,
+              api_key: p.credentials?.api_key,
+              api_secret: p.credentials?.api_secret,
+              access_token: p.credentials?.access_token,
+              webhook_secret: p.credentials?.webhook_secret,
             },
             status: hasCredentials ? 'configured' : 'unconfigured',
             last_updated: p.updated_at,
