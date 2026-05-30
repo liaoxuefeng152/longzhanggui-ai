@@ -287,8 +287,8 @@ export default function LandingPage() {
             </div>
           </FadeIn>
 
-          <div className="grid lg:grid-cols-2 gap-8 items-center">
-            {/* 左侧：体验入口卡片 */}
+          <div className="max-w-3xl mx-auto">
+            {/* 体验入口卡片 - 居中展示 */}
             <FadeIn delay={100}>
               <div className="relative rounded-2xl bg-gradient-to-br from-violet-500/10 to-purple-500/5 border border-violet-500/20 p-8 sm:p-10 overflow-hidden">
                 <div className="flex items-center gap-3 mb-6">
@@ -334,9 +334,10 @@ export default function LandingPage() {
                 <div className="absolute -bottom-16 -left-16 w-32 h-32 bg-purple-500/10 rounded-full blur-3xl pointer-events-none" />
               </div>
             </FadeIn>
+          </div>
 
-            {/* 右侧：能力介绍 */}
-            <div className="space-y-5">
+          {/* 能力卡片 - 居中4列 */}
+          <div className="mt-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 max-w-5xl mx-auto">
               {[
                 {
                   icon: Command,
@@ -368,19 +369,16 @@ export default function LandingPage() {
                 },
               ].map((item, i) => (
                 <FadeIn key={i} delay={200 + i * 80}>
-                  <div className="group flex gap-4 p-5 rounded-xl bg-white/[0.02] border border-white/5 hover:border-white/10 transition-all hover:bg-white/[0.04]">
-                    <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${item.gradient} flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform`}>
+                  <div className="group p-5 rounded-xl bg-white/[0.02] border border-white/5 hover:border-white/10 transition-all hover:bg-white/[0.04] text-center">
+                    <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${item.gradient} flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform`}>
                       <item.icon className={`w-5 h-5 ${item.iconColor}`} />
                     </div>
-                    <div>
-                      <h3 className="font-semibold mb-1">{item.title}</h3>
-                      <p className="text-sm text-white/40 leading-relaxed">{item.desc}</p>
-                    </div>
+                    <h3 className="font-semibold mb-1">{item.title}</h3>
+                    <p className="text-xs text-white/40 leading-relaxed">{item.desc}</p>
                   </div>
                 </FadeIn>
               ))}
             </div>
-          </div>
 
           {/* 快捷指令示例 */}
           <FadeIn delay={400}>
