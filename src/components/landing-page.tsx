@@ -95,7 +95,8 @@ export default function LandingPage() {
   const [prefillQuery, setPrefillQuery] = useState("");
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f] text-white overflow-x-hidden">
+    <>
+      <div className="min-h-screen bg-[#0a0a0f] text-white overflow-x-hidden">
       {/* ─── 导航栏 ─── */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-[#0a0a0f]/80 backdrop-blur-xl border-b border-white/5">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
@@ -548,25 +549,27 @@ export default function LandingPage() {
           </div>
         </div>
       </footer>
-
-      {/* ─── AI助手浮窗 ─── */}
-      <LandingChatWidget
-        open={chatOpen}
-        onClose={() => setChatOpen(false)}
-        initialQuery={prefillQuery}
-        onQueryConsumed={() => setPrefillQuery("")}
-      />
-
-      {/* ─── 右下角浮动按钮（聊天窗口关闭时显示） ─── */}
-      {!chatOpen && (
-        <button
-          onClick={() => setChatOpen(true)}
-          className="fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 text-white shadow-lg shadow-violet-500/30 hover:shadow-xl hover:shadow-violet-500/40 hover:scale-105 transition-all flex items-center justify-center"
-          aria-label="打开AI助手"
-        >
-          <MessageCircle size={24} />
-        </button>
-      )}
     </div>
+
+    {/* ─── 右下角浮动按钮（聊天窗口关闭时显示） ─── */}
+    {!chatOpen && (
+      <button
+        onClick={() => setChatOpen(true)}
+        className="fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 text-white shadow-lg shadow-violet-500/30 hover:shadow-xl hover:shadow-violet-500/40 hover:scale-105 transition-all flex items-center justify-center"
+        aria-label="打开AI助手"
+      >
+        <MessageCircle size={24} />
+      </button>
+    )}
+
+    {/* ─── AI助手浮窗（放在根 div 外部，避免 overflow 影响 fixed 定位） ─── */}
+    <LandingChatWidget
+      key="landing-chat-widget"
+      open={chatOpen}
+      onClose={() => setChatOpen(false)}
+      initialQuery={prefillQuery}
+      onQueryConsumed={() => setPrefillQuery("")}
+    />
+    </>
   );
 }
