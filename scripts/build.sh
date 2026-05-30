@@ -13,6 +13,11 @@ pnpm install --prefer-frozen-lockfile --prefer-offline --loglevel debug --report
 echo "Building the frontend..."
 pnpm next build
 
+# Next.js standalone 模式需要手动复制静态资源
+echo "Copying static assets for standalone mode..."
+cp -r .next/static .next/standalone/.next/static 2>/dev/null || true
+cp -r public .next/standalone/public 2>/dev/null || true
+
 # 安装后端依赖
 echo "Installing backend dependencies..."
 cd "${COZE_WORKSPACE_PATH}/backend"
