@@ -625,6 +625,144 @@ class Collection1688Service:
             "collect_method": "mock"
         }
     
+    async def save_product_data(self, url: str, product_data: dict) -> Optional[str]:
+        """
+        直接保存已采集的商品数据到ERP商品库（不重新采集）
+        
+        Args:
+            url: 1688商品链接
+            product_data: 已采集的商品数据（来自API/爬虫/浏览器）
+            
+        Returns:
+            商品ID
+        """
+        if not product_data:
+            return None
+        
+        from app.core.database import get_db
+        from app.models.erp import ERPProduct, Collection1688
+        from sqlalchemy import select
+        
+        async for db in get_db():
+            try:
+                # 检查是否已采集（按source_url匹配）
+                result = await db.execute(
+                    select(Collection1688).where(Collection1688.source_url == url)
+                )
+                existing = result.scalar_one_or_none()
+                
+                if existing:
+                    # 更新已有记录
+                    existing.title = product_data.get("title", "")
+                    price_str = product_data.get("price", "0")
+                    try:
+                        if "-" in str(price_str):
+                            existing.price = float(str(price_str).split("-")[0])
+                        else:
+                            existing.price = float(price_str)
+                    except (ValueError, TypeError):
+                        existing.price = 0
+                    existing.images = json.dumps(product_data.get("images", []), ensure_ascii=False)
+                    existing.skus = json.dumps(product_data.get("skus", []), ensure_ascii=False)
+                    existing.description = product_data.get("details", "") or product_data.get("attributes", {}).get("详细说明", "")
+                    supplier = product_data.get("supplier", {})
+                    existing.supplier_name = supplier.get("name", "")
+                    existing.weight = float(product_data.get("weight", 0)) if product_data.get("weight") else 0
+                    existing.status = "success"
+                    existing.updated_at = datetime.now()
+                    
+                    # 更新关联的ERP商品
+                    if existing.product_id:
+                        product_result = await db.execute(
+                            select(ERPProduct).where(ERPProduct.id == existing.product_id)
+                        )
+                        erp_product = product_result.scalar_one_or_none()
+                        if erp_product:
+                            erp_product.name_zh = product_data.get("title", "")
+                            erp_product.description = product_data.get("details", "") or product_data.get("attributes", {}).get("详细说明", "")
+                            erp_product.images = json.dumps(product_data.get("images", []), ensure_ascii=False)
+                            erp_product.weight = float(product_data.get("weight", 0)) if product_data.get("weight") else 0
+                            erp_product.cost_price = existing.price
+                            erp_product.image_status = "pending"
+                            erp_product.workflow_status = "collecting"
+                    
+                    await db.commit()
+                    logger.info(f"更新采集记录(直接保存): {existing.product_id}, collect_method={product_data.get('collect_method')}")
+                    return existing.product_id
+                
+                # 创建新记录
+                supplier = product_data.get("supplier", {})
+                
+                from sqlalchemy import text
+                result_user = await db.execute(text("SELECT id FROM feishu_users LIMIT 1"))
+                default_user = result_user.fetchone()
+                user_id = default_user[0] if default_user else "system"
+                
+                # 解析价格
+                price_str = product_data.get("price", "0")
+                try:
+                    if "-" in str(price_str):
+                        price = float(str(price_str).split("-")[0])
+                    else:
+                        price = float(price_str)
+                except (ValueError, TypeError):
+                    price = 0
+                
+                import uuid
+                sku = f"1688-{product_data.get('offer_id', uuid.uuid4().hex[:8])}"
+                
+                description = product_data.get("details", "") or product_data.get("attributes", {}).get("详细说明", "")
+                
+                erp_product = ERPProduct(
+                    user_id=user_id,
+                    internal_sku=sku,
+                    name_zh=product_data.get("title", ""),
+                    description=description,
+                    source_url=url,
+                    source_id=product_data.get("offer_id"),
+                    supplier_name=supplier.get("name", ""),
+                    supplier_url=supplier.get("url", ""),
+                    cost_price=price,
+                    domestic_shipping=0,
+                    first_mile_shipping=0,
+                    weight=float(product_data.get("weight", 0)) if product_data.get("weight") else 0,
+                    images=json.dumps(product_data.get("images", []), ensure_ascii=False),
+                    image_status="pending",
+                    compliance_status="pending",
+                    workflow_status="collecting",
+                    status="draft"
+                )
+                
+                db.add(erp_product)
+                await db.flush()
+                
+                collection = Collection1688(
+                    user_id=user_id,
+                    source_url=url,
+                    source_id=product_data.get("offer_id"),
+                    title=product_data.get("title", ""),
+                    price=price,
+                    images=json.dumps(product_data.get("images", []), ensure_ascii=False),
+                    skus=json.dumps(product_data.get("skus", []), ensure_ascii=False),
+                    description=description,
+                    supplier_name=supplier.get("name", ""),
+                    supplier_rating=supplier.get("rating", 0),
+                    weight=float(product_data.get("weight", 0)) if product_data.get("weight") else 0,
+                    status="success",
+                    product_id=erp_product.id
+                )
+                
+                db.add(collection)
+                await db.commit()
+                
+                logger.info(f"商品保存成功(直接保存): {erp_product.id}, collect_method={product_data.get('collect_method')}")
+                return erp_product.id
+                
+            except Exception as e:
+                await db.rollback()
+                logger.error(f"保存商品数据失败: {e}")
+                return None
+    
     async def collect_and_save(self, url: str, selection_id: str = None) -> Optional[str]:
         """
         采集商品并保存到ERP商品库

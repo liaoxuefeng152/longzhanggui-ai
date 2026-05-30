@@ -1,6 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-// 内存商品数据
+// 安全解析JSON字符串
+function safeParseJSON(str: any): any {
+  if (!str) return [];
+  if (typeof str !== 'string') return str;
+  try {
+    return JSON.parse(str);
+  } catch {
+    return [];
+  }
+}
+
+// 内存商品数据 (fallback)
 const mockProducts: { [key: string]: any } = {
   'PROD001': {
     id: 'PROD001',
@@ -62,6 +73,41 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
+
+    // 优先从Python后端获取真实数据
+    try {
+      const authHeader = request.headers.get('authorization') || '';
+      const backendUrl = process.env.BACKEND_URL || 'http://localhost:8000';
+      const backendResponse = await fetch(
+        `${backendUrl}/api/v1/erp/products/${id}`,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            ...(authHeader ? { 'Authorization': authHeader } : {}),
+          },
+          signal: AbortSignal.timeout(5000),
+        }
+      );
+
+      if (backendResponse.ok) {
+        const product = await backendResponse.json();
+        if (product && product.id) {
+          // 解析JSON字符串字段
+          const parsed = {
+            ...product,
+            images: safeParseJSON(product.images),
+            processed_images: safeParseJSON(product.processed_images),
+            skus: safeParseJSON(product.skus),
+            category: product.category_name || product.category,
+          };
+          return NextResponse.json(parsed);
+        }
+      }
+    } catch (backendError) {
+      console.warn('[商品详情API] 后端不可用，使用本地数据:', (backendError as Error).message);
+    }
+
+    // Fallback: 本地内存数据
     const product = products[id];
 
     if (!product) {
@@ -90,6 +136,32 @@ export async function PUT(
     const { id } = await params;
     const body = await request.json();
 
+    // 优先更新后端
+    try {
+      const authHeader = request.headers.get('authorization') || '';
+      const backendUrl = process.env.BACKEND_URL || 'http://localhost:8000';
+      const backendResponse = await fetch(
+        `${backendUrl}/api/v1/erp/products/${id}`,
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(authHeader ? { 'Authorization': authHeader } : {}),
+          },
+          body: JSON.stringify(body),
+          signal: AbortSignal.timeout(5000),
+        }
+      );
+
+      if (backendResponse.ok) {
+        const updated = await backendResponse.json();
+        return NextResponse.json(updated);
+      }
+    } catch (backendError) {
+      console.warn('[商品更新API] 后端不可用，使用本地数据:', (backendError as Error).message);
+    }
+
+    // Fallback: 本地更新
     if (!products[id]) {
       return NextResponse.json(
         { error: '商品不存在' },
@@ -97,7 +169,6 @@ export async function PUT(
       );
     }
 
-    // 更新商品
     products[id] = {
       ...products[id],
       ...body,
@@ -122,6 +193,30 @@ export async function DELETE(
   try {
     const { id } = await params;
 
+    // 优先从后端删除
+    try {
+      const authHeader = request.headers.get('authorization') || '';
+      const backendUrl = process.env.BACKEND_URL || 'http://localhost:8000';
+      const backendResponse = await fetch(
+        `${backendUrl}/api/v1/erp/products/${id}`,
+        {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(authHeader ? { 'Authorization': authHeader } : {}),
+          },
+          signal: AbortSignal.timeout(5000),
+        }
+      );
+
+      if (backendResponse.ok) {
+        return NextResponse.json({ success: true, message: '删除成功' });
+      }
+    } catch (backendError) {
+      console.warn('[商品删除API] 后端不可用，使用本地数据:', (backendError as Error).message);
+    }
+
+    // Fallback: 本地删除
     if (!products[id]) {
       return NextResponse.json(
         { error: '商品不存在' },

@@ -1,5 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+// 安全解析JSON字符串
+function safeParseJSON(str: any): any {
+  if (!str) return [];
+  if (typeof str !== 'string') return str;
+  try {
+    return JSON.parse(str);
+  } catch {
+    return [];
+  }
+}
+
 // 模拟商品数据（直接从store复制）
 const mockProducts = [
   {
@@ -411,6 +422,46 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status') || '';
     const page = parseInt(searchParams.get('page') || '1');
     const pageSize = parseInt(searchParams.get('page_size') || '100');
+
+    // 优先从Python后端获取真实数据
+    try {
+      const authHeader = request.headers.get('authorization') || '';
+      const backendUrl = process.env.BACKEND_URL || 'http://localhost:8000';
+      const backendResponse = await fetch(
+        `${backendUrl}/api/v1/erp/products?keyword=${encodeURIComponent(keyword)}&status=${encodeURIComponent(status)}&page=${page}&page_size=${pageSize}`,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            ...(authHeader ? { 'Authorization': authHeader } : {}),
+          },
+          signal: AbortSignal.timeout(5000),
+        }
+      );
+
+      if (backendResponse.ok) {
+        const backendData = await backendResponse.json();
+        if (backendData.items && Array.isArray(backendData.items)) {
+          // 解析images字段（后端存储为JSON字符串）
+          const items = backendData.items.map((p: any) => ({
+            ...p,
+            images: typeof p.images === 'string' ? safeParseJSON(p.images) : (p.images || []),
+            processed_images: typeof p.processed_images === 'string' ? safeParseJSON(p.processed_images) : (p.processed_images || []),
+            skus: typeof p.skus === 'string' ? safeParseJSON(p.skus) : (p.skus || []),
+            category: p.category_name || p.category,
+          }));
+          return NextResponse.json({
+            items,
+            total: backendData.total || items.length,
+            page: backendData.page || page,
+            page_size: backendData.page_size || pageSize,
+          });
+        }
+      }
+    } catch (backendError) {
+      console.warn('[ERP商品API] 后端不可用，使用本地数据:', (backendError as Error).message);
+    }
+
+    // Fallback: 本地内存数据
 
     // 筛选
     let filteredProducts = products;

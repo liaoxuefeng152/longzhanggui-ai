@@ -12,7 +12,7 @@ import json
 import uuid
 
 from app.core.database import get_db
-from app.api.auth import get_current_user
+from app.api.auth import get_current_user, get_optional_user
 from app.models.user import User, FeishuUser
 from app.models.erp import (
     ERPProduct, PlatformSKU, Inventory, PurchaseOrder,
@@ -47,7 +47,7 @@ async def get_erp_products(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: Optional[User] = Depends(get_optional_user)
 ):
     """获取ERP商品列表"""
     query = select(ERPProduct)
@@ -190,7 +190,7 @@ async def create_erp_product(
 async def get_erp_product(
     product_id: str,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: Optional[User] = Depends(get_optional_user)
 ):
     """获取ERP商品详情"""
     result = await db.execute(

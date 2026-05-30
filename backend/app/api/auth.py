@@ -59,6 +59,28 @@ async def get_current_user(
     return user
 
 
+async def get_optional_user(
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(HTTPBearer(auto_error=False)),
+    db: AsyncSession = Depends(get_db)
+) -> Optional[User]:
+    """获取当前用户（可选，无token时返回None）"""
+    if credentials is None:
+        return None
+    try:
+        token = credentials.credentials
+        payload = decode_access_token(token)
+        if payload is None:
+            return None
+        user_id = payload.get("sub")
+        if user_id is None:
+            return None
+        result = await db.execute(select(User).where(User.id == user_id))
+        user = result.scalar_one_or_none()
+        return user
+    except Exception:
+        return None
+
+
 @router.post("/login", response_model=TokenResponse)
 async def login(
     login_data: UserLogin,

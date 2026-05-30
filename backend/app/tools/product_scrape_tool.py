@@ -182,9 +182,9 @@ class ProductScrapeTool:
     # 辅助方法
     # ========================================
     async def _save_to_erp(self, url: str, product_data: Dict[str, Any]) -> Optional[str]:
-        """保存采集结果到ERP商品库"""
+        """保存采集结果到ERP商品库（直接使用已采集的数据，不重新采集）"""
         try:
-            product_id = await collection_1688_service.collect_and_save(url)
+            product_id = await collection_1688_service.save_product_data(url, product_data)
             if product_id:
                 logger.info(f"[ProductScrapeTool] 保存到ERP成功: product_id={product_id}")
             return product_id

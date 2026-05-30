@@ -24,6 +24,7 @@ PUBLIC_PATH_PREFIXES = [
     "/api/v1/ai/calculate-price",
     "/api/v1/ai/customer-reply",
     "/api/v1/ai/chat",
+    "/api/v1/erp/products",  # ERP商品读取（前端代理需要）
 ]
 
 # 不需要认证的路径（精确匹配）
