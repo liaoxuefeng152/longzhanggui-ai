@@ -49,4 +49,9 @@ echo "✅ 后端服务启动中 (PID: ${BACKEND_PID})"
 echo "🔧 启动Next.js前端服务..."
 cd "${COZE_WORKSPACE_PATH}"
 
+# Next.js standalone 模式需要 PORT 和 HOSTNAME 环境变量
+export PORT=${DEPLOY_RUN_PORT}
+export HOSTNAME="0.0.0.0"
+echo "   Next.js 监听: ${HOSTNAME}:${PORT}"
+
 exec node .next/standalone/server.js

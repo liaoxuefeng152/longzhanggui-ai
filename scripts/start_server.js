@@ -1,72 +1,39 @@
 #!/usr/bin/env node
+
 /**
- * 龙掌柜进程管理器
- * 启动前端服务
+ * 龙掌柜智能运营系统 - 生产环境启动入口
+ * 由 FaaS 系统调用: node ./scripts/start_server.js
+ * 
+ * 核心策略：直接启动 start.sh，不做额外的端口检测
+ * FaaS 系统会自行检测 5000 端口是否就绪
  */
 
 const { spawn } = require('child_process');
-const http = require('http');
+const path = require('path');
 
-const PORT = process.env.DEPLOY_RUN_PORT || 5000;
-const MAX_RETRIES = 30;
-const RETRY_INTERVAL = 2000;
+const workspacePath = process.env.COZE_WORKSPACE_PATH || process.cwd();
 
-console.log(`[启动] 正在启动前端服务，端口: ${PORT}...`);
+console.log('[启动] 正在启动前端服务，端口: 5000...');
 
-function checkServer() {
-  return new Promise((resolve) => {
-    const req = http.get(`http://localhost:${PORT}`, (res) => {
-      resolve(res.statusCode === 200);
-    });
-    req.on('error', () => resolve(false));
-    req.setTimeout(3000, () => {
-      req.destroy();
-      resolve(false);
-    });
-  });
-}
-
-async function waitForServer(retries = MAX_RETRIES) {
-  for (let i = 0; i < retries; i++) {
-    const ready = await checkServer();
-    if (ready) {
-      console.log(`[启动] 前端服务已就绪 http://localhost:${PORT}`);
-      return true;
-    }
-    process.stdout.write(`\r[等待] 服务启动中... ${i + 1}/${retries}`);
-    await new Promise(r => setTimeout(r, RETRY_INTERVAL));
+// 直接启动 start.sh，FaaS 系统会自动检测端口就绪
+const child = spawn('pnpm', ['start'], {
+  cwd: workspacePath,
+  shell: true,
+  stdio: 'inherit',
+  env: {
+    ...process.env,
+    PORT: '5000',
+    DEPLOY_RUN_PORT: '5000',
+    NODE_ENV: 'production',
   }
-  console.log('\n[错误] 服务启动超时');
-  return false;
-}
+});
 
-async function start() {
-  // 启动 Next.js 生产服务器
-  const server = spawn('pnpm', ['start'], {
-    cwd: process.cwd(),
-    stdio: 'inherit',
-    shell: true,
-    env: { ...process.env }
-  });
+child.on('error', (err) => {
+  console.error('[错误] 启动失败:', err.message);
+  process.exit(1);
+});
 
-  server.on('error', (err) => {
-    console.error('[错误] 启动失败:', err.message);
-    process.exit(1);
-  });
-
-  // 等待服务就绪
-  const ready = await waitForServer();
-  if (!ready) {
-    server.kill();
-    process.exit(1);
-  }
-
-  // 保持进程运行
-  process.on('SIGTERM', () => {
-    console.log('[关闭] 正在停止服务...');
-    server.kill();
-    process.exit(0);
-  });
-}
-
-start();
+child.on('exit', (code) => {
+  console.log(`[退出] 服务进程退出，代码: ${code}`);
+  process.exit(code || 0);
+});
