@@ -259,8 +259,8 @@ export default function Sidebar() {
   return (
     <aside className={cn(
       "w-[220px] fixed left-0 top-[60px] bottom-0 overflow-y-auto",
-      "bg-[#165DFF]",
-      "border-r border-[#1250E0]",
+      "bg-primary",
+      "border-r border-primary",
       "transition-all duration-300 ease-out"
     )}>
       <div className="p-4">
