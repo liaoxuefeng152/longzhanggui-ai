@@ -18,8 +18,8 @@ echo "Installing backend dependencies..."
 cd "${COZE_WORKSPACE_PATH}/backend"
 pip install -r requirements.txt -q 2>/dev/null || pip install -r requirements.txt -q
 
-# 确保数据目录存在
-mkdir -p data
+# 确保数据目录存在（容错：生产环境可能只读）
+mkdir -p data 2>/dev/null || true
 
 # 数据库会在后端首次启动时自动初始化
 echo "Database will be initialized on first backend startup"
