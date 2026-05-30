@@ -2,6 +2,8 @@
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { MessageCircle, Send, X, Bot, Sparkles, ChevronRight, Loader2 } from 'lucide-react';
+import { isUsageExceeded, incrementUsage, getRemainingCount, getMaxFreeMessages } from '@/lib/chat-usage';
+import { WechatGuideOverlay } from './wechat-guide-overlay';
 
 /* ─── 类型 ─── */
 interface Message {
@@ -35,6 +37,8 @@ export default function LandingChatWidget({ open: externalOpen, onClose: externa
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showWechatGuide, setShowWechatGuide] = useState(false);
+  const [remaining, setRemaining] = useState<number>(getMaxFreeMessages());
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const sessionIdRef = useRef(`landing_${Date.now()}`);
@@ -68,6 +72,16 @@ export default function LandingChatWidget({ open: externalOpen, onClose: externa
   // 发送消息（流式SSE）
   const sendMessage = useCallback(async (text: string) => {
     if (!text.trim() || loading) return;
+
+    // 检查使用次数限制
+    if (isUsageExceeded()) {
+      setShowWechatGuide(true);
+      return;
+    }
+
+    // 计数 +1 并更新剩余次数
+    incrementUsage();
+    setRemaining(getRemainingCount());
 
     const userMsg: Message = {
       id: `user_${Date.now()}`,
@@ -203,14 +217,21 @@ export default function LandingChatWidget({ open: externalOpen, onClose: externa
           className="fixed bottom-6 right-6 z-50 group flex items-center gap-2 px-5 py-3.5 rounded-2xl bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white font-medium shadow-2xl shadow-violet-500/30 hover:shadow-violet-500/50 transition-all hover:scale-105 animate-bounce-subtle"
           aria-label="打开AI助手"
         >
-          <Sparkles size={18} />
+          <div className="relative">
+            <Sparkles size={18} />
+            {remaining > 0 && (
+              <span className="absolute -top-1.5 -right-2.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-white/20 px-1 text-[9px] font-bold text-white">
+                {remaining}
+              </span>
+            )}
+          </div>
           <span className="text-sm">和AI助手聊聊</span>
         </button>
       )}
 
       {/* ─── 聊天面板 ─── */}
       {open && (
-        <div className="fixed bottom-6 right-6 z-50 w-[380px] max-w-[calc(100vw-3rem)] h-[560px] max-h-[calc(100vh-6rem)] flex flex-col rounded-2xl bg-[#111118] border border-white/10 shadow-2xl shadow-black/50 overflow-hidden">
+        <div className="fixed bottom-6 right-6 z-50 w-[380px] max-w-[calc(100vw-3rem)] h-[560px] max-h-[calc(100vh-6rem)] flex flex-col rounded-2xl bg-[#111118] border border-white/10 shadow-2xl shadow-black/50 overflow-hidden relative">
           {/* 头部 */}
           <div className="flex items-center justify-between px-5 py-3.5 border-b border-white/5 bg-gradient-to-r from-violet-600/10 to-purple-600/5">
             <div className="flex items-center gap-2.5">
@@ -219,7 +240,9 @@ export default function LandingChatWidget({ open: externalOpen, onClose: externa
               </div>
               <div>
                 <div className="text-sm font-semibold text-white">跨境AI助手</div>
-                <div className="text-[10px] text-white/30">龙掌柜智能运营</div>
+                <div className="text-[10px] text-white/30">
+                  {remaining > 0 ? `剩余 ${remaining} 次免费对话` : '免费次数已用完'}
+                </div>
               </div>
             </div>
             <button
@@ -309,6 +332,11 @@ export default function LandingChatWidget({ open: externalOpen, onClose: externa
               </button>
             </div>
           </div>
+
+          {/* 微信引导弹窗 */}
+          {showWechatGuide && (
+            <WechatGuideOverlay onClose={() => setShowWechatGuide(false)} />
+          )}
         </div>
       )}
     </>
