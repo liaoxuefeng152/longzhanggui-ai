@@ -36,6 +36,14 @@ import {
   Package,
   AlertCircle,
   Settings,
+  ChevronLeft,
+  ChevronRight,
+  MapPin,
+  ShoppingCart,
+  Scale,
+  Tag,
+  Store,
+  Info,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -65,6 +73,7 @@ export default function CollectionCenterPage() {
   // 商品详情弹窗
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [detailItem, setDetailItem] = useState<any>(null);
+  const [detailImageIndex, setDetailImageIndex] = useState(0);
   const [claimDialogOpen, setClaimDialogOpen] = useState(false);
   const [claimItem, setClaimItem] = useState<any>(null);
   const [claimPlatform, setClaimPlatform] = useState('tiktok');
@@ -245,9 +254,20 @@ export default function CollectionCenterPage() {
         product_name_en: '',
         source: '1688' as const,
         supplier_name: item.shop_name || '待补充供应商',
+        supplier_url: item.shop_url || '',
         cost_price: item.price || 0,
+        price_range: item.price_range || '',
+        main_image: item.main_image || (item.images && item.images[0]) || '',
         images: item.images || [],
-        category: '',
+        category: item.specifications?.类目 || item.category || '',
+        specifications: item.specifications || {},
+        skus: item.skus || [],
+        sales: item.sales || 0,
+        min_order: item.min_order || 1,
+        weight: item.weight,
+        location: item.location || '',
+        description: item.description || '',
+        collect_method: item.collect_method || 'alibaba_api',
       }));
 
       collectData.forEach((item: any) => {
@@ -274,6 +294,13 @@ export default function CollectionCenterPage() {
     } else {
       setSelectedItems(unclaimed.map((item: any) => item.id));
     }
+  };
+
+  // 打开商品详情弹窗
+  const openDetailDialog = (item: any) => {
+    setDetailItem(item);
+    setDetailImageIndex(0);
+    setDetailDialogOpen(true);
   };
 
   // 打开认领弹窗
@@ -641,11 +668,23 @@ export default function CollectionCenterPage() {
                               setSelectedItems(selectedItems.filter((id: string) => id !== item.id));
                             }
                           }}
-                          className="w-4 h-4 rounded border-gray-300"
+                          className="w-4 h-4 rounded border-gray-300 flex-shrink-0"
                         />
                       )}
-                      <div className="w-14 h-14 bg-muted rounded-lg flex items-center justify-center flex-shrink-0">
-                        <Package className="h-6 w-6 text-muted-foreground/40" />
+                      {/* 商品缩略图 */}
+                      <div className="w-14 h-14 bg-muted rounded-lg flex-shrink-0 overflow-hidden">
+                        {item.main_image || (item.images && item.images[0]) ? (
+                          <img
+                            src={item.main_image || item.images[0]}
+                            alt={item.product_name}
+                            className="w-full h-full object-cover"
+                            referrerPolicy="no-referrer"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <Package className="h-6 w-6 text-muted-foreground/40" />
+                          </div>
+                        )}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="text-[14px] font-medium text-foreground line-clamp-1">
@@ -653,9 +692,31 @@ export default function CollectionCenterPage() {
                         </div>
                         <div className="flex items-center gap-3 mt-1">
                           <span className="text-[14px] font-semibold text-orange-500">¥{item.cost_price || item.price || '0.00'}</span>
+                          {item.price_range && String(item.price_range) !== String(item.cost_price) && (
+                            <span className="text-[12px] text-muted-foreground">（{item.price_range}）</span>
+                          )}
                           <span className="text-[12px] text-muted-foreground">
-                            {item.supplier_name || item.supplier || '未知供应商'}
+                            {item.supplier_name || '未知供应商'}
                           </span>
+                          {item.category && (
+                            <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-5">
+                              {item.category}
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-3 mt-0.5">
+                          {item.sales > 0 && (
+                            <span className="text-[11px] text-muted-foreground">已售 {item.sales}</span>
+                          )}
+                          {item.min_order > 1 && (
+                            <span className="text-[11px] text-muted-foreground">{item.min_order}件起批</span>
+                          )}
+                          {item.location && (
+                            <span className="text-[11px] text-muted-foreground">{item.location}</span>
+                          )}
+                          {item.collect_method === 'alibaba_api' && (
+                            <span className="text-[11px] text-green-600">API采集</span>
+                          )}
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
@@ -671,14 +732,13 @@ export default function CollectionCenterPage() {
                           </Badge>
                         )}
                         <div className="flex gap-1">
-                          <Link href={`/erp/products/${item.id}`}>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                            >
-                              详情
-                            </Button>
-                          </Link>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => openDetailDialog(item)}
+                          >
+                            详情
+                          </Button>
                           {!item.claimed && (
                             <>
                               <Button
@@ -708,6 +768,200 @@ export default function CollectionCenterPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* 商品详情弹窗 */}
+      <Dialog open={detailDialogOpen} onOpenChange={setDetailDialogOpen}>
+        <DialogContent className="sm:max-w-[800px] max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-[16px] line-clamp-2 pr-8">
+              {detailItem?.product_name || '商品详情'}
+            </DialogTitle>
+          </DialogHeader>
+          {detailItem && (
+            <div className="space-y-5">
+              {/* 图片轮播 */}
+              {detailItem.images && detailItem.images.length > 0 && (
+                <div className="relative bg-muted/30 rounded-lg overflow-hidden">
+                  <div className="aspect-[4/3] flex items-center justify-center">
+                    <img
+                      src={detailItem.images[detailImageIndex]}
+                      alt={`${detailItem.product_name} - ${detailImageIndex + 1}`}
+                      className="max-w-full max-h-full object-contain"
+                      referrerPolicy="no-referrer"
+                    />
+                  </div>
+                  {detailItem.images.length > 1 && (
+                    <>
+                      <button
+                        onClick={() => setDetailImageIndex(prev => prev > 0 ? prev - 1 : detailItem.images.length - 1)}
+                        className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-black/40 hover:bg-black/60 text-white rounded-full flex items-center justify-center transition-colors"
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => setDetailImageIndex(prev => prev < detailItem.images.length - 1 ? prev + 1 : 0)}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-black/40 hover:bg-black/60 text-white rounded-full flex items-center justify-center transition-colors"
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </button>
+                      <div className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-black/50 text-white text-[11px] px-2 py-0.5 rounded-full">
+                        {detailImageIndex + 1} / {detailItem.images.length}
+                      </div>
+                    </>
+                  )}
+                  {/* 缩略图列表 */}
+                  {detailItem.images.length > 1 && (
+                    <div className="flex gap-1.5 p-2 overflow-x-auto bg-muted/20">
+                      {detailItem.images.map((img: string, idx: number) => (
+                        <button
+                          key={idx}
+                          onClick={() => setDetailImageIndex(idx)}
+                          className={`w-12 h-12 rounded-md overflow-hidden flex-shrink-0 border-2 transition-colors ${idx === detailImageIndex ? 'border-primary' : 'border-transparent opacity-60 hover:opacity-100'}`}
+                        >
+                          <img src={img} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* 基本信息 */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="flex items-center gap-2 p-2.5 bg-muted/30 rounded-lg">
+                  <Tag className="h-4 w-4 text-orange-500 flex-shrink-0" />
+                  <div>
+                    <div className="text-[11px] text-muted-foreground">价格</div>
+                    <div className="text-[14px] font-semibold text-orange-500">
+                      ¥{detailItem.cost_price || '0.00'}
+                      {detailItem.price_range && String(detailItem.price_range) !== String(detailItem.cost_price) && (
+                        <span className="text-[12px] text-muted-foreground font-normal ml-1">（{detailItem.price_range}）</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 p-2.5 bg-muted/30 rounded-lg">
+                  <Store className="h-4 w-4 text-blue-500 flex-shrink-0" />
+                  <div>
+                    <div className="text-[11px] text-muted-foreground">供应商</div>
+                    <div className="text-[13px] truncate max-w-[200px]">
+                      {detailItem.supplier_url ? (
+                        <a href={detailItem.supplier_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                          {detailItem.supplier_name || '查看店铺'}
+                        </a>
+                      ) : (
+                        detailItem.supplier_name || '未知'
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 p-2.5 bg-muted/30 rounded-lg">
+                  <ShoppingCart className="h-4 w-4 text-green-500 flex-shrink-0" />
+                  <div>
+                    <div className="text-[11px] text-muted-foreground">起订量 / 销量</div>
+                    <div className="text-[13px]">{detailItem.min_order || 1}件起批 · 已售{detailItem.sales || 0}</div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 p-2.5 bg-muted/30 rounded-lg">
+                  {detailItem.location ? <MapPin className="h-4 w-4 text-red-500 flex-shrink-0" /> : <Scale className="h-4 w-4 text-purple-500 flex-shrink-0" />}
+                  <div>
+                    <div className="text-[11px] text-muted-foreground">{detailItem.location ? '发货地' : '重量'}</div>
+                    <div className="text-[13px]">
+                      {detailItem.location || (detailItem.weight ? `${detailItem.weight}kg` : '未知')}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* 类目标签 */}
+              {detailItem.category && (
+                <div className="flex items-center gap-2">
+                  <Info className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span className="text-[12px] text-muted-foreground">类目:</span>
+                  <Badge variant="secondary" className="text-[12px]">{detailItem.category}</Badge>
+                  <span className="text-[12px] text-muted-foreground ml-2">来源:</span>
+                  <Badge variant="outline" className="text-[12px]">{detailItem.source || '1688'}</Badge>
+                  {detailItem.collect_method && (
+                    <>
+                      <span className="text-[12px] text-muted-foreground ml-2">方式:</span>
+                      <Badge variant="outline" className="text-[12px] text-green-600">{detailItem.collect_method === 'alibaba_api' ? 'API' : detailItem.collect_method}</Badge>
+                    </>
+                  )}
+                </div>
+              )}
+
+              {/* 商品属性 */}
+              {detailItem.specifications && Object.keys(detailItem.specifications).length > 0 && (
+                <div>
+                  <h4 className="text-[13px] font-medium mb-2 flex items-center gap-1.5">
+                    <Settings className="h-3.5 w-3.5 text-muted-foreground" />
+                    商品属性
+                  </h4>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {Object.entries(detailItem.specifications).map(([key, value]) => (
+                      <div key={key} className="flex text-[12px] py-1 px-2 bg-muted/20 rounded">
+                        <span className="text-muted-foreground mr-2 flex-shrink-0">{key}:</span>
+                        <span className="text-foreground truncate">{String(value)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* SKU列表 */}
+              {detailItem.skus && detailItem.skus.length > 0 && (
+                <div>
+                  <h4 className="text-[13px] font-medium mb-2 flex items-center gap-1.5">
+                    <Package className="h-3.5 w-3.5 text-muted-foreground" />
+                    SKU规格 ({detailItem.skus.length}个)
+                  </h4>
+                  <div className="max-h-[200px] overflow-y-auto border rounded-lg">
+                    <table className="w-full text-[12px]">
+                      <thead className="bg-muted/30 sticky top-0">
+                        <tr>
+                          <th className="text-left py-1.5 px-2 font-medium">规格名称</th>
+                          <th className="text-right py-1.5 px-2 font-medium">价格</th>
+                          <th className="text-right py-1.5 px-2 font-medium">库存</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {detailItem.skus.slice(0, 50).map((sku: any, idx: number) => (
+                          <tr key={sku.sku_id || idx} className="border-t">
+                            <td className="py-1.5 px-2 max-w-[300px] truncate">{sku.name || '-'}</td>
+                            <td className="py-1.5 px-2 text-right text-orange-500 font-medium">¥{sku.price || '-'}</td>
+                            <td className="py-1.5 px-2 text-right">{sku.stock ?? '-'}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    {detailItem.skus.length > 50 && (
+                      <div className="text-center py-1.5 text-[11px] text-muted-foreground border-t">
+                        还有 {detailItem.skus.length - 50} 个规格未显示
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* 源链接 */}
+              {detailItem.source_url && (
+                <div className="flex items-center gap-2 pt-2 border-t">
+                  <Link2 className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span className="text-[12px] text-muted-foreground">来源链接:</span>
+                  <a
+                    href={detailItem.source_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[12px] text-blue-600 hover:underline truncate max-w-[400px]"
+                  >
+                    {detailItem.source_url}
+                  </a>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* 认领弹窗 */}
       <Dialog open={claimDialogOpen} onOpenChange={setClaimDialogOpen}>

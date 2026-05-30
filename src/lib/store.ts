@@ -342,9 +342,20 @@ export interface PublicCollectionItem {
   source_url: string;
   source_id?: string;
   supplier_name?: string;
+  supplier_url?: string;       // 供应商店铺URL
   cost_price?: number;
+  price_range?: string;        // 价格区间
+  main_image?: string;         // 主图URL
   images?: string[];           // 商品图片列表
   category?: string;
+  specifications?: Record<string, string>;  // 商品属性
+  skus?: Array<{sku_id: string; name: string; price: number; stock: number}>;  // SKU列表
+  sales?: number;              // 销量
+  min_order?: number;          // 起订量
+  weight?: number;             // 重量(kg)
+  location?: string;           // 发货地
+  description?: string;        // 商品描述
+  collect_method?: string;     // 采集方式
   claimed: boolean;           // 是否已被认领
   claimed_by?: string;         // 认领人
   claimed_at?: string;        // 认领时间
