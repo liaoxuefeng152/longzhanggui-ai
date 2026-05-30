@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import LandingChatWidget from "@/components/landing-chat-widget";
 import {
   Search,
   Image,
@@ -90,6 +91,8 @@ const FLOW_STEPS = [
 export default function LandingPage() {
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
+  const [prefillQuery, setPrefillQuery] = useState("");
 
   return (
     <div className="min-h-screen bg-[#0a0a0f] text-white overflow-x-hidden">
@@ -285,83 +288,50 @@ export default function LandingPage() {
           </FadeIn>
 
           <div className="grid lg:grid-cols-2 gap-8 items-center">
-            {/* 左侧：对话模拟 */}
+            {/* 左侧：体验入口卡片 */}
             <FadeIn delay={100}>
-              <div className="relative rounded-2xl bg-white/[0.03] border border-white/10 p-6 sm:p-8 overflow-hidden">
-                {/* 模拟对话窗口 */}
-                <div className="space-y-4">
-                  {/* 用户消息 */}
-                  <div className="flex justify-end">
-                    <div className="max-w-[80%] px-4 py-2.5 rounded-2xl rounded-tr-md bg-orange-500/20 text-orange-300 text-sm">
-                      帮我选几款宠物用品爆款
-                    </div>
+              <div className="relative rounded-2xl bg-gradient-to-br from-violet-500/10 to-purple-500/5 border border-violet-500/20 p-8 sm:p-10 overflow-hidden">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-lg shadow-violet-500/20">
+                    <Bot size={24} className="text-white" />
                   </div>
-                  {/* AI回复 */}
-                  <div className="flex justify-start">
-                    <div className="max-w-[85%] space-y-3">
-                      <div className="flex items-center gap-2 mb-1">
-                        <div className="w-6 h-6 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
-                          <Bot size={12} className="text-white" />
-                        </div>
-                        <span className="text-xs text-white/50">跨境AI助手</span>
-                      </div>
-                      <div className="px-4 py-3 rounded-2xl rounded-tl-md bg-white/[0.05] text-sm text-white/70 leading-relaxed">
-                        好的，我来为您分析宠物用品市场趋势。当前热门方向有：
-                        <br /><br />
-                        <span className="text-blue-400">1. 宠物智能喂食器</span> — 增长率 128%，东南亚需求旺盛
-                        <br />
-                        <span className="text-blue-400">2. 猫爬架/猫树</span> — 稳定品类，利润率 45%+
-                        <br />
-                        <span className="text-blue-400">3. 宠物车载安全带</span> — 蓝海品类，竞争度低
-                      </div>
-                      {/* 快捷操作按钮 */}
-                      <div className="flex flex-wrap gap-2 ml-0">
-                        <span className="px-3 py-1 rounded-full text-xs bg-blue-500/10 text-blue-400 border border-blue-500/20 cursor-default">
-                          查看选品详情
-                        </span>
-                        <span className="px-3 py-1 rounded-full text-xs bg-green-500/10 text-green-400 border border-green-500/20 cursor-default">
-                          利润测算
-                        </span>
-                        <span className="px-3 py-1 rounded-full text-xs bg-purple-500/10 text-purple-400 border border-purple-500/20 cursor-default">
-                          竞品分析
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                  {/* 第二轮对话 */}
-                  <div className="flex justify-end">
-                    <div className="max-w-[80%] px-4 py-2.5 rounded-2xl rounded-tr-md bg-orange-500/20 text-orange-300 text-sm">
-                      生成今日运营日报
-                    </div>
-                  </div>
-                  <div className="flex justify-start">
-                    <div className="max-w-[85%] space-y-3">
-                      <div className="flex items-center gap-2 mb-1">
-                        <div className="w-6 h-6 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
-                          <Bot size={12} className="text-white" />
-                        </div>
-                        <span className="text-xs text-white/50">跨境AI助手</span>
-                      </div>
-                      <div className="px-4 py-3 rounded-2xl rounded-tl-md bg-white/[0.05] text-sm text-white/70 leading-relaxed">
-                        今日运营日报已生成：
-                        <br /><br />
-                        <span className="text-green-400">GMV ¥32,580</span> ↑12.5%&ensp;|&ensp;订单 <span className="text-green-400">186</span> ↑8.3%
-                        <br />
-                        <span className="text-orange-400">库存预警</span>：3款商品库存不足&ensp;|&ensp;<span className="text-red-400">1条差评</span>需处理
-                      </div>
-                    </div>
+                  <div>
+                    <h3 className="font-bold text-lg">龙掌柜跨境AI助手</h3>
+                    <p className="text-white/40 text-sm">基于大模型的智能运营助理</p>
                   </div>
                 </div>
-                {/* 输入框模拟 */}
-                <div className="mt-5 flex items-center gap-3 px-4 py-3 rounded-xl bg-white/[0.03] border border-white/5">
-                  <MessageCircle size={16} className="text-white/20" />
-                  <span className="text-sm text-white/20 flex-1">输入你想了解的运营问题...</span>
-                  <div className="w-8 h-8 rounded-lg bg-gradient-to-r from-violet-500 to-purple-600 flex items-center justify-center">
-                    <Send size={14} className="text-white" />
+
+                <p className="text-white/50 leading-relaxed mb-6">
+                  无论你是想选品、定价、优化Listing，还是查看运营数据、处理客服问题，只需一句话，AI助手立刻响应。支持9大意图识别，实时流式输出，快捷操作一键直达。
+                </p>
+
+                <button
+                  onClick={() => setChatOpen(true)}
+                  className="group inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-violet-500 to-purple-600 text-white font-medium hover:shadow-lg hover:shadow-violet-500/25 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                >
+                  <MessageCircle size={18} />
+                  立即体验对话
+                  <ArrowRight size={16} className="group-hover:translate-x-0.5 transition-transform" />
+                </button>
+
+                <div className="mt-8 pt-6 border-t border-white/5">
+                  <p className="text-xs text-white/30 mb-3">试试问我：</p>
+                  <div className="flex flex-wrap gap-2">
+                    {["帮我选品分析", "生成今日日报", "查看库存预警", "优化Listing"].map((q, i) => (
+                      <button
+                        key={i}
+                        onClick={() => { setChatOpen(true); setPrefillQuery(q); }}
+                        className="px-3 py-1.5 rounded-lg text-xs bg-white/5 border border-white/10 text-white/50 hover:text-white/80 hover:border-violet-500/30 hover:bg-violet-500/10 transition-all"
+                      >
+                        {q}
+                      </button>
+                    ))}
                   </div>
                 </div>
+
                 {/* 装饰光晕 */}
                 <div className="absolute -top-20 -right-20 w-40 h-40 bg-violet-500/10 rounded-full blur-3xl pointer-events-none" />
+                <div className="absolute -bottom-16 -left-16 w-32 h-32 bg-purple-500/10 rounded-full blur-3xl pointer-events-none" />
               </div>
             </FadeIn>
 
@@ -427,10 +397,14 @@ export default function LandingPage() {
                   { cmd: "广告ROI怎么样", tag: "广告", tagColor: "bg-yellow-500/10 text-yellow-400 border-yellow-500/20" },
                   { cmd: "这个品能卖多少钱", tag: "定价", tagColor: "bg-red-500/10 text-red-400 border-red-500/20" },
                 ].map((item, i) => (
-                  <div key={i} className="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-white/[0.03] border border-white/5">
+                  <button
+                    key={i}
+                    onClick={() => { setChatOpen(true); setPrefillQuery(item.cmd); }}
+                    className="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-white/[0.03] border border-white/5 hover:border-violet-500/20 hover:bg-violet-500/5 transition-all cursor-pointer text-left"
+                  >
                     <span className={`px-2 py-0.5 rounded text-[10px] font-medium border ${item.tagColor} shrink-0`}>{item.tag}</span>
                     <span className="text-xs text-white/50 truncate">{item.cmd}</span>
-                  </div>
+                  </button>
                 ))}
               </div>
             </div>
@@ -574,6 +548,25 @@ export default function LandingPage() {
           </div>
         </div>
       </footer>
+
+      {/* ─── AI助手浮窗 ─── */}
+      <LandingChatWidget
+        open={chatOpen}
+        onClose={() => setChatOpen(false)}
+        initialQuery={prefillQuery}
+        onQueryConsumed={() => setPrefillQuery("")}
+      />
+
+      {/* ─── 右下角浮动按钮（聊天窗口关闭时显示） ─── */}
+      {!chatOpen && (
+        <button
+          onClick={() => setChatOpen(true)}
+          className="fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 text-white shadow-lg shadow-violet-500/30 hover:shadow-xl hover:shadow-violet-500/40 hover:scale-105 transition-all flex items-center justify-center"
+          aria-label="打开AI助手"
+        >
+          <MessageCircle size={24} />
+        </button>
+      )}
     </div>
   );
 }
