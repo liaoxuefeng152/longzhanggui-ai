@@ -506,6 +506,35 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
 
+    // 优先代理到后端API
+    try {
+      const token = request.headers.get('Authorization') || '';
+      const backendResp = await fetch('http://localhost:8000/api/v1/erp/products', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': token } : {}),
+        },
+        body: JSON.stringify(body),
+      });
+
+      if (backendResp.ok) {
+        const backendData = await backendResp.json();
+        // 解析JSON字符串字段
+        const parsed = { ...backendData };
+        if (typeof parsed.images === 'string') {
+          try { parsed.images = JSON.parse(parsed.images); } catch {}
+        }
+        if (typeof parsed.processed_images === 'string') {
+          try { parsed.processed_images = JSON.parse(parsed.processed_images); } catch {}
+        }
+        return NextResponse.json(parsed, { status: 201 });
+      }
+    } catch (backendErr) {
+      console.warn('[ERP Products POST] 后端不可用，fallback到本地存储');
+    }
+
+    // Fallback: 本地内存存储
     const newProduct = {
       id: `PROD${String(products.length + 1).padStart(3, '0')}`,
       internal_sku: body.internal_sku || `SKU-NEW-${Date.now()}`,
@@ -514,10 +543,12 @@ export async function POST(request: NextRequest) {
       category: body.category_name || body.category || '',
       source_url: body.source_url || '',
       supplier_name: body.supplier_name || '',
+      supplier_url: body.supplier_url || '',
       cost_price: body.cost_price || 0,
       domestic_shipping: body.domestic_shipping || 0,
       first_mile_shipping: body.first_mile_shipping || 0,
       total_cost: (body.cost_price || 0) + (body.domestic_shipping || 0) + (body.first_mile_shipping || 0),
+      images: body.images || [],
       image_status: 'pending',
       listing_status: 'pending',
       compliance_status: 'pending',

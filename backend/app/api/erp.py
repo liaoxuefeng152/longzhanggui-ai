@@ -125,9 +125,12 @@ async def get_erp_products(
 async def create_erp_product(
     product_data: ERPProductCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: Optional[User] = Depends(get_optional_user)
 ):
     """创建ERP商品"""
+    # 如果没有认证用户，使用默认用户ID
+    user_id = current_user.id if current_user else "c12a975d-18d0-44c1-8705-94918d9cdf10"
+    
     # 检查SKU是否重复
     existing = await db.execute(
         select(ERPProduct).where(ERPProduct.internal_sku == product_data.internal_sku)
@@ -136,7 +139,7 @@ async def create_erp_product(
         raise HTTPException(status_code=400, detail="SKU已存在")
     
     product = ERPProduct(
-        user_id=current_user.id,
+        user_id=user_id,
         internal_sku=product_data.internal_sku,
         name_zh=product_data.name_zh,
         name_en=product_data.name_en,

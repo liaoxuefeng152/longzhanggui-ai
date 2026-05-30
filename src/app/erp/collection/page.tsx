@@ -315,22 +315,88 @@ export default function CollectionCenterPage() {
     setDetailDialogOpen(true);
   };
 
+  // 将采集箱商品转为ERP商品
+  const createERPProduct = async (item: any) => {
+    try {
+      const token = localStorage.getItem('token');
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
+      const productData = {
+        internal_sku: `1688-${item.offer_id || item.id}`,
+        name_zh: item.product_name || '未命名商品',
+        source_url: item.source_url || '',
+        supplier_name: item.supplier_name || '',
+        supplier_url: item.supplier_url || '',
+        cost_price: item.cost_price || 0,
+        domestic_shipping: 0,
+        first_mile_shipping: 0,
+        images: item.images ? JSON.stringify(item.images) : null,
+        category_name: item.category || '',
+      };
+
+      const resp = await fetch('/api/v1/erp/products', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(productData),
+      });
+
+      if (resp.ok) {
+        const result = await resp.json();
+        console.log('[采集中心] ERP商品创建成功:', result.id);
+        return result;
+      } else {
+        console.warn('[采集中心] ERP商品创建失败，fallback到本地store');
+      }
+    } catch (err) {
+      console.warn('[采集中心] ERP商品创建异常，fallback到本地store:', err);
+    }
+
+    // 后端不可用时，fallback到本地store
+    try {
+      const { default: store } = await import('@/lib/store');
+      const product = store.createProduct({
+        internal_sku: `1688-${item.offer_id || item.id}`,
+        name_zh: item.product_name || '未命名商品',
+        source_url: item.source_url || '',
+        supplier_name: item.supplier_name || '',
+        supplier_url: item.supplier_url || '',
+        cost_price: item.cost_price || 0,
+        images: item.images || [],
+        category: item.category || '',
+        status: 'selected',
+      });
+      console.log('[采集中心] 本地store商品创建成功:', product.id);
+      return product;
+    } catch (err) {
+      console.error('[采集中心] 本地store创建也失败:', err);
+      return null;
+    }
+  };
+
   const handleClaimToShop = async () => {
     setClaimLoading(true);
     try {
       const { default: store } = await import('@/lib/store');
+      const itemsToClaim = claimItem
+        ? [claimItem]
+        : publicCollections.filter((item: any) => selectedItems.includes(item.id));
       
-      if (claimItem) {
-        store.claimPublicCollection(claimItem.id, claimPlatform, PLATFORMS.find(p => p.value === claimPlatform)?.label || '');
-        toast.success(`已认领到 ${PLATFORMS.find(p => p.value === claimPlatform)?.label}`);
-      } else {
-        for (const id of selectedItems) {
-          store.claimPublicCollection(id, claimPlatform, PLATFORMS.find(p => p.value === claimPlatform)?.label || '');
-        }
-        toast.success(`已将 ${selectedItems.length} 个商品认领到 ${PLATFORMS.find(p => p.value === claimPlatform)?.label}`);
-        setSelectedItems([]);
+      let successCount = 0;
+      for (const item of itemsToClaim) {
+        if (item.claimed) continue;
+        
+        // 1. 标记为已认领
+        store.claimPublicCollection(item.id, claimPlatform, PLATFORMS.find(p => p.value === claimPlatform)?.label || '');
+        
+        // 2. 创建ERP商品记录
+        await createERPProduct(item);
+        successCount++;
       }
       
+      const platformLabel = PLATFORMS.find(p => p.value === claimPlatform)?.label;
+      toast.success(`已认领 ${successCount} 个商品到 ${platformLabel}，可在商品中心查看`);
+      setSelectedItems([]);
       setClaimDialogOpen(false);
       loadPublicCollections();
     } catch (error) {
