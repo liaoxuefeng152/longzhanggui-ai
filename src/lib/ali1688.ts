@@ -29,7 +29,7 @@ function generateHmacSha1Sign(
   // 1. 构建签名串: apiPath + appKey + 按key字母排序的参数键值对
   const sortedKeys = Object.keys(params).sort();
   const paramStr = sortedKeys.map((key) => `${key}${params[key]}`).join('');
-  const signStr = `${apiPath}${appKey}${paramStr}`;
+  const signStr = `${apiPath}/${appKey}${paramStr}`;
 
   // 2. HMAC-SHA1 签名
   const signature = crypto
@@ -168,27 +168,66 @@ export async function collectProduct(url: string): Promise<any> {
 
 /**
  * 解析1688 API返回的商品数据为统一格式
+ * 
+ * 分销版API(productInfo.get)返回结构:
+ * - subject: 标题
+ * - referencePrice: 参考价
+ * - productImage.images: 图片URL数组
+ * - productSkuInfos: SKU列表 [{cargoNumber, amountOnSale, price, skuId, attributes:[{attributeName, attributeValue}]}]
+ * - productAttribute: 属性列表 [{attributeName, value}]
+ * - supplierLoginId / sellerLoginId: 供应商登录ID
+ * - categoryName: 类目名
+ * - description: 详情HTML
  */
 function parseProductData(productInfo: any, offerId: string, url: string): any {
   // 从API返回中提取字段
   const title = productInfo.subject || productInfo.title || productInfo.name || '';
   const price = productInfo.referencePrice || productInfo.price || productInfo.priceRange || '';
-  const images = (productInfo.imageUrls || productInfo.images || productInfo.picUrl || [])
-    .map((img: string) => {
-      // 补全https前缀
-      if (img && !img.startsWith('http')) {
-        return `https:${img}`;
-      }
-      return img;
-    })
-    .filter(Boolean);
 
-  // 提取商品属性
+  // 解析图片 - 分销版API: productImage.images 是URL数组
+  let images: string[] = [];
+  const productImage = productInfo.productImage || productInfo.imageUrls || {};
+  if (typeof productImage === 'object' && Array.isArray(productImage.images)) {
+    images = productImage.images
+      .map((img: string) => {
+        if (img && !img.startsWith('http')) {
+          return `https:${img}`;
+        }
+        return img;
+      })
+      .filter(Boolean);
+  } else if (Array.isArray(productImage)) {
+    // 兼容 imageUrls 直接是数组的情况
+    images = productImage
+      .map((img: string) => {
+        if (typeof img === 'string' && img && !img.startsWith('http')) {
+          return `https:${img}`;
+        }
+        return typeof img === 'string' ? img : '';
+      })
+      .filter(Boolean);
+  } else if (Array.isArray(productInfo.images)) {
+    images = productInfo.images
+      .map((img: string) => {
+        if (typeof img === 'string' && img && !img.startsWith('http')) {
+          return `https:${img}`;
+        }
+        return typeof img === 'string' ? img : '';
+      })
+      .filter(Boolean);
+  }
+
+  // 提取商品属性 - 分销版API: productAttribute 是 [{attributeName, value}]
   const attributes: Record<string, string> = {};
-  if (productInfo.attributes && Array.isArray(productInfo.attributes)) {
-    for (const attr of productInfo.attributes) {
-      if (attr.attributeName && attr.attributeValue) {
-        attributes[attr.attributeName] = attr.attributeValue;
+  const attrList = productInfo.productAttribute || productInfo.attributes || productInfo.productFeatureList || [];
+  if (Array.isArray(attrList)) {
+    for (const attr of attrList) {
+      if (attr && typeof attr === 'object') {
+        const key = attr.attributeName || attr.name || '';
+        const val = attr.value || attr.attributeValue || attr.attributeValueName || '';
+        if (key && val) {
+          attributes[key] = String(val);
+        }
       }
     }
   }
@@ -199,26 +238,41 @@ function parseProductData(productInfo: any, offerId: string, url: string): any {
     attributes['品牌'] = productInfo.brandName;
   }
 
-  // 提取SKU信息
+  // 提取SKU信息 - 分销版API: productSkuInfos 是 [{skuId, price, amountOnSale, cargoNumber, attributes}]
   const skus: any[] = [];
-  if (productInfo.skuInfos && Array.isArray(productInfo.skuInfos)) {
-    for (const sku of productInfo.skuInfos) {
-      skus.push({
-        name: sku.skuName || sku.name || '',
-        values: sku.skuValues || sku.values || [],
-        price: sku.skuPrice || sku.price || '',
-        stock: sku.skuStock || sku.stock || 0,
-      });
+  const skuList = productInfo.productSkuInfos || productInfo.skuInfos || productInfo.skus || [];
+  if (Array.isArray(skuList)) {
+    for (const sku of skuList) {
+      if (sku && typeof sku === 'object') {
+        // attributes 是数组 [{attributeName, attributeValue}]
+        let skuName = '';
+        if (Array.isArray(sku.attributes)) {
+          skuName = sku.attributes
+            .map((a: any) => a.attributeValue || a.attributeName || '')
+            .filter(Boolean)
+            .join(' / ');
+        } else if (typeof sku.attributes === 'string') {
+          skuName = sku.attributes;
+        } else {
+          skuName = sku.name || sku.cargoNumber || '';
+        }
+        skus.push({
+          sku_id: String(sku.skuId || ''),
+          name: skuName,
+          price: sku.price || sku.consignPrice || 0,
+          stock: sku.amountOnSale || 0,
+        });
+      }
     }
   }
 
-  // 供应商信息
+  // 供应商信息 - 分销版API: supplierLoginId / sellerLoginId
+  const supplierLoginId = productInfo.supplierLoginId || productInfo.sellerLoginId || '';
+  const supplierInfo = productInfo.supplierInfo || productInfo.sellerInfo || {};
   const supplier = {
-    name: productInfo.supplierLoginId || productInfo.shopName || productInfo.supplierName || '',
-    url: productInfo.supplierLoginId 
-      ? `https://${productInfo.supplierLoginId}.1688.com` 
-      : '',
-    rating: productInfo.supplierRate || '',
+    name: (typeof supplierInfo === 'object' ? (supplierInfo.companyName || supplierInfo.shopName || '') : '') || supplierLoginId || '',
+    url: supplierLoginId ? `https://${supplierLoginId}.1688.com` : (typeof supplierInfo === 'object' ? supplierInfo.shopUrl || '' : ''),
+    rating: typeof supplierInfo === 'object' ? supplierInfo.creditRating || 0 : 0,
   };
 
   return {

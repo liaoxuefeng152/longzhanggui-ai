@@ -137,7 +137,9 @@ class Alibaba1688Service:
             raise ValueError(f"不支持的API: {api_name}")
 
         # 拼接完整路径：api_path + appKey
-        api_path_with_appkey = api_path_template + self.app_key
+        # 确保api_path和appKey之间只有一个斜杠
+        base_path = api_path_template.rstrip("/")
+        api_path_with_appkey = base_path + "/" + self.app_key
         url = f"{self.GATEWAY_URL}/{api_path_with_appkey}"
 
         # 只传业务参数 + access_token（不传 _aop_timestamp 等额外参数，与官方调试工具一致）
