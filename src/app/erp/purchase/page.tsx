@@ -68,6 +68,12 @@ interface Supplier {
   rating: number;
 }
 
+// 安全数字转换，防止 toFixed 报错
+const safeNum = (v: any, fallback = 0): number => {
+  const n = Number(v);
+  return isNaN(n) ? fallback : n;
+};
+
 export default function ERPPurchasePage() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
