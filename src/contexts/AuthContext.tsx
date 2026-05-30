@@ -30,7 +30,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 // 不需要登录的页面
-const PUBLIC_PATHS = ['/login', '/register', '/forgot-password', '/reset-password'];
+const PUBLIC_PATHS = ['/', '/landing', '/login', '/register', '/forgot-password', '/reset-password'];
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
@@ -84,7 +84,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem('userRole');
     setToken(null);
     setUser(null);
-    router.push('/login');
+    router.push('/');
   };
 
   // 更新用户信息

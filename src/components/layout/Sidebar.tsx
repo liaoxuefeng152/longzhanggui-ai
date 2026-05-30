@@ -25,7 +25,7 @@ import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
 // 不需要登录的页面
-const PUBLIC_PATHS = ['/login', '/register', '/forgot-password', '/reset-password'];
+const PUBLIC_PATHS = ['/', '/landing', '/login', '/register', '/forgot-password', '/reset-password'];
 
 // AISKILL彩虹配色映射
 const agentColors = {
