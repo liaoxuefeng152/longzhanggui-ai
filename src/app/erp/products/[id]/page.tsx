@@ -97,6 +97,12 @@ const STATUS_CONFIG = {
   archived: { label: '已归档', color: 'bg-gray-100 text-gray-500' },
 };
 
+// 安全数字转换，防止 toFixed 报错
+const safeNum = (v: any, fallback = 0): number => {
+  const n = Number(v);
+  return isNaN(n) ? fallback : n;
+};
+
 export default function ProductDetailPage() {
   const params = useParams();
   const router = useRouter();

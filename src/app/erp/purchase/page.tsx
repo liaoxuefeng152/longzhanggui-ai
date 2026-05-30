@@ -478,7 +478,7 @@ export default function ERPPurchasePage() {
                 </div>
                 <div>
                   <p className="text-[12px] text-muted-foreground">采购金额</p>
-                  <p className="text-[26px] font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">${totalAmount.toFixed(2)}</p>
+                  <p className="text-[26px] font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">${safeNum(totalAmount).toFixed(2)}</p>
                   <p className="text-[11px] text-muted-foreground">总金额</p>
                 </div>
               </div>
@@ -571,8 +571,8 @@ export default function ERPPurchasePage() {
                         </div>
                       </div>
                       <div className="text-right space-y-2">
-                        <div className="text-[20px] font-semibold text-foreground">${(order.total_amount || 0).toFixed(2)}</div>
-                        <div className="text-[11px] text-muted-foreground">{order.qty}件 × ${(order.unit_price || 0).toFixed(2)}</div>
+                        <div className="text-[20px] font-semibold text-foreground">${safeNum(order.total_amount).toFixed(2)}</div>
+                        <div className="text-[11px] text-muted-foreground">{order.qty}件 × ${safeNum(order.unit_price).toFixed(2)}</div>
                         <div className="flex items-center justify-end gap-2 mt-3">
                           <Button variant="outline" size="sm" onClick={() => handleViewDetail(order)}>
                             <Eye className="h-3 w-3 mr-1" />
@@ -727,7 +727,7 @@ export default function ERPPurchasePage() {
                   <div className="flex items-center justify-between">
                     <span className="text-[13px] text-muted-foreground">采购总额</span>
                     <span className="text-[20px] font-semibold text-foreground">
-                      ${(parseInt(createForm.qty) * parseFloat(createForm.unit_price || '0')).toFixed(2)}
+                      ${safeNum(parseInt(createForm.qty) * parseFloat(createForm.unit_price || '0')).toFixed(2)}
                     </span>
                   </div>
                 </div>
@@ -772,11 +772,11 @@ export default function ERPPurchasePage() {
                   </div>
                   <div>
                     <div className="text-[12px] text-muted-foreground">单价</div>
-                    <div className="text-[16px] font-semibold">${(selectedOrder.unit_price || 0).toFixed(2)}</div>
+                    <div className="text-[16px] font-semibold">${safeNum(selectedOrder.unit_price).toFixed(2)}</div>
                   </div>
                   <div>
                     <div className="text-[12px] text-muted-foreground">总额</div>
-                    <div className="text-[16px] font-semibold text-success">${(selectedOrder.total_amount || 0).toFixed(2)}</div>
+                    <div className="text-[16px] font-semibold text-success">${safeNum(selectedOrder.total_amount).toFixed(2)}</div>
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">

@@ -51,6 +51,12 @@ interface InventoryItem {
   supplier?: string;
 }
 
+// 安全数字转换，防止 toFixed 报错
+const safeNum = (v: any, fallback = 0): number => {
+  const n = Number(v);
+  return isNaN(n) ? fallback : n;
+};
+
 export default function ERPInventoryPage() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
@@ -319,7 +325,7 @@ export default function ERPInventoryPage() {
                 </div>
                 <div>
                   <p className="text-[12px] text-muted-foreground">库存价值</p>
-                  <p className="text-[26px] font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">${totalValue.toFixed(2)}</p>
+                  <p className="text-[26px] font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">${safeNum(totalValue).toFixed(2)}</p>
                   <p className="text-[11px] text-muted-foreground">成本价值</p>
                 </div>
               </div>
@@ -418,7 +424,7 @@ export default function ERPInventoryPage() {
                           <div className="text-[14px] font-medium text-foreground">{item.product_name}</div>
                           <div className="flex items-center gap-4 text-[12px] text-muted-foreground">
                             <span>仓库: <span className="text-foreground">{item.warehouse}</span></span>
-                            <span>成本: <span className="text-foreground">${item.cost_price.toFixed(2)}</span></span>
+                            <span>成本: <span className="text-foreground">${safeNum(item.cost_price).toFixed(2)}</span></span>
                             <span>周转: <span className="text-foreground">{item.turnover_days}天</span></span>
                           </div>
                         </div>

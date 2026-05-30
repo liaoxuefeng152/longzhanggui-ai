@@ -70,6 +70,12 @@ interface FinancialRecord {
   created_at: string;
 }
 
+// 安全数字转换，防止 toFixed 报错
+const safeNum = (v: any, fallback = 0): number => {
+  const n = Number(v);
+  return isNaN(n) ? fallback : n;
+};
+
 export default function ERPFinancePage() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
@@ -141,14 +147,14 @@ export default function ERPFinancePage() {
       const headers = ['日期', '销售额', '成本', '运费', '平台费', '广告费', '其他费用', '毛利润', '利润率', '订单数'];
       const rows = summaries.map(s => [
         s.date,
-        s.total_sales.toFixed(2),
-        s.total_cost.toFixed(2),
-        s.shipping_fee.toFixed(2),
-        s.platform_fee.toFixed(2),
-        s.ad_cost.toFixed(2),
-        s.other_cost.toFixed(2),
-        s.gross_profit.toFixed(2),
-        `${s.profit_rate.toFixed(1)}%`,
+        safeNum(s.total_sales).toFixed(2),
+        safeNum(s.total_cost).toFixed(2),
+        safeNum(s.shipping_fee).toFixed(2),
+        safeNum(s.platform_fee).toFixed(2),
+        safeNum(s.ad_cost).toFixed(2),
+        safeNum(s.other_cost).toFixed(2),
+        safeNum(s.gross_profit).toFixed(2),
+        `${safeNum(s.profit_rate).toFixed(1)}%`,
         s.order_count,
       ]);
       
@@ -394,7 +400,7 @@ export default function ERPFinancePage() {
                 </div>
                 <div>
                   <p className="text-[12px] text-muted-foreground">总销售额</p>
-                  <p className="text-[26px] font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">${totalSales.toFixed(2)}</p>
+                  <p className="text-[26px] font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">${safeNum(totalSales).toFixed(2)}</p>
                   <p className="text-[11px] text-green-600">本期累计</p>
                 </div>
               </div>
@@ -408,7 +414,7 @@ export default function ERPFinancePage() {
                 </div>
                 <div>
                   <p className="text-[12px] text-muted-foreground">总成本</p>
-                  <p className="text-[26px] font-bold bg-gradient-to-r from-orange-600 to-amber-600 bg-clip-text text-transparent">${totalCost.toFixed(2)}</p>
+                  <p className="text-[26px] font-bold bg-gradient-to-r from-orange-600 to-amber-600 bg-clip-text text-transparent">${safeNum(totalCost).toFixed(2)}</p>
                   <p className="text-[11px] text-muted-foreground">商品成本</p>
                 </div>
               </div>
@@ -422,8 +428,8 @@ export default function ERPFinancePage() {
                 </div>
                 <div>
                   <p className="text-[12px] text-muted-foreground">毛利润</p>
-                  <p className="text-[26px] font-bold bg-gradient-to-r from-emerald-600 to-green-600 bg-clip-text text-transparent">${totalProfit.toFixed(2)}</p>
-                  <p className="text-[11px] text-emerald-600">利润率 {avgProfitRate.toFixed(1)}%</p>
+                  <p className="text-[26px] font-bold bg-gradient-to-r from-emerald-600 to-green-600 bg-clip-text text-transparent">${safeNum(totalProfit).toFixed(2)}</p>
+                  <p className="text-[11px] text-emerald-600">利润率 {safeNum(avgProfitRate).toFixed(1)}%</p>
                 </div>
               </div>
             </CardContent>
@@ -436,7 +442,7 @@ export default function ERPFinancePage() {
                 </div>
                 <div>
                   <p className="text-[12px] text-muted-foreground">广告花费</p>
-                  <p className="text-[26px] font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">${totalAdCost.toFixed(2)}</p>
+                  <p className="text-[26px] font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">${safeNum(totalAdCost).toFixed(2)}</p>
                   <p className="text-[11px] text-muted-foreground">占比 {totalSales > 0 ? (totalAdCost / totalSales * 100).toFixed(1) : 0}%</p>
                 </div>
               </div>
@@ -451,7 +457,7 @@ export default function ERPFinancePage() {
                 <div>
                   <p className="text-[12px] text-muted-foreground">订单数</p>
                   <p className="text-[26px] font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">{totalOrders}</p>
-                  <p className="text-[11px] text-muted-foreground">退款 ${totalRefund.toFixed(2)}</p>
+                  <p className="text-[11px] text-muted-foreground">退款 ${safeNum(totalRefund).toFixed(2)}</p>
                 </div>
               </div>
             </CardContent>
@@ -468,7 +474,7 @@ export default function ERPFinancePage() {
                 </div>
                 <div>
                   <div className="text-[12px] text-muted-foreground">运费</div>
-                  <div className="text-[18px] font-semibold">${totalShipping.toFixed(2)}</div>
+                  <div className="text-[18px] font-semibold">${safeNum(totalShipping).toFixed(2)}</div>
                 </div>
               </div>
             </CardContent>
@@ -481,7 +487,7 @@ export default function ERPFinancePage() {
                 </div>
                 <div>
                   <div className="text-[12px] text-muted-foreground">平台费用</div>
-                  <div className="text-[18px] font-semibold">${totalPlatformFee.toFixed(2)}</div>
+                  <div className="text-[18px] font-semibold">${safeNum(totalPlatformFee).toFixed(2)}</div>
                 </div>
               </div>
             </CardContent>
@@ -494,7 +500,7 @@ export default function ERPFinancePage() {
                 </div>
                 <div>
                   <div className="text-[12px] text-muted-foreground">广告费用</div>
-                  <div className="text-[18px] font-semibold">${totalAdCost.toFixed(2)}</div>
+                  <div className="text-[18px] font-semibold">${safeNum(totalAdCost).toFixed(2)}</div>
                 </div>
               </div>
             </CardContent>
@@ -507,7 +513,7 @@ export default function ERPFinancePage() {
                 </div>
                 <div>
                   <div className="text-[12px] text-muted-foreground">退款金额</div>
-                  <div className="text-[18px] font-semibold text-destructive">${totalRefund.toFixed(2)}</div>
+                  <div className="text-[18px] font-semibold text-destructive">${safeNum(totalRefund).toFixed(2)}</div>
                 </div>
               </div>
             </CardContent>
@@ -525,27 +531,27 @@ export default function ERPFinancePage() {
               <div className="space-y-3">
                 <div className="flex items-center justify-between p-3 bg-success/5 rounded-lg">
                   <span className="text-[13px] text-muted-foreground">销售额</span>
-                  <span className="text-[16px] font-semibold text-success">${totalSales.toFixed(2)}</span>
+                  <span className="text-[16px] font-semibold text-success">${safeNum(totalSales).toFixed(2)}</span>
                 </div>
                 <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
                   <span className="text-[13px] text-muted-foreground">商品成本</span>
-                  <span className="text-[16px] font-semibold">-${totalCost.toFixed(2)}</span>
+                  <span className="text-[16px] font-semibold">-${safeNum(totalCost).toFixed(2)}</span>
                 </div>
                 <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
                   <span className="text-[13px] text-muted-foreground">运费</span>
-                  <span className="text-[16px] font-semibold">-${totalShipping.toFixed(2)}</span>
+                  <span className="text-[16px] font-semibold">-${safeNum(totalShipping).toFixed(2)}</span>
                 </div>
                 <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
                   <span className="text-[13px] text-muted-foreground">平台费</span>
-                  <span className="text-[16px] font-semibold">-${totalPlatformFee.toFixed(2)}</span>
+                  <span className="text-[16px] font-semibold">-${safeNum(totalPlatformFee).toFixed(2)}</span>
                 </div>
                 <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
                   <span className="text-[13px] text-muted-foreground">广告费</span>
-                  <span className="text-[16px] font-semibold">-${totalAdCost.toFixed(2)}</span>
+                  <span className="text-[16px] font-semibold">-${safeNum(totalAdCost).toFixed(2)}</span>
                 </div>
                 <div className="flex items-center justify-between p-3 bg-primary/5 rounded-lg border border-primary/20">
                   <span className="text-[13px] font-medium">毛利润</span>
-                  <span className="text-[20px] font-bold text-success">${totalProfit.toFixed(2)}</span>
+                  <span className="text-[20px] font-bold text-success">${safeNum(totalProfit).toFixed(2)}</span>
                 </div>
               </div>
             </CardContent>
@@ -573,12 +579,12 @@ export default function ERPFinancePage() {
                       </div>
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4 text-[12px]">
-                          <span>销售: <span className="text-success font-medium">${summary.total_sales.toFixed(2)}</span></span>
-                          <span>成本: <span className="text-foreground">${summary.total_cost.toFixed(2)}</span></span>
+                          <span>销售: <span className="text-success font-medium">${safeNum(summary.total_sales).toFixed(2)}</span></span>
+                          <span>成本: <span className="text-foreground">${safeNum(summary.total_cost).toFixed(2)}</span></span>
                         </div>
                         <div className="text-right">
-                          <div className="text-[14px] font-semibold text-success">${summary.gross_profit.toFixed(2)}</div>
-                          <div className="text-[11px] text-muted-foreground">{summary.profit_rate.toFixed(1)}%</div>
+                          <div className="text-[14px] font-semibold text-success">${safeNum(summary.gross_profit).toFixed(2)}</div>
+                          <div className="text-[11px] text-muted-foreground">{safeNum(summary.profit_rate).toFixed(1)}%</div>
                         </div>
                       </div>
                     </div>
@@ -668,7 +674,7 @@ export default function ERPFinancePage() {
                           record.record_type === 'income' ? 'text-success' : 
                           record.record_type === 'expense' || record.record_type === 'refund' ? 'text-destructive' : 'text-foreground'
                         }`}>
-                          {record.record_type === 'income' ? '+' : '-'}${record.amount.toFixed(2)}
+                          {record.record_type === 'income' ? '+' : '-'}${safeNum(record.amount).toFixed(2)}
                         </div>
                         <div className="text-[11px] text-muted-foreground">{record.record_date}</div>
                       </div>
@@ -698,7 +704,7 @@ export default function ERPFinancePage() {
                     <div className={`text-[18px] font-semibold ${
                       selectedRecord.record_type === 'income' ? 'text-success' : 'text-destructive'
                     }`}>
-                      {selectedRecord.record_type === 'income' ? '+' : '-'}${selectedRecord.amount.toFixed(2)}
+                      {selectedRecord.record_type === 'income' ? '+' : '-'}${safeNum(selectedRecord.amount).toFixed(2)}
                     </div>
                   </div>
                 </div>
@@ -826,7 +832,7 @@ export default function ERPFinancePage() {
                               </Badge>
                             </td>
                             <td className="px-3 py-2">{row.category || '-'}</td>
-                            <td className="px-3 py-2">${(row.amount || 0).toFixed(2)}</td>
+                            <td className="px-3 py-2">${safeNum(row.amount).toFixed(2)}</td>
                             <td className="px-3 py-2 truncate max-w-[150px]">{row.description || '-'}</td>
                           </tr>
                         ))}

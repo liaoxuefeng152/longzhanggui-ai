@@ -64,6 +64,12 @@ interface ERPOrder {
   updated_at?: string;
 }
 
+// 安全数字转换，防止 toFixed 报错
+const safeNum = (v: any, fallback = 0): number => {
+  const n = Number(v);
+  return isNaN(n) ? fallback : n;
+};
+
 export default function ERPOrdersPage() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
@@ -499,7 +505,7 @@ export default function ERPOrdersPage() {
                 </div>
                 <div>
                   <p className="text-[12px] text-muted-foreground">销售额</p>
-                  <p className="text-[26px] font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">${totalSales.toFixed(2)}</p>
+                  <p className="text-[26px] font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">${safeNum(totalSales).toFixed(2)}</p>
                   <p className="text-[11px] text-muted-foreground">累计销售</p>
                 </div>
               </div>
@@ -513,7 +519,7 @@ export default function ERPOrdersPage() {
                 </div>
                 <div>
                   <p className="text-[12px] text-muted-foreground">毛利润</p>
-                  <p className="text-[26px] font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">${totalProfit.toFixed(2)}</p>
+                  <p className="text-[26px] font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">${safeNum(totalProfit).toFixed(2)}</p>
                   <p className="text-[11px] text-green-600">利润率 {totalSales > 0 ? ((totalProfit / totalSales) * 100).toFixed(1) : 0}%</p>
                 </div>
               </div>
@@ -637,12 +643,12 @@ export default function ERPOrdersPage() {
                         </div>
                       </div>
                       <div className="text-right space-y-2">
-                        <div className="text-[20px] font-semibold text-foreground">${order.total_amount.toFixed(2)}</div>
-                        <div className="text-[11px] text-muted-foreground">售价 ${order.sale_price.toFixed(2)} × {order.quantity}</div>
+                        <div className="text-[20px] font-semibold text-foreground">${safeNum(order.total_amount).toFixed(2)}</div>
+                        <div className="text-[11px] text-muted-foreground">售价 ${safeNum(order.sale_price).toFixed(2)} × {order.quantity}</div>
                         <div className="flex items-center justify-end gap-2 text-[12px]">
                           <span className="text-muted-foreground">利润:</span>
                           <span className={order.profit > 0 ? 'text-success font-medium' : 'text-destructive font-medium'}>
-                            ${order.profit.toFixed(2)}
+                            ${safeNum(order.profit).toFixed(2)}
                           </span>
                         </div>
                         <div className="flex items-center gap-2 mt-3">
@@ -726,22 +732,22 @@ export default function ERPOrdersPage() {
                   </div>
                   <div>
                     <div className="text-[12px] text-muted-foreground">单价</div>
-                    <div className="text-[16px] font-semibold">${selectedOrder.sale_price.toFixed(2)}</div>
+                    <div className="text-[16px] font-semibold">${safeNum(selectedOrder.sale_price).toFixed(2)}</div>
                   </div>
                   <div>
                     <div className="text-[12px] text-muted-foreground">总金额</div>
-                    <div className="text-[16px] font-semibold text-success">${selectedOrder.total_amount.toFixed(2)}</div>
+                    <div className="text-[16px] font-semibold text-success">${safeNum(selectedOrder.total_amount).toFixed(2)}</div>
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <div className="text-[12px] text-muted-foreground">成本</div>
-                    <div className="text-[14px]">${selectedOrder.cost_price.toFixed(2)}</div>
+                    <div className="text-[14px]">${safeNum(selectedOrder.cost_price).toFixed(2)}</div>
                   </div>
                   <div>
                     <div className="text-[12px] text-muted-foreground">利润</div>
                     <div className={`text-[14px] font-semibold ${selectedOrder.profit > 0 ? 'text-success' : 'text-destructive'}`}>
-                      ${selectedOrder.profit.toFixed(2)}
+                      ${safeNum(selectedOrder.profit).toFixed(2)}
                     </div>
                   </div>
                 </div>
@@ -902,7 +908,7 @@ export default function ERPOrdersPage() {
                             <td className="px-3 py-2 font-mono">{row.platform_order_id || row.order_id || '-'}</td>
                             <td className="px-3 py-2">{row.product_name || '-'}</td>
                             <td className="px-3 py-2">{row.quantity || '-'}</td>
-                            <td className="px-3 py-2">${(row.total_amount || row.amount || 0).toFixed(2)}</td>
+                            <td className="px-3 py-2">${safeNum(row.total_amount || row.amount).toFixed(2)}</td>
                             <td className="px-3 py-2">
                               <Badge variant="outline" className="text-[10px]">
                                 {row.status || '待处理'}

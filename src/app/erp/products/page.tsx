@@ -905,7 +905,7 @@ export default function ERPProductsPage() {
                         </div>
                       </div>
                       <div className="text-right space-y-2">
-                        <div className="text-[20px] font-semibold text-foreground">¥{product.total_cost.toFixed(2)}</div>
+                        <div className="text-[20px] font-semibold text-foreground">¥{safeNum(product.total_cost).toFixed(2)}</div>
                         <div className="text-[11px] text-muted-foreground">总成本</div>
                         {product.selection_score && (
                           <div className="flex items-center justify-end gap-1 text-[12px]">
@@ -1197,7 +1197,7 @@ export default function ERPProductsPage() {
                           </div>
                           <div>
                             <div className="text-[12px] text-muted-foreground">总利润</div>
-                            <div className="text-[20px] font-semibold text-success">¥{(selectedProduct.total_profit || 0).toFixed(2)}</div>
+                            <div className="text-[20px] font-semibold text-success">¥{safeNum(selectedProduct.total_profit).toFixed(2)}</div>
                           </div>
                         </div>
                       </div>
@@ -1369,7 +1369,7 @@ export default function ERPProductsPage() {
                           />
                         ) : (
                           <div className="p-3 bg-muted/30 rounded">
-                            <span className="text-[18px] font-semibold">¥{selectedProduct.cost_price.toFixed(2)}</span>
+                            <span className="text-[18px] font-semibold">¥{safeNum(selectedProduct.cost_price).toFixed(2)}</span>
                           </div>
                         )}
                       </div>
@@ -1383,7 +1383,7 @@ export default function ERPProductsPage() {
                           />
                         ) : (
                           <div className="p-3 bg-muted/30 rounded">
-                            <span className="text-[18px] font-semibold">¥{selectedProduct.domestic_shipping.toFixed(2)}</span>
+                            <span className="text-[18px] font-semibold">¥{safeNum(selectedProduct.domestic_shipping).toFixed(2)}</span>
                           </div>
                         )}
                       </div>
@@ -1397,14 +1397,14 @@ export default function ERPProductsPage() {
                           />
                         ) : (
                           <div className="p-3 bg-muted/30 rounded">
-                            <span className="text-[18px] font-semibold">¥{selectedProduct.first_mile_shipping.toFixed(2)}</span>
+                            <span className="text-[18px] font-semibold">¥{safeNum(selectedProduct.first_mile_shipping).toFixed(2)}</span>
                           </div>
                         )}
                       </div>
                       <div className="space-y-2">
                         <Label className="text-primary text-[12px]">总成本</Label>
                         <div className="p-3 bg-primary/10 rounded">
-                          <span className="text-[20px] font-semibold text-primary">¥{selectedProduct.total_cost.toFixed(2)}</span>
+                          <span className="text-[20px] font-semibold text-primary">¥{safeNum(selectedProduct.total_cost).toFixed(2)}</span>
                         </div>
                       </div>
                     </div>
@@ -1419,15 +1419,15 @@ export default function ERPProductsPage() {
                         <div className="grid grid-cols-3 gap-4 text-[13px]">
                           <div>
                             <span className="text-muted-foreground">建议售价:</span>
-                            <span className="ml-2 font-semibold">${selectedProduct.pricing.suggested_price.toFixed(2)}</span>
+                            <span className="ml-2 font-semibold">${safeNum(selectedProduct.pricing?.suggested_price).toFixed(2)}</span>
                           </div>
                           <div>
                             <span className="text-muted-foreground">目标价:</span>
-                            <span className="ml-2 font-semibold">${selectedProduct.pricing.target_price.toFixed(2)}</span>
+                            <span className="ml-2 font-semibold">${safeNum(selectedProduct.pricing?.target_price).toFixed(2)}</span>
                           </div>
                           <div>
                             <span className="text-muted-foreground">利润率:</span>
-                            <span className="ml-2 font-semibold text-success">{selectedProduct.pricing.profit_margin.toFixed(1)}%</span>
+                            <span className="ml-2 font-semibold text-success">{safeNum(selectedProduct.pricing?.profit_margin).toFixed(1)}%</span>
                           </div>
                         </div>
                       </div>
@@ -1444,7 +1444,7 @@ export default function ERPProductsPage() {
                               <span className="text-[13px]">{listing.shop_name || '-'}</span>
                             </div>
                             <div className="text-[14px] font-semibold">
-                              {listing.sale_price ? `$${listing.sale_price.toFixed(2)}` : '-'}
+                              {listing.sale_price ? `$${safeNum(listing.sale_price).toFixed(2)}` : '-'}
                             </div>
                           </div>
                         ))}

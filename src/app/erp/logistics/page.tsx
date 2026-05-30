@@ -62,6 +62,12 @@ interface TrackingEvent {
   description: string;
 }
 
+// 安全数字转换，防止 toFixed 报错
+const safeNum = (v: any, fallback = 0): number => {
+  const n = Number(v);
+  return isNaN(n) ? fallback : n;
+};
+
 export default function ERPLogisticsPage() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
@@ -140,7 +146,7 @@ export default function ERPLogisticsPage() {
         r.carrier,
         r.tracking_number,
         r.status,
-        r.shipping_fee.toFixed(2),
+        safeNum(r.shipping_fee).toFixed(2),
         r.shipped_at || '-',
         r.delivered_at || '-',
       ]);
@@ -322,7 +328,7 @@ export default function ERPLogisticsPage() {
                 </div>
                 <div>
                   <p className="text-[12px] text-muted-foreground">运费总额</p>
-                  <p className="text-[26px] font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">${totalFee.toFixed(2)}</p>
+                  <p className="text-[26px] font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">${safeNum(totalFee).toFixed(2)}</p>
                   <p className="text-[11px] text-muted-foreground">累计运费</p>
                 </div>
               </div>
@@ -420,7 +426,7 @@ export default function ERPLogisticsPage() {
                         </div>
                       </div>
                       <div className="text-right space-y-2">
-                        <div className="text-[16px] font-semibold text-foreground">${record.shipping_fee.toFixed(2)}</div>
+                        <div className="text-[16px] font-semibold text-foreground">${safeNum(record.shipping_fee).toFixed(2)}</div>
                         <div className="text-[11px] text-muted-foreground">运费</div>
                         <div className="flex items-center justify-end gap-2 mt-3">
                           <Button variant="outline" size="sm" onClick={() => handleViewDetail(record)}>
@@ -502,7 +508,7 @@ export default function ERPLogisticsPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <div className="text-[12px] text-muted-foreground">运费</div>
-                    <div className="text-[16px] font-semibold">${selectedRecord.shipping_fee.toFixed(2)}</div>
+                    <div className="text-[16px] font-semibold">${safeNum(selectedRecord.shipping_fee).toFixed(2)}</div>
                   </div>
                   <div>
                     <div className="text-[12px] text-muted-foreground">重量</div>
