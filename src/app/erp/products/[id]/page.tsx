@@ -122,9 +122,33 @@ export default function ProductDetailPage() {
       const res = await fetch(`/api/v1/erp/products/${productId}`);
       const data = await res.json();
       
+      // 兼容两种API返回格式:
+      // 1. {success: true, data: {...}} — 旧格式
+      // 2. {id: ..., images: [...]} — 后端代理直返格式
+      let apiData: any = null;
       if (data.success && data.data) {
-        // 转换字段格式以匹配 ProductDetail 接口
-        const apiData = data.data;
+        apiData = data.data;
+      } else if (data.id) {
+        apiData = data;
+      }
+
+      if (apiData) {
+        // 解析images字段（可能是JSON字符串或数组）
+        let images: string[] = [];
+        if (typeof apiData.images === 'string') {
+          try { images = JSON.parse(apiData.images); } catch { images = []; }
+        } else if (Array.isArray(apiData.images)) {
+          images = apiData.images;
+        }
+
+        // 解析videos字段
+        let videos: string[] = [];
+        if (typeof apiData.videos === 'string') {
+          try { videos = JSON.parse(apiData.videos); } catch { videos = []; }
+        } else if (Array.isArray(apiData.videos)) {
+          videos = apiData.videos;
+        }
+
         const convertedData: ProductDetail = {
           id: apiData.id,
           offer_id: apiData.source_id || apiData.offer_id,
@@ -132,8 +156,8 @@ export default function ProductDetailPage() {
           title: apiData.title || apiData.name_zh || apiData.product_name || '未命名商品',
           price: apiData.price || apiData.cost_price || 0,
           original_price: apiData.original_price || apiData.cost_price,
-          images: apiData.images || [],
-          videos: apiData.videos || [],
+          images: images,
+          videos: videos,
           supplier: apiData.supplier || apiData.supplier_name,
           location: apiData.location || '',
           sales: apiData.sales || 0,
@@ -178,7 +202,7 @@ export default function ProductDetailPage() {
           setProduct(productFromCollection);
           setEditData(productFromCollection);
         } else {
-          toast.error('获取商品详情失败');
+          toast.error('商品不存在');
           router.push('/erp/products');
         }
       }
@@ -559,6 +583,7 @@ export default function ProductDetailPage() {
                           src={img}
                           alt={`商品图片 ${index + 1}`}
                           className="w-full h-full object-cover"
+                          referrerPolicy="no-referrer"
                           onError={(e) => {
                             (e.target as HTMLImageElement).src = '/placeholder.png';
                           }}

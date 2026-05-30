@@ -1066,6 +1066,7 @@ export default function ImageDesignPage() {
                               src={selectedTask.originalUrl} 
                               alt="原图" 
                               className="w-full h-32 object-contain rounded bg-white"
+                              referrerPolicy="no-referrer"
                             />
                           </div>
                           <div>
@@ -1074,6 +1075,7 @@ export default function ImageDesignPage() {
                               src={selectedTask.processedUrl} 
                               alt="处理后" 
                               className="w-full h-32 object-contain rounded bg-white"
+                              referrerPolicy="no-referrer"
                             />
                           </div>
                         </div>
@@ -1083,6 +1085,7 @@ export default function ImageDesignPage() {
                           src={selectedTask.processedUrl} 
                           alt="生成的图片" 
                           className="w-full h-64 object-contain bg-white"
+                          referrerPolicy="no-referrer"
                         />
                       ) : null}
                     </div>

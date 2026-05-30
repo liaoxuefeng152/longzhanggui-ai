@@ -1222,7 +1222,7 @@ export default function ERPProductsPage() {
                         {selectedProduct.images.map((img, idx) => (
                           <div key={img.id} className="relative group">
                             <div className="aspect-square bg-muted rounded-lg overflow-hidden border">
-                              <img src={img.processed_url || img.original_url} alt="" className="w-full h-full object-cover" />
+                              <img src={img.processed_url || img.original_url} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                             </div>
                             <div className="absolute top-2 left-2">
                               <Badge variant={img.type === 'main' ? 'default' : 'secondary'} className="text-[10px]">

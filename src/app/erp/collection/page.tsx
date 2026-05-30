@@ -525,7 +525,7 @@ export default function CollectionCenterPage() {
                   <div className="flex gap-4">
                     <div className="w-20 h-20 bg-muted rounded-lg overflow-hidden flex items-center justify-center">
                       {previewData.images?.[0] ? (
-                        <img src={previewData.images[0]} alt="" className="w-full h-full object-cover" />
+                        <img src={previewData.images[0]} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                       ) : (
                         <Package className="h-8 w-8 text-muted-foreground/30" />
                       )}
