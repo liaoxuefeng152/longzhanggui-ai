@@ -258,14 +258,15 @@ export default function Sidebar() {
 
   return (
     <aside className={cn(
-      "w-[220px] sidebar-gradient fixed left-0 top-[60px] bottom-0 overflow-y-auto",
-      "border-r border-white/5",
+      "w-[220px] fixed left-0 top-[60px] bottom-0 overflow-y-auto",
+      "bg-[#165DFF]",
+      "border-r border-[#1260E0]",
       "transition-all duration-300 ease-out"
     )}>
       <div className="p-4">
         {/* 视图切换提示 - 非管理员在运营端时只显示当前视图，不显示切换按钮 */}
-        <div className="mb-4 px-3 py-2 rounded-md bg-white/5 border border-white/10">
-          <p className="text-[11px] text-muted-foreground mb-1">当前视图</p>
+        <div className="mb-4 px-3 py-2 rounded-md bg-white/10 border border-white/15">
+          <p className="text-[11px] text-blue-200 mb-1">当前视图</p>
           <div className="flex items-center gap-2">
             <p className="text-sm font-medium text-white">{currentViewName}</p>
             {isClientView && !isAdmin && (
@@ -275,13 +276,13 @@ export default function Sidebar() {
           {showSwitchButton && (
             <button
               onClick={toggleView}
-              className="mt-2 text-[11px] text-primary hover:text-primary/80 transition-colors"
+              className="mt-2 text-[11px] text-blue-200 hover:text-white transition-colors"
             >
               切换到{isClientView ? '管理端' : '客户端'}
             </button>
           )}
           {!isClientView && (
-            <p className="mt-2 text-[10px] text-muted-foreground/70">
+            <p className="mt-2 text-[10px] text-blue-300/70">
               管理员可切换到运营端
             </p>
           )}
@@ -321,11 +322,11 @@ export default function Sidebar() {
           'group relative',
           (active || isActiveAgentMenu)
             ? menuColors
-              ? `${menuColors.bg}/20 text-white shadow-lg ${menuColors.hover.replace('hover:', '')}/10`
-              : 'bg-gradient-to-r from-primary/20 to-primary/10 text-white shadow-lg shadow-primary/20'
+              ? `bg-white/20 text-white shadow-lg`
+              : 'bg-white/20 text-white shadow-lg'
             : menuColors
               ? `${menuColors.hover} hover:text-white`
-              : 'text-sidebar-foreground hover:bg-white/5 hover:text-white hover:translate-x-1'
+              : 'text-blue-100 hover:bg-white/10 hover:text-white hover:translate-x-1'
         )}
       >
         <Icon className={cn(
@@ -338,7 +339,7 @@ export default function Sidebar() {
             "absolute left-0 top-0 bottom-0 w-[2px] rounded-r-full animate-pulse",
             menuColors
               ? `bg-gradient-to-b ${menuColors.gradient}`
-              : 'bg-gradient-to-b from-primary to-blue-400'
+              : 'bg-white'
           )} />
         )}
         {item.submenu && (
@@ -351,7 +352,7 @@ export default function Sidebar() {
 
                 {/* 子菜单 */}
                 {item.submenu && (active || isActiveAgentMenu) && (
-                  <div className="ml-4 mt-1 space-y-0.5 border-l border-white/10 pl-3">
+                  <div className="ml-4 mt-1 space-y-0.5 border-l border-white/20 pl-3">
                     {item.submenu.map((sub) => {
                       const colors = sub.agentKey ? agentColors[sub.agentKey as keyof typeof agentColors] : null;
                       return (
@@ -362,11 +363,11 @@ export default function Sidebar() {
                             'block py-1.5 px-2 text-[13px] rounded transition-colors group flex items-center gap-2',
                             pathname === sub.href
                               ? colors
-                                ? `${colors.bg}/15 text-white font-medium`
-                                : 'text-primary font-medium bg-primary/10'
+                                ? `bg-white/15 text-white font-medium`
+                                : 'text-white font-medium bg-white/15'
                               : colors
-                                ? `text-sidebar-foreground/70 ${colors.hover} hover:text-white`
-                                : 'text-sidebar-foreground/70 hover:text-white hover:bg-white/5'
+                                ? `text-blue-200/70 ${colors.hover} hover:text-white`
+                                : 'text-blue-200/70 hover:text-white hover:bg-white/10'
                           )}
                         >
                           {colors && (

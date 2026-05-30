@@ -17,7 +17,7 @@ interface MainLayoutProps {
 
 export default function MainLayout({ children, user, onLogout }: MainLayoutProps) {
   return (
-    <div className="min-h-screen bg-[#F5F7FA]">
+    <div className="min-h-screen bg-[#F7F8FA]">
       <Header user={user} onLogout={onLogout} />
       <Sidebar />
       <main className="pt-[60px] pl-[220px]">
