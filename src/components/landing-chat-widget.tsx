@@ -214,7 +214,8 @@ export default function LandingChatWidget({ open: externalOpen, onClose: externa
       {!isControlled && !open && (
         <button
           onClick={() => setOpen(true)}
-          className="fixed bottom-6 right-6 z-50 group flex items-center gap-2 px-5 py-3.5 rounded-2xl bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white font-medium shadow-2xl shadow-violet-500/30 hover:shadow-violet-500/50 transition-all hover:scale-105 animate-bounce-subtle"
+          className="fixed z-50 group flex items-center gap-2 px-5 py-3.5 rounded-2xl bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-white font-medium shadow-2xl shadow-violet-500/30 hover:shadow-violet-500/50 transition-all hover:scale-105 animate-bounce-subtle"
+          style={{ bottom: '1.5rem', right: '1.5rem' }}
           aria-label="打开AI助手"
         >
           <div className="relative">
@@ -231,7 +232,7 @@ export default function LandingChatWidget({ open: externalOpen, onClose: externa
 
       {/* ─── 聊天面板 ─── */}
       {open && (
-        <div className="fixed bottom-6 right-6 z-50 w-[380px] max-w-[calc(100vw-3rem)] h-[560px] max-h-[calc(100vh-6rem)] flex flex-col rounded-2xl bg-[#111118] border border-white/10 shadow-2xl shadow-black/50 overflow-hidden relative">
+        <div className="fixed z-50 w-[380px] max-w-[calc(100vw-3rem)] h-[560px] max-h-[calc(100vh-6rem)] flex flex-col rounded-2xl bg-[#111118] border border-white/10 shadow-2xl shadow-black/50 overflow-hidden relative" style={{ bottom: '1.5rem', right: '1.5rem' }}>
           {/* 头部 */}
           <div className="flex items-center justify-between px-5 py-3.5 border-b border-white/5 bg-gradient-to-r from-violet-600/10 to-purple-600/5">
             <div className="flex items-center gap-2.5">

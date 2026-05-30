@@ -555,7 +555,8 @@ export default function LandingPage() {
     {!chatOpen && (
       <button
         onClick={() => setChatOpen(true)}
-        className="fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 text-white shadow-lg shadow-violet-500/30 hover:shadow-xl hover:shadow-violet-500/40 hover:scale-105 transition-all flex items-center justify-center"
+        className="fixed z-40 w-14 h-14 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 text-white shadow-lg shadow-violet-500/30 hover:shadow-xl hover:shadow-violet-500/40 hover:scale-105 transition-all flex items-center justify-center"
+        style={{ bottom: '1.5rem', right: '1.5rem' }}
         aria-label="打开AI助手"
       >
         <MessageCircle size={24} />
