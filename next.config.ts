@@ -27,6 +27,8 @@ const nextConfig: NextConfig = {
   compress: true,
   serverExternalPackages: [
     'coze-coding-dev-sdk',
+    'better-sqlite3',
+    'sharp',
     'pg',
     'pg-connection-string',
     'dotenv',

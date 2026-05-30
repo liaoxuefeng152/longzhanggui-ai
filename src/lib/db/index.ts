@@ -1,15 +1,34 @@
 import Database from 'better-sqlite3';
 import path from 'path';
-
-// 数据库文件路径
-const DB_PATH = path.join(process.cwd(), 'data', 'lobster.db');
-
-// 确保data目录存在
 import fs from 'fs';
-const dataDir = path.dirname(DB_PATH);
-if (!fs.existsSync(dataDir)) {
-  fs.mkdirSync(dataDir, { recursive: true });
+
+// 数据库文件路径 - 优先使用项目目录，不可写则回退到 /tmp
+function getDbPath(): string {
+  const projectDataDir = path.join(process.cwd(), 'data');
+  try {
+    if (!fs.existsSync(projectDataDir)) {
+      fs.mkdirSync(projectDataDir, { recursive: true });
+    }
+    // 测试写入权限
+    const testFile = path.join(projectDataDir, '.write_test');
+    fs.writeFileSync(testFile, 'test');
+    fs.unlinkSync(testFile);
+    return path.join(projectDataDir, 'lobster.db');
+  } catch {
+    // 项目目录不可写，回退到 /tmp
+    const tmpDataDir = '/tmp/backend_data';
+    try {
+      if (!fs.existsSync(tmpDataDir)) {
+        fs.mkdirSync(tmpDataDir, { recursive: true });
+      }
+    } catch {
+      // /tmp 也不可用（极端情况），使用内存模式
+    }
+    return path.join(tmpDataDir, 'lobster.db');
+  }
 }
+
+const DB_PATH = getDbPath();
 
 // 创建数据库连接
 let db: Database.Database | null = null;
