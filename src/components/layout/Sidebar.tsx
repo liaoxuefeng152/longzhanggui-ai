@@ -259,8 +259,8 @@ export default function Sidebar() {
   return (
     <aside className={cn(
       "w-[220px] fixed left-0 top-[60px] bottom-0 overflow-y-auto",
-      "bg-[#165DFF]",
-      "border-r border-[#1260E0]",
+      "bg-[#0E42D2]",
+      "border-r border-[#0A36B0]",
       "transition-all duration-300 ease-out"
     )}>
       <div className="p-4">
@@ -282,7 +282,7 @@ export default function Sidebar() {
             </button>
           )}
           {!isClientView && (
-            <p className="mt-2 text-[10px] text-blue-300/70">
+            <p className="mt-2 text-[10px] text-blue-200/70">
               管理员可切换到运营端
             </p>
           )}
