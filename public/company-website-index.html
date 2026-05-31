@@ -256,79 +256,6 @@
             background: #E67018;
         }
 
-        /* 龙掌柜专属展示区 */
-        .longzg-showcase {
-            padding: 80px 0;
-            background: #fff;
-            position: relative;
-            overflow: hidden;
-        }
-        .longzg-showcase .container {
-            position: relative;
-            z-index: 1;
-        }
-        .longzg-features {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-            gap: 24px;
-            margin-bottom: 50px;
-        }
-        .longzg-feature {
-            text-align: center;
-            padding: 24px 16px;
-            background: var(--gray);
-            border-radius: 12px;
-            border: 1px solid #eee;
-            transition: transform 0.3s, box-shadow 0.3s;
-        }
-        .longzg-feature:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 8px 20px rgba(0,0,0,0.08);
-        }
-        .longzg-feature i {
-            font-size: 28px;
-            color: var(--primary);
-            margin-bottom: 12px;
-        }
-        .longzg-feature h4 {
-            font-size: 15px;
-            margin-bottom: 6px;
-            font-weight: 600;
-            color: var(--text-dark);
-        }
-        .longzg-feature p {
-            font-size: 12px;
-            color: var(--text-light);
-            line-height: 1.4;
-        }
-        .longzg-cta {
-            text-align: center;
-        }
-        .longzg-cta p {
-            font-size: 18px;
-            margin-bottom: 24px;
-            color: var(--text-dark);
-        }
-        .longzg-cta .cta-btn {
-            display: inline-block;
-            padding: 14px 40px;
-            background: var(--primary);
-            color: #fff;
-            border-radius: 6px;
-            font-size: 17px;
-            font-weight: 600;
-            transition: all 0.3s;
-            box-shadow: 0 4px 15px rgba(255,127,36,0.3);
-        }
-        .longzg-cta .cta-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(255,127,36,0.4);
-            background: #E67018;
-        }
-        .longzg-cta .cta-btn i {
-            margin-left: 6px;
-        }
-
         /* 优势亮点板块 */
         .advantages {
             padding: 80px 0;
@@ -557,12 +484,6 @@
             .cases-header h2 {
                 font-size: 26px;
             }
-            .longzg-features {
-                grid-template-columns: repeat(2, 1fr);
-            }
-            .longzg-showcase {
-                padding: 60px 0;
-            }
         }
     </style>
 </head>
@@ -579,7 +500,7 @@
                     <a href="index.html">首页</a>
                     <a href="about.html">关于我们</a>
                     <a href="courses.html">产品/服务</a>
-                    <a href="https://lakeli.coze.site/landing" target="_blank" class="longzg-link">
+                    <a href="courses.html" class="longzg-link">
                         <i class="fas fa-robot"></i> 龙掌柜系统 <span class="badge">NEW</span>
                     </a>
                     <a href="cases.html">成功案例</a>
@@ -621,7 +542,10 @@
                     <i class="fas fa-robot"></i>
                     <h3>龙掌柜智能运营系统</h3>
                     <p>7大AI智能体+轻量ERP，从选品到售后全链路AI驱动</p>
-                    <a href="https://lakeli.coze.site/landing" target="_blank" class="card-btn">免费体验 <i class="fas fa-arrow-right"></i></a>
+                    <div style="display:flex;gap:10px;justify-content:center;margin-top:15px">
+                        <a href="https://lakeli.coze.site/landing" target="_blank" class="card-btn">免费体验 <i class="fas fa-external-link-alt"></i></a>
+                        <a href="courses.html" class="card-btn" style="background:transparent;color:var(--primary);border:1px solid var(--primary)">了解更多 <i class="fas fa-arrow-right"></i></a>
+                    </div>
                 </div>
                 <div class="business-card">
                     <i class="fas fa-shield-alt"></i>
@@ -637,60 +561,7 @@
         </div>
     </section>
 
-    <!-- 龙掌柜专属展示区 -->
-    <section class="longzg-showcase">
-        <div class="container">
-            <h2 class="section-title">龙掌柜 · 跨境AI智能运营系统</h2>
-            <div class="longzg-features">
-                <div class="longzg-feature">
-                    <i class="fas fa-search"></i>
-                    <h4>选品智能体</h4>
-                    <p>趋势分析·竞品研究·合规校验</p>
-                </div>
-                <div class="longzg-feature">
-                    <i class="fas fa-image"></i>
-                    <h4>图片设计</h4>
-                    <p>图片翻译·白底图·主图优化</p>
-                </div>
-                <div class="longzg-feature">
-                    <i class="fas fa-video"></i>
-                    <h4>视频生成</h4>
-                    <p>商品视频一键自动生成</p>
-                </div>
-                <div class="longzg-feature">
-                    <i class="fas fa-file-alt"></i>
-                    <h4>Listing优化</h4>
-                    <p>标题·五点·关键词·多语言</p>
-                </div>
-                <div class="longzg-feature">
-                    <i class="fas fa-bullhorn"></i>
-                    <h4>广告投放</h4>
-                    <p>预算优化·ROI监控</p>
-                </div>
-                <div class="longzg-feature">
-                    <i class="fas fa-headset"></i>
-                    <h4>AI客服</h4>
-                    <p>多语言回复·纠纷处理</p>
-                </div>
-                <div class="longzg-feature">
-                    <i class="fas fa-chart-line"></i>
-                    <h4>数据复盘</h4>
-                    <p>运营分析·问题诊断</p>
-                </div>
-                <div class="longzg-feature">
-                    <i class="fas fa-comments"></i>
-                    <h4>AI综合助手</h4>
-                    <p>自然语言对话·飞书集成</p>
-                </div>
-            </div>
-            <div class="longzg-cta">
-                <p>7大AI智能体 + 自研轻量ERP，从选品到售后全链路AI驱动</p>
-                <a href="https://lakeli.coze.site/landing" target="_blank" class="cta-btn">
-                    立即体验龙掌柜 <i class="fas fa-arrow-right"></i>
-                </a>
-            </div>
-        </div>
-    </section>
+
     
     <!-- 优势亮点板块 -->
     <section class="advantages">
