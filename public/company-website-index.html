@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TikTok跨境电商全链路服务 - 深圳市拉克力国际贸易有限公司</title>
+    <meta name="keywords" content="TikTok跨境电商,AI合规雷达,跨境电商培训,亚马逊运营培训,龙掌柜智能运营系统">
+    <meta name="description" content="8年TikTok跨境电商实战经验，提供AI合规雷达工具+龙掌柜智能运营系统+实战培训课程，降风险提业绩，助力1000+学员出海成功！">
+    <link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: '思源黑体', Arial, sans-serif;
+        }
+        :root {
+            --primary: #FF7F24; /* 主色橙色 */
+            --secondary: #1E40AF; /* 辅助色深蓝色 */
+            --longzg: #165DFF; /* 龙掌柜蓝 */
+            --gray: #F5F5F5; /* 浅灰 */
+            --text-dark: #333;
+            --text-light: #666;
+        }
+        body {
+            color: var(--text-dark);
+            line-height: 1.6;
+        }
+        a {
+            text-decoration: none;
+            color: inherit;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+        /* 导航栏 */
+        .header {
+            position: sticky;
+            top: 0;
+            background: #fff;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            z-index: 999;
+        }
+        .nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 80px;
+        }
+        .logo {
+            font-size: 22px;
+            font-weight: bold;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .logo i {
+            font-size: 24px;
+        }
+        .nav-menu {
+            display: flex;
+            gap: 30px;
+            align-items: center;
+        }
+        .nav-menu a {
+            font-size: 16px;
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+        .nav-menu a:hover {
+            color: var(--primary);
+        }
+        .nav-menu .longzg-link {
+            color: var(--longzg);
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .nav-menu .longzg-link:hover {
+            color: #0E42D2;
+        }
+        .nav-menu .longzg-link .badge {
+            background: var(--longzg);
+            color: #fff;
+            font-size: 10px;
+            padding: 1px 6px;
+            border-radius: 10px;
+            font-weight: 500;
+        }
+        .consult-btn {
+            background: var(--primary);
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: background 0.3s;
+        }
+        .consult-btn:hover {
+            background: #E67018;
+        }
+        .hamburger {
+            display: none;
+            font-size: 24px;
+            cursor: pointer;
+        }
+        /* Banner区 */
+        .banner {
+            height: calc(100vh - 80px);
+            min-height: 500px;
+            background: url("images/banner/daping_1920x1080.jpg") no-repeat center/cover;
+            display: flex;
+            align-items: center;
+            color: #fff;
+            position: relative;
+        }
+        .banner::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+        }
+        .banner-content {
+            position: relative;
+            z-index: 1;
+            max-width: 600px;
+        }
+        .banner h1 {
+            font-size: 40px;
+            line-height: 1.2;
+            margin-bottom: 20px;
+        }
+        .banner p {
+            font-size: 18px;
+            margin-bottom: 30px;
+            color: #eee;
+        }
+        .banner-btns {
+            display: flex;
+            gap: 20px;
+        }
+        .banner-btn {
+            padding: 12px 30px;
+            border-radius: 4px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .btn-primary {
+            background: var(--primary);
+            border: none;
+            color: #fff;
+        }
+        .btn-primary:hover {
+            background: #E67018;
+        }
+        .btn-longzg {
+            background: var(--longzg);
+            border: none;
+            color: #fff;
+        }
+        .btn-longzg:hover {
+            background: #0E42D2;
+        }
+        .btn-outline {
+            background: transparent;
+            border: 2px solid #fff;
+            color: #fff;
+        }
+        .btn-outline:hover {
+            background: rgba(255,255,255,0.2);
+        }
+        /* 核心业务板块 */
+        .core-business {
+            padding: 80px 0;
+            background: #fff;
+        }
+        .section-title {
+            text-align: center;
+            font-size: 32px;
+            margin-bottom: 60px;
+            position: relative;
+        }
+        .section-title::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 4px;
+            background: var(--primary);
+        }
+        .business-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 30px;
+        }
+        .business-card {
+            padding: 40px 20px;
+            background: var(--gray);
+            border-radius: 8px;
+            text-align: center;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        .business-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+        .business-card i {
+            font-size: 40px;
+            color: var(--primary);
+            margin-bottom: 20px;
+        }
+        .business-card h3 {
+            font-size: 22px;
+            margin-bottom: 15px;
+        }
+        .business-card p {
+            color: var(--text-light);
+            font-size: 16px;
+        }
+        .business-card.longzg-card {
+            background: linear-gradient(135deg, #eef4ff 0%, #f0f7ff 100%);
+            border: 2px solid #c5d9ff;
+            position: relative;
+        }
+        .business-card.longzg-card i {
+            color: var(--longzg);
+        }
+        .business-card.longzg-card h3 {
+            color: var(--longzg);
+        }
+        .business-card.longzg-card .card-tag {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background: var(--longzg);
+            color: #fff;
+            font-size: 11px;
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-weight: 500;
+        }
+        .business-card.longzg-card .card-btn {
+            display: inline-block;
+            margin-top: 15px;
+            padding: 8px 24px;
+            background: var(--longzg);
+            color: #fff;
+            border-radius: 4px;
+            font-size: 14px;
+            transition: background 0.3s;
+        }
+        .business-card.longzg-card .card-btn:hover {
+            background: #0E42D2;
+        }
+
+        /* 龙掌柜专属展示区 */
+        .longzg-showcase {
+            padding: 80px 0;
+            background: linear-gradient(135deg, #0a1628 0%, #122a5c 50%, #165DFF 100%);
+            color: #fff;
+            position: relative;
+            overflow: hidden;
+        }
+        .longzg-showcase::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -20%;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(22,93,255,0.3) 0%, transparent 70%);
+            border-radius: 50%;
+        }
+        .longzg-showcase .container {
+            position: relative;
+            z-index: 1;
+        }
+        .longzg-showcase .section-title {
+            color: #fff;
+        }
+        .longzg-showcase .section-title::after {
+            background: #fff;
+        }
+        .longzg-features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 24px;
+            margin-bottom: 50px;
+        }
+        .longzg-feature {
+            text-align: center;
+            padding: 24px 16px;
+            background: rgba(255,255,255,0.08);
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.12);
+            transition: transform 0.3s, background 0.3s;
+        }
+        .longzg-feature:hover {
+            transform: translateY(-4px);
+            background: rgba(255,255,255,0.14);
+        }
+        .longzg-feature i {
+            font-size: 28px;
+            color: #7eb8ff;
+            margin-bottom: 12px;
+        }
+        .longzg-feature h4 {
+            font-size: 15px;
+            margin-bottom: 6px;
+            font-weight: 600;
+        }
+        .longzg-feature p {
+            font-size: 12px;
+            color: rgba(255,255,255,0.7);
+            line-height: 1.4;
+        }
+        .longzg-cta {
+            text-align: center;
+        }
+        .longzg-cta p {
+            font-size: 18px;
+            margin-bottom: 24px;
+            color: rgba(255,255,255,0.9);
+        }
+        .longzg-cta .cta-btn {
+            display: inline-block;
+            padding: 14px 40px;
+            background: #fff;
+            color: var(--longzg);
+            border-radius: 6px;
+            font-size: 17px;
+            font-weight: 600;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        .longzg-cta .cta-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+            background: #f0f7ff;
+        }
+        .longzg-cta .cta-btn i {
+            margin-left: 6px;
+        }
+
+        /* 优势亮点板块 */
+        .advantages {
+            padding: 80px 0;
+            background: var(--gray);
+        }
+        .advantage-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 40px;
+            text-align: center;
+        }
+        .advantage-item {
+            padding: 20px;
+        }
+        .advantage-item .number {
+            font-size: 40px;
+            font-weight: bold;
+            color: var(--primary);
+            margin-bottom: 10px;
+        }
+        .advantage-item .desc {
+            font-size: 16px;
+            color: var(--text-dark);
+        }
+        /* 精选案例板块 */
+        .cases {
+            padding: 80px 0;
+            background: #fff;
+        }
+        .cases-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 40px;
+        }
+        .cases-header h2 {
+            font-size: 32px;
+        }
+        .cases-header a {
+            color: var(--primary);
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .case-slider {
+            overflow-x: auto;
+            padding-bottom: 20px;
+        }
+        .case-cards {
+            display: flex;
+            gap: 30px;
+            width: max-content;
+        }
+        .case-card {
+            width: 350px;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .case-card img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+        }
+        .case-card .content {
+            padding: 20px;
+        }
+        .case-card h4 {
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+        .case-card p {
+            color: var(--text-light);
+        }
+        /* 客户评价板块 */
+        .reviews {
+            padding: 80px 0;
+            background: var(--secondary);
+            color: #fff;
+        }
+        .review-slider {
+            max-width: 800px;
+            margin: 0 auto;
+            text-align: center;
+        }
+        .review-item {
+            padding: 20px;
+        }
+        .review-item p {
+            font-size: 18px;
+            font-style: italic;
+            margin-bottom: 30px;
+        }
+        .reviewer {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+        .reviewer img {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+        .reviewer-info h5 {
+            font-size: 16px;
+            font-weight: 500;
+        }
+        .reviewer-info p {
+            font-size: 14px;
+            color: #ddd;
+            margin: 0;
+        }
+        /* 联系入口 */
+        .contact-cta {
+            padding: 60px 0;
+            background: linear-gradient(to right, #FF9E6D, var(--primary));
+            text-align: center;
+            color: #fff;
+        }
+        .contact-cta h3 {
+            font-size: 28px;
+            margin-bottom: 20px;
+        }
+        .contact-cta .btn {
+            padding: 12px 30px;
+            background: #fff;
+            color: var(--primary);
+            border-radius: 4px;
+            font-size: 16px;
+            font-weight: 500;
+            display: inline-block;
+            transition: background 0.3s, color 0.3s;
+        }
+        .contact-cta .btn:hover {
+            background: #f5f5f5;
+            color: #E67018;
+        }
+        /* 页脚 */
+        .footer {
+            background: #333;
+            color: #fff;
+            padding: 60px 0 20px;
+        }
+        .footer-content {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 40px;
+            margin-bottom: 40px;
+        }
+        .footer-col h4 {
+            font-size: 18px;
+            margin-bottom: 20px;
+            position: relative;
+            padding-bottom: 10px;
+        }
+        .footer-col h4::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 50px;
+            height: 2px;
+            background: var(--primary);
+        }
+        .footer-col p {
+            color: #ccc;
+            font-size: 14px;
+            line-height: 1.8;
+        }
+        .footer-col .contact-info {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .footer-col .contact-info li {
+            list-style: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .footer-col .social-icons {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .footer-col .social-icons a {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.3s;
+        }
+        .footer-col .social-icons a:hover {
+            background: var(--primary);
+        }
+        .footer-bottom {
+            text-align: center;
+            padding-top: 20px;
+            border-top: 1px solid #444;
+            font-size: 14px;
+            color: #ccc;
+        }
+        /* 响应式 */
+        @media (max-width: 768px) {
+            .nav-menu, .consult-btn {
+                display: none;
+            }
+            .hamburger {
+                display: block;
+            }
+            .banner h1 {
+                font-size: 30px;
+            }
+            .banner p {
+                font-size: 16px;
+            }
+            .section-title {
+                font-size: 26px;
+            }
+            .cases-header h2 {
+                font-size: 26px;
+            }
+            .longzg-features {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .longzg-showcase {
+                padding: 60px 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <header class="header">
+        <div class="container">
+            <nav class="nav">
+                <a href="index.html" class="logo">
+                    <i class="fab fa-tiktok"></i>
+                    拉克力跨境
+                </a>
+                <div class="nav-menu">
+                    <a href="index.html">首页</a>
+                    <a href="about.html">关于我们</a>
+                    <a href="courses.html">产品/服务</a>
+                    <a href="https://lakeli.coze.site/landing" target="_blank" class="longzg-link">
+                        <i class="fas fa-robot"></i> 龙掌柜系统 <span class="badge">NEW</span>
+                    </a>
+                    <a href="cases.html">成功案例</a>
+                    <a href="contact.html">联系我们</a>
+                </div>
+                <a href="contact.html" class="consult-btn">
+                    <i class="fas fa-comments"></i>
+                    立即咨询
+                </a>
+                <div class="hamburger">
+                    <i class="fas fa-bars"></i>
+                </div>
+            </nav>
+        </div>
+    </header>
+    <!-- Banner区 -->
+    <section class="banner">
+        <div class="container">
+            <div class="banner-content">
+                <h1>TikTok跨境电商全链路服务，让出海更高效</h1>
+                <p>8年实战经验 · AI SaaS工具 · 1000+培训学员 · 降风险提业绩</p>
+                <div class="banner-btns">
+                    <a href="https://lakeli.coze.site/landing" target="_blank" class="banner-btn btn-longzg">
+                        <i class="fas fa-robot"></i> 体验龙掌柜
+                    </a>
+                    <a href="contact.html" class="banner-btn btn-outline">咨询培训课程</a>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- 核心业务板块 -->
+    <section class="core-business">
+        <div class="container">
+            <h2 class="section-title">我们的核心业务</h2>
+            <div class="business-cards">
+                <div class="business-card longzg-card">
+                    <span class="card-tag">新品</span>
+                    <i class="fas fa-robot"></i>
+                    <h3>龙掌柜智能运营系统</h3>
+                    <p>7大AI智能体+轻量ERP，从选品到售后全链路AI驱动</p>
+                    <a href="https://lakeli.coze.site/landing" target="_blank" class="card-btn">免费体验 <i class="fas fa-arrow-right"></i></a>
+                </div>
+                <div class="business-card">
+                    <i class="fas fa-shield-alt"></i>
+                    <h3>跨境AI合规雷达</h3>
+                    <p>解决TikTok店铺合规问题，降低封店风险</p>
+                </div>
+                <div class="business-card">
+                    <i class="fas fa-chalkboard-teacher"></i>
+                    <h3>TikTok/亚马逊运营培训</h3>
+                    <p>TK跨境电商课/直播运营课/亚马逊运营课，实战教学</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 龙掌柜专属展示区 -->
+    <section class="longzg-showcase">
+        <div class="container">
+            <h2 class="section-title">龙掌柜 · 跨境AI智能运营系统</h2>
+            <div class="longzg-features">
+                <div class="longzg-feature">
+                    <i class="fas fa-search"></i>
+                    <h4>选品智能体</h4>
+                    <p>趋势分析·竞品研究·合规校验</p>
+                </div>
+                <div class="longzg-feature">
+                    <i class="fas fa-image"></i>
+                    <h4>图片设计</h4>
+                    <p>图片翻译·白底图·主图优化</p>
+                </div>
+                <div class="longzg-feature">
+                    <i class="fas fa-video"></i>
+                    <h4>视频生成</h4>
+                    <p>商品视频一键自动生成</p>
+                </div>
+                <div class="longzg-feature">
+                    <i class="fas fa-file-alt"></i>
+                    <h4>Listing优化</h4>
+                    <p>标题·五点·关键词·多语言</p>
+                </div>
+                <div class="longzg-feature">
+                    <i class="fas fa-bullhorn"></i>
+                    <h4>广告投放</h4>
+                    <p>预算优化·ROI监控</p>
+                </div>
+                <div class="longzg-feature">
+                    <i class="fas fa-headset"></i>
+                    <h4>AI客服</h4>
+                    <p>多语言回复·纠纷处理</p>
+                </div>
+                <div class="longzg-feature">
+                    <i class="fas fa-chart-line"></i>
+                    <h4>数据复盘</h4>
+                    <p>运营分析·问题诊断</p>
+                </div>
+                <div class="longzg-feature">
+                    <i class="fas fa-comments"></i>
+                    <h4>AI综合助手</h4>
+                    <p>自然语言对话·飞书集成</p>
+                </div>
+            </div>
+            <div class="longzg-cta">
+                <p>7大AI智能体 + 自研轻量ERP，从选品到售后全链路AI驱动</p>
+                <a href="https://lakeli.coze.site/landing" target="_blank" class="cta-btn">
+                    立即体验龙掌柜 <i class="fas fa-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+    </section>
+    
+    <!-- 优势亮点板块 -->
+    <section class="advantages">
+        <div class="container">
+            <div class="advantage-list">
+                <div class="advantage-item">
+                    <div class="number">8</div>
+                    <div class="desc">年跨境电商行业经验</div>
+                </div>
+                <div class="advantage-item">
+                    <div class="number">7</div>
+                    <div class="desc">大AI智能体全链路覆盖</div>
+                </div>
+                <div class="advantage-item">
+                    <div class="number">1000+</div>
+                    <div class="desc">培训学员</div>
+                </div>
+                <div class="advantage-item">
+                    <div class="number">98%</div>
+                    <div class="desc">合规工具客户降风险有效</div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- 精选案例板块 -->
+    <section class="cases">
+        <div class="container">
+            <div class="cases-header">
+                <h2>成功案例</h2>
+                <a href="cases.html">查看全部 <i class="fas fa-arrow-right"></i></a>
+            </div>
+            <div class="case-slider">
+                <div class="case-cards">
+                    <div class="case-card">
+                        <img src="images/banner/youkeshu.jpg" alt="有棵树科技案例">
+                        <div class="content">
+                            <h4>有棵树科技</h4>
+                            <p>AI合规雷达采购，降低合规封店风险</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- 客户评价板块 -->
+    <section class="reviews">
+        <div class="container">
+            <h2 class="section-title" style="color: #fff;">客户评价</h2>
+            <div class="review-slider">
+                <div class="review-item">
+                    <p>"AI合规雷达帮我们规避了封店风险，培训课程落地性极强，真正解决了TikTok运营中的核心痛点！"</p>
+                    <div class="reviewer">
+                        <img src="images/banner/zhangxiansheng.jpg" alt="客户头像">
+                        <div class="reviewer-info">
+                            <h5>张先生</h5>
+                            <p>跨境电商企业运营总监</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- 联系入口 -->
+    <section class="contact-cta">
+        <div class="container">
+            <h3>TikTok出海有难题？随时联系我们</h3>
+            <a href="contact.html" class="btn">立即沟通</a>
+        </div>
+    </section>
+    
+    <!-- 页脚 -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-col">
+                    <h4>关于我们</h4>
+                    <p>聚焦TikTok跨境电商，提供AI SaaS工具+实战培训全链路服务，助力全球商家高效出海。</p>
+                </div>
+                <div class="footer-col">
+                    <h4>联系方式</h4>
+                    <ul class="contact-info">
+                        <li>
+                            <i class="fas fa-phone"></i>
+                            <span>13715191472（微信同号）</span>
+                        </li>
+                        <li>
+                            <i class="fas fa-map-marker-alt"></i>
+                            <span>深圳市龙岗区坂田街道发达路6号云里智能大厦</span>
+                        </li>
+                    </ul>
+                </div>
+                <div class="footer-col">
+                    <h4>社交媒体</h4>
+                    <div class="social-icons">
+                        <a href="#"><i class="fab fa-tiktok"></i></a>
+                        <a href="#"><i class="fab fa-weixin"></i></a>
+                        <a href="#"><i class="fab fa-weibo"></i></a>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>©2025 深圳市拉克力国际贸易有限公司 版权所有 | <a href="#">隐私政策</a></p>
+            </div>
+        </div>
+    </footer>
+    
+    <script>
+        // 简单轮播效果（客户评价）
+        const reviewItems = document.querySelectorAll('.review-item');
+        let currentReview = 0;
+        function showReview(index) {
+            reviewItems.forEach((item, i) => {
+                item.style.display = i === index ? 'block' : 'none';
+            });
+        }
+        showReview(currentReview);
+        setInterval(() => {
+            currentReview = (currentReview + 1) % reviewItems.length;
+            showReview(currentReview);
+        }, 5000);
+    </script>
+    <script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const hamburger = document.querySelector('.hamburger');
+    const navMenu = document.querySelector('.nav-menu');
+    const consultBtn = document.querySelector('.consult-btn');
+    
+    if (hamburger && navMenu && consultBtn) {
+      hamburger.addEventListener('click', function() {
+        const isNavVisible = getComputedStyle(navMenu).display === 'flex';
+        navMenu.style.display = isNavVisible ? 'none' : 'flex';
+        consultBtn.style.display = isNavVisible ? 'none' : 'block';
+      });
+    }
+  });
+</script>
+</body>
+</html>
