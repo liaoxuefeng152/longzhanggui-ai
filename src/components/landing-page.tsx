@@ -29,6 +29,8 @@ import {
   Sparkles,
   Command,
   Send,
+  Phone,
+  Mail,
 } from "lucide-react";
 
 /* ─── 动画 Hook ─── */
@@ -110,6 +112,7 @@ export default function LandingPage() {
             <a href="#assistant" className="hover:text-white transition">AI助手</a>
             <a href="#erp" className="hover:text-white transition">ERP系统</a>
             <a href="#flow" className="hover:text-white transition">全链路</a>
+            <a href="https://liaoxuefeng152.github.io/contact.html" target="_blank" rel="noopener noreferrer" className="hover:text-orange-400 transition flex items-center gap-1"><Phone size={14} /> 联系我们</a>
           </div>
           <div className="flex items-center gap-3">
             <button
@@ -131,6 +134,7 @@ export default function LandingPage() {
             <a href="#assistant" className="block text-sm text-muted-foreground hover:text-white" onClick={() => setMobileMenuOpen(false)}>AI助手</a>
             <a href="#erp" className="block text-sm text-muted-foreground hover:text-white" onClick={() => setMobileMenuOpen(false)}>ERP系统</a>
             <a href="#flow" className="block text-sm text-muted-foreground hover:text-white" onClick={() => setMobileMenuOpen(false)}>全链路</a>
+            <a href="https://liaoxuefeng152.github.io/contact.html" target="_blank" rel="noopener noreferrer" className="block text-sm text-orange-400 hover:text-orange-300" onClick={() => setMobileMenuOpen(false)}><Phone size={14} className="inline mr-1" />联系我们</a>
             <button onClick={() => router.push("/login")} className="w-full px-4 py-2 text-sm font-medium rounded-lg bg-gradient-to-r from-orange-500 to-amber-600">登录系统</button>
           </div>
         )}
@@ -542,8 +546,13 @@ export default function LandingPage() {
               <div className="w-7 h-7 rounded-md bg-gradient-to-br from-orange-500 to-amber-600 flex items-center justify-center text-white font-bold text-xs">龙</div>
               <span className="font-semibold">龙掌柜智能运营系统</span>
             </div>
+            <div className="flex items-center gap-6 text-sm text-white/40">
+              <a href="https://liaoxuefeng152.github.io/contact.html" target="_blank" rel="noopener noreferrer" className="hover:text-orange-400 transition">联系我们</a>
+              <span>13715191472</span>
+              <span>深圳市龙岗区坂田街道</span>
+            </div>
             <p className="text-sm text-white/25">
-              AI驱动的跨境电商全链路智能运营平台
+              © 2025 深圳市拉克力国际贸易有限公司
             </p>
           </div>
         </div>
@@ -551,8 +560,8 @@ export default function LandingPage() {
 
       {/* ─── AI助手浮窗 ─── */}
       <LandingChatWidget
-        open={chatOpen}
-        onClose={() => setChatOpen(false)}
+        externalOpen={chatOpen}
+        onOpenChange={(open: boolean) => { if (!open) setChatOpen(false); }}
         initialQuery={prefillQuery}
         onQueryConsumed={() => setPrefillQuery("")}
       />

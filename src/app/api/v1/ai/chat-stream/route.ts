@@ -28,6 +28,40 @@ type IntentType =
 // 会话存储（生产环境应使用Redis）
 const sessionStore = new Map<string, { messages: Array<{role: string, content: string}> }>();
 
+// 免费体验次数限制（基于IP + 时间窗口）
+const FREE_CHAT_LIMIT = 10; // 每个IP每天免费10次
+const ipUsageStore = new Map<string, { count: number; resetAt: number }>();
+
+function checkRateLimit(ip: string): { allowed: boolean; remaining: number; resetAt: number } {
+  const now = Date.now();
+  const usage = ipUsageStore.get(ip);
+  
+  // 如果没有记录或已过期（24小时窗口），重置
+  if (!usage || now >= usage.resetAt) {
+    const resetAt = now + 24 * 60 * 60 * 1000; // 24小时后重置
+    ipUsageStore.set(ip, { count: 1, resetAt });
+    return { allowed: true, remaining: FREE_CHAT_LIMIT - 1, resetAt };
+  }
+  
+  // 检查是否超限
+  if (usage.count >= FREE_CHAT_LIMIT) {
+    return { allowed: false, remaining: 0, resetAt: usage.resetAt };
+  }
+  
+  // 增加计数
+  usage.count++;
+  return { allowed: true, remaining: FREE_CHAT_LIMIT - usage.count, resetAt: usage.resetAt };
+}
+
+function getClientIP(request: NextRequest): string {
+  // 优先从代理头获取真实IP
+  const forwarded = request.headers.get('x-forwarded-for');
+  if (forwarded) return forwarded.split(',')[0].trim();
+  const realIP = request.headers.get('x-real-ip');
+  if (realIP) return realIP;
+  return 'unknown';
+}
+
 // 系统提示词
 const SYSTEM_PROMPT = `你是龙掌柜智能运营助手，专为跨境电商卖家提供一站式运营服务。
 
@@ -225,6 +259,29 @@ function getIntentPrompt(intent: IntentType): string {
 
 export async function POST(request: NextRequest) {
   try {
+    // 免费体验次数检查
+    const clientIP = getClientIP(request);
+    const rateLimit = checkRateLimit(clientIP);
+    
+    if (!rateLimit.allowed) {
+      return new Response(
+        JSON.stringify({ 
+          detail: '免费体验次数已用完', 
+          remaining: 0, 
+          resetAt: rateLimit.resetAt,
+          upgradeUrl: '/contact'
+        }),
+        { 
+          status: 429, 
+          headers: { 
+            'Content-Type': 'application/json',
+            'X-RateLimit-Remaining': '0',
+            'X-RateLimit-Reset': String(rateLimit.resetAt)
+          } 
+        }
+      );
+    }
+
     const body = await request.json();
     const { message, session_id = 'default', history = [] } = body;
 
@@ -317,6 +374,9 @@ export async function POST(request: NextRequest) {
         'Content-Type': 'text/event-stream',
         'Cache-Control': 'no-cache',
         'Connection': 'keep-alive',
+        'X-RateLimit-Remaining': String(rateLimit.remaining),
+        'X-RateLimit-Limit': String(FREE_CHAT_LIMIT),
+        'X-RateLimit-Reset': String(rateLimit.resetAt),
       },
     });
   } catch (error) {

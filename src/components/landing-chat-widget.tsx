@@ -1,9 +1,36 @@
 'use client';
 
-import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { MessageCircle, Send, X, Bot, Sparkles, ChevronRight, Loader2 } from 'lucide-react';
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { Bot, Sparkles, Send, X, Loader2, ChevronRight, MessageCircle, Lock } from 'lucide-react';
 
-/* ─── 类型 ─── */
+const MAX_FREE_MESSAGES = 10;
+const STORAGE_KEY = 'longzg_ai_usage';
+
+function getUsage(): { count: number; resetDate: string } {
+  if (typeof window === 'undefined') return { count: 0, resetDate: '' };
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) return JSON.parse(stored);
+  } catch {}
+  return { count: 0, resetDate: '' };
+}
+
+function setUsage(count: number) {
+  const today = new Date().toISOString().slice(0, 10);
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({ count, resetDate: today }));
+}
+
+function getRemaining(): number {
+  const usage = getUsage();
+  // 每月重置
+  const today = new Date().toISOString().slice(0, 10);
+  if (usage.resetDate && usage.resetDate.slice(0, 7) !== today.slice(0, 7)) {
+    setUsage(0);
+    return MAX_FREE_MESSAGES;
+  }
+  return Math.max(0, MAX_FREE_MESSAGES - usage.count);
+}
+
 interface Message {
   id: string;
   role: 'user' | 'assistant';
@@ -12,70 +39,87 @@ interface Message {
   isStreaming?: boolean;
 }
 
-/* ─── 推荐指令 ─── */
-const SUGGESTED_PROMPTS = [
-  { label: '选品分析', text: '帮我分析一下东南亚宠物用品市场趋势' },
-  { label: 'Listing优化', text: '帮我优化一个蓝牙耳机的Listing标题' },
-  { label: '智能定价', text: '采购价30元的手机壳，Shopee马来站怎么定价？' },
-  { label: '运营日报', text: '帮我生成一份今日运营日报' },
-];
-
-/* ─── 主组件 ─── */
 interface LandingChatWidgetProps {
-  open?: boolean;
-  onClose?: () => void;
+  externalOpen?: boolean;
+  onOpenChange?: (open: boolean) => void;
   initialQuery?: string;
   onQueryConsumed?: () => void;
 }
 
-export default function LandingChatWidget({ open: externalOpen, onClose: externalOnClose, initialQuery = '', onQueryConsumed }: LandingChatWidgetProps = {}) {
+const SUGGESTED_PROMPTS = [
+  { label: '帮我选品', text: '帮我分析一下宠物用品的市场趋势' },
+  { label: '优化Listing', text: '帮我优化一个TikTok商品标题' },
+  { label: '运营日报', text: '生成今日运营日报' },
+  { label: '智能定价', text: '帮我计算一款商品的最优售价' },
+];
+
+export default function LandingChatWidget({ externalOpen, onOpenChange, initialQuery, onQueryConsumed }: LandingChatWidgetProps) {
   const [internalOpen, setInternalOpen] = useState(false);
   const open = externalOpen !== undefined ? externalOpen : internalOpen;
-  const setOpen = externalOnClose ? (v: boolean) => { if (!v) externalOnClose(); } : setInternalOpen;
+  const setOpen = (v: boolean) => {
+    setInternalOpen(v);
+    onOpenChange?.(v);
+  };
+
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [remaining, setRemaining] = useState(MAX_FREE_MESSAGES);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const sessionIdRef = useRef(`landing_${Date.now()}`);
-  const initialQueryConsumedRef = useRef(false);
+  const sessionIdRef = useRef(`session_${Date.now()}_${Math.random().toString(36).slice(2)}`);
+  const initialQueryConsumed = useRef(false);
+
+  // 初始化时读取剩余次数
+  useEffect(() => {
+    setRemaining(getRemaining());
+  }, []);
 
   // 自动滚动到底部
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
+    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
   }, [messages]);
 
   // 打开时聚焦输入框
   useEffect(() => {
-    if (open && inputRef.current) {
-      setTimeout(() => inputRef.current?.focus(), 100);
-    }
+    if (open) setTimeout(() => inputRef.current?.focus(), 100);
   }, [open]);
 
-  // 消费 initialQuery：打开时自动发送预填问题
+  // 处理外部传入的初始查询
   useEffect(() => {
-    if (open && initialQuery && !initialQueryConsumedRef.current) {
-      initialQueryConsumedRef.current = true;
+    if (open && initialQuery && !initialQueryConsumed.current) {
+      initialQueryConsumed.current = true;
       setTimeout(() => {
         sendMessage(initialQuery);
         onQueryConsumed?.();
       }, 300);
     }
-  }, [open, initialQuery]);
+  }, [open, initialQuery]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // 发送消息（流式SSE）
   const sendMessage = useCallback(async (text: string) => {
     if (!text.trim() || loading) return;
 
-    const userMsg: Message = {
-      id: `user_${Date.now()}`,
-      role: 'user',
-      content: text.trim(),
-    };
+    // 检查次数限制
+    const left = getRemaining();
+    if (left <= 0) {
+      const limitMsg: Message = {
+        id: `limit_${Date.now()}`,
+        role: 'assistant',
+        content: '',
+        isStreaming: false,
+      };
+      setMessages(prev => [
+        ...prev,
+        { id: `user_${Date.now()}`, role: 'user', content: text.trim() },
+        limitMsg,
+      ]);
+      setInput('');
+      return;
+    }
 
+    const userId = `user_${Date.now()}`;
     const assistantId = `asst_${Date.now()}`;
+    const userMsg: Message = { id: userId, role: 'user', content: text.trim() };
     const assistantMsg: Message = {
       id: assistantId,
       role: 'assistant',
@@ -145,6 +189,11 @@ export default function LandingChatWidget({ open: externalOpen, onClose: externa
                     : m
                 )
               );
+              // 消耗次数
+              const currentUsage = getUsage();
+              const newCount = currentUsage.count + 1;
+              setUsage(newCount);
+              setRemaining(Math.max(0, MAX_FREE_MESSAGES - newCount));
             } else if (data.type === 'error') {
               setMessages(prev =>
                 prev.map(m =>
@@ -183,16 +232,22 @@ export default function LandingChatWidget({ open: externalOpen, onClose: externa
   // 初始欢迎消息
   useEffect(() => {
     if (open && messages.length === 0) {
+      const left = getRemaining();
       setMessages([{
         id: 'welcome',
         role: 'assistant',
-        content: '你好！我是龙掌柜跨境AI助手 🤖\n\n我可以帮你进行选品分析、Listing优化、智能定价、运营数据查询等。试试下面的快捷指令，或者直接输入你的问题！',
+        content: `你好！我是龙掌柜跨境AI助手 🤖\n\n我可以帮你进行选品分析、Listing优化、智能定价、运营数据查询等。试试下面的快捷指令，或者直接输入你的问题！`,
       }]);
+      setRemaining(left);
     }
   }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // 是否由外部控制开关（落地页模式）
   const isControlled = externalOpen !== undefined;
+  const isLimitReached = remaining <= 0 && messages.some(m => m.id.startsWith('limit_'));
+
+  // 联系我们链接
+  const contactUrl = 'https://liaoxuefeng152.github.io/contact.html';
 
   return (
     <>
@@ -222,13 +277,30 @@ export default function LandingChatWidget({ open: externalOpen, onClose: externa
                 <div className="text-[10px] text-white/30">龙掌柜智能运营</div>
               </div>
             </div>
-            <button
-              onClick={() => setOpen(false)}
-              className="w-7 h-7 rounded-lg hover:bg-white/5 flex items-center justify-center text-white/40 hover:text-white/70 transition"
-              aria-label="关闭"
-            >
-              <X size={16} />
-            </button>
+            <div className="flex items-center gap-2">
+              {/* 剩余次数指示 */}
+              <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium ${
+                remaining <= 0
+                  ? 'bg-red-500/20 text-red-400'
+                  : remaining <= 3
+                    ? 'bg-orange-500/20 text-orange-400'
+                    : 'bg-white/5 text-white/40'
+              }`}>
+                {remaining <= 0 ? (
+                  <Lock size={9} />
+                ) : (
+                  <Sparkles size={9} />
+                )}
+                {remaining <= 0 ? '已用完' : `${remaining}/${MAX_FREE_MESSAGES}`}
+              </div>
+              <button
+                onClick={() => setOpen(false)}
+                className="w-7 h-7 rounded-lg hover:bg-white/5 flex items-center justify-center text-white/40 hover:text-white/70 transition"
+                aria-label="关闭"
+              >
+                <X size={16} />
+              </button>
+            </div>
           </div>
 
           {/* 消息列表 */}
@@ -246,29 +318,51 @@ export default function LandingChatWidget({ open: externalOpen, onClose: externa
                       <Sparkles size={9} /> {msg.intent}
                     </div>
                   )}
-                  <div
-                    className={`px-3.5 py-2.5 rounded-2xl text-[13px] leading-relaxed whitespace-pre-wrap ${
-                      msg.role === 'user'
-                        ? 'bg-violet-500/20 text-violet-200 rounded-tr-md'
-                        : 'bg-white/[0.04] text-white/75 rounded-tl-md border border-white/5'
-                    }`}
-                  >
-                    {msg.content || (
-                      <span className="flex items-center gap-1.5 text-white/40">
-                        <Loader2 size={12} className="animate-spin" /> 思考中...
-                      </span>
-                    )}
-                    {msg.isStreaming && msg.content && (
-                      <span className="inline-block w-0.5 h-4 bg-violet-400 animate-pulse ml-0.5 align-middle" />
-                    )}
-                  </div>
+                  {/* 次数用完的特殊消息 */}
+                  {msg.id.startsWith('limit_') ? (
+                    <div className="px-4 py-3.5 rounded-2xl rounded-tl-md bg-gradient-to-br from-violet-500/10 to-purple-500/5 border border-violet-500/20">
+                      <div className="flex items-center gap-2 mb-2.5">
+                        <Lock size={14} className="text-orange-400" />
+                        <span className="text-sm font-medium text-orange-400">免费体验次数已用完</span>
+                      </div>
+                      <p className="text-[12px] text-white/50 leading-relaxed mb-3">
+                        您已使用完 {MAX_FREE_MESSAGES} 次免费体验额度。联系我们可以获取完整使用权限，解锁全部AI智能体能力。
+                      </p>
+                      <a
+                        href={contactUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-gradient-to-r from-violet-500 to-purple-600 text-white text-xs font-medium hover:from-violet-400 hover:to-purple-500 transition-all shadow-lg shadow-violet-500/20"
+                      >
+                        <MessageCircle size={12} />
+                        联系我们获取完整权限
+                      </a>
+                    </div>
+                  ) : (
+                    <div
+                      className={`px-3.5 py-2.5 rounded-2xl text-[13px] leading-relaxed whitespace-pre-wrap ${
+                        msg.role === 'user'
+                          ? 'bg-violet-500/20 text-violet-200 rounded-tr-md'
+                          : 'bg-white/[0.04] text-white/75 rounded-tl-md border border-white/5'
+                      }`}
+                    >
+                      {msg.content || (
+                        <span className="flex items-center gap-1.5 text-white/40">
+                          <Loader2 size={12} className="animate-spin" /> 思考中...
+                        </span>
+                      )}
+                      {msg.isStreaming && msg.content && (
+                        <span className="inline-block w-0.5 h-4 bg-violet-400 animate-pulse ml-0.5 align-middle" />
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
           </div>
 
-          {/* 快捷指令（仅首次对话前显示） */}
-          {messages.length <= 1 && (
+          {/* 快捷指令（仅首次对话前且还有次数时显示） */}
+          {messages.length <= 1 && remaining > 0 && (
             <div className="px-4 pb-2">
               <div className="flex flex-wrap gap-1.5">
                 {SUGGESTED_PROMPTS.map((p, i) => (
@@ -287,27 +381,52 @@ export default function LandingChatWidget({ open: externalOpen, onClose: externa
 
           {/* 输入区 */}
           <div className="px-4 py-3 border-t border-white/5">
-            <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white/[0.04] border border-white/5 focus-within:border-violet-500/30 transition">
-              <MessageCircle size={14} className="text-white/20 shrink-0" />
-              <input
-                ref={inputRef}
-                type="text"
-                value={input}
-                onChange={e => setInput(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder="输入你的问题..."
-                disabled={loading}
-                className="flex-1 bg-transparent text-sm text-white/80 placeholder:text-white/20 outline-none disabled:opacity-50"
-              />
-              <button
-                onClick={() => sendMessage(input)}
-                disabled={!input.trim() || loading}
-                className="w-7 h-7 rounded-lg bg-gradient-to-r from-violet-500 to-purple-600 flex items-center justify-center shrink-0 disabled:opacity-30 hover:opacity-90 transition"
-                aria-label="发送"
-              >
-                <Send size={12} className="text-white" />
-              </button>
-            </div>
+            {remaining <= 0 ? (
+              /* 次数用完 - 显示锁定状态 */
+              <div className="flex items-center justify-between px-3 py-2.5 rounded-xl bg-white/[0.02] border border-white/5">
+                <div className="flex items-center gap-2 text-[12px] text-white/30">
+                  <Lock size={12} />
+                  <span>体验次数已用完</span>
+                </div>
+                <a
+                  href={contactUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[11px] text-violet-400 hover:text-violet-300 font-medium transition"
+                >
+                  联系我们 →
+                </a>
+              </div>
+            ) : (
+              /* 正常输入 */
+              <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white/[0.04] border border-white/5 focus-within:border-violet-500/30 transition">
+                <MessageCircle size={14} className="text-white/20 shrink-0" />
+                <input
+                  ref={inputRef}
+                  type="text"
+                  value={input}
+                  onChange={e => setInput(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  placeholder="输入你的问题..."
+                  disabled={loading}
+                  className="flex-1 bg-transparent text-sm text-white/80 placeholder:text-white/20 outline-none disabled:opacity-50"
+                />
+                <button
+                  onClick={() => sendMessage(input)}
+                  disabled={!input.trim() || loading}
+                  className="w-7 h-7 rounded-lg bg-gradient-to-r from-violet-500 to-purple-600 flex items-center justify-center shrink-0 disabled:opacity-30 hover:opacity-90 transition"
+                  aria-label="发送"
+                >
+                  <Send size={12} className="text-white" />
+                </button>
+              </div>
+            )}
+            {/* 次数提示条 */}
+            {remaining > 0 && remaining <= 5 && (
+              <div className="mt-1.5 text-center text-[10px] text-orange-400/60">
+                剩余 {remaining} 次免费体验 · 用完可联系我们获取完整权限
+              </div>
+            )}
           </div>
         </div>
       )}
