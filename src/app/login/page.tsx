@@ -46,23 +46,22 @@ export default function LoginPage() {
     }
   };
 
-  // 演示模式登录（跳过认证）
+  // 演示模式登录（跳过认证）- 管理员权限，可查看运营端+管理端
   const handleDemoLogin = () => {
-    // 模拟登录数据 - 演示模式默认客户端角色
     const mockToken = 'demo-token-' + Date.now();
     const mockUser = {
       id: 'demo-user-001',
       username: 'demo',
-      name: '演示用户',
+      name: '演示管理员',
       phone: '13800138000',
-      role: 'client', // 演示模式默认客户端
-      permissions: ['dashboard', 'workflows', 'erp', 'tickets', 'reports'],
+      role: 'admin', // 演示模式使用管理员角色，可查看双端
+      permissions: ['dashboard', 'workflows', 'erp', 'tickets', 'reports', 'agents_config', 'models', 'platform', 'feishu', 'task_logs', 'users', 'packages', 'settings'],
     };
 
     setAuth(mockToken, mockUser);
-    localStorage.setItem('userRole', 'client');
-    toast.success('演示模式登录成功');
-    router.push('/dashboard');
+    localStorage.setItem('userRole', 'admin');
+    toast.success('演示模式登录成功，可切换运营端/管理端');
+    router.push('/workflows');
   };
 
   return (
@@ -136,7 +135,7 @@ export default function LoginPage() {
                 className="w-full h-10 text-[14px] border-primary/30 text-primary hover:bg-primary/5"
                 onClick={handleDemoLogin}
               >
-                演示模式（免登录）
+                演示模式（管理员体验）
               </Button>
             </form>
 
