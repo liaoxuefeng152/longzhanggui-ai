@@ -204,9 +204,9 @@ export default function Sidebar() {
     } else if (token) {
       // 如果有 token 但没有保存角色，根据用户角色决定默认视图
       if (isAdmin) {
-        // 管理员默认进入管理端
+        // 管理员默认进入运营端（可切换到管理端）
         setUserRole('admin');
-        setIsClientView(false);
+        setIsClientView(true);
         localStorage.setItem('userRole', 'admin');
       } else {
         // 非管理员默认进入运营端
