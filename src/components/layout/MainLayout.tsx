@@ -1,10 +1,11 @@
 'use client';
 
-import { ReactNode } from 'react';
+import { ReactNode, useEffect } from 'react';
 import Header from './Header';
 import Sidebar from './Sidebar';
 import AIAssistant from '@/components/ai-assistant';
 import { DemoLimitDialog } from '@/components/demo-limit-dialog';
+import { setupDemoGuard, isDemoMode } from '@/lib/demo';
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -17,6 +18,12 @@ interface MainLayoutProps {
 }
 
 export default function MainLayout({ children, user, onLogout }: MainLayoutProps) {
+  // 注册全局演示模式点击拦截器
+  useEffect(() => {
+    const cleanup = setupDemoGuard();
+    return cleanup;
+  }, []);
+
   return (
     <div className="min-h-screen bg-[#F7F8FA]">
       <Header user={user} onLogout={onLogout} />
