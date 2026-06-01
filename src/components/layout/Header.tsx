@@ -1,7 +1,9 @@
 'use client';
 
-import { Bell, User, Moon, Sun } from 'lucide-react';
+import { Bell, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { isDemoMode } from '@/lib/demo';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,7 +13,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
 
 interface HeaderProps {
   user?: {
@@ -69,9 +70,16 @@ export default function Header({ user, onLogout }: HeaderProps) {
                 </AvatarFallback>
               </Avatar>
               <div className="flex flex-col items-start">
-                <span className="text-[14px] font-medium text-foreground">
-                  {user?.nickname || '老板'}
-                </span>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[14px] font-medium text-foreground">
+                    {user?.nickname || '老板'}
+                  </span>
+                  {isDemoMode() && (
+                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 border-orange-300 text-orange-600 bg-orange-50">
+                      演示模式
+                    </Badge>
+                  )}
+                </div>
                 <span className="text-[11px] text-muted-foreground">
                   超级管理员
                 </span>

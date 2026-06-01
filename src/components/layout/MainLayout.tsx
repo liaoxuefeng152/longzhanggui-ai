@@ -4,6 +4,7 @@ import { ReactNode } from 'react';
 import Header from './Header';
 import Sidebar from './Sidebar';
 import AIAssistant from '@/components/ai-assistant';
+import { DemoLimitDialog } from '@/components/demo-limit-dialog';
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -25,6 +26,8 @@ export default function MainLayout({ children, user, onLogout }: MainLayoutProps
       </main>
       {/* 全局AI助手悬浮图标 */}
       <AIAssistant />
+      {/* 演示模式写操作限制弹窗 */}
+      <DemoLimitDialog />
     </div>
   );
 }
