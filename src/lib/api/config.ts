@@ -58,9 +58,9 @@ export const API_ENDPOINTS = {
     suggestKeywords: '/api/ai/suggest-keywords',
   },
   
-  // 控制台
+  // 控制台 - 使用前端API路由
   dashboard: {
-    stats: '/dashboard/stats',
+    stats: '/api/dashboard',
   },
   
   // 飞书用户 - 使用前端API路由（不依赖后端）
