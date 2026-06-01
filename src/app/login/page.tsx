@@ -60,6 +60,7 @@ export default function LoginPage() {
 
     setAuth(mockToken, mockUser);
     localStorage.setItem('userRole', 'admin');
+    localStorage.setItem('userView', 'client'); // 默认进入运营端视图
     toast.success('演示模式登录成功，可切换运营端/管理端');
     router.push('/workflows');
   };

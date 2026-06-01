@@ -185,7 +185,14 @@ const adminMenuItems: MenuItem[] = [
 export default function Sidebar() {
   const pathname = usePathname();
   const [userRole, setUserRole] = useState<'client' | 'admin' | null>(null);
-  const [isClientView, setIsClientView] = useState(false);
+  // 初始化时就从 localStorage 读取视图偏好，避免首帧闪烁到管理端
+  const getInitialClientView = () => {
+    if (typeof window === 'undefined') return true;
+    const savedView = localStorage.getItem('userView');
+    if (savedView) return savedView === 'client';
+    return true; // 默认运营端视图
+  };
+  const [isClientView, setIsClientView] = useState(getInitialClientView);
   
   // 从用户数据获取管理员状态
   const userData = typeof window !== 'undefined' ? localStorage.getItem('user') : null;
@@ -200,7 +207,13 @@ export default function Sidebar() {
     if (savedRole) {
       // 使用保存的角色
       setUserRole(savedRole as 'client' | 'admin');
-      setIsClientView(savedRole === 'client');
+      // 优先读取用户上次的视图选择，否则默认运营端
+      const savedView = localStorage.getItem('userView');
+      if (savedView) {
+        setIsClientView(savedView === 'client');
+      } else {
+        setIsClientView(true);
+      }
     } else if (token) {
       // 如果有 token 但没有保存角色，根据用户角色决定默认视图
       if (isAdmin) {
@@ -228,10 +241,10 @@ export default function Sidebar() {
       return;
     }
 
-    const newRole = isClientView ? 'admin' : 'client';
-    setIsClientView(!isClientView);
-    setUserRole(newRole);
-    localStorage.setItem('userRole', newRole);
+    const newView = !isClientView;
+    setIsClientView(newView);
+    // userRole保持真实角色(admin)，userView记录视图偏好
+    localStorage.setItem('userView', newView ? 'client' : 'admin');
     // 切换到对应的首页
     if (!isClientView) {
       window.location.href = '/dashboard';
