@@ -11,8 +11,10 @@ export interface SelectProductsRequest {
   site?: string;
   category?: string;
   budget?: string;
+  budgetLabel?: string;
   core_appeal?: string;
   targetMarket?: string;
+  directionNames?: string[]; // 用户选中的选品方向名
 }
 
 export interface SelectedProduct {
@@ -67,7 +69,7 @@ interface StreamCallbacks {
   type?: string;
   label?: string;
   messageType?: string;
-  done?: (fullResponse?: string) => void;
+  done?: (fullResponse?: string, products?: any[]) => void;
   error?: (msg: string) => void;
 }
 
@@ -128,7 +130,8 @@ export async function selectProductsStream(request: SelectProductsRequest, callb
             fullResponse += data.content;
             callbacks.content?.(data.content);
           } else if (data.type === 'done') {
-            callbacks.done?.(fullResponse);
+            // data.products 是后端解析好的结构化商品数据
+            callbacks.done?.(fullResponse, data.products);
           }
         } catch (e) {
           // 忽略解析错误
@@ -517,7 +520,7 @@ export async function scrapeProduct(request: ScrapeRequest): Promise<ScrapeResul
 
 
 /**
- * 选品方向推荐 - 使用流式API
+ * 选品方向推荐 - 使用独立API，结构化输出
  */
 export async function suggestDirections(request: {
   market?: string;
@@ -525,64 +528,25 @@ export async function suggestDirections(request: {
   category?: string;
   budget?: string;
   core_appeal?: string;
+  avoid_categories?: string;
 }): Promise<{ success: boolean; directions?: any[]; error?: string }> {
-  return new Promise((resolve) => {
-    let fullContent = '';
-    
-    selectProductsStream({
-      platform: request.platform || 'tiktok',
-      site: request.market || 'id',
-      category: request.category || '热门商品',
-      budget: request.budget || '5000',
-      targetMarket: request.market?.toUpperCase() || 'ID',
-    }, {
-      content: (text) => {
-        fullContent += text;
-      },
-      done: (response) => {
-        const directions = parseDirectionsFromReport(fullContent, request.market);
-        resolve({ success: true, directions });
-      },
-      error: (msg) => {
-        resolve({ 
-          success: true, 
-          directions: getDefaultDirections(request.market),
-          error: msg 
-        });
-      }
-    });
-  });
-}
-
-/**
- * 从报告中解析选品方向
- */
-function parseDirectionsFromReport(report: string, market?: string): any[] {
-  const defaultDirections = getDefaultDirections(market);
-  
   try {
-    const tableMatches = report.match(/\|\s*[^|]+\s*\|/g) || [];
-    
-    if (tableMatches.length > 0) {
-      return tableMatches.slice(0, 5).map((match, index) => {
-        const parts = match.split('|').filter(p => p.trim());
-        return {
-          id: `DIR-${index + 1}`,
-          name: parts[0]?.trim() || `方向${index + 1}`,
-          category: parts[1]?.trim() || '综合品类',
-          reason: parts[2]?.trim() || '市场需求旺盛',
-          marketPotential: 7 + Math.random() * 2,
-          competition: '中等',
-          avgProfitRate: 25 + Math.random() * 15,
-          trending: Math.random() > 0.5,
-        };
-      });
+    const response = await fetch('/api/v1/tools/selection/directions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(request),
+    });
+
+    if (!response.ok) {
+      return { success: false, directions: getDefaultDirections(request.market), error: `API请求失败: ${response.status}` };
     }
-  } catch (e) {
-    console.error('解析选品方向失败:', e);
+
+    const data = await response.json();
+    return { success: data.success, directions: data.directions || getDefaultDirections(request.market), error: data.error };
+  } catch (error) {
+    console.error('方向推荐失败:', error);
+    return { success: true, directions: getDefaultDirections(request.market), error: '方向推荐请求失败，使用默认数据' };
   }
-  
-  return defaultDirections;
 }
 
 /**
@@ -611,33 +575,57 @@ export async function analyzeCompetitorDetail(request: {
   platform?: string;
   site?: string;
 }): Promise<{ success: boolean; competitors?: any[]; error?: string }> {
-  return new Promise((resolve) => {
-    let fullContent = '';
-    
-    selectProductsStream({
-      platform: request.platform || 'tiktok',
-      site: request.site || 'id',
-      category: request.product_name,
-      budget: '5000',
-      targetMarket: request.site?.toUpperCase() || 'ID',
-    }, {
-      content: (text) => {
-        fullContent += text;
-      },
-      done: (response) => {
-        // 从报告中解析竞品信息
-        const competitors = parseCompetitorsFromReport(fullContent, request.product_name);
-        resolve({ success: true, competitors });
-      },
-      error: (msg) => {
-        resolve({ 
-          success: true, 
-          competitors: getDefaultCompetitors(request.product_name),
-          error: msg 
-        });
-      }
+  try {
+    // 使用独立API调用竞品分析（而非复用选品流式API）
+    const response = await fetch('/api/v1/tools/selection', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        category: request.product_name,
+        platform: request.platform || 'tiktok',
+        site: request.site || 'id',
+        targetMarket: request.site?.toUpperCase() || 'ID',
+        specificRequest: `请分析"${request.product_name}"在${request.platform || 'TikTok Shop'}上的主要竞品，包括竞品名称、销量、评分、核心卖点和用户痛点。`,
+      }),
     });
-  });
+
+    if (!response.ok) {
+      return { success: false, competitors: getDefaultCompetitors(request.product_name), error: `API请求失败: ${response.status}` };
+    }
+
+    // 解析流式响应
+    const reader = response.body?.getReader();
+    if (!reader) {
+      return { success: false, competitors: getDefaultCompetitors(request.product_name), error: '无法读取响应' };
+    }
+
+    const decoder = new TextDecoder();
+    let buffer = '';
+    let fullContent = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
+      for (const line of lines) {
+        if (line.startsWith('data: ')) {
+          try {
+            const data = JSON.parse(line.slice(6));
+            if (data.type === 'content') fullContent += data.content;
+          } catch {}
+        }
+      }
+    }
+
+    // 从报告中解析竞品
+    const competitors = parseCompetitorsFromReport(fullContent, request.product_name);
+    return { success: true, competitors };
+  } catch (error) {
+    console.error('竞品分析失败:', error);
+    return { success: true, competitors: getDefaultCompetitors(request.product_name), error: '竞品分析请求失败，使用默认数据' };
+  }
 }
 
 /**
@@ -746,20 +734,22 @@ export async function generateSelectionReport(request: {
     selectProductsStream({
       platform: request.platform || 'tiktok',
       site: request.market || 'id',
-      category: request.products[0]?.name || '热门商品',
+      category: request.products.map(p => p.name || p.category).filter(Boolean).join(', ') || '热门商品',
       budget: '5000',
       targetMarket: request.market?.toUpperCase() || 'ID',
+      directionNames: request.directions.map((d: any) => d.name || d).filter(Boolean),
     }, {
       content: (text) => {
         fullContent += text;
       },
-      done: (response) => {
+      done: (response, products) => {
         resolve({ 
           success: true, 
           report: {
             content: fullContent,
             summary: `基于${request.market || '东南亚'}市场的选品分析报告`,
             recommendations: request.directions.slice(0, 3),
+            products, // 包含解析好的商品数据
           }
         });
       },

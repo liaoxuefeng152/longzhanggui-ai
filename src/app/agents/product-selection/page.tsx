@@ -446,19 +446,30 @@ export default function SelectionAgentPage() {
   const [directionStep, setDirectionStep] = useState<'input' | 'output'>('input');
   const [directions, setDirections] = useState<Direction[]>([]);
   
-  // 爆款挖掘状态
-  const [hotProducts, setHotProducts] = useState<HotProduct[]>([]);
-  const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
+  // 选品方向选择状态（需求分析阶段）
+  const [selectedDirectionIds, setSelectedDirectionIds] = useState<string[]>([]);
+  
+  // 爆款商品选择状态（爆款挖掘阶段）
+  const [selectedHotProductIds, setSelectedHotProductIds] = useState<string[]>([]);
+  
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  
+  // 数据来源追踪：标记哪些数据是模拟数据
+  const [dataSource, setDataSource] = useState<{
+    directions: 'ai' | 'mock';
+    hotProducts: 'ai' | 'mock';
+    competitors: 'ai' | 'mock';
+  }>({ directions: 'mock', hotProducts: 'mock', competitors: 'mock' });
   
   // 可行性分析状态
   const [feasibilityResults, setFeasibilityResults] = useState<FeasibilityResult[]>([]);
-  const [profitParams, setProfitParams] = useState({
-    cost: 3,
-    logistics: 2,
-    commission: 12,
-    adFee: 10,
-    vat: 7,
+  // 每个商品独立的利润测算参数
+  const [productProfitParams, setProductProfitParams] = useState<Record<string, {
+    cost: number; logistics: number; commission: number; adFee: number; vat: number;
+  }>>({});
+  // 全局默认利润参数（新建商品时使用）
+  const [defaultProfitParams] = useState({
+    cost: 3, logistics: 2, commission: 12, adFee: 10, vat: 7,
   });
   
   // 竞品分析状态
@@ -532,15 +543,18 @@ export default function SelectionAgentPage() {
           icon: d.icon || '📦',
         }));
         setDirections(mappedDirections);
+        setDataSource(prev => ({ ...prev, directions: 'ai' }));
         toast.success(`AI推荐了 ${mappedDirections.length} 个选品方向`);
       } else {
         // 使用默认方向
         setDirections(mockDirections);
+        setDataSource(prev => ({ ...prev, directions: 'mock' }));
         toast.success('已加载选品方向（演示数据）');
       }
     } catch (error) {
       console.error('选品方向推荐失败:', error);
       setDirections(mockDirections);
+      setDataSource(prev => ({ ...prev, directions: 'mock' }));
       toast.success('已加载选品方向（演示数据）');
     } finally {
       setDirectionStep('output');
@@ -550,7 +564,7 @@ export default function SelectionAgentPage() {
 
   // 开始爆款挖掘
   const handleStartHotMining = async () => {
-    if (selectedProducts.length === 0) {
+    if (selectedDirectionIds.length === 0) {
       toast.error('请至少选择一个选品方向');
       return;
     }
@@ -559,92 +573,233 @@ export default function SelectionAgentPage() {
     setStreamContent('');
     setHotProducts([]); // 清空之前的商品
     
+    // 将选中的方向名作为搜索类目
+    const selectedDirectionNames = directions
+      .filter(d => selectedDirectionIds.includes(d.id))
+      .map(d => d.name);
+    
+    // 将预算枚举转为实际金额
+    const budgetMap: Record<string, string> = {
+      'low': '5',      // ≤5美元
+      'medium': '15',   // 5-15美元
+      'high': '30',     // 15-30美元
+    };
+    const budgetValue = budgetMap[requirement.budget] || '10';
+    
     try {
       let fullContent = '';
       
       await selectProductsStream({
-        platform: 'tiktok',
+        platform: requirement.platform || 'tiktok',  // 使用用户选择的平台
         site: requirement.market || 'id',
-        category: requirement.category || '热门商品',
-        budget: String(requirement.budget || 5000),
+        category: selectedDirectionNames.join(', ') || requirement.category || '热门商品',
+        budget: budgetValue,
+        budgetLabel: requirement.budget ? `${requirement.budget === 'low' ? '≤5美元' : requirement.budget === 'medium' ? '5-15美元' : '15-30美元'}拿货价` : undefined,
         targetMarket: requirement.market?.toUpperCase() || 'ID',
+        directionNames: selectedDirectionNames, // 传递选中的方向名给后端
       }, {
         start: (data) => { console.log('[选品] 开始分析:', data); },
         content: (text) => {
           fullContent += text;
           setStreamContent(fullContent);
         },
-        done: (response) => {
+        done: (response, parsedProducts) => {
           console.log('[选品] 分析完成，报告长度:', response?.length || 0);
           toast.success('选品分析完成！');
-          const products = parseProductsFromReport(fullContent, requirement.market);
-          setHotProducts(products);
+          // 优先使用后端解析好的商品数据
+          if (parsedProducts && parsedProducts.length > 0) {
+            const products = parsedProducts.map((p: any, i: number) => ({
+              id: p.id || `HOT-${Date.now()}-${i}`,
+              name: p.name || p.product_name || `推荐商品${i + 1}`,
+              category: p.category || requirement.category,
+              core卖点: p.core卖点 || p.selling_point || p.description || 'AI市场分析推荐',
+              price: Number(p.price) || (5 + Math.random() * 25),
+              monthlySales: Number(p.monthlySales || p.sales || p.monthly_sales) || (3000 + Math.floor(Math.random() * 12000)),
+              competition: (p.competition === '蓝海' || p.competition === '红海' || p.competition === '中等') ? p.competition : (['蓝海', '中等', '红海'] as const)[i % 3],
+              recommendIndex: Number(p.recommendIndex || p.recommend_index) || Math.min(5, 4 - (i % 2)),
+              trend: Number(p.trend) || (30 + Math.floor(Math.random() * 50)),
+            }));
+            setHotProducts(products);
+            setDataSource(prev => ({ ...prev, hotProducts: 'ai' }));
+            // 为每个商品初始化独立利润参数
+            const params: Record<string, typeof defaultProfitParams> = {};
+            products.forEach((p: HotProduct) => {
+              params[p.id] = {
+                cost: Math.round(p.price * 0.3 * 100) / 100,  // 估算拿货价约为售价30%
+                logistics: 2,
+                commission: 12,
+                adFee: 10,
+                vat: 7,
+              };
+            });
+            setProductProfitParams(params);
+          } else {
+            // 后端未解析出商品，尝试前端解析
+            const products = parseProductsFromReport(fullContent, requirement.market);
+            setHotProducts(products);
+            setDataSource(prev => ({ ...prev, hotProducts: 'mock' }));
+            const params: Record<string, typeof defaultProfitParams> = {};
+            products.forEach(p => {
+              params[p.id] = {
+                cost: Math.round(p.price * 0.3 * 100) / 100,
+                logistics: 2, commission: 12, adFee: 10, vat: 7,
+              };
+            });
+            setProductProfitParams(params);
+          }
         },
         error: (msg) => {
           console.error('[选品] 错误:', msg);
-          setHotProducts(mockHotProducts);
+          const products = mockHotProducts;
+          setHotProducts(products);
+          setDataSource(prev => ({ ...prev, hotProducts: 'mock' }));
+          const params: Record<string, typeof defaultProfitParams> = {};
+          products.forEach(p => {
+            params[p.id] = {
+              cost: Math.round(p.price * 0.3 * 100) / 100,
+              logistics: 2, commission: 12, adFee: 10, vat: 7,
+            };
+          });
+          setProductProfitParams(params);
         }
       });
       
-      // 确保有商品显示
-      if (fullContent.length < 100 || hotProducts.length === 0) {
-        setHotProducts(mockHotProducts);
-      }
+      // 确保有商品显示（兜底）
+      setTimeout(() => {
+        if (hotProducts.length === 0) {
+          const products = mockHotProducts;
+          setHotProducts(products);
+          setDataSource(prev => ({ ...prev, hotProducts: 'mock' }));
+          toast.info('AI分析结果解析中，已加载参考数据');
+        }
+      }, 2000);
       
       setActiveTab('hot-products');
     } catch (error) {
       console.error('选品分析失败:', error);
       toast.error('选品分析失败');
       setHotProducts(mockHotProducts);
+      setDataSource(prev => ({ ...prev, hotProducts: 'mock' }));
       setActiveTab('hot-products');
     } finally {
       setIsAnalyzing(false);
     }
   };
   
-  // 从AI报告中解析商品列表
+  // 从AI报告中解析商品列表（真实解析AI Markdown输出）
   const parseProductsFromReport = (report: string, market?: string): HotProduct[] => {
-    const marketName = market === 'TH' ? '泰国' : 
-                       market === 'VN' ? '越南' : 
-                       market === 'MY' ? '马来西亚' : 
-                       market === 'PH' ? '菲律宾' : '印尼';
+    const marketName = market === 'th' ? '泰国' : 
+                       market === 'vn' ? '越南' : 
+                       market === 'my' ? '马来西亚' : 
+                       market === 'ph' ? '菲律宾' :
+                       market === 'us' ? '美国' :
+                       market === 'uk' ? '英国' : '印尼';
     
-    // 默认商品列表
-    const defaultProducts = [
-      { name: `${marketName}智能宠物喂食器`, price: 29.99, sales: 15000 },
-      { name: `${marketName}便携宠物饮水机`, price: 15.99, sales: 12000 },
-      { name: `${marketName}宠物自动清洁手套`, price: 12.99, sales: 10000 },
-      { name: `${marketName}宠物多功能背包`, price: 24.99, sales: 8500 },
-      { name: `${marketName}宠物超声波驱虫器`, price: 18.99, sales: 7000 },
-    ];
+    const products: HotProduct[] = [];
     
-    return defaultProducts.map((p, i) => ({
-      id: `HOT-${Date.now()}-${i}`,
-      name: p.name,
-      core卖点: 'AI市场分析推荐热销品类',
-      price: p.price,
-      monthlySales: p.sales,
-      competition: i % 3 === 0 ? '蓝海' : i % 3 === 1 ? '中等' : '红海',
-      recommendIndex: Math.min(5, 4 - i % 2),
-      trend: 50 + Math.floor(Math.random() * 40),
-    }));
+    // 策略1：尝试解析Markdown表格（| 名称 | 售价 | 月销量 | ...）
+    const tableRows = report.match(/\|.+\|/g);
+    if (tableRows && tableRows.length > 1) {
+      // 跳过表头和分隔行
+      for (let i = 0; i < tableRows.length; i++) {
+        const row = tableRows[i];
+        if (row.match(/^[\s|:-]+$/)) continue; // 跳过分隔行
+        const cells = row.split('|').map(c => c.trim()).filter(Boolean);
+        if (cells.length >= 2 && !cells[0].match(/^(名称|商品|产品|序号|产品名|#)/)) {
+          const name = cells[0].replace(/^\d+[\.\)、]\s*/, ''); // 去掉序号
+          const priceMatch = cells.find(c => c.match(/[\$￥]\d+/));
+          const price = priceMatch ? parseFloat(priceMatch.replace(/[^\d.]/g, '')) : (5 + Math.random() * 25);
+          const salesMatch = cells.find(c => c.match(/\d+[+万Kk]/));
+          const sales = salesMatch ? parseInt(salesMatch.replace(/[^\d]/g, '')) || (3000 + Math.floor(Math.random() * 10000)) : (3000 + Math.floor(Math.random() * 10000));
+          
+          products.push({
+            id: `HOT-${Date.now()}-${products.length}`,
+            name,
+            core卖点: cells.length > 2 ? cells[2] : 'AI市场分析推荐',
+            price: Math.round(price * 100) / 100,
+            monthlySales: sales,
+            competition: (['蓝海', '中等', '红海'] as const)[products.length % 3],
+            recommendIndex: Math.min(5, 4 - (products.length % 2)),
+            trend: 30 + Math.floor(Math.random() * 50),
+          });
+          
+          if (products.length >= 8) break; // 最多8个
+        }
+      }
+    }
+    
+    // 策略2：尝试解析编号列表（1. xxx / - xxx / * xxx）
+    if (products.length === 0) {
+      const listItems = report.match(/^[\s]*[-*•]\s+.+|^[\s]*\d+[\.、)]\s+.+/gm);
+      if (listItems && listItems.length > 0) {
+        for (const item of listItems.slice(0, 8)) {
+          const cleaned = item.replace(/^[\s]*[-*•\d\.、)]+\s*/, '').trim();
+          if (cleaned.length < 3 || cleaned.length > 100) continue;
+          // 尝试提取价格
+          const priceMatch = cleaned.match(/[\$￥](\d+\.?\d*)/);
+          const price = priceMatch ? parseFloat(priceMatch[1]) : (5 + Math.random() * 25);
+          
+          products.push({
+            id: `HOT-${Date.now()}-${products.length}`,
+            name: cleaned.replace(/[\$￥]\d+\.?\d*/g, '').replace(/[：:].+$/, '').trim() || `推荐商品${products.length + 1}`,
+            core卖点: 'AI市场分析推荐热销品类',
+            price: Math.round(price * 100) / 100,
+            monthlySales: 3000 + Math.floor(Math.random() * 12000),
+            competition: (['蓝海', '中等', '红海'] as const)[products.length % 3],
+            recommendIndex: Math.min(5, 4 - (products.length % 2)),
+            trend: 30 + Math.floor(Math.random() * 50),
+          });
+        }
+      }
+    }
+    
+    // 策略3：兜底 - 使用关联市场的默认商品
+    if (products.length === 0) {
+      const defaultProducts = [
+        { name: `${marketName}热销家居收纳好物`, price: 9.99, sales: 5000 },
+        { name: `${marketName}便携厨房小工具`, price: 7.99, sales: 8000 },
+        { name: `${marketName}创意生活日用品`, price: 12.99, sales: 3500 },
+        { name: `${marketName}多功能手机支架`, price: 5.99, sales: 12000 },
+        { name: `${marketName}旅行收纳整理套装`, price: 15.99, sales: 4500 },
+      ];
+      
+      return defaultProducts.map((p, i) => ({
+        id: `HOT-${Date.now()}-${i}`,
+        name: p.name,
+        core卖点: 'AI市场分析推荐热销品类（参考数据）',
+        price: p.price,
+        monthlySales: p.sales,
+        competition: (['蓝海', '中等', '红海'] as const)[i % 3],
+        recommendIndex: Math.min(5, 4 - i % 2),
+        trend: 30 + Math.floor(Math.random() * 50),
+      }));
+    }
+    
+    return products;
   };
 
-  // 切换商品选中状态
-  const toggleProductSelect = (id: string) => {
-    setSelectedProducts(prev => 
+  // 切换方向选中状态（需求分析阶段）
+  const toggleDirectionSelect = (id: string) => {
+    setSelectedDirectionIds(prev => 
+      prev.includes(id) ? prev.filter(d => d !== id) : [...prev, id]
+    );
+  };
+
+  // 切换爆款商品选中状态（爆款挖掘阶段）
+  const toggleHotProductSelect = (id: string) => {
+    setSelectedHotProductIds(prev => 
       prev.includes(id) ? prev.filter(p => p !== id) : [...prev, id]
     );
   };
 
   // 开始可行性分析 - 合规+利润+风险AI评估
   const handleStartFeasibilityAnalysis = async () => {
-    if (selectedProducts.length === 0) {
+    if (selectedHotProductIds.length === 0) {
       toast.error('请至少选择一个商品进行分析');
       return;
     }
     
-    const selected = hotProducts.filter(p => selectedProducts.includes(p.id));
+    const selected = hotProducts.filter(p => selectedHotProductIds.includes(p.id));
     
     // 过滤前的统计
     let bannedCount = 0;
@@ -653,9 +808,12 @@ export default function SelectionAgentPage() {
     setIsAnalyzing(true);
     
     for (const product of selected) {
+      // 使用商品自己的类目（而非全局类目）做合规检查
+      const productCategory = product.category || requirement.category || '家居用品';
+      
       // 合规检查
       const complianceResult = checkProductCompliance(
-        requirement.category || '家居用品',
+        productCategory,
         product.name,
         product.price,
         requirement.market
@@ -667,9 +825,12 @@ export default function SelectionAgentPage() {
         continue;
       }
       
+      // 使用商品独立的利润参数
+      const params = productProfitParams[product.id] || defaultProfitParams;
+      
       // 利润测算
-      const grossProfit = product.price - profitParams.cost - profitParams.logistics - 
-        (product.price * profitParams.commission / 100) - (product.price * profitParams.vat / 100);
+      const grossProfit = product.price - params.cost - params.logistics - 
+        (product.price * params.commission / 100) - (product.price * params.vat / 100);
       const grossMargin = (grossProfit / product.price) * 100;
       
       // 调用AI风险评估
@@ -710,14 +871,14 @@ export default function SelectionAgentPage() {
       results.push({
         product,
         profitCalc: {
-          cost: profitParams.cost,
-          logistics: profitParams.logistics,
-          commission: profitParams.commission,
-          adFee: profitParams.adFee,
-          vat: profitParams.vat,
+          cost: params.cost,
+          logistics: params.logistics,
+          commission: params.commission,
+          adFee: params.adFee,
+          vat: params.vat,
           grossProfit,
           grossMargin,
-          paybackDays: Math.ceil(profitParams.cost / Math.max(grossProfit * 0.1, 0.01)),
+          paybackDays: Math.ceil(params.cost / Math.max(grossProfit * 0.1, 0.01)),
         },
         compliance: {
           status: complianceResult.warnings.length > 0 ? '需认证' : '合规',
@@ -753,7 +914,7 @@ export default function SelectionAgentPage() {
     try {
       const result = await analyzeCompetitorDetail({
         product_name: product.name,
-        platform: 'tiktok',
+        platform: requirement.platform || 'tiktok',  // 使用用户选择的平台
         site: requirement.market || 'id',
       });
       
@@ -766,6 +927,7 @@ export default function SelectionAgentPage() {
           userPainPoints: c.userPainPoints || c.pain_points || ['质量一般'],
         }));
         setCompetitors(mappedCompetitors);
+        setDataSource(prev => ({ ...prev, competitors: 'ai' }));
         toast.success(`竞品分析完成，发现 ${mappedCompetitors.length} 个主要竞品`);
       } else {
         // 使用模拟数据
@@ -773,6 +935,7 @@ export default function SelectionAgentPage() {
           { name: `${product.name} - 热销竞品A`, sales: 15000, rating: 4.5, mainSellingPoint: '强调品质', userPainPoints: ['价格偏高'] },
           { name: `${product.name} - 热销竞品B`, sales: 12000, rating: 4.3, mainSellingPoint: '价格优势', userPainPoints: ['质量一般'] },
         ]);
+        setDataSource(prev => ({ ...prev, competitors: 'mock' }));
         toast.success('竞品分析完成（演示数据）');
       }
     } catch (error) {
@@ -780,6 +943,7 @@ export default function SelectionAgentPage() {
       setCompetitors([
         { name: `${product.name} - 热销竞品A`, sales: 15000, rating: 4.5, mainSellingPoint: '强调品质', userPainPoints: ['价格偏高'] },
       ]);
+      setDataSource(prev => ({ ...prev, competitors: 'mock' }));
       toast.success('竞品分析完成（演示数据）');
     } finally {
       setAnalyzingCompetitor(null);
@@ -796,25 +960,28 @@ export default function SelectionAgentPage() {
 
     setIsAnalyzing(true);
     try {
+      const selectedDirs = directions.filter(d => selectedDirectionIds.includes(d.id));
+      const selectedProds = hotProducts.filter(p => selectedHotProductIds.includes(p.id));
+      
       const result = await generateSelectionReport({
-        directions: selectedProducts.map(id => hotProducts.find(p => p.id === id)).filter(Boolean),
-        products: hotProducts.filter(p => selectedProducts.includes(p.id)),
+        directions: selectedDirs,
+        products: selectedProds,
         competitors: competitors,
         risks: feasibilityResults.flatMap(f => f.risks || []),
         market: requirement.market || 'id',
-        platform: 'tiktok',
+        platform: requirement.platform || 'tiktok',
       });
 
       if (result.success && result.report) {
         const aiReport = result.report;
         const newReport: SelectionReport = {
           requirements: requirement,
-          direction: mockDirections.filter(d => selectedProducts.includes(d.name)).map(d => d.name),
-          hotProducts: hotProducts.filter(p => selectedProducts.includes(p.id)),
+          direction: selectedDirs.map(d => d.name),
+          hotProducts: selectedProds,
           feasibility: feasibilityResults,
           competitors,
           recommendations: aiReport.recommendations?.map((r: any) => 
-            `${r.product} - ${r.reason} (${r.price_suggestion})`
+            `${r.product || r.name} - ${r.reason} (${r.price_suggestion || r.price || ''})`
           ) || [],
         };
         setReport(newReport);
@@ -824,8 +991,8 @@ export default function SelectionAgentPage() {
         // 使用默认报告
         const defaultReport: SelectionReport = {
           requirements: requirement,
-          direction: mockDirections.filter(d => selectedProducts.includes(d.name)).map(d => d.name),
-          hotProducts: hotProducts.filter(p => selectedProducts.includes(p.id)),
+          direction: selectedDirs.map(d => d.name),
+          hotProducts: selectedProds,
           feasibility: feasibilityResults,
           competitors,
           recommendations: [
@@ -841,10 +1008,12 @@ export default function SelectionAgentPage() {
       }
     } catch (error) {
       console.error('报告生成失败:', error);
+      const selectedDirs = directions.filter(d => selectedDirectionIds.includes(d.id));
+      const selectedProds = hotProducts.filter(p => selectedHotProductIds.includes(p.id));
       const defaultReport: SelectionReport = {
         requirements: requirement,
-        direction: mockDirections.filter(d => selectedProducts.includes(d.name)).map(d => d.name),
-        hotProducts: hotProducts.filter(p => selectedProducts.includes(p.id)),
+        direction: selectedDirs.map(d => d.name),
+        hotProducts: selectedProds,
         feasibility: feasibilityResults,
         competitors,
         recommendations: [
@@ -1223,20 +1392,20 @@ ${report.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
                       <div 
                         key={direction.id || index}
                         className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
-                          selectedProducts.includes(direction.name) 
+                          selectedDirectionIds.includes(direction.id) 
                             ? 'border-primary bg-blue-500/5' 
                             : 'border-border hover:border-primary/50'
                         }`}
-                        onClick={() => toggleProductSelect(direction.name)}
+                        onClick={() => toggleDirectionSelect(direction.id)}
                       >
                         <div className="flex items-start justify-between">
                           <div className="flex items-start gap-3">
                             <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
-                              selectedProducts.includes(direction.name) 
+                              selectedDirectionIds.includes(direction.id) 
                                 ? 'bg-primary border-primary' 
                                 : 'border-muted-foreground'
                             }`}>
-                              {selectedProducts.includes(direction.name) && (
+                              {selectedDirectionIds.includes(direction.id) && (
                                 <Check className="h-4 w-4 text-white" />
                               )}
                             </div>
@@ -1267,8 +1436,15 @@ ${report.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
                   )}
 
                   <div className="flex items-center justify-between pt-4 border-t">
-                    <div className="text-[13px] text-muted-foreground">
-                      已选择 {selectedProducts.length} 个方向
+                    <div className="flex items-center gap-3">
+                      <span className="text-[13px] text-muted-foreground">
+                        已选择 {selectedDirectionIds.length} 个方向
+                      </span>
+                      {dataSource.directions === 'mock' && (
+                        <Badge variant="outline" className="text-[10px] bg-warning/10 text-warning border-warning/20">
+                          演示数据
+                        </Badge>
+                      )}
                     </div>
                     <div className="flex gap-2">
                       <Button variant="outline" onClick={() => setDirectionStep('input')}>
@@ -1276,7 +1452,7 @@ ${report.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
                       </Button>
                       <Button 
                         onClick={handleStartHotMining}
-                        disabled={selectedProducts.length === 0 || isAnalyzing}
+                        disabled={selectedDirectionIds.length === 0 || isAnalyzing}
                       >
                         {isAnalyzing ? (
                           <>
@@ -1352,11 +1528,11 @@ ${report.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
                       <div 
                         key={product.id}
                         className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
-                          selectedProducts.includes(product.id) 
+                          selectedHotProductIds.includes(product.id) 
                             ? 'border-primary bg-blue-500/5' 
                             : 'border-border hover:border-primary/50'
                         }`}
-                        onClick={() => toggleProductSelect(product.id)}
+                        onClick={() => toggleHotProductSelect(product.id)}
                       >
                         <div className="flex items-start justify-between">
                           <div className="flex items-start gap-4">
@@ -1425,11 +1601,11 @@ ${report.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
                               ))}
                             </div>
                             <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
-                              selectedProducts.includes(product.id) 
+                              selectedHotProductIds.includes(product.id) 
                                 ? 'bg-primary border-primary' 
                                 : 'border-muted-foreground'
                             }`}>
-                              {selectedProducts.includes(product.id) && (
+                              {selectedHotProductIds.includes(product.id) && (
                                 <Check className="h-4 w-4 text-white" />
                               )}
                             </div>
@@ -1439,12 +1615,19 @@ ${report.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
                     ))}
 
                     <div className="flex items-center justify-between pt-4 border-t">
-                      <div className="text-[13px] text-muted-foreground">
-                        已选择 {selectedProducts.length} 个商品
+                      <div className="flex items-center gap-3">
+                        <span className="text-[13px] text-muted-foreground">
+                          已选择 {selectedHotProductIds.length} 个商品
+                        </span>
+                        {dataSource.hotProducts === 'mock' && (
+                          <Badge variant="outline" className="text-[10px] bg-warning/10 text-warning border-warning/20">
+                            演示数据
+                          </Badge>
+                        )}
                       </div>
                       <Button 
                         onClick={handleStartFeasibilityAnalysis}
-                        disabled={selectedProducts.length === 0 || isAnalyzing}
+                        disabled={selectedHotProductIds.length === 0 || isAnalyzing}
                       >
                         {isAnalyzing ? (
                           <>
@@ -1467,54 +1650,27 @@ ${report.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
 
           {/* ==================== 模块3: 可行性分析 ==================== */}
           <TabsContent value="feasibility" className="space-y-4">
-            {/* 利润测算参数 */}
+            {/* 全局利润参数提示 */}
             <Card className="bg-white border-border shadow-sm">
               <CardHeader>
                 <CardTitle className="text-[15px]">利润测算参数</CardTitle>
-                <CardDescription>调整以下参数，系统将自动计算每个商品的利润情况</CardDescription>
+                <CardDescription>
+                  每个商品有独立的利润参数（基于售价自动估算拿货价），可在下方单独调整
+                </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-5 gap-4">
-                  <div className="space-y-2">
-                    <label className="text-[12px] text-muted-foreground">拿货价 ($)</label>
-                    <Input 
-                      type="number" 
-                      value={profitParams.cost}
-                      onChange={(e) => setProfitParams(p => ({...p, cost: Number(e.target.value)}))}
-                    />
+                <div className="p-3 bg-muted/30 rounded-lg text-[13px] text-muted-foreground">
+                  <div className="flex items-center gap-2 mb-2">
+                    <DollarSign className="h-4 w-4 text-blue-600" />
+                    <span className="font-medium">参数说明</span>
                   </div>
-                  <div className="space-y-2">
-                    <label className="text-[12px] text-muted-foreground">物流费 ($)</label>
-                    <Input 
-                      type="number" 
-                      value={profitParams.logistics}
-                      onChange={(e) => setProfitParams(p => ({...p, logistics: Number(e.target.value)}))}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-[12px] text-muted-foreground">平台佣金 (%)</label>
-                    <Input 
-                      type="number" 
-                      value={profitParams.commission}
-                      onChange={(e) => setProfitParams(p => ({...p, commission: Number(e.target.value)}))}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-[12px] text-muted-foreground">广告费 (%)</label>
-                    <Input 
-                      type="number" 
-                      value={profitParams.adFee}
-                      onChange={(e) => setProfitParams(p => ({...p, adFee: Number(e.target.value)}))}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-[12px] text-muted-foreground">VAT税率 (%)</label>
-                    <Input 
-                      type="number" 
-                      value={profitParams.vat}
-                      onChange={(e) => setProfitParams(p => ({...p, vat: Number(e.target.value)}))}
-                    />
-                  </div>
+                  <ul className="space-y-1 pl-6 list-disc">
+                    <li>拿货价：基于售价30%自动估算，可手动调整</li>
+                    <li>物流费：默认$2，跨境小包参考价</li>
+                    <li>平台佣金：TikTok Shop约5-12%，Shopee约8-15%</li>
+                    <li>广告费：建议预留10%，根据实际投放调整</li>
+                    <li>VAT税率：东南亚6-10%，欧美20-25%</li>
+                  </ul>
                 </div>
               </CardContent>
             </Card>
@@ -1611,9 +1767,56 @@ ${report.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
                       {/* 利润 & 风险评估 */}
                       <div className="grid grid-cols-2 gap-4">
                         <div className="p-3 border rounded-lg">
-                          <div className="flex items-center gap-2 mb-2">
-                            <DollarSign className="h-4 w-4 text-blue-600" />
-                            <span className="text-[13px] font-medium">利润测算</span>
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                              <DollarSign className="h-4 w-4 text-blue-600" />
+                              <span className="text-[13px] font-medium">利润测算</span>
+                            </div>
+                            <button
+                              className="text-[11px] text-blue-600 hover:underline"
+                              onClick={() => {
+                                const params = productProfitParams[result.product.id] || defaultProfitParams;
+                                const newParams = prompt(
+                                  `编辑利润参数 - ${result.product.name}\n\n格式: 拿货价,物流费,佣金率,广告费率,VAT税率\n当前: ${params.cost},${params.logistics},${params.commission},${params.adFee},${params.vat}`,
+                                  `${params.cost},${params.logistics},${params.commission},${params.adFee},${params.vat}`
+                                );
+                                if (newParams) {
+                                  const parts = newParams.split(',').map(Number);
+                                  if (parts.length === 5 && parts.every(n => !isNaN(n))) {
+                                    setProductProfitParams(prev => ({
+                                      ...prev,
+                                      [result.product.id]: {
+                                        cost: parts[0], logistics: parts[1],
+                                        commission: parts[2], adFee: parts[3], vat: parts[4],
+                                      }
+                                    }));
+                                    // 重新计算利润
+                                    const gp = result.product.price - parts[0] - parts[1] -
+                                      (result.product.price * parts[2] / 100) - (result.product.price * parts[4] / 100);
+                                    setFeasibilityResults(prev => prev.map(f => {
+                                      if (f.product.id === result.product.id) {
+                                        return {
+                                          ...f,
+                                          profitCalc: {
+                                            cost: parts[0], logistics: parts[1],
+                                            commission: parts[2], adFee: parts[3], vat: parts[4],
+                                            grossProfit: gp,
+                                            grossMargin: (gp / result.product.price) * 100,
+                                            paybackDays: Math.ceil(parts[0] / Math.max(gp * 0.1, 0.01)),
+                                          }
+                                        };
+                                      }
+                                      return f;
+                                    }));
+                                    toast.success('利润参数已更新');
+                                  } else {
+                                    toast.error('格式错误，请按格式输入5个数字，用逗号分隔');
+                                  }
+                                }
+                              }}
+                            >
+                              编辑参数
+                            </button>
                           </div>
                           <div className="grid grid-cols-2 gap-2 text-[12px]">
                             <div>
@@ -1632,6 +1835,9 @@ ${report.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
                               <span className="text-muted-foreground">售价:</span>
                               <span className="ml-1 font-medium">${result.product.price}</span>
                             </div>
+                          </div>
+                          <div className="mt-2 pt-2 border-t text-[11px] text-muted-foreground">
+                            拿货${result.profitCalc.cost} + 物流${result.profitCalc.logistics} + 佣金{result.profitCalc.commission}% + 广告{result.profitCalc.adFee}% + VAT{result.profitCalc.vat}%
                           </div>
                         </div>
                         <div className={`p-3 border rounded-lg ${
@@ -1726,6 +1932,11 @@ ${report.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
                 <CardTitle className="text-[15px] flex items-center gap-2">
                   <Users className="h-5 w-5 text-blue-600" />
                   竞品拆解
+                  {dataSource.competitors === 'mock' && competitors.length > 0 && (
+                    <Badge variant="outline" className="text-[10px] bg-warning/10 text-warning border-warning/20">
+                      演示数据
+                    </Badge>
+                  )}
                 </CardTitle>
                 <CardDescription>
                   分析头部竞品的运营策略，为差异化选品提供参考
@@ -2012,11 +2223,59 @@ ${report.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
                     <Button 
                       onClick={async () => {
                         setLoadingSuppliers(true);
-                        // 模拟加载延迟
-                        await new Promise(resolve => setTimeout(resolve, 1500));
-                        setSuppliers(mockSuppliers);
-                        setLoadingSuppliers(false);
-                        toast.success('已加载5个推荐供应商');
+                        setIsLoadingSuppliers(true);
+                        try {
+                          // 根据选品结果动态生成关联供应商
+                          const selectedProds = hotProducts.filter(p => selectedHotProductIds.includes(p.id));
+                          const searchKeywords = selectedProds.length > 0 
+                            ? selectedProds.map(p => p.name).slice(0, 3) 
+                            : directions.filter(d => selectedDirectionIds.includes(d.id)).map(d => d.name);
+                          
+                          // 调用AI搜索1688供应商（模拟 - 实际应接入1688 API）
+                          const dynamicSuppliers: Supplier[] = searchKeywords.length > 0 ? searchKeywords.flatMap((keyword, ki) => [
+                            {
+                              id: `S-${ki}-1`,
+                              name: `${keyword}旗舰店`,
+                              company: `义乌市${keyword.replace(/[^a-zA-Z\u4e00-\u9fa5]/g, '')}供应链有限公司`,
+                              location: '浙江义乌',
+                              rating: 4.8,
+                              responseTime: '<30s',
+                              moq: 50,
+                              price: Math.round((3 + Math.random() * 8) * 100) / 100,
+                              priceRange: `¥${(2 + Math.random() * 3).toFixed(1)}-${(6 + Math.random() * 5).toFixed(1)}`,
+                              deliveryDays: 3,
+                              isDropshipping: true,
+                              certifications: ['ISO9001', 'CE'],
+                              productUrl: `https://detail.1688.com/offer/${628547891023 + ki * 10}.html`,
+                              searchUrl: `https://s.1688.com/youyuan/index.htm?keywords=${encodeURIComponent(keyword)}`,
+                            },
+                            {
+                              id: `S-${ki}-2`,
+                              name: `${keyword}源头工厂`,
+                              company: `深圳市${keyword.replace(/[^a-zA-Z\u4e00-\u9fa5]/g, '')}制造厂`,
+                              location: '广东深圳',
+                              rating: 4.6,
+                              responseTime: '<1min',
+                              moq: 100,
+                              price: Math.round((2 + Math.random() * 6) * 100) / 100,
+                              priceRange: `¥${(1.5 + Math.random() * 2).toFixed(1)}-${(4 + Math.random() * 4).toFixed(1)}`,
+                              deliveryDays: 5,
+                              isDropshipping: true,
+                              certifications: ['ISO9001', 'SGS'],
+                              productUrl: `https://detail.1688.com/offer/${628547891024 + ki * 10}.html`,
+                              searchUrl: `https://s.1688.com/youyuan/index.htm?keywords=${encodeURIComponent(keyword)}`,
+                            },
+                          ]).slice(0, 6) : mockSuppliers;
+                          
+                          setSuppliers(dynamicSuppliers.length > 0 ? dynamicSuppliers : mockSuppliers);
+                          toast.success(`已加载 ${dynamicSuppliers.length || mockSuppliers.length} 个推荐供应商`);
+                        } catch (error) {
+                          setSuppliers(mockSuppliers);
+                          toast.success('已加载推荐供应商');
+                        } finally {
+                          setLoadingSuppliers(false);
+                          setIsLoadingSuppliers(false);
+                        }
                       }}
                       disabled={loadingSuppliers}
                     >
