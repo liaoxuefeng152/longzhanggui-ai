@@ -449,6 +449,8 @@ export default function SelectionAgentPage() {
   // 选品方向选择状态（需求分析阶段）
   const [selectedDirectionIds, setSelectedDirectionIds] = useState<string[]>([]);
   
+  // 爆款商品列表状态
+  const [hotProducts, setHotProducts] = useState<HotProduct[]>([]);
   // 爆款商品选择状态（爆款挖掘阶段）
   const [selectedHotProductIds, setSelectedHotProductIds] = useState<string[]>([]);
   
