@@ -547,8 +547,8 @@ export default function SelectionAgentPage() {
         product_profit_params: productProfitParams as Record<string, unknown> | null,
         feasibility_results: feasibilityResults as unknown[] | null,
         competitors: competitors as unknown[] | null,
-        current_step: activeStep,
-        status: activeStep >= 5 ? 'completed' : 'in_progress',
+        current_step: ['requirement','hot-products','feasibility','competitor','report','suppliers'].indexOf(activeTab),
+        status: ['report','suppliers'].includes(activeTab) ? 'completed' : 'in_progress',
         data_sources: dataSource as unknown as Record<string, string> | null,
       } as Partial<SelectionSessionData>);
     } catch {
@@ -578,7 +578,7 @@ export default function SelectionAgentPage() {
       return () => clearTimeout(timer);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [directions, hotProducts, feasibilityResults, competitors, selectedDirectionIds, selectedHotProductIds, activeStep]);
+  }, [directions, hotProducts, feasibilityResults, competitors, selectedDirectionIds, selectedHotProductIds, activeTab]);
 
   // Ensure session exists before first analysis
   const ensureSession = async () => {
