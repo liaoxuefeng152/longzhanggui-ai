@@ -624,7 +624,8 @@ export default function SelectionAgentPage() {
       setProductProfitParams((session.product_profit_params as Record<string, { cost: number; logistics: number; commission: number; adFee: number; vat: number }>) || {});
       setFeasibilityResults((session.feasibility_results as unknown as typeof feasibilityResults) || []);
       setCompetitors((session.competitors as unknown as typeof competitors) || []);
-      setActiveStep(session.current_step || 0);
+      const tabs = ['requirement','hot-products','feasibility','competitor','report','suppliers'];
+      setActiveTab(tabs[session.current_step || 0] || 'requirement');
       if (session.data_sources) {
         setDataSource(session.data_sources as unknown as typeof dataSource);
       }
@@ -658,7 +659,7 @@ export default function SelectionAgentPage() {
     setProductProfitParams({});
     setFeasibilityResults([]);
     setCompetitors([]);
-    setActiveStep(0);
+    setActiveTab('requirement');
     setDataSource({ directions: 'mock', hotProducts: 'mock', competitors: 'mock' });
     setShowHistory(false);
   };
