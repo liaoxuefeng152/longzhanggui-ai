@@ -178,6 +178,14 @@ coze dev
   - 数据在服务重启后重置为初始状态
   - 包含完整的类型定义和初始化数据
   - 提供数据关联索引 (product_id → orders/inventory/ads)
+- **持久化存储 (Supabase + S3)**: `src/lib/storage/`
+  - `src/lib/storage/database.ts` - 数据库CRUD工具类
+  - `src/lib/storage/s3.ts` - S3对象存储工具类
+  - `src/storage/database/supabase-client.ts` - Supabase客户端初始化
+  - `src/storage/database/shared/schema.ts` - 数据库表Schema定义
+  - **数据库表**: ai_tasks, ai_task_outputs, selection_sessions, generated_images, generated_videos, listing_drafts, chat_histories
+  - **存储架构**: 二进制文件(图片/视频/报告) → S3, 结构化数据 → Supabase PostgreSQL
+  - **AI产物持久化**: 选品会话自动保存、图片视频临时URL转存S3、Listing草稿保存、AI对话历史
 
 ## 目录结构
 
@@ -417,6 +425,35 @@ coze dev
 - **Listing生成**：标题、五点描述、多语言支持（英/泰/越/马/印尼/菲律宾语）
 - **客服回复**：多语言客服回复，支持询盘/订单/物流/投诉/退款/评价场景
 
+### 选品方向推荐API路由
+| 路由 | 方法 | 功能 |
+|------|------|------|
+| `/api/v1/tools/selection/directions` | POST | 选品方向推荐（结构化JSON输出） |
+
+**选品方向推荐说明**：
+- 独立于选品分析的专用API，专注方向推荐
+- 输入：market/platform/category/budget/core_appeal
+- 输出：3-5个结构化方向（含市场潜力、竞争度、利润率、风险等级）
+- 三层解析策略：直接JSON → 正则提取 → 市场相关默认方向
+
+### AI产物存储API路由
+| 路由 | 方法 | 功能 |
+|------|------|------|
+| `/api/v1/storage/selection-sessions` | GET/POST/PUT/DELETE | 选品会话持久化（自动保存/历史恢复） |
+| `/api/v1/storage/images` | GET/POST | 生成图片持久化（临时URL转存S3） |
+| `/api/v1/storage/videos` | GET/POST | 生成视频持久化（临时URL转存S3） |
+| `/api/v1/storage/listing-drafts` | GET/POST/PUT/DELETE | Listing草稿持久化 |
+| `/api/v1/storage/chat-histories` | GET/POST | AI对话历史持久化 |
+| `/api/v1/storage/ai-tasks` | GET/POST | 统一任务中心记录 |
+| `/api/v1/storage/report` | POST | 报告上传S3 |
+
+**存储架构说明**：
+- **二进制文件**（图片/视频/报告）→ S3对象存储（coze-coding-dev-sdk S3 proxy）
+- **结构化数据**（会话/任务/历史）→ Supabase PostgreSQL
+- **临时URL转存**：AI生成的图片视频URL有效期短，通过 `transferFromUrl` 自动转存到S3
+- **选品自动保存**：每次步骤完成自动保存会话状态，支持历史恢复
+- **RLS策略**：所有表启用Row Level Security，当前demo模式允许匿名访问
+
 ### API配置
 所有API端点配置在 `src/lib/api/config.ts`，使用相对路径 `/api/xxx`。
 
@@ -629,6 +666,20 @@ npx tsc --noEmit
 - 模型 API: `src/lib/api/models.ts`
 - AI智能体 API: `src/lib/api/ai-agents.ts`
 - Dashboard API: `src/lib/api/dashboard.ts`
+- 存储API: `src/lib/api/storage.ts`
+
+### 持久化存储
+- 数据库工具: `src/lib/storage/database.ts` - Supabase CRUD
+- S3工具: `src/lib/storage/s3.ts` - 对象存储上传/下载/转存
+- Supabase客户端: `src/storage/database/supabase-client.ts`
+- Schema定义: `src/storage/database/shared/schema.ts`
+- 选品会话API: `src/app/api/v1/storage/selection-sessions/route.ts`
+- 图片持久化API: `src/app/api/v1/storage/images/route.ts`
+- 视频持久化API: `src/app/api/v1/storage/videos/route.ts`
+- Listing草稿API: `src/app/api/v1/storage/listing-drafts/route.ts`
+- 对话历史API: `src/app/api/v1/storage/chat-histories/route.ts`
+- 任务中心API: `src/app/api/v1/storage/ai-tasks/route.ts`
+- 报告上传API: `src/app/api/v1/storage/report/route.ts`
 
 ### 布局组件
 - 主布局: `src/components/layout/MainLayout.tsx`

@@ -28,6 +28,7 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { saveChatMessage, getChatHistory } from '@/lib/api/storage';
 
 // Intent types
 type IntentType = 
@@ -152,6 +153,7 @@ export default function AIAssistant({ onNavigate }: AIAssistantProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false); // 放大状态
+  const [chatSessionId] = useState(() => `chat-${Date.now()}`); // persistent session ID
   
   // 拖拽状态 - 使用百分比位置
   const [isDragging, setIsDragging] = useState(false);
@@ -233,6 +235,16 @@ export default function AIAssistant({ onNavigate }: AIAssistantProps) {
     setInput('');
     setIsLoading(true);
 
+    // Persist user message
+    try {
+      await saveChatMessage({
+        session_id: chatSessionId,
+        role: 'user',
+        content: userMessage.content,
+        intent_type: recognizeIntent(userMessage.content),
+      });
+    } catch { /* non-critical */ }
+
     const intent = recognizeIntent(userMessage.content);
 
     const assistantMessageId = (Date.now() + 1).toString();
@@ -281,7 +293,7 @@ export default function AIAssistant({ onNavigate }: AIAssistantProps) {
         },
         body: JSON.stringify({
           message: userMessage.content,
-          session_id: 'default',
+          session_id: chatSessionId,
         }),
       });
 
@@ -336,6 +348,15 @@ export default function AIAssistant({ onNavigate }: AIAssistantProps) {
                     ? { ...msg, content: fullContent, isStreaming: false }
                     : msg
                 ));
+                // Persist assistant message
+                try {
+                  await saveChatMessage({
+                    session_id: chatSessionId,
+                    role: 'assistant',
+                    content: fullContent,
+                    intent_type: intent,
+                  });
+                } catch { /* non-critical */ }
               } else if (data.type === 'error') {
                 throw new Error(data.message);
               }

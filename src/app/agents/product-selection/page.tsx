@@ -50,9 +50,21 @@ import {
   Copy,
   CheckCircle2,
   Building,
+  History,
+  Save,
+  Trash2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { selectProductsStream, suggestDirections, analyzeCompetitorDetail, assessRisks, generateSelectionReport } from '@/lib/api/ai-agents';
+import {
+  createSelectionSession,
+  updateSelectionSession,
+  listSelectionSessions,
+  getSelectionSession,
+  deleteSelectionSession,
+  uploadReport,
+  type SelectionSessionData,
+} from '@/lib/api/storage';
 import { store } from '@/lib/store';
 
 // 类型定义
@@ -463,6 +475,13 @@ export default function SelectionAgentPage() {
     competitors: 'ai' | 'mock';
   }>({ directions: 'mock', hotProducts: 'mock', competitors: 'mock' });
   
+  // ======== 持久化状态 ========
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [savedSessions, setSavedSessions] = useState<SelectionSessionData[]>([]);
+  const [showHistory, setShowHistory] = useState(false);
+  const lastSaveRef = useRef<number>(0);
+  
   // 可行性分析状态
   const [feasibilityResults, setFeasibilityResults] = useState<FeasibilityResult[]>([]);
   // 每个商品独立的利润测算参数
@@ -505,6 +524,145 @@ export default function SelectionAgentPage() {
     setUser(JSON.parse(userData));
   }, [router]);
 
+  // ======== 持久化：自动保存到数据库 ========
+  const autoSave = async (force = false) => {
+    // 限流：最多每3秒保存一次，除非强制
+    const now = Date.now();
+    if (!force && now - lastSaveRef.current < 3000) return;
+    if (!sessionId) return;
+    lastSaveRef.current = now;
+
+    setIsSaving(true);
+    try {
+      await updateSelectionSession(sessionId, {
+        market: requirement.market || undefined,
+        platform: requirement.platform || undefined,
+        category: requirement.category || undefined,
+        budget: requirement.budget || undefined,
+        core_appeal: requirement.core诉求 || undefined,
+        directions: directions as unknown[] | null,
+        selected_direction_ids: selectedDirectionIds,
+        hot_products: hotProducts as unknown[] | null,
+        selected_product_ids: selectedHotProductIds,
+        product_profit_params: productProfitParams as Record<string, unknown> | null,
+        feasibility_results: feasibilityResults as unknown[] | null,
+        competitors: competitors as unknown[] | null,
+        current_step: activeStep,
+        status: activeStep >= 5 ? 'completed' : 'in_progress',
+        data_sources: dataSource as unknown as Record<string, string> | null,
+      } as Partial<SelectionSessionData>);
+    } catch {
+      // Auto-save failure should not block user interaction
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Load history on mount
+  useEffect(() => {
+    const loadHistory = async () => {
+      try {
+        const sessions = await listSelectionSessions({ limit: 20 });
+        setSavedSessions(sessions);
+      } catch {
+        // History load failure is non-critical
+      }
+    };
+    loadHistory();
+  }, []);
+
+  // Auto-save on significant state changes (debounced)
+  useEffect(() => {
+    if (sessionId && (directions.length > 0 || hotProducts.length > 0 || feasibilityResults.length > 0)) {
+      const timer = setTimeout(() => autoSave(), 2000);
+      return () => clearTimeout(timer);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [directions, hotProducts, feasibilityResults, competitors, selectedDirectionIds, selectedHotProductIds, activeStep]);
+
+  // Ensure session exists before first analysis
+  const ensureSession = async () => {
+    if (sessionId) return sessionId;
+    try {
+      const session = await createSelectionSession({
+        market: requirement.market || undefined,
+        platform: requirement.platform || undefined,
+        category: requirement.category || undefined,
+        budget: requirement.budget || undefined,
+        coreAppeal: requirement.core诉求 || undefined,
+      });
+      setSessionId(session.id);
+      // Refresh history list
+      const sessions = await listSelectionSessions({ limit: 20 });
+      setSavedSessions(sessions);
+      return session.id;
+    } catch {
+      return null;
+    }
+  };
+
+  // Restore a saved session
+  const handleRestoreSession = async (id: string) => {
+    try {
+      const session = await getSelectionSession(id);
+      if (!session) {
+        toast.error('会话不存在');
+        return;
+      }
+      setSessionId(session.id);
+      setRequirement({
+        market: session.market || '',
+        platform: session.platform || '',
+        category: session.category || '',
+        budget: session.budget || '',
+        core诉求: session.core_appeal || '',
+      });
+      setDirections((session.directions as unknown as typeof directions) || []);
+      setSelectedDirectionIds(session.selected_direction_ids || []);
+      setHotProducts((session.hot_products as unknown as typeof hotProducts) || []);
+      setSelectedHotProductIds(session.selected_product_ids || []);
+      setProductProfitParams((session.product_profit_params as Record<string, { cost: number; logistics: number; commission: number; adFee: number; vat: number }>) || {});
+      setFeasibilityResults((session.feasibility_results as unknown as typeof feasibilityResults) || []);
+      setCompetitors((session.competitors as unknown as typeof competitors) || []);
+      setActiveStep(session.current_step || 0);
+      if (session.data_sources) {
+        setDataSource(session.data_sources as unknown as typeof dataSource);
+      }
+      setShowHistory(false);
+      toast.success('已恢复选品会话');
+    } catch {
+      toast.error('恢复会话失败');
+    }
+  };
+
+  // Delete a saved session
+  const handleDeleteSession = async (id: string) => {
+    try {
+      await deleteSelectionSession(id);
+      setSavedSessions(prev => prev.filter(s => s.id !== id));
+      if (sessionId === id) setSessionId(null);
+      toast.success('已删除会话');
+    } catch {
+      toast.error('删除会话失败');
+    }
+  };
+
+  // Start new session
+  const handleNewSession = () => {
+    setSessionId(null);
+    setRequirement({ market: '', platform: '', category: '', budget: '', core诉求: '' });
+    setDirections([]);
+    setSelectedDirectionIds([]);
+    setHotProducts([]);
+    setSelectedHotProductIds([]);
+    setProductProfitParams({});
+    setFeasibilityResults([]);
+    setCompetitors([]);
+    setActiveStep(0);
+    setDataSource({ directions: 'mock', hotProducts: 'mock', competitors: 'mock' });
+    setShowHistory(false);
+  };
+
   // 处理需求输入
   const handleRequirementChange = (key: keyof SelectionRequirement, value: string) => {
     setRequirement(prev => ({ ...prev, [key]: value }));
@@ -520,6 +678,9 @@ export default function SelectionAgentPage() {
       toast.error('请选择目标平台');
       return;
     }
+    
+    // Ensure session exists before analysis
+    await ensureSession();
     
     setIsAnalyzing(true);
     try {
@@ -989,6 +1150,15 @@ export default function SelectionAgentPage() {
         setReport(newReport);
         setActiveTab('report');
         toast.success('AI选品报告已生成');
+        
+        // Upload report to S3 and save session
+        try {
+          const reportContent = JSON.stringify(newReport, null, 2);
+          await uploadReport({ content: reportContent, session_id: sessionId || undefined });
+          await autoSave(true);
+        } catch {
+          // Report upload failed, but report is still visible in UI
+        }
       } else {
         // 使用默认报告
         const defaultReport: SelectionReport = {
@@ -1034,7 +1204,7 @@ export default function SelectionAgentPage() {
   };
 
   // 导出报告
-  const handleExportReport = () => {
+  const handleExportReport = async () => {
     if (!report) return;
     const content = `# 电商选品报告
 
@@ -1067,6 +1237,7 @@ ${report.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
 *报告生成时间: ${new Date().toLocaleString('zh-CN')}*
 `;
     
+    // Download locally
     const blob = new Blob([content], { type: 'text/markdown' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -1074,7 +1245,24 @@ ${report.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
     a.download = `选品报告_${new Date().toISOString().slice(0, 10)}.md`;
     a.click();
     URL.revokeObjectURL(url);
-    toast.success('报告已导出');
+
+    // Also save to S3
+    if (sessionId) {
+      try {
+        await fetch('/api/v1/storage/report', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            session_id: sessionId,
+            session_type: 'selection',
+            content,
+            file_name: `选品报告_${new Date().toISOString().slice(0, 10)}.md`,
+            mime_type: 'text/markdown',
+          }),
+        });
+      } catch { /* non-critical */ }
+    }
+    toast.success('报告已导出并保存到云端');
   };
 
   if (!user) return null;
@@ -1096,6 +1284,24 @@ ${report.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
           <Badge className="bg-blue-100 text-blue-600 border-blue-500/20">
             在线运行
           </Badge>
+          <div className="flex items-center gap-2">
+            {isSaving && (
+              <span className="text-xs text-muted-foreground flex items-center gap-1">
+                <Loader2 className="h-3 w-3 animate-spin" /> 保存中...
+              </span>
+            )}
+            {sessionId && (
+              <Badge variant="outline" className="text-xs bg-green-50 text-green-600 border-green-200">
+                <Save className="h-3 w-3 mr-1" /> 已自动保存
+              </Badge>
+            )}
+            <Button variant="outline" size="sm" onClick={() => setShowHistory(!showHistory)}>
+              <History className="h-4 w-4 mr-1" /> 历史记录
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleNewSession}>
+              <Plus className="h-4 w-4 mr-1" /> 新建选品
+            </Button>
+          </div>
         </div>
 
         {/* 核心能力标签 */}
@@ -1125,6 +1331,51 @@ ${report.recommendations.map((r, i) => `${i + 1}. ${r}`).join('\n')}
             供应商筛选
           </Badge>
         </div>
+
+        {/* 历史会话面板 */}
+        {showHistory && (
+          <Card className="border-blue-200 bg-blue-50/30">
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <History className="h-4 w-4" /> 历史选品会话
+                </CardTitle>
+                <Button variant="ghost" size="sm" onClick={() => setShowHistory(false)}>
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {savedSessions.length === 0 ? (
+                <p className="text-sm text-muted-foreground py-4 text-center">暂无历史会话，开始一次新的选品分析吧</p>
+              ) : (
+                <div className="space-y-2 max-h-64 overflow-y-auto">
+                  {savedSessions.map((s) => (
+                    <div key={s.id} className={`flex items-center justify-between p-3 rounded-lg border ${s.id === sessionId ? 'border-blue-300 bg-blue-50' : 'border-border bg-white'} hover:shadow-sm transition-shadow`}>
+                      <div className="flex-1 min-w-0 cursor-pointer" onClick={() => handleRestoreSession(s.id)}>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className="text-xs shrink-0">
+                            {s.status === 'completed' ? '已完成' : s.status === 'in_progress' ? '进行中' : '草稿'}
+                          </Badge>
+                          <span className="text-sm font-medium truncate">
+                            {s.category || '未设置类目'} - {s.market || '未设置市场'}
+                          </span>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {new Date(s.created_at).toLocaleString('zh-CN')}
+                          {s.directions && ` | ${(s.directions as unknown[])?.length || 0}个方向`}
+                        </p>
+                      </div>
+                      <Button variant="ghost" size="sm" className="text-red-400 hover:text-red-600 shrink-0" onClick={(e) => { e.stopPropagation(); handleDeleteSession(s.id); }}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         {/* 流程指引 */}
         <Card className="bg-gradient-to-r from-primary/5 to-primary/10 border-blue-500/20">

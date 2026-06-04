@@ -48,6 +48,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { saveListingDraft, listListingDrafts, type ListingDraftData } from '@/lib/api/storage';
 import { optimizeListingStream, ListingResult } from '@/lib/api/ai-agents';
 
 interface ListingTask {
@@ -231,6 +232,19 @@ export default function ListingAgentPage() {
         };
         setListingTasks([newTask, ...listingTasks]);
         toast.success('Listing优化完成！');
+        
+        // Persist to storage
+        try {
+          await saveListingDraft({
+            platform: newListing.platform,
+            market: newListing.language,
+            title: result.data?.title,
+            bullet_points: result.data?.bullet_points,
+            description: result.data?.description,
+            keywords: result.data?.keywords,
+            language: newListing.language,
+          });
+        } catch { /* non-critical */ }
         setIsDialogOpen(false);
         setNewListing({
           product_name: '',

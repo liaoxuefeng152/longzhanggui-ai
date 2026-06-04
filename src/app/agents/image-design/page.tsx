@@ -48,6 +48,7 @@ import {
   Globe,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { saveGeneratedImage, listGeneratedImages, type GeneratedImageData } from '@/lib/api/storage';
 
 // 图片处理模式类型
 type ImageProcessMode = 'translate' | 'optimize' | 'remove_watermark' | 'white_background';
@@ -153,6 +154,83 @@ Requirements:
     size: result.size || '2K',
     model: result.model || 'unknown',
   };
+}
+
+// 历史作品Tab组件
+function ImageHistoryTab() {
+  const [images, setImages] = useState<GeneratedImageData[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const data = await listGeneratedImages({ limit: 50 });
+        setImages(data);
+      } catch {
+        // non-critical
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+  }, []);
+
+  if (loading) {
+    return (
+      <Card className="bg-white border-border shadow-sm">
+        <CardContent className="p-8 text-center">
+          <Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" />
+          <p className="text-sm text-muted-foreground mt-2">加载历史作品...</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (images.length === 0) {
+    return (
+      <Card className="bg-white border-border shadow-sm">
+        <CardContent className="p-8 text-center">
+          <FileImage className="h-10 w-10 mx-auto text-muted-foreground/50" />
+          <p className="text-sm text-muted-foreground mt-2">暂无历史作品</p>
+          <p className="text-xs text-muted-foreground">处理或生成的图片会自动保存到这里</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+      {images.map((img) => (
+        <Card key={img.id} className="bg-white border-border shadow-sm hover:shadow-md transition-shadow overflow-hidden">
+          <div className="aspect-square bg-muted/30 flex items-center justify-center">
+            {img.access_url || img.original_url ? (
+              <img
+                src={img.access_url || img.original_url || ''}
+                alt={img.image_type || 'Generated image'}
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).style.display = 'none';
+                }}
+              />
+            ) : (
+              <FileImage className="h-8 w-8 text-muted-foreground/30" />
+            )}
+          </div>
+          <CardContent className="p-3">
+            <div className="flex items-center justify-between">
+              <Badge variant="outline" className="text-xs">
+                {img.image_type === 'translate' ? '翻译' : img.image_type === 'ai_generate' ? 'AI生成' : img.image_type || '处理'}
+              </Badge>
+              <span className="text-xs text-muted-foreground">{new Date(img.created_at).toLocaleDateString('zh-CN')}</span>
+            </div>
+            {img.prompt && (
+              <p className="text-xs text-muted-foreground mt-1 truncate">{img.prompt}</p>
+            )}
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
 }
 
 export default function ImageDesignPage() {
@@ -318,6 +396,16 @@ export default function ImageDesignPage() {
         ));
         toast.success('图片翻译完成！', { id: taskId });
         
+        // Persist to storage
+        try {
+          await saveGeneratedImage({
+            original_url: (result as ImageProcessResult).processed_url,
+            image_type: 'translate',
+            prompt: `翻译成 ${(result as ImageProcessResult).target_language_name}`,
+            product_id: createForm.product_id,
+          });
+        } catch { /* non-critical */ }
+        
       } else if (createForm.image_url && createForm.type !== 'main') {
         // 图片处理（优化/去水印/白底图）
         const modeMap: Record<string, ImageProcessMode> = {
@@ -345,6 +433,16 @@ export default function ImageDesignPage() {
         ));
         toast.success('图片处理完成！', { id: taskId });
         
+        // Persist to storage
+        try {
+          await saveGeneratedImage({
+            original_url: (result as ImageProcessResult).processed_url,
+            image_type: createForm.type,
+            prompt: createForm.prompt,
+            product_id: createForm.product_id,
+          });
+        } catch { /* non-critical */ }
+        
       } else {
         // AI生成图片
         const genResult = await generateImage(
@@ -365,6 +463,16 @@ export default function ImageDesignPage() {
           } : t
         ));
         toast.success('图片生成完成！', { id: taskId });
+        
+        // Persist AI-generated image to storage
+        try {
+          await saveGeneratedImage({
+            original_url: (result as ImageGenerateResult).imageUrl,
+            image_type: 'ai_generate',
+            prompt: createForm.prompt || 'AI生成',
+            product_id: createForm.product_id,
+          });
+        } catch { /* non-critical */ }
       }
       
       setCreateForm({ 
@@ -652,6 +760,7 @@ export default function ImageDesignPage() {
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="bg-muted/50">
             <TabsTrigger value="tasks">任务列表</TabsTrigger>
+            <TabsTrigger value="history">历史作品</TabsTrigger>
             <TabsTrigger value="compliance">合规检查</TabsTrigger>
             <TabsTrigger value="templates">模板库</TabsTrigger>
             <TabsTrigger value="config">配置设置</TabsTrigger>
@@ -788,6 +897,11 @@ export default function ImageDesignPage() {
                 )}
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* 历史作品 */}
+          <TabsContent value="history" className="space-y-4">
+            <ImageHistoryTab />
           </TabsContent>
 
           {/* 合规检查 */}

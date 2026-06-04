@@ -48,6 +48,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { saveGeneratedVideo, listGeneratedVideos, type GeneratedVideoData } from '@/lib/api/storage';
 import { generateVideo, GenerateVideoRequest } from '@/lib/api/ai-agents';
 
 interface VideoScene {
@@ -126,6 +127,80 @@ const tkComplianceRules = [
   { id: 'VCR004', name: 'TK官方预检接口', status: 'active', checkCount: 560, passRate: 97.8 },
 ];
 
+// 历史视频Tab组件
+function VideoHistoryTab() {
+  const [videos, setVideos] = useState<GeneratedVideoData[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const data = await listGeneratedVideos({ limit: 50 });
+        setVideos(data);
+      } catch {
+        // non-critical
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+  }, []);
+
+  if (loading) {
+    return (
+      <Card className="bg-white border-border shadow-sm">
+        <CardContent className="p-8 text-center">
+          <Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" />
+          <p className="text-sm text-muted-foreground mt-2">加载历史视频...</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (videos.length === 0) {
+    return (
+      <Card className="bg-white border-border shadow-sm">
+        <CardContent className="p-8 text-center">
+          <Video className="h-10 w-10 mx-auto text-muted-foreground/50" />
+          <p className="text-sm text-muted-foreground mt-2">暂无历史视频</p>
+          <p className="text-xs text-muted-foreground">生成的视频会自动保存到这里</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+      {videos.map((vid) => (
+        <Card key={vid.id} className="bg-white border-border shadow-sm hover:shadow-md transition-shadow overflow-hidden">
+          <div className="aspect-video bg-muted/30 flex items-center justify-center">
+            {vid.access_url || vid.original_url ? (
+              <video
+                src={vid.access_url || vid.original_url || ''}
+                className="w-full h-full object-cover"
+                preload="metadata"
+              />
+            ) : (
+              <Video className="h-8 w-8 text-muted-foreground/30" />
+            )}
+          </div>
+          <CardContent className="p-3">
+            <div className="flex items-center justify-between">
+              <Badge variant="outline" className="text-xs">
+                {vid.video_type === 'full' ? '完整视频' : vid.video_type === 'slideshow' ? '图文轮播' : vid.video_type || '视频'}
+              </Badge>
+              <span className="text-xs text-muted-foreground">{new Date(vid.created_at).toLocaleDateString('zh-CN')}</span>
+            </div>
+            {vid.prompt && (
+              <p className="text-xs text-muted-foreground mt-1 truncate">{vid.prompt}</p>
+            )}
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+}
+
 export default function VideoAgentPage() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
@@ -201,6 +276,16 @@ export default function VideoAgentPage() {
           fps: 30,
         };
         setVideoTasks([newTask, ...videoTasks]);
+        
+        // Persist to storage
+        try {
+          await saveGeneratedVideo({
+            original_url: result.videoUrl,
+            video_type: newVideo.video_type,
+            prompt: newVideo.product_name,
+            duration: result.duration || String(newVideo.duration),
+          });
+        } catch { /* non-critical */ }
         
         toast.success('视频生成成功！');
         setIsDialogOpen(false);
@@ -439,6 +524,7 @@ export default function VideoAgentPage() {
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="bg-muted/50">
             <TabsTrigger value="tasks">视频任务</TabsTrigger>
+            <TabsTrigger value="history">历史视频</TabsTrigger>
             <TabsTrigger value="compliance">合规预检</TabsTrigger>
             <TabsTrigger value="publish">发布管理</TabsTrigger>
             <TabsTrigger value="config">配置设置</TabsTrigger>
@@ -546,6 +632,11 @@ export default function VideoAgentPage() {
                 </Card>
               ))}
             </div>
+          </TabsContent>
+
+          {/* 历史视频 */}
+          <TabsContent value="history" className="space-y-4">
+            <VideoHistoryTab />
           </TabsContent>
 
           {/* 合规预检 */}
