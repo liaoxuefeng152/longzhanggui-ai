@@ -1,4 +1,29 @@
-"""
+
+
+@router.get("/{user_id}", response_model=FeishuUserResponse)
+async def get_feishu_user(
+    user_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """获取飞书用户详情"""
+    result = await db.execute(
+        select(FeishuUser).where(FeishuUser.id == user_id)
+    )
+    user = result.scalar_one_or_none()
+    
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="用户不存在"
+        )
+    
+    return FeishuUserResponse.model_validate(user)
+
+
+@router.post("", response_model=FeishuUserResponse)
+async def create_feishu_user(
+    user_data: FeishuUserCreate,"""
 飞书用户管理API路由
 """
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -74,32 +99,6 @@ async def get_feishu_users(
         page=page,
         page_size=page_size
     )
-
-
-@router.get("/{user_id}", response_model=FeishuUserResponse)
-async def get_feishu_user(
-    user_id: str,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    """获取飞书用户详情"""
-    result = await db.execute(
-        select(FeishuUser).where(FeishuUser.id == user_id)
-    )
-    user = result.scalar_one_or_none()
-    
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="用户不存在"
-        )
-    
-    return FeishuUserResponse.model_validate(user)
-
-
-@router.post("", response_model=FeishuUserResponse)
-async def create_feishu_user(
-    user_data: FeishuUserCreate,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
