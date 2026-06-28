@@ -7,6 +7,91 @@ export const healthCheck = pgTable("health_check", {
 	updatedAt: timestamp("updated_at", { withTimezone: true, mode: 'string' }).defaultNow(),
 });
 
+// ==================== E-commerce Platforms ====================
+
+// Platforms configuration for marketplace integrations (Shopee, Lazada, TikTok, etc.)
+export const platforms = pgTable(
+  "platforms",
+  {
+    id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+    platformCode: varchar("platform_code", { length: 20 }).notNull(), // 'shopee', 'lazada', 'tiktok', 'amazon'
+    platformName: varchar("platform_name", { length: 50 }).notNull(), // 'Shopee', 'Lazada Mall', 'TikTok Shop'
+    
+    // Open Platform credentials
+    partnerId: varchar("partner_id", { length: 50 }), // Open Platform Partner ID
+    partnerKey: text("partner_key"), // Open Platform Partner Key (encrypted storage)
+    
+    // Shop info
+    shopId: varchar("shop_id", { length: 50 }).notNull(), // Shop ID from marketplace
+    shopName: varchar("shop_name", { length: 100 }), // Shop display name
+    region: varchar("region", { length: 10 }).notNull(), // 'SG', 'MY', 'TH', 'ID', 'VN', 'PH', 'BR'
+    currency: varchar("currency", { length: 10 }), // 'SGD', 'MYR', 'THB', 'IDR', 'VND', 'PHP', 'BRL'
+    
+    // OAuth tokens (encrypted storage)
+    accessToken: text("access_token"), // Access token (4 hours validity)
+    refreshToken: text("refresh_token"), // Refresh token (30 days validity)
+    tokenExpiresAt: timestamp("token_expires_at", { withTimezone: true }),
+    refreshExpiresAt: timestamp("refresh_expires_at", { withTimezone: true }),
+    
+    // Authorization status
+    authStatus: varchar("auth_status", { length: 20 }).notNull().default("pending"), // 'pending', 'authorized', 'expired', 'error', 'revoked'
+    authorizedAt: timestamp("authorized_at", { withTimezone: true }),
+    lastAuthError: text("last_auth_error"),
+    
+    // Shop status from marketplace
+    shopStatus: varchar("shop_status", { length: 20 }), // 'NORMAL', 'BANNED', 'DEACTIVATED', 'SUSPENDED'
+    
+    // Sync tracking
+    lastProductSync: timestamp("last_product_sync", { withTimezone: true }),
+    lastOrderSync: timestamp("last_order_sync", { withTimezone: true }),
+    lastInventorySync: timestamp("last_inventory_sync", { withTimezone: true }),
+    
+    // Config
+    syncEnabled: boolean("sync_enabled").default(true),
+    autoPublishEnabled: boolean("auto_publish_enabled").default(false),
+    autoOrderPullEnabled: boolean("auto_order_pull_enabled").default(true),
+    
+    // Metadata
+    extraConfig: jsonb("extra_config"), // Platform-specific config
+    notes: text("notes"),
+    
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index("platforms_platform_code_idx").on(table.platformCode),
+    index("platforms_shop_id_idx").on(table.shopId),
+    index("platforms_region_idx").on(table.region),
+    index("platforms_auth_status_idx").on(table.authStatus),
+  ]
+);
+
+// Shop-Platform binding (for multi-shop support)
+export const shops = pgTable(
+  "shops",
+  {
+    id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+    shopName: varchar("shop_name", { length: 100 }).notNull(),
+    ownerId: varchar("owner_id", { length: 36 }), // User ID reference (future)
+    platformId: varchar("platform_id", { length: 36 }).references(() => platforms.id, { onDelete: "cascade" }),
+    
+    // Local shop config
+    localCurrency: varchar("local_currency", { length: 10 }), // Base currency for this shop
+    defaultWarehouse: varchar("default_warehouse", { length: 50 }),
+    
+    // Status
+    status: varchar("status", { length: 20 }).notNull().default("active"), // 'active', 'inactive', 'suspended'
+    
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index("shops_owner_id_idx").on(table.ownerId),
+    index("shops_platform_id_idx").on(table.platformId),
+    index("shops_status_idx").on(table.status),
+  ]
+);
+
 // ==================== AI Task System ====================
 
 // Unified AI task tracking table
@@ -33,6 +118,91 @@ export const aiTasks = pgTable(
 	]
 );
 
+// ==================== E-commerce Platforms ====================
+
+// Platforms configuration for marketplace integrations (Shopee, Lazada, TikTok, etc.)
+export const platforms = pgTable(
+  "platforms",
+  {
+    id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+    platformCode: varchar("platform_code", { length: 20 }).notNull(), // 'shopee', 'lazada', 'tiktok', 'amazon'
+    platformName: varchar("platform_name", { length: 50 }).notNull(), // 'Shopee', 'Lazada Mall', 'TikTok Shop'
+    
+    // Open Platform credentials
+    partnerId: varchar("partner_id", { length: 50 }), // Open Platform Partner ID
+    partnerKey: text("partner_key"), // Open Platform Partner Key (encrypted storage)
+    
+    // Shop info
+    shopId: varchar("shop_id", { length: 50 }).notNull(), // Shop ID from marketplace
+    shopName: varchar("shop_name", { length: 100 }), // Shop display name
+    region: varchar("region", { length: 10 }).notNull(), // 'SG', 'MY', 'TH', 'ID', 'VN', 'PH', 'BR'
+    currency: varchar("currency", { length: 10 }), // 'SGD', 'MYR', 'THB', 'IDR', 'VND', 'PHP', 'BRL'
+    
+    // OAuth tokens (encrypted storage)
+    accessToken: text("access_token"), // Access token (4 hours validity)
+    refreshToken: text("refresh_token"), // Refresh token (30 days validity)
+    tokenExpiresAt: timestamp("token_expires_at", { withTimezone: true }),
+    refreshExpiresAt: timestamp("refresh_expires_at", { withTimezone: true }),
+    
+    // Authorization status
+    authStatus: varchar("auth_status", { length: 20 }).notNull().default("pending"), // 'pending', 'authorized', 'expired', 'error', 'revoked'
+    authorizedAt: timestamp("authorized_at", { withTimezone: true }),
+    lastAuthError: text("last_auth_error"),
+    
+    // Shop status from marketplace
+    shopStatus: varchar("shop_status", { length: 20 }), // 'NORMAL', 'BANNED', 'DEACTIVATED', 'SUSPENDED'
+    
+    // Sync tracking
+    lastProductSync: timestamp("last_product_sync", { withTimezone: true }),
+    lastOrderSync: timestamp("last_order_sync", { withTimezone: true }),
+    lastInventorySync: timestamp("last_inventory_sync", { withTimezone: true }),
+    
+    // Config
+    syncEnabled: boolean("sync_enabled").default(true),
+    autoPublishEnabled: boolean("auto_publish_enabled").default(false),
+    autoOrderPullEnabled: boolean("auto_order_pull_enabled").default(true),
+    
+    // Metadata
+    extraConfig: jsonb("extra_config"), // Platform-specific config
+    notes: text("notes"),
+    
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index("platforms_platform_code_idx").on(table.platformCode),
+    index("platforms_shop_id_idx").on(table.shopId),
+    index("platforms_region_idx").on(table.region),
+    index("platforms_auth_status_idx").on(table.authStatus),
+  ]
+);
+
+// Shop-Platform binding (for multi-shop support)
+export const shops = pgTable(
+  "shops",
+  {
+    id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+    shopName: varchar("shop_name", { length: 100 }).notNull(),
+    ownerId: varchar("owner_id", { length: 36 }), // User ID reference (future)
+    platformId: varchar("platform_id", { length: 36 }).references(() => platforms.id, { onDelete: "cascade" }),
+    
+    // Local shop config
+    localCurrency: varchar("local_currency", { length: 10 }), // Base currency for this shop
+    defaultWarehouse: varchar("default_warehouse", { length: 50 }),
+    
+    // Status
+    status: varchar("status", { length: 20 }).notNull().default("active"), // 'active', 'inactive', 'suspended'
+    
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index("shops_owner_id_idx").on(table.ownerId),
+    index("shops_platform_id_idx").on(table.platformId),
+    index("shops_status_idx").on(table.status),
+  ]
+);
+
 // AI task outputs - links to ai_tasks
 export const aiTaskOutputs = pgTable(
 	"ai_task_outputs",
@@ -50,6 +220,91 @@ export const aiTaskOutputs = pgTable(
 		index("ai_task_outputs_task_id_idx").on(table.taskId),
 		index("ai_task_outputs_output_type_idx").on(table.outputType),
 	]
+);
+
+// ==================== E-commerce Platforms ====================
+
+// Platforms configuration for marketplace integrations (Shopee, Lazada, TikTok, etc.)
+export const platforms = pgTable(
+  "platforms",
+  {
+    id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+    platformCode: varchar("platform_code", { length: 20 }).notNull(), // 'shopee', 'lazada', 'tiktok', 'amazon'
+    platformName: varchar("platform_name", { length: 50 }).notNull(), // 'Shopee', 'Lazada Mall', 'TikTok Shop'
+    
+    // Open Platform credentials
+    partnerId: varchar("partner_id", { length: 50 }), // Open Platform Partner ID
+    partnerKey: text("partner_key"), // Open Platform Partner Key (encrypted storage)
+    
+    // Shop info
+    shopId: varchar("shop_id", { length: 50 }).notNull(), // Shop ID from marketplace
+    shopName: varchar("shop_name", { length: 100 }), // Shop display name
+    region: varchar("region", { length: 10 }).notNull(), // 'SG', 'MY', 'TH', 'ID', 'VN', 'PH', 'BR'
+    currency: varchar("currency", { length: 10 }), // 'SGD', 'MYR', 'THB', 'IDR', 'VND', 'PHP', 'BRL'
+    
+    // OAuth tokens (encrypted storage)
+    accessToken: text("access_token"), // Access token (4 hours validity)
+    refreshToken: text("refresh_token"), // Refresh token (30 days validity)
+    tokenExpiresAt: timestamp("token_expires_at", { withTimezone: true }),
+    refreshExpiresAt: timestamp("refresh_expires_at", { withTimezone: true }),
+    
+    // Authorization status
+    authStatus: varchar("auth_status", { length: 20 }).notNull().default("pending"), // 'pending', 'authorized', 'expired', 'error', 'revoked'
+    authorizedAt: timestamp("authorized_at", { withTimezone: true }),
+    lastAuthError: text("last_auth_error"),
+    
+    // Shop status from marketplace
+    shopStatus: varchar("shop_status", { length: 20 }), // 'NORMAL', 'BANNED', 'DEACTIVATED', 'SUSPENDED'
+    
+    // Sync tracking
+    lastProductSync: timestamp("last_product_sync", { withTimezone: true }),
+    lastOrderSync: timestamp("last_order_sync", { withTimezone: true }),
+    lastInventorySync: timestamp("last_inventory_sync", { withTimezone: true }),
+    
+    // Config
+    syncEnabled: boolean("sync_enabled").default(true),
+    autoPublishEnabled: boolean("auto_publish_enabled").default(false),
+    autoOrderPullEnabled: boolean("auto_order_pull_enabled").default(true),
+    
+    // Metadata
+    extraConfig: jsonb("extra_config"), // Platform-specific config
+    notes: text("notes"),
+    
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index("platforms_platform_code_idx").on(table.platformCode),
+    index("platforms_shop_id_idx").on(table.shopId),
+    index("platforms_region_idx").on(table.region),
+    index("platforms_auth_status_idx").on(table.authStatus),
+  ]
+);
+
+// Shop-Platform binding (for multi-shop support)
+export const shops = pgTable(
+  "shops",
+  {
+    id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+    shopName: varchar("shop_name", { length: 100 }).notNull(),
+    ownerId: varchar("owner_id", { length: 36 }), // User ID reference (future)
+    platformId: varchar("platform_id", { length: 36 }).references(() => platforms.id, { onDelete: "cascade" }),
+    
+    // Local shop config
+    localCurrency: varchar("local_currency", { length: 10 }), // Base currency for this shop
+    defaultWarehouse: varchar("default_warehouse", { length: 50 }),
+    
+    // Status
+    status: varchar("status", { length: 20 }).notNull().default("active"), // 'active', 'inactive', 'suspended'
+    
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index("shops_owner_id_idx").on(table.ownerId),
+    index("shops_platform_id_idx").on(table.platformId),
+    index("shops_status_idx").on(table.status),
+  ]
 );
 
 // ==================== Selection Sessions ====================
@@ -84,6 +339,91 @@ export const selectionSessions = pgTable(
 	]
 );
 
+// ==================== E-commerce Platforms ====================
+
+// Platforms configuration for marketplace integrations (Shopee, Lazada, TikTok, etc.)
+export const platforms = pgTable(
+  "platforms",
+  {
+    id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+    platformCode: varchar("platform_code", { length: 20 }).notNull(), // 'shopee', 'lazada', 'tiktok', 'amazon'
+    platformName: varchar("platform_name", { length: 50 }).notNull(), // 'Shopee', 'Lazada Mall', 'TikTok Shop'
+    
+    // Open Platform credentials
+    partnerId: varchar("partner_id", { length: 50 }), // Open Platform Partner ID
+    partnerKey: text("partner_key"), // Open Platform Partner Key (encrypted storage)
+    
+    // Shop info
+    shopId: varchar("shop_id", { length: 50 }).notNull(), // Shop ID from marketplace
+    shopName: varchar("shop_name", { length: 100 }), // Shop display name
+    region: varchar("region", { length: 10 }).notNull(), // 'SG', 'MY', 'TH', 'ID', 'VN', 'PH', 'BR'
+    currency: varchar("currency", { length: 10 }), // 'SGD', 'MYR', 'THB', 'IDR', 'VND', 'PHP', 'BRL'
+    
+    // OAuth tokens (encrypted storage)
+    accessToken: text("access_token"), // Access token (4 hours validity)
+    refreshToken: text("refresh_token"), // Refresh token (30 days validity)
+    tokenExpiresAt: timestamp("token_expires_at", { withTimezone: true }),
+    refreshExpiresAt: timestamp("refresh_expires_at", { withTimezone: true }),
+    
+    // Authorization status
+    authStatus: varchar("auth_status", { length: 20 }).notNull().default("pending"), // 'pending', 'authorized', 'expired', 'error', 'revoked'
+    authorizedAt: timestamp("authorized_at", { withTimezone: true }),
+    lastAuthError: text("last_auth_error"),
+    
+    // Shop status from marketplace
+    shopStatus: varchar("shop_status", { length: 20 }), // 'NORMAL', 'BANNED', 'DEACTIVATED', 'SUSPENDED'
+    
+    // Sync tracking
+    lastProductSync: timestamp("last_product_sync", { withTimezone: true }),
+    lastOrderSync: timestamp("last_order_sync", { withTimezone: true }),
+    lastInventorySync: timestamp("last_inventory_sync", { withTimezone: true }),
+    
+    // Config
+    syncEnabled: boolean("sync_enabled").default(true),
+    autoPublishEnabled: boolean("auto_publish_enabled").default(false),
+    autoOrderPullEnabled: boolean("auto_order_pull_enabled").default(true),
+    
+    // Metadata
+    extraConfig: jsonb("extra_config"), // Platform-specific config
+    notes: text("notes"),
+    
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index("platforms_platform_code_idx").on(table.platformCode),
+    index("platforms_shop_id_idx").on(table.shopId),
+    index("platforms_region_idx").on(table.region),
+    index("platforms_auth_status_idx").on(table.authStatus),
+  ]
+);
+
+// Shop-Platform binding (for multi-shop support)
+export const shops = pgTable(
+  "shops",
+  {
+    id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+    shopName: varchar("shop_name", { length: 100 }).notNull(),
+    ownerId: varchar("owner_id", { length: 36 }), // User ID reference (future)
+    platformId: varchar("platform_id", { length: 36 }).references(() => platforms.id, { onDelete: "cascade" }),
+    
+    // Local shop config
+    localCurrency: varchar("local_currency", { length: 10 }), // Base currency for this shop
+    defaultWarehouse: varchar("default_warehouse", { length: 50 }),
+    
+    // Status
+    status: varchar("status", { length: 20 }).notNull().default("active"), // 'active', 'inactive', 'suspended'
+    
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index("shops_owner_id_idx").on(table.ownerId),
+    index("shops_platform_id_idx").on(table.platformId),
+    index("shops_status_idx").on(table.status),
+  ]
+);
+
 // ==================== Generated Images ====================
 
 export const generatedImages = pgTable(
@@ -108,6 +448,91 @@ export const generatedImages = pgTable(
 	]
 );
 
+// ==================== E-commerce Platforms ====================
+
+// Platforms configuration for marketplace integrations (Shopee, Lazada, TikTok, etc.)
+export const platforms = pgTable(
+  "platforms",
+  {
+    id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+    platformCode: varchar("platform_code", { length: 20 }).notNull(), // 'shopee', 'lazada', 'tiktok', 'amazon'
+    platformName: varchar("platform_name", { length: 50 }).notNull(), // 'Shopee', 'Lazada Mall', 'TikTok Shop'
+    
+    // Open Platform credentials
+    partnerId: varchar("partner_id", { length: 50 }), // Open Platform Partner ID
+    partnerKey: text("partner_key"), // Open Platform Partner Key (encrypted storage)
+    
+    // Shop info
+    shopId: varchar("shop_id", { length: 50 }).notNull(), // Shop ID from marketplace
+    shopName: varchar("shop_name", { length: 100 }), // Shop display name
+    region: varchar("region", { length: 10 }).notNull(), // 'SG', 'MY', 'TH', 'ID', 'VN', 'PH', 'BR'
+    currency: varchar("currency", { length: 10 }), // 'SGD', 'MYR', 'THB', 'IDR', 'VND', 'PHP', 'BRL'
+    
+    // OAuth tokens (encrypted storage)
+    accessToken: text("access_token"), // Access token (4 hours validity)
+    refreshToken: text("refresh_token"), // Refresh token (30 days validity)
+    tokenExpiresAt: timestamp("token_expires_at", { withTimezone: true }),
+    refreshExpiresAt: timestamp("refresh_expires_at", { withTimezone: true }),
+    
+    // Authorization status
+    authStatus: varchar("auth_status", { length: 20 }).notNull().default("pending"), // 'pending', 'authorized', 'expired', 'error', 'revoked'
+    authorizedAt: timestamp("authorized_at", { withTimezone: true }),
+    lastAuthError: text("last_auth_error"),
+    
+    // Shop status from marketplace
+    shopStatus: varchar("shop_status", { length: 20 }), // 'NORMAL', 'BANNED', 'DEACTIVATED', 'SUSPENDED'
+    
+    // Sync tracking
+    lastProductSync: timestamp("last_product_sync", { withTimezone: true }),
+    lastOrderSync: timestamp("last_order_sync", { withTimezone: true }),
+    lastInventorySync: timestamp("last_inventory_sync", { withTimezone: true }),
+    
+    // Config
+    syncEnabled: boolean("sync_enabled").default(true),
+    autoPublishEnabled: boolean("auto_publish_enabled").default(false),
+    autoOrderPullEnabled: boolean("auto_order_pull_enabled").default(true),
+    
+    // Metadata
+    extraConfig: jsonb("extra_config"), // Platform-specific config
+    notes: text("notes"),
+    
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index("platforms_platform_code_idx").on(table.platformCode),
+    index("platforms_shop_id_idx").on(table.shopId),
+    index("platforms_region_idx").on(table.region),
+    index("platforms_auth_status_idx").on(table.authStatus),
+  ]
+);
+
+// Shop-Platform binding (for multi-shop support)
+export const shops = pgTable(
+  "shops",
+  {
+    id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+    shopName: varchar("shop_name", { length: 100 }).notNull(),
+    ownerId: varchar("owner_id", { length: 36 }), // User ID reference (future)
+    platformId: varchar("platform_id", { length: 36 }).references(() => platforms.id, { onDelete: "cascade" }),
+    
+    // Local shop config
+    localCurrency: varchar("local_currency", { length: 10 }), // Base currency for this shop
+    defaultWarehouse: varchar("default_warehouse", { length: 50 }),
+    
+    // Status
+    status: varchar("status", { length: 20 }).notNull().default("active"), // 'active', 'inactive', 'suspended'
+    
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index("shops_owner_id_idx").on(table.ownerId),
+    index("shops_platform_id_idx").on(table.platformId),
+    index("shops_status_idx").on(table.status),
+  ]
+);
+
 // ==================== Generated Videos ====================
 
 export const generatedVideos = pgTable(
@@ -129,6 +554,91 @@ export const generatedVideos = pgTable(
 		index("generated_videos_video_type_idx").on(table.videoType),
 		index("generated_videos_created_at_idx").on(table.createdAt),
 	]
+);
+
+// ==================== E-commerce Platforms ====================
+
+// Platforms configuration for marketplace integrations (Shopee, Lazada, TikTok, etc.)
+export const platforms = pgTable(
+  "platforms",
+  {
+    id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+    platformCode: varchar("platform_code", { length: 20 }).notNull(), // 'shopee', 'lazada', 'tiktok', 'amazon'
+    platformName: varchar("platform_name", { length: 50 }).notNull(), // 'Shopee', 'Lazada Mall', 'TikTok Shop'
+    
+    // Open Platform credentials
+    partnerId: varchar("partner_id", { length: 50 }), // Open Platform Partner ID
+    partnerKey: text("partner_key"), // Open Platform Partner Key (encrypted storage)
+    
+    // Shop info
+    shopId: varchar("shop_id", { length: 50 }).notNull(), // Shop ID from marketplace
+    shopName: varchar("shop_name", { length: 100 }), // Shop display name
+    region: varchar("region", { length: 10 }).notNull(), // 'SG', 'MY', 'TH', 'ID', 'VN', 'PH', 'BR'
+    currency: varchar("currency", { length: 10 }), // 'SGD', 'MYR', 'THB', 'IDR', 'VND', 'PHP', 'BRL'
+    
+    // OAuth tokens (encrypted storage)
+    accessToken: text("access_token"), // Access token (4 hours validity)
+    refreshToken: text("refresh_token"), // Refresh token (30 days validity)
+    tokenExpiresAt: timestamp("token_expires_at", { withTimezone: true }),
+    refreshExpiresAt: timestamp("refresh_expires_at", { withTimezone: true }),
+    
+    // Authorization status
+    authStatus: varchar("auth_status", { length: 20 }).notNull().default("pending"), // 'pending', 'authorized', 'expired', 'error', 'revoked'
+    authorizedAt: timestamp("authorized_at", { withTimezone: true }),
+    lastAuthError: text("last_auth_error"),
+    
+    // Shop status from marketplace
+    shopStatus: varchar("shop_status", { length: 20 }), // 'NORMAL', 'BANNED', 'DEACTIVATED', 'SUSPENDED'
+    
+    // Sync tracking
+    lastProductSync: timestamp("last_product_sync", { withTimezone: true }),
+    lastOrderSync: timestamp("last_order_sync", { withTimezone: true }),
+    lastInventorySync: timestamp("last_inventory_sync", { withTimezone: true }),
+    
+    // Config
+    syncEnabled: boolean("sync_enabled").default(true),
+    autoPublishEnabled: boolean("auto_publish_enabled").default(false),
+    autoOrderPullEnabled: boolean("auto_order_pull_enabled").default(true),
+    
+    // Metadata
+    extraConfig: jsonb("extra_config"), // Platform-specific config
+    notes: text("notes"),
+    
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index("platforms_platform_code_idx").on(table.platformCode),
+    index("platforms_shop_id_idx").on(table.shopId),
+    index("platforms_region_idx").on(table.region),
+    index("platforms_auth_status_idx").on(table.authStatus),
+  ]
+);
+
+// Shop-Platform binding (for multi-shop support)
+export const shops = pgTable(
+  "shops",
+  {
+    id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+    shopName: varchar("shop_name", { length: 100 }).notNull(),
+    ownerId: varchar("owner_id", { length: 36 }), // User ID reference (future)
+    platformId: varchar("platform_id", { length: 36 }).references(() => platforms.id, { onDelete: "cascade" }),
+    
+    // Local shop config
+    localCurrency: varchar("local_currency", { length: 10 }), // Base currency for this shop
+    defaultWarehouse: varchar("default_warehouse", { length: 50 }),
+    
+    // Status
+    status: varchar("status", { length: 20 }).notNull().default("active"), // 'active', 'inactive', 'suspended'
+    
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index("shops_owner_id_idx").on(table.ownerId),
+    index("shops_platform_id_idx").on(table.platformId),
+    index("shops_status_idx").on(table.status),
+  ]
 );
 
 // ==================== Listing Drafts ====================
@@ -157,6 +667,91 @@ export const listingDrafts = pgTable(
 	]
 );
 
+// ==================== E-commerce Platforms ====================
+
+// Platforms configuration for marketplace integrations (Shopee, Lazada, TikTok, etc.)
+export const platforms = pgTable(
+  "platforms",
+  {
+    id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+    platformCode: varchar("platform_code", { length: 20 }).notNull(), // 'shopee', 'lazada', 'tiktok', 'amazon'
+    platformName: varchar("platform_name", { length: 50 }).notNull(), // 'Shopee', 'Lazada Mall', 'TikTok Shop'
+    
+    // Open Platform credentials
+    partnerId: varchar("partner_id", { length: 50 }), // Open Platform Partner ID
+    partnerKey: text("partner_key"), // Open Platform Partner Key (encrypted storage)
+    
+    // Shop info
+    shopId: varchar("shop_id", { length: 50 }).notNull(), // Shop ID from marketplace
+    shopName: varchar("shop_name", { length: 100 }), // Shop display name
+    region: varchar("region", { length: 10 }).notNull(), // 'SG', 'MY', 'TH', 'ID', 'VN', 'PH', 'BR'
+    currency: varchar("currency", { length: 10 }), // 'SGD', 'MYR', 'THB', 'IDR', 'VND', 'PHP', 'BRL'
+    
+    // OAuth tokens (encrypted storage)
+    accessToken: text("access_token"), // Access token (4 hours validity)
+    refreshToken: text("refresh_token"), // Refresh token (30 days validity)
+    tokenExpiresAt: timestamp("token_expires_at", { withTimezone: true }),
+    refreshExpiresAt: timestamp("refresh_expires_at", { withTimezone: true }),
+    
+    // Authorization status
+    authStatus: varchar("auth_status", { length: 20 }).notNull().default("pending"), // 'pending', 'authorized', 'expired', 'error', 'revoked'
+    authorizedAt: timestamp("authorized_at", { withTimezone: true }),
+    lastAuthError: text("last_auth_error"),
+    
+    // Shop status from marketplace
+    shopStatus: varchar("shop_status", { length: 20 }), // 'NORMAL', 'BANNED', 'DEACTIVATED', 'SUSPENDED'
+    
+    // Sync tracking
+    lastProductSync: timestamp("last_product_sync", { withTimezone: true }),
+    lastOrderSync: timestamp("last_order_sync", { withTimezone: true }),
+    lastInventorySync: timestamp("last_inventory_sync", { withTimezone: true }),
+    
+    // Config
+    syncEnabled: boolean("sync_enabled").default(true),
+    autoPublishEnabled: boolean("auto_publish_enabled").default(false),
+    autoOrderPullEnabled: boolean("auto_order_pull_enabled").default(true),
+    
+    // Metadata
+    extraConfig: jsonb("extra_config"), // Platform-specific config
+    notes: text("notes"),
+    
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index("platforms_platform_code_idx").on(table.platformCode),
+    index("platforms_shop_id_idx").on(table.shopId),
+    index("platforms_region_idx").on(table.region),
+    index("platforms_auth_status_idx").on(table.authStatus),
+  ]
+);
+
+// Shop-Platform binding (for multi-shop support)
+export const shops = pgTable(
+  "shops",
+  {
+    id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+    shopName: varchar("shop_name", { length: 100 }).notNull(),
+    ownerId: varchar("owner_id", { length: 36 }), // User ID reference (future)
+    platformId: varchar("platform_id", { length: 36 }).references(() => platforms.id, { onDelete: "cascade" }),
+    
+    // Local shop config
+    localCurrency: varchar("local_currency", { length: 10 }), // Base currency for this shop
+    defaultWarehouse: varchar("default_warehouse", { length: 50 }),
+    
+    // Status
+    status: varchar("status", { length: 20 }).notNull().default("active"), // 'active', 'inactive', 'suspended'
+    
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index("shops_owner_id_idx").on(table.ownerId),
+    index("shops_platform_id_idx").on(table.platformId),
+    index("shops_status_idx").on(table.status),
+  ]
+);
+
 // ==================== Chat Histories ====================
 
 export const chatHistories = pgTable(
@@ -174,4 +769,89 @@ export const chatHistories = pgTable(
 		index("chat_histories_session_id_idx").on(table.sessionId),
 		index("chat_histories_created_at_idx").on(table.createdAt),
 	]
+);
+
+// ==================== E-commerce Platforms ====================
+
+// Platforms configuration for marketplace integrations (Shopee, Lazada, TikTok, etc.)
+export const platforms = pgTable(
+  "platforms",
+  {
+    id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+    platformCode: varchar("platform_code", { length: 20 }).notNull(), // 'shopee', 'lazada', 'tiktok', 'amazon'
+    platformName: varchar("platform_name", { length: 50 }).notNull(), // 'Shopee', 'Lazada Mall', 'TikTok Shop'
+    
+    // Open Platform credentials
+    partnerId: varchar("partner_id", { length: 50 }), // Open Platform Partner ID
+    partnerKey: text("partner_key"), // Open Platform Partner Key (encrypted storage)
+    
+    // Shop info
+    shopId: varchar("shop_id", { length: 50 }).notNull(), // Shop ID from marketplace
+    shopName: varchar("shop_name", { length: 100 }), // Shop display name
+    region: varchar("region", { length: 10 }).notNull(), // 'SG', 'MY', 'TH', 'ID', 'VN', 'PH', 'BR'
+    currency: varchar("currency", { length: 10 }), // 'SGD', 'MYR', 'THB', 'IDR', 'VND', 'PHP', 'BRL'
+    
+    // OAuth tokens (encrypted storage)
+    accessToken: text("access_token"), // Access token (4 hours validity)
+    refreshToken: text("refresh_token"), // Refresh token (30 days validity)
+    tokenExpiresAt: timestamp("token_expires_at", { withTimezone: true }),
+    refreshExpiresAt: timestamp("refresh_expires_at", { withTimezone: true }),
+    
+    // Authorization status
+    authStatus: varchar("auth_status", { length: 20 }).notNull().default("pending"), // 'pending', 'authorized', 'expired', 'error', 'revoked'
+    authorizedAt: timestamp("authorized_at", { withTimezone: true }),
+    lastAuthError: text("last_auth_error"),
+    
+    // Shop status from marketplace
+    shopStatus: varchar("shop_status", { length: 20 }), // 'NORMAL', 'BANNED', 'DEACTIVATED', 'SUSPENDED'
+    
+    // Sync tracking
+    lastProductSync: timestamp("last_product_sync", { withTimezone: true }),
+    lastOrderSync: timestamp("last_order_sync", { withTimezone: true }),
+    lastInventorySync: timestamp("last_inventory_sync", { withTimezone: true }),
+    
+    // Config
+    syncEnabled: boolean("sync_enabled").default(true),
+    autoPublishEnabled: boolean("auto_publish_enabled").default(false),
+    autoOrderPullEnabled: boolean("auto_order_pull_enabled").default(true),
+    
+    // Metadata
+    extraConfig: jsonb("extra_config"), // Platform-specific config
+    notes: text("notes"),
+    
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index("platforms_platform_code_idx").on(table.platformCode),
+    index("platforms_shop_id_idx").on(table.shopId),
+    index("platforms_region_idx").on(table.region),
+    index("platforms_auth_status_idx").on(table.authStatus),
+  ]
+);
+
+// Shop-Platform binding (for multi-shop support)
+export const shops = pgTable(
+  "shops",
+  {
+    id: varchar("id", { length: 36 }).primaryKey().default(sql`gen_random_uuid()`),
+    shopName: varchar("shop_name", { length: 100 }).notNull(),
+    ownerId: varchar("owner_id", { length: 36 }), // User ID reference (future)
+    platformId: varchar("platform_id", { length: 36 }).references(() => platforms.id, { onDelete: "cascade" }),
+    
+    // Local shop config
+    localCurrency: varchar("local_currency", { length: 10 }), // Base currency for this shop
+    defaultWarehouse: varchar("default_warehouse", { length: 50 }),
+    
+    // Status
+    status: varchar("status", { length: 20 }).notNull().default("active"), // 'active', 'inactive', 'suspended'
+    
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index("shops_owner_id_idx").on(table.ownerId),
+    index("shops_platform_id_idx").on(table.platformId),
+    index("shops_status_idx").on(table.status),
+  ]
 );

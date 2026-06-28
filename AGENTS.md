@@ -389,6 +389,36 @@ coze dev
 | `/api/v1/platforms/[platform_id]/test` | POST | 测试平台连接 |
 | `/api/v1/platforms/[platform_id]` | DELETE | 删除平台配置 |
 
+### Shopee开放平台API
+| 路由 | 方法 | 功能 |
+|------|------|------|
+| `/api/v1/marketplace/shopee/test` | POST | 测试Shopee连接（需配置凭证） |
+| `/api/v1/marketplace/shopee/callback` | GET | OAuth授权回调处理 |
+| `/api/v1/shops` | GET/POST | 店铺列表/创建 |
+
+**Shopee对接配置流程**：
+1. 在Supabase数据库 `platforms` 表配置凭证：
+   - `partner_id`: Shopee开放平台合作方ID
+   - `partner_key`: Shopee开放平台合作方密钥
+   - `shop_id`: 店铺ID（如6495088373）
+   - `region`: 站点代码（SG/MY/TH/ID/VN/PH）
+2. 调用 `/api/v1/marketplace/shopee/test` 验证连接
+3. OAuth授权后系统自动获取 `access_token` 和 `refresh_token`
+
+**数据库表结构**：
+- `platforms`: 存储平台凭证（partner_id/partner_key/access_token/refresh_token等）
+- `shops`: 存储店铺映射关系（shop_id/platform/region等）
+
+**已初始化的Shopee站点**：
+| platform_code | region | shop_id |
+|---------------|--------|---------|
+| shopee_sg | SG | 6495088373 |
+| shopee_my | MY | (待配置) |
+| shopee_th | TH | (待配置) |
+| shopee_id | ID | (待配置) |
+| shopee_vn | VN | (待配置) |
+| shopee_ph | PH | (待配置) |
+
 ### 飞书集成API路由
 | 路由 | 方法 | 功能 |
 |------|------|------|

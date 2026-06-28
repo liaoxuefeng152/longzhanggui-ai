@@ -516,3 +516,253 @@ export async function getRecentSessions(limit: number = 10): Promise<string[]> {
   const uniqueIds = [...new Set((data as { session_id: string }[])?.map(d => d.session_id) || [])];
   return uniqueIds.slice(0, limit);
 }
+
+// ==================== Platforms (Shopee/TikTok/Lazada) ====================
+
+export interface Platform {
+  id: string;
+  platform_code: string;          // 'shopee_sg', 'shopee_my', etc.
+  platform_name: string;          // 'Shopee Singapore'
+  partner_id?: string;            // Shopee Partner ID
+  partner_key?: string;           // Shopee Partner Key (encrypted)
+  region?: string;                // SG/MY/TH/ID/VN/PH
+  shop_id?: string;               // Shop ID from Shopee
+  shop_name?: string;             // Shop name
+  access_token?: string;          // Access token (encrypted)
+  refresh_token?: string;         // Refresh token (encrypted)
+  token_expires_at?: string;      // Token expiration time
+  refresh_expires_at?: string;    // Refresh token expiration
+  authorized_at?: string;         // When authorized
+  auth_status: string;            // pending/authorized/expired/error
+  currency?: string;              // SGD/MYR/THB/IDR/VND/PHP
+  last_auth_error?: string;       // Last authorization error
+  sync_enabled?: boolean;         // Auto sync enabled
+  sync_interval?: number;         // Sync interval in minutes
+  last_product_sync?: string;     // Last product sync time
+  last_order_sync?: string;       // Last order sync time
+  last_inventory_sync?: string;   // Last inventory sync time
+  total_products?: number;        // Total products synced
+  total_orders?: number;          // Total orders synced
+  last_error?: string;            // Last sync error
+  error_count?: number;           // Error count
+  is_active?: boolean;            // Platform active
+  created_at: string;
+  updated_at: string;
+}
+
+export async function getPlatforms(): Promise<Platform[]> {
+  const client = getSupabaseClient();
+  const { data, error } = await client
+    .from('platforms')
+    .select('*')
+    .order('platform_name', { ascending: true });
+  if (error) throw new Error(`查询平台列表失败: ${error.message}`);
+  return (data as Platform[]) || [];
+}
+
+export async function getPlatformByCode(platformCode: string): Promise<Platform | null> {
+  const client = getSupabaseClient();
+  const { data, error } = await client
+    .from('platforms')
+    .select('*')
+    .eq('platform_code', platformCode)
+    .single();
+  if (error) {
+    if (error.code === 'PGRST116') return null; // Not found
+    throw new Error(`查询平台失败: ${error.message}`);
+  }
+  return data as Platform;
+}
+
+// Get platform by ID (UUID)
+export async function getPlatform(id: string): Promise<Platform | null> {
+  const client = getSupabaseClient();
+  const { data, error } = await client
+    .from('platforms')
+    .select('*')
+    .eq('id', id)
+    .single();
+  if (error) {
+    if (error.code === 'PGRST116') return null; // Not found
+    throw new Error(`查询平台失败: ${error.message}`);
+  }
+  return data as Platform;
+}
+
+/**
+ * Update a platform by ID
+ */
+export async function updatePlatform(
+  id: string,
+  updates: Partial<Platform>
+): Promise<Platform> {
+  const client = getSupabaseClient();
+  const updateData = {
+    ...updates,
+    updated_at: new Date().toISOString(),
+  };
+  const { data, error } = await client
+    .from('platforms')
+    .update(updateData)
+    .eq('id', id)
+    .select()
+    .single();
+  if (error) {
+    throw new Error(`更新平台失败: ${error.message}`);
+  }
+  return data as Platform;
+}
+
+export async function updatePlatformCredentials(
+  platformCode: string,
+  credentials: {
+    partner_id?: string;
+    partner_key?: string;
+    shop_id?: string;
+    shop_name?: string;
+  }
+): Promise<Platform> {
+  const client = getSupabaseClient();
+  const { data, error } = await client
+    .from('platforms')
+    .update({
+      ...credentials,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('platform_code', platformCode)
+    .select()
+    .single();
+  if (error) throw new Error(`更新平台凭证失败: ${error.message}`);
+  return data as Platform;
+}
+
+export async function updatePlatformTokens(
+  platformCode: string,
+  tokens: {
+    access_token: string;
+    refresh_token: string;
+    token_expires_at: string;
+    refresh_expires_at: string;
+    authorized_at: string;
+  }
+): Promise<Platform> {
+  const client = getSupabaseClient();
+  const { data, error } = await client
+    .from('platforms')
+    .update({
+      ...tokens,
+      auth_status: 'authorized',
+      updated_at: new Date().toISOString(),
+    })
+    .eq('platform_code', platformCode)
+    .select()
+    .single();
+  if (error) throw new Error(`更新平台Token失败: ${error.message}`);
+  return data as Platform;
+}
+
+export async function updatePlatformAuthStatus(
+  platformCode: string,
+  status: 'pending' | 'authorized' | 'expired' | 'error',
+  errorMessage?: string
+): Promise<Platform> {
+  const client = getSupabaseClient();
+  const updateData: Record<string, unknown> = {
+    auth_status: status,
+    updated_at: new Date().toISOString(),
+  };
+  if (errorMessage) {
+    updateData.last_auth_error = errorMessage;
+  }
+  const { data, error } = await client
+    .from('platforms')
+    .update(updateData)
+    .eq('platform_code', platformCode)
+    .select()
+    .single();
+  if (error) throw new Error(`更新平台状态失败: ${error.message}`);
+  return data as Platform;
+}
+
+// ==================== Shops ====================
+
+export interface Shop {
+  id: string;
+  shop_id: string;                // Platform shop ID
+  shop_name: string;              // Shop display name
+  platform: string;               // 'shopee', 'tiktok', 'lazada'
+  region: string;                 // SG/MY/TH/ID/VN/PH
+  platform_config_id?: string;    // Reference to platforms table
+  status: string;                 // active/inactive/banned
+  last_sync_at?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+// Generic update platform by code
+export async function updatePlatformByCode(
+  platformCode: string,
+  updateData: Partial<Platform>
+): Promise<Platform> {
+  const client = getSupabaseClient();
+  const { data, error } = await client
+    .from('platforms')
+    .update({
+      ...updateData,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('platform_code', platformCode)
+    .select()
+    .single();
+  if (error) throw new Error(`更新平台配置失败: ${error.message}`);
+  return data as Platform;
+}
+
+export async function getShops(): Promise<Shop[]> {
+  const client = getSupabaseClient();
+  const { data, error } = await client
+    .from('shops')
+    .select('*')
+    .order('created_at', { ascending: false });
+  if (error) throw new Error(`查询店铺列表失败: ${error.message}`);
+  return (data as Shop[]) || [];
+}
+
+export async function createShop(params: {
+  shop_id: string;
+  shop_name: string;
+  platform: string;
+  region: string;
+  platform_config_id?: string;
+}): Promise<Shop> {
+  const client = getSupabaseClient();
+  const { data, error } = await client
+    .from('shops')
+    .insert({
+      shop_id: params.shop_id,
+      shop_name: params.shop_name,
+      platform: params.platform,
+      region: params.region,
+      platform_config_id: params.platform_config_id || null,
+      status: 'active',
+    })
+    .select()
+    .single();
+  if (error) throw new Error(`创建店铺失败: ${error.message}`);
+  return data as Shop;
+}
+
+export async function updateShopSyncTime(shopId: string): Promise<Shop> {
+  const client = getSupabaseClient();
+  const { data, error } = await client
+    .from('shops')
+    .update({
+      last_sync_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', shopId)
+    .select()
+    .single();
+  if (error) throw new Error(`更新店铺同步时间失败: ${error.message}`);
+  return data as Shop;
+}
