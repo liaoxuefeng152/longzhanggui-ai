@@ -76,56 +76,7 @@ interface VideoTask {
   fps?: number;
 }
 
-const mockVideoTasks: VideoTask[] = [
-  {
-    id: 'VID001',
-    productName: '宠物自动喂食器 5L大容量',
-    type: 'full',
-    status: 'completed',
-    complianceStatus: 'passed',
-    preCheckResult: { passed: true, issues: [] },
-    duration: 45,
-    publishStatus: 'published',
-    generatedAt: '2026-03-21 14:30',
-    videoUrl: '/placeholder-video.mp4',
-  },
-  {
-    id: 'VID002',
-    productName: '便携式榨汁机 USB充电',
-    type: 'slideshow',
-    status: 'completed',
-    complianceStatus: 'passed',
-    preCheckResult: { passed: true, issues: [] },
-    duration: 30,
-    publishStatus: 'draft',
-    generatedAt: '2026-03-21 13:15',
-  },
-  {
-    id: 'VID003',
-    productName: 'LED化妆镜 台式带灯',
-    type: 'full',
-    status: 'failed',
-    complianceStatus: 'failed',
-    preCheckResult: { passed: false, issues: ['脚本包含夸大宣传词', '禁用语检测失败'] },
-    publishStatus: 'draft',
-    generatedAt: '2026-03-21 12:00',
-  },
-  {
-    id: 'VID004',
-    productName: '智能手环 运动监测',
-    type: 'voiceover',
-    status: 'processing',
-    complianceStatus: 'checking',
-    publishStatus: 'draft',
-  },
-];
-
-const tkComplianceRules = [
-  { id: 'VCR001', name: '脚本夸大宣传词过滤', status: 'active', checkCount: 560, passRate: 98.5 },
-  { id: 'VCR002', name: '禁用语检测', status: 'active', checkCount: 560, passRate: 99.2 },
-  { id: 'VCR003', name: '视频时长/比例校验', status: 'active', checkCount: 560, passRate: 100 },
-  { id: 'VCR004', name: 'TK官方预检接口', status: 'active', checkCount: 560, passRate: 97.8 },
-];
+// 视频任务从数据库加载，不再使用模拟数据
 
 // 历史视频Tab组件
 function VideoHistoryTab({ refreshKey }: { refreshKey?: number }) {
@@ -210,7 +161,7 @@ export default function VideoAgentPage() {
   const [user, setUser] = useState<any>(null);
   const [activeTab, setActiveTab] = useState('tasks');
   const [agentStatus, setAgentStatus] = useState<'online' | 'offline' | 'processing'>('online');
-  const [videoTasks, setVideoTasks] = useState<VideoTask[]>(mockVideoTasks);
+  const [videoTasks, setVideoTasks] = useState<VideoTask[]>([]);
   
   // 历史视频刷新Key
   const [historyRefreshKey, setHistoryRefreshKey] = useState(0);

@@ -291,56 +291,8 @@ export default function ImageDesignPage() {
   const fetchTasks = async () => {
     setLoading(true);
     try {
-      // 模拟获取任务
-      const mockTasks: ImageTask[] = [
-        {
-          id: 'IMG001',
-          product_id: 'PROD001',
-          productName: '宠物自动喂食器 5L大容量',
-          type: 'main',
-          platform: 'TK',
-          status: 'completed',
-          complianceStatus: 'passed',
-          complianceIssues: [],
-          generatedAt: '2026-03-21 14:30',
-          processedUrl: '/images/product-main-1.jpg',
-        },
-        {
-          id: 'IMG002',
-          product_id: 'PROD002',
-          productName: '便携式榨汁机 USB充电',
-          type: 'a-plus',
-          platform: 'Amazon',
-          status: 'completed',
-          complianceStatus: 'passed',
-          complianceIssues: [],
-          generatedAt: '2026-03-21 13:15',
-          processedUrl: '/images/product-aplus-1.jpg',
-        },
-        {
-          id: 'IMG003',
-          product_id: 'PROD003',
-          productName: 'LED化妆镜 台式带灯',
-          type: 'background',
-          platform: 'TK',
-          status: 'failed',
-          complianceStatus: 'failed',
-          complianceIssues: ['包含宗教元素', '夸大宣传效果'],
-          generatedAt: '2026-03-21 12:00',
-        },
-        {
-          id: 'IMG004',
-          product_id: 'PROD004',
-          productName: '智能手环 运动监测',
-          type: 'cover',
-          platform: 'TK',
-          status: 'processing',
-          complianceStatus: 'checking',
-          complianceIssues: [],
-          prompt: '运动风格，科技感，蓝白配色',
-        },
-      ];
-      setTasks(mockTasks);
+      // 从数据库加载图片任务（暂无数据）
+      setTasks([]);
     } catch (error) {
       toast.error('获取任务失败');
     } finally {
