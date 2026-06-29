@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { supabase } from '@/storage/database/supabase-client';
 
 // 智能体名称映射
 const AGENT_NAMES: Record<string, string> = {
@@ -30,77 +31,68 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1');
     const pageSize = parseInt(searchParams.get('pageSize') || '20');
 
-    // 模拟数据 + 数据库真实数据
-    // 目前暂时返回模拟数据，实际应从 ai_tasks 表查询
-    const mockLogs = [
-      {
-        id: '1',
-        task_id: 'task-001',
-        agent_id: 'product-selection',
-        agent_name: '选品智能体',
-        action: '选品分析',
-        status: 'success',
-        duration: 15.2,
-        tokens_used: 2500,
-        cost: 0.05,
-        request_params: { market: '东南亚', category: '宠物用品' },
-        response_summary: '推荐3个选品方向：智能喂食器、宠物窝、玩具',
-        created_at: '2026-06-29 10:00:00',
-      },
-      {
-        id: '2',
-        task_id: 'task-002',
-        agent_id: 'image-design',
-        agent_name: '图片设计',
-        action: '图片翻译',
-        status: 'success',
-        duration: 8.5,
-        tokens_used: 0,
-        cost: 0.02,
-        request_params: { image_url: 'https://example.com/image.jpg', target_lang: 'en' },
-        response_summary: '成功翻译图片文字为英文',
-        created_at: '2026-06-29 10:05:00',
-      },
-      {
-        id: '5c699eaa',
-        task_id: '5c699eaa-2709-42b4-8525-e9ff79247221',
-        agent_id: 'video-generation',
-        agent_name: '视频生成',
-        action: '商品视频',
-        status: 'success',
-        duration: 45.0,
-        tokens_used: 0,
-        cost: 0.50,
-        request_params: { prompt: '测试视频' },
-        response_summary: '生成视频：mov_bbb_0b6cc2d7.mp4',
-        created_at: '2026-06-29 00:59:40',
-        output_url: 'https://www.w3schools.com/html/mov_bbb.mp4',
-      },
-    ];
-
-    let logs = [...mockLogs];
+    // 从数据库查询 ai_tasks 表
+    let query = supabase
+      .from('ai_tasks')
+      .select('*')
+      .order('created_at', { ascending: false });
 
     // 过滤状态
     if (status && status !== 'all') {
-      logs = logs.filter(log => log.status === status);
+      query = query.eq('status', status);
     }
 
     // 过滤智能体
     if (agentId && agentId !== 'all') {
-      logs = logs.filter(log => log.agent_id === agentId);
+      query = query.eq('agent_id', agentId);
     }
 
-    // 按时间倒序
-    logs.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    // 分页
+    const from = (page - 1) * pageSize;
+    const to = from + pageSize - 1;
+    query = query.range(from, to);
 
-    // 统计数据
+    const { data: tasks, error, count } = await query;
+
+    if (error) {
+      console.error('[TaskLogs API] 查询失败:', error);
+      // 返回空数据而不是模拟数据
+      return NextResponse.json({
+        logs: [],
+        stats: { total: 0, success: 0, failed: 0, processing: 0, avgDuration: 0 },
+        pagination: { page, pageSize, total: 0 },
+      });
+    }
+
+    // 转换为前端需要的格式
+    const logs = (tasks || []).map(task => ({
+      id: task.id,
+      task_id: task.task_id || task.id,
+      agent_id: task.agent_id,
+      agent_name: AGENT_NAMES[task.agent_id] || task.agent_id,
+      action: AGENT_ACTIONS[task.agent_id] || '未知操作',
+      status: task.status,
+      duration: task.duration || 0,
+      tokens_used: task.tokens_used || 0,
+      cost: task.cost || 0,
+      request_params: task.request_params || {},
+      response_summary: task.response_summary || '',
+      created_at: task.created_at,
+      output_url: task.output_url,
+    }));
+
+    // 获取统计数据（不带分页）
+    const { data: allTasks } = await supabase
+      .from('ai_tasks')
+      .select('status, duration');
+
     const stats = {
-      total: logs.length,
-      success: logs.filter(l => l.status === 'success').length,
-      failed: logs.filter(l => l.status === 'failed').length,
-      processing: logs.filter(l => l.status === 'processing').length,
-      avgDuration: logs.length > 0 
-        ? logs.reduce((sum, l) => sum + (l.duration || 0), 0) / logs.length 
+      total: allTasks?.length || 0,
+      success: allTasks?.filter(t => t.status === 'success' || t.status === 'completed').length || 0,
+      failed: allTasks?.filter(t => t.status === 'failed' || t.status === 'error').length || 0,
+      processing: allTasks?.filter(t => t.status === 'processing' || t.status === 'running').length || 0,
+      avgDuration: allTasks && allTasks.length > 0 
+        ? allTasks.reduce((sum, t) => sum + (t.duration || 0), 0) / allTasks.length 
         : 0,
     };
 
@@ -110,11 +102,15 @@ export async function GET(request: NextRequest) {
       pagination: {
         page,
         pageSize,
-        total: logs.length,
+        total: count || 0,
       },
     });
   } catch (error) {
     console.error('[TaskLogs API] Error:', error);
-    return NextResponse.json({ error: '获取任务日志失败' }, { status: 500 });
+    return NextResponse.json({
+      logs: [],
+      stats: { total: 0, success: 0, failed: 0, processing: 0, avgDuration: 0 },
+      pagination: { page: 1, pageSize: 20, total: 0 },
+    });
   }
 }

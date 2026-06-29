@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { supabase } from '@/storage/database/supabase-client';
 
 // 数据复盘请求接口
 interface DataReviewRequest {
@@ -11,68 +12,146 @@ interface DataReviewRequest {
   reportType?: 'daily' | 'weekly' | 'monthly' | 'custom';
 }
 
-// 获取模拟业务数据（实际项目中应从数据库获取）
-function getMockBusinessData(dateRange?: { start: string; end: string }) {
-  const now = new Date();
-  const days = dateRange ? 
-    Math.ceil((new Date(dateRange.end).getTime() - new Date(dateRange.start).getTime()) / (1000 * 60 * 60 * 24)) : 7;
-  
-  const dailyMetrics = [];
-  for (let i = days - 1; i >= 0; i--) {
-    const date = new Date(now);
-    date.setDate(date.getDate() - i);
-    const baseSales = 10000 + Math.random() * 8000;
-    const orders = Math.floor(baseSales / 200) + Math.floor(Math.random() * 20);
-    dailyMetrics.push({
-      date: date.toISOString().split('T')[0],
-      sales: Math.round(baseSales * 100) / 100,
-      orders,
-      profit: Math.round(baseSales * 0.18 * 100) / 100,
-      adSpend: Math.round(baseSales * 0.1 * 100) / 100,
-      roas: 1.5 + Math.random() * 2,
-      conversionRate: 2 + Math.random() * 2,
-    });
-  }
-
-  const productMetrics = [
-    { id: 'P001', product_id: 'PROD001', product_name: '蓝牙耳机无线降噪', platform: 'tiktok', category: '3C数码', sales: 15680.50, orders: 42, profit: 2838.12, adSpend: 1568.05, roas: 2.8, conversionRate: 3.2, trend: 'up' },
-    { id: 'P002', product_id: 'PROD002', product_name: '宠物自动喂食器5L', platform: 'tiktok', category: '宠物用品', sales: 12350.80, orders: 35, profit: 2117.68, adSpend: 1235.08, roas: 2.5, conversionRate: 3.5, trend: 'up' },
-    { id: 'P003', product_id: 'PROD003', product_name: '便携式榨汁机USB', platform: 'amazon', category: '厨房用品', sales: 8920.00, orders: 28, profit: 1650.40, adSpend: 892.00, roas: 3.2, conversionRate: 4.1, trend: 'stable' },
-    { id: 'P004', product_id: 'PROD004', product_name: 'LED化妆镜台式带灯', platform: 'tiktok', category: '美妆工具', sales: 5680.00, orders: 22, profit: 980.20, adSpend: 852.00, roas: 1.8, conversionRate: 2.2, trend: 'down' },
-    { id: 'P005', product_id: 'PROD005', product_name: '智能手表运动防水', platform: 'shopee', category: '3C数码', sales: 4520.00, orders: 15, profit: 720.30, adSpend: 452.00, roas: 2.5, conversionRate: 2.8, trend: 'stable' },
-  ];
-
-  const platformMetrics = [
-    { platform: 'TikTok', sales: 28050.30, orders: 77, profit: 4957.80, adSpend: 2805.03, roas: 2.7 },
-    { platform: 'Amazon', sales: 8920.00, orders: 28, profit: 1650.40, adSpend: 892.00, roas: 3.2 },
-    { platform: 'Shopee', sales: 4520.00, orders: 15, profit: 720.30, adSpend: 452.00, roas: 2.5 },
-  ];
-
-  const categoryMetrics = [
-    { category: '3C数码', sales: 20200.50, orders: 57, profit: 3558.42, count: 2 },
-    { category: '宠物用品', sales: 12350.80, orders: 35, profit: 2117.68, count: 1 },
-    { category: '厨房用品', sales: 8920.00, orders: 28, profit: 1650.40, count: 1 },
-    { category: '美妆工具', sales: 5680.00, orders: 22, profit: 980.20, count: 1 },
-  ];
-
-  return {
-    dailyMetrics,
-    productMetrics,
-    platformMetrics,
-    categoryMetrics,
-    summary: {
-      totalSales: 41490.30,
-      totalOrders: 120,
-      totalProfit: 7327.50,
-      totalAdSpend: 4149.03,
-      avgRoas: 2.7,
-      avgConversionRate: 3.1,
+// 从数据库获取业务数据
+async function getBusinessData(dateRange?: { start: string; end: string }) {
+  try {
+    // 查询商品数据
+    const { data: products, error: productsError } = await supabase
+      .from('products')
+      .select('*');
+    
+    if (productsError) {
+      console.error('查询商品失败:', productsError);
     }
-  };
+    
+    // 查询订单数据
+    const { data: orders, error: ordersError } = await supabase
+      .from('orders')
+      .select('*');
+    
+    if (ordersError) {
+      console.error('查询订单失败:', ordersError);
+    }
+    
+    // 查询广告数据
+    const { data: adCampaigns, error: adsError } = await supabase
+      .from('ad_campaigns')
+      .select('*');
+    
+    if (adsError) {
+      console.error('查询广告失败:', adsError);
+    }
+    
+    // 构建商品指标数据
+    const productMetrics = (products || []).map(product => ({
+      id: product.id,
+      product_id: product.sku,
+      product_name: product.name,
+      platform: product.platform || 'shopee',
+      category: product.category || '其他',
+      sales: product.sell_price || 0,
+      orders: 0, // 暂无订单数据
+      profit: (product.sell_price || 0) - (product.purchase_price || 0),
+      adSpend: 0, // 暂无广告数据
+      roas: 0,
+      conversionRate: 0,
+      trend: 'stable',
+    }));
+    
+    // 构建平台指标数据（从商品数据聚合）
+    const platformMap = new Map();
+    productMetrics.forEach(p => {
+      const platform = p.platform || 'shopee';
+      if (!platformMap.has(platform)) {
+        platformMap.set(platform, { platform, sales: 0, orders: 0, profit: 0, adSpend: 0, count: 0 });
+      }
+      const stats = platformMap.get(platform);
+      stats.sales += p.sales;
+      stats.orders += p.orders;
+      stats.profit += p.profit;
+      stats.adSpend += p.adSpend;
+      stats.count += 1;
+    });
+    
+    const platformMetrics = Array.from(platformMap.values()).map(p => ({
+      ...p,
+      roas: p.adSpend > 0 ? p.sales / p.adSpend : 0,
+    }));
+    
+    // 构建类目指标数据（从商品数据聚合）
+    const categoryMap = new Map();
+    productMetrics.forEach(p => {
+      const category = p.category || '其他';
+      if (!categoryMap.has(category)) {
+        categoryMap.set(category, { category, sales: 0, orders: 0, profit: 0, count: 0 });
+      }
+      const stats = categoryMap.get(category);
+      stats.sales += p.sales;
+      stats.orders += p.orders;
+      stats.profit += p.profit;
+      stats.count += 1;
+    });
+    
+    const categoryMetrics = Array.from(categoryMap.values());
+    
+    // 构建每日指标数据（暂无真实数据，返回空数组）
+    const dailyMetrics: any[] = [];
+    
+    // 计算汇总数据
+    const summary = {
+      totalSales: productMetrics.reduce((sum, p) => sum + p.sales, 0),
+      totalOrders: productMetrics.reduce((sum, p) => sum + p.orders, 0),
+      totalProfit: productMetrics.reduce((sum, p) => sum + p.profit, 0),
+      totalAdSpend: platformMetrics.reduce((sum, p) => sum + p.adSpend, 0),
+      avgRoas: platformMetrics.length > 0 
+        ? platformMetrics.reduce((sum, p) => sum + p.roas, 0) / platformMetrics.length 
+        : 0,
+      avgConversionRate: productMetrics.length > 0 
+        ? productMetrics.reduce((sum, p) => sum + p.conversionRate, 0) / productMetrics.length 
+        : 0,
+    };
+    
+    return {
+      dailyMetrics,
+      productMetrics,
+      platformMetrics,
+      categoryMetrics,
+      summary,
+      hasData: (products?.length || 0) > 0,
+    };
+  } catch (error) {
+    console.error('获取业务数据失败:', error);
+    return {
+      dailyMetrics: [],
+      productMetrics: [],
+      platformMetrics: [],
+      categoryMetrics: [],
+      summary: {
+        totalSales: 0,
+        totalOrders: 0,
+        totalProfit: 0,
+        totalAdSpend: 0,
+        avgRoas: 0,
+        avgConversionRate: 0,
+      },
+      hasData: false,
+    };
+  }
 }
 
 // 生成AI分析提示词
-function generateAnalysisPrompt(data: ReturnType<typeof getMockBusinessData>, reportType: string) {
+function generateAnalysisPrompt(data: Awaited<ReturnType<typeof getBusinessData>>, reportType: string) {
+  if (!data.hasData) {
+    return `你是跨境电商数据分析师。
+    
+当前系统没有业务数据，请提示用户：
+1. 需要先添加商品数据
+2. 需要有订单数据才能生成复盘报告
+3. 建议用户导入数据或等待业务运行一段时间后再查看复盘
+
+请用中文回复，使用Markdown格式。`;
+  }
+  
   const prompt = `你是跨境电商数据分析师，正在为老板生成运营数据复盘报告。
 
 ## 数据概览
@@ -83,20 +162,20 @@ function generateAnalysisPrompt(data: ReturnType<typeof getMockBusinessData>, re
 - 平均ROAS: ${data.summary.avgRoas.toFixed(2)}
 - 平均转化率: ${data.summary.avgConversionRate.toFixed(2)}%
 
-## 每日数据
-${data.dailyMetrics.map(m => `- ${m.date}: 销售额$${m.sales.toFixed(2)}, 订单${m.orders}, ROAS ${m.roas.toFixed(2)}`).join('\n')}
-
-## TOP商品表现
-${data.productMetrics.map(p => `- ${p.product_name} (${p.platform}): 销售额$${p.sales.toFixed(2)}, ROAS ${p.roas.toFixed(2)}, 趋势${p.trend}`).join('\n')}
+## 商品数据
+${data.productMetrics.length > 0 
+  ? data.productMetrics.map(p => `- ${p.product_name} (${p.platform}): 成本$${(p.sales - p.profit).toFixed(2)}, 售价$${p.sales.toFixed(2)}`).join('\n')
+  : '- 暂无商品数据'}
 
 ## 平台分布
-${data.platformMetrics.map(p => `- ${p.platform}: 销售额$${p.sales.toFixed(2)}, ROAS ${p.roas.toFixed(2)}`).join('\n')}
+${data.platformMetrics.length > 0 
+  ? data.platformMetrics.map(p => `- ${p.platform}: 销售额$${p.sales.toFixed(2)}, 商品数${p.count}`).join('\n')
+  : '- 暂无平台数据'}
 
 请生成一份专业的运营复盘报告，包含：
 1. **数据摘要**: 核心指标总结
-2. **亮点分析**: 表现最好的商品/平台
-3. **问题诊断**: 需要关注的问题
-4. **优化建议**: 具体可执行的建议
+2. **现状分析**: 当前数据状态
+3. **建议**: 如何获取更完整的数据
 
 请用中文回复，使用Markdown格式，保持专业且易于理解。`;
 
@@ -135,61 +214,46 @@ async function invokeAIAnalysis(prompt: string) {
 }
 
 // 生成AI洞察
-function generateAIInsights(data: ReturnType<typeof getMockBusinessData>) {
+function generateAIInsights(data: Awaited<ReturnType<typeof getBusinessData>>) {
   const insights = [];
-
-  // 分析TOP商品
-  const topProduct = data.productMetrics.reduce((max, p) => p.sales > max.sales ? p : max);
-  insights.push({
-    id: `INS-${Date.now()}-1`,
-    type: 'opportunity',
-    title: `${topProduct.product_name}表现亮眼`,
-    description: `该商品销售额$${topProduct.sales.toFixed(2)}，ROAS达到${topProduct.roas.toFixed(2)}，是本期表现最好的商品。`,
-    impact: `占总销售额的 ${((topProduct.sales / data.summary.totalSales) * 100).toFixed(1)}%`,
-    action: '建议适当增加广告预算，扩大流量入口',
-    createdAt: new Date().toISOString().replace('T', ' ').substring(0, 16),
-  });
-
-  // 分析低ROAS商品
-  const lowRoasProducts = data.productMetrics.filter(p => p.roas < 2.0);
-  if (lowRoasProducts.length > 0) {
-    const totalLoss = lowRoasProducts.reduce((sum, p) => sum + (p.sales * 0.1 - p.profit), 0);
+  
+  if (!data.hasData) {
     insights.push({
-      id: `INS-${Date.now()}-2`,
+      id: `INS-${Date.now()}-1`,
       type: 'warning',
-      title: `${lowRoasProducts.length}个商品ROAS偏低`,
-      description: lowRoasProducts.map(p => `${p.product_name}(ROAS ${p.roas.toFixed(2)})`).join('、') + ' 的ROAS低于2.0，广告投入产出不成正比。',
-      impact: `预估额外亏损约 $${totalLoss.toFixed(2)}/月`,
-      action: '建议优化Listing或调整广告策略',
+      title: '暂无业务数据',
+      description: '当前系统没有商品或订单数据，无法生成有效的复盘分析。',
+      impact: '请先添加商品或导入订单数据',
+      action: '前往ERP系统添加商品数据',
+      createdAt: new Date().toISOString().replace('T', ' ').substring(0, 16),
+    });
+    return insights;
+  }
+
+  // 分析TOP商品（如果有数据）
+  if (data.productMetrics.length > 0) {
+    const topProduct = data.productMetrics.reduce((max, p) => p.sales > max.sales ? p : max, data.productMetrics[0]);
+    insights.push({
+      id: `INS-${Date.now()}-1`,
+      type: 'opportunity',
+      title: `${topProduct.product_name}销售额最高`,
+      description: `该商品销售额$${topProduct.sales.toFixed(2)}，利润$${topProduct.profit.toFixed(2)}。`,
+      impact: `占总销售额的 ${((topProduct.sales / data.summary.totalSales) * 100).toFixed(1)}%`,
+      action: '建议持续关注该商品表现',
       createdAt: new Date().toISOString().replace('T', ' ').substring(0, 16),
     });
   }
 
-  // 分析平台表现
-  const bestPlatform = data.platformMetrics.reduce((max, p) => p.roas > max.roas ? p : max);
-  insights.push({
-    id: `INS-${Date.now()}-3`,
-    type: 'suggestion',
-    title: `${bestPlatform.platform}平台ROI最高`,
-    description: `${bestPlatform.platform}平台ROAS达到${bestPlatform.roas.toFixed(2)}，是当前投资回报率最高的平台。`,
-    impact: `可考虑将更多预算分配到该平台`,
-    action: '增加平台广告投放占比',
-    createdAt: new Date().toISOString().replace('T', ' ').substring(0, 16),
-  });
-
-  // 分析增长趋势
-  if (data.dailyMetrics.length >= 2) {
-    const recentDay = data.dailyMetrics[data.dailyMetrics.length - 1];
-    const prevDay = data.dailyMetrics[data.dailyMetrics.length - 2];
-    const growthRate = ((recentDay.sales - prevDay.sales) / prevDay.sales * 100).toFixed(1);
-    
+  // 分析平台分布
+  if (data.platformMetrics.length > 0) {
+    const mainPlatform = data.platformMetrics.reduce((max, p) => p.count > max.count ? p : max, data.platformMetrics[0]);
     insights.push({
-      id: `INS-${Date.now()}-4`,
-      type: growthRate.startsWith('-') ? 'warning' : 'opportunity',
-      title: `今日销售额${parseFloat(growthRate) > 0 ? '增长' : '下降'} ${Math.abs(parseFloat(growthRate))}%`,
-      description: `昨日销售额$${prevDay.sales.toFixed(2)}，今日销售额$${recentDay.sales.toFixed(2)}。`,
-      impact: `环比 ${parseFloat(growthRate) > 0 ? '正' : '负'}增长`,
-      action: growthRate.startsWith('-') ? '分析下降原因，调整运营策略' : '保持当前策略，继续观察',
+      id: `INS-${Date.now()}-2`,
+      type: 'suggestion',
+      title: `${mainPlatform.platform}是主要销售平台`,
+      description: `${mainPlatform.platform}平台有${mainPlatform.count}个商品，销售额$${mainPlatform.sales.toFixed(2)}。`,
+      impact: `可考虑在其他平台拓展`,
+      action: '评估其他平台的拓展机会',
       createdAt: new Date().toISOString().replace('T', ' ').substring(0, 16),
     });
   }
@@ -203,25 +267,25 @@ export async function POST(request: NextRequest) {
     const body: DataReviewRequest = await request.json();
     const { dateRange, platforms, reportType = 'weekly' } = body;
 
-    // 获取业务数据
-    const data = getMockBusinessData(dateRange);
+    // 从数据库获取业务数据
+    const data = await getBusinessData(dateRange);
 
     // 过滤数据（如果有平台筛选）
     let filteredData = data;
-    if (platforms && platforms.length > 0) {
+    if (platforms && platforms.length > 0 && data.hasData) {
       filteredData = {
         ...data,
         productMetrics: data.productMetrics.filter(p => platforms.includes(p.platform)),
-        platformMetrics: data.platformMetrics.filter(p => platforms.includes(p.platform)),
+        platformMetrics: data.platformMetrics.filter(p => platforms.some(pl => p.platform.toLowerCase().includes(pl.toLowerCase()))),
       };
       // 重新计算汇总
       filteredData.summary = {
         totalSales: filteredData.productMetrics.reduce((sum, p) => sum + p.sales, 0),
         totalOrders: filteredData.productMetrics.reduce((sum, p) => sum + p.orders, 0),
         totalProfit: filteredData.productMetrics.reduce((sum, p) => sum + p.profit, 0),
-        totalAdSpend: filteredData.productMetrics.reduce((sum, p) => sum + p.adSpend, 0),
-        avgRoas: filteredData.productMetrics.length > 0 
-          ? filteredData.productMetrics.reduce((sum, p) => sum + p.roas, 0) / filteredData.productMetrics.length 
+        totalAdSpend: filteredData.platformMetrics.reduce((sum, p) => sum + p.adSpend, 0),
+        avgRoas: filteredData.platformMetrics.length > 0 
+          ? filteredData.platformMetrics.reduce((sum, p) => sum + p.roas, 0) / filteredData.platformMetrics.length 
           : 0,
         avgConversionRate: filteredData.productMetrics.length > 0 
           ? filteredData.productMetrics.reduce((sum, p) => sum + p.conversionRate, 0) / filteredData.productMetrics.length 
@@ -236,28 +300,28 @@ export async function POST(request: NextRequest) {
     try {
       aiReport = await invokeAIAnalysis(prompt);
     } catch (aiError: any) {
-      // AI调用失败时返回模拟报告
-      console.warn('AI分析调用失败，使用默认报告:', aiError.message);
+      console.warn('AI分析调用失败:', aiError.message);
       aiReport = `## 数据复盘报告
 
+### 数据状态
+当前系统数据：${filteredData.hasData ? '有数据' : '暂无数据'}
+
+${filteredData.hasData ? `
 ### 数据摘要
 - 本期总销售额：**$${filteredData.summary.totalSales.toFixed(2)}**
-- 总订单数：**${filteredData.summary.totalOrders}** 单
+- 总商品数：**${filteredData.productMetrics.length}** 个
 - 总利润：**$${filteredData.summary.totalProfit.toFixed(2)}**
-- 广告花费：**$${filteredData.summary.totalAdSpend.toFixed(2)}**
-- 平均ROAS：**${filteredData.summary.avgRoas.toFixed(2)}**
 
-### 运营分析
-1. **整体表现**：本期运营数据表现良好，${filteredData.summary.avgRoas >= 2.5 ? '广告ROI达到预期' : '广告ROI有优化空间'}。
-
-2. **TOP商品**：${filteredData.productMetrics[0]?.product_name || '暂无数据'}表现最佳，贡献了主要销售额。
-
-3. **平台分布**：${filteredData.platformMetrics.map(p => `${p.platform}(${((p.sales / filteredData.summary.totalSales) * 100).toFixed(1)}%)`).join('、')}。
-
-### 优化建议
-- ${filteredData.summary.avgRoas < 2.5 ? '建议优化广告投放策略，提高ROAS' : '建议保持当前投放策略'}
-- 关注低ROAS商品，及时调整或淘汰
-- 增加高转化率商品的曝光`;
+### 商品分布
+${filteredData.productMetrics.map(p => `- ${p.product_name}: 售价$${p.sales.toFixed(2)}`).join('\n')}
+` : `
+### 提示
+当前系统没有业务数据，请：
+1. 前往ERP添加商品
+2. 导入订单数据
+3. 配置广告投放
+`}
+`;
     }
 
     // 生成AI洞察
@@ -289,7 +353,7 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const days = parseInt(searchParams.get('days') || '7');
 
-    const data = getMockBusinessData({
+    const data = await getBusinessData({
       start: new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
       end: new Date().toISOString().split('T')[0],
     });

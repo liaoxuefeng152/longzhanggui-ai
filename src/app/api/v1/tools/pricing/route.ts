@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { supabase } from '@/storage/database/supabase-client';
 
 // 定价配置
 const PRICING_CONFIG = {
@@ -34,57 +35,6 @@ const PRICING_CONFIG = {
     danger: 0.05,  // 危险 5%
   },
 };
-
-// 竞品价格数据（模拟）
-const mockCompetitorPrices: Record<string, any[]> = {
-  'P001': [
-    { id: 'C1', name: '小米充电宝 20000mAh', price: 149, currency: 'CNY', platform: 'shopee', trend: 'down', lastUpdated: new Date().toISOString() },
-    { id: 'C2', name: '华为充电宝 20000mAh', price: 169, currency: 'CNY', platform: 'lazada', trend: 'up', lastUpdated: new Date().toISOString() },
-    { id: 'C3', name: '罗马仕充电宝', price: 139, currency: 'CNY', platform: 'tiktok', trend: 'stable', lastUpdated: new Date().toISOString() },
-  ],
-  'P002': [
-    { id: 'C4', name: '小米蓝牙耳机', price: 129, currency: 'CNY', platform: 'shopee', trend: 'down', lastUpdated: new Date().toISOString() },
-    { id: 'C5', name: '华为FreeBuds', price: 199, currency: 'CNY', platform: 'lazada', trend: 'stable', lastUpdated: new Date().toISOString() },
-  ],
-  'P003': [
-    { id: 'C6', name: '小米手环8', price: 229, currency: 'CNY', platform: 'shopee', trend: 'up', lastUpdated: new Date().toISOString() },
-    { id: 'C7', name: '华为手环8', price: 249, currency: 'CNY', platform: 'lazada', trend: 'stable', lastUpdated: new Date().toISOString() },
-  ],
-};
-
-// 模拟商品数据
-const mockProducts = [
-  {
-    id: 'P001',
-    name: '便携充电宝 20000mAh',
-    sku: 'SKU-P001',
-    costPrice: 45,
-    sellingPrice: 159,
-    platform: 'shopee',
-    country: 'id',
-    weight: 0.35,
-  },
-  {
-    id: 'P002',
-    name: '无线蓝牙耳机',
-    sku: 'SKU-P002',
-    costPrice: 68,
-    sellingPrice: 128,
-    platform: 'tiktok',
-    country: 'th',
-    weight: 0.15,
-  },
-  {
-    id: 'P003',
-    name: '智能手环运动手表',
-    sku: 'SKU-P003',
-    costPrice: 120,
-    sellingPrice: 199,
-    platform: 'lazada',
-    country: 'my',
-    weight: 0.25,
-  },
-];
 
 // 计算成本
 function calculateCost(product: { costPrice?: number; platform?: string; country?: string; weight?: number }, targetPrice: number, config: typeof PRICING_CONFIG) {
@@ -157,11 +107,19 @@ function calculateOptimalPrice(product: { costPrice?: number; platform?: string;
   // 保本价 = (成本 + 物流 + 包装) / (1 - 佣金率 - VAT影响 - 汇率损耗)
   const breakEvenPrice = totalFixedCost / (1 - commissionRate * (1 + vatRate) - exchangeLossRate);
   
-  // 获取竞品价格范围
-  const competitorPrices = competitors.map(c => c.price).filter(p => p > 0);
-  const minCompetitorPrice = Math.min(...competitorPrices);
-  const maxCompetitorPrice = Math.max(...competitorPrices);
-  const avgCompetitorPrice = competitorPrices.reduce((a, b) => a + b, 0) / competitorPrices.length;
+  // 获取竞品价格范围（如果没有竞品数据，使用默认值）
+  let minCompetitorPrice = breakEvenPrice * 1.5;
+  let maxCompetitorPrice = breakEvenPrice * 2;
+  let avgCompetitorPrice = breakEvenPrice * 1.75;
+  
+  if (competitors.length > 0) {
+    const competitorPrices = competitors.map(c => c.price).filter(p => p > 0);
+    if (competitorPrices.length > 0) {
+      minCompetitorPrice = Math.min(...competitorPrices);
+      maxCompetitorPrice = Math.max(...competitorPrices);
+      avgCompetitorPrice = competitorPrices.reduce((a, b) => a + b, 0) / competitorPrices.length;
+    }
+  }
   
   // 目标利润率定价
   // 售价 = 成本 / (1 - 佣金率 - 汇率损耗 - 目标利润率)
@@ -194,26 +152,56 @@ function calculateOptimalPrice(product: { costPrice?: number; platform?: string;
   };
 }
 
-// GET - 获取商品列表和竞品价格
+// GET - 获取商品列表和定价分析
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const productId = searchParams.get('productId');
     
+    // 从数据库查询商品
+    const { data: products, error } = await supabase
+      .from('products')
+      .select('*');
+    
+    if (error) {
+      console.error('查询商品失败:', error);
+      return NextResponse.json({ success: false, error: '查询商品失败' }, { status: 500 });
+    }
+    
     if (productId) {
       // 获取单个商品详情
-      const product = mockProducts.find(p => p.id === productId);
+      const product = products?.find(p => p.id === productId);
       if (!product) {
         return NextResponse.json({ success: false, error: '商品不存在' }, { status: 404 });
       }
       
-      const competitors = mockCompetitorPrices[productId] || [];
-      const pricing = calculateOptimalPrice(product, competitors, 0.25, PRICING_CONFIG);
+      // 暂无竞品数据表，返回空竞品列表
+      const competitors: any[] = [];
+      const pricing = calculateOptimalPrice(
+        { 
+          costPrice: product.purchase_price || 0, 
+          platform: product.platform || 'shopee', 
+          country: 'id', 
+          weight: 0.2 
+        }, 
+        competitors, 
+        0.25, 
+        PRICING_CONFIG
+      );
       
       return NextResponse.json({
         success: true,
         data: {
-          product,
+          product: {
+            id: product.id,
+            name: product.name,
+            sku: product.sku,
+            costPrice: product.purchase_price || 0,
+            sellingPrice: product.sell_price || 0,
+            platform: product.platform || 'shopee',
+            country: 'id',
+            weight: 0.2,
+          },
           competitors,
           pricing,
         },
@@ -221,11 +209,28 @@ export async function GET(request: NextRequest) {
     }
     
     // 获取所有商品
-    const productsWithPricing = mockProducts.map(product => {
-      const competitors = mockCompetitorPrices[product.id] || [];
-      const pricing = calculateOptimalPrice(product, competitors, 0.25, PRICING_CONFIG);
+    const productsWithPricing = (products || []).map(product => {
+      const competitors: any[] = [];
+      const pricing = calculateOptimalPrice(
+        { 
+          costPrice: product.purchase_price || 0, 
+          platform: product.platform || 'shopee', 
+          country: 'id', 
+          weight: 0.2 
+        }, 
+        competitors, 
+        0.25, 
+        PRICING_CONFIG
+      );
       return {
-        ...product,
+        id: product.id,
+        name: product.name,
+        sku: product.sku,
+        costPrice: product.purchase_price || 0,
+        sellingPrice: product.sell_price || 0,
+        platform: product.platform || 'shopee',
+        country: 'id',
+        weight: 0.2,
         competitors,
         pricing,
       };
@@ -256,17 +261,22 @@ export async function POST(request: NextRequest) {
     }
     
     if (action === 'calculate') {
-      // 计算定价
+      // 使用传入的商品数据计算定价
       const results = [];
       for (const item of products) {
-        const product = mockProducts.find(p => p.id === item.productId) || item;
-        const competitors = mockCompetitorPrices[product.id] || [];
-        const pricing = calculateOptimalPrice(
-          { ...product, platform: platform || product.platform, country: country || product.country },
-          competitors,
-          targetProfitRate || 0.25,
-          config
-        );
+        const product = {
+          id: item.productId,
+          name: item.productName || '未命名商品',
+          costPrice: item.costPrice || 0,
+          sellingPrice: item.currentPrice || 0,
+          platform: platform || item.platform || 'shopee',
+          country: country || item.country || 'id',
+          weight: item.weight || 0.2,
+        };
+        
+        // 暂无竞品数据
+        const competitors: any[] = [];
+        const pricing = calculateOptimalPrice(product, competitors, targetProfitRate || 0.25, config);
         
         const currentCost = calculateCost(product, product.sellingPrice, config);
         
@@ -278,7 +288,7 @@ export async function POST(request: NextRequest) {
           suggestedPrice: pricing.optimalPrice,
           suggestedProfitRate: pricing.plans.optimal.profitRate,
           priceChange: pricing.optimalPrice - product.sellingPrice,
-          priceChangePercent: ((pricing.optimalPrice - product.sellingPrice) / product.sellingPrice * 100).toFixed(1) + '%',
+          priceChangePercent: ((pricing.optimalPrice - product.sellingPrice) / (product.sellingPrice || 1) * 100).toFixed(1) + '%',
           pricing,
           riskLevel: pricing.plans.optimal.profitRate >= config.minProfitRates.safe ? 'safe' :
                      pricing.plans.optimal.profitRate >= config.minProfitRates.warning ? 'warning' : 'danger',
@@ -292,20 +302,31 @@ export async function POST(request: NextRequest) {
     }
     
     if (action === 'apply') {
-      // 应用定价（模拟）
-      const applied = products.map((item: any) => ({
-        productId: item.productId,
-        oldPrice: mockProducts.find(p => p.id === item.productId)?.sellingPrice || 0,
-        newPrice: item.newPrice,
-        status: 'applied',
-        appliedAt: new Date().toISOString(),
-      }));
+      // 应用定价 - 更新数据库
+      const updates = [];
+      for (const item of products) {
+        const { error } = await supabase
+          .from('products')
+          .update({ sell_price: item.newPrice })
+          .eq('id', item.productId);
+        
+        updates.push({
+          productId: item.productId,
+          oldPrice: item.oldPrice || 0,
+          newPrice: item.newPrice,
+          status: error ? 'failed' : 'applied',
+          appliedAt: new Date().toISOString(),
+          error: error?.message,
+        });
+      }
       
       return NextResponse.json({
         success: true,
         data: {
-          applied,
-          total: applied.length,
+          applied: updates,
+          total: updates.length,
+          successCount: updates.filter(u => u.status === 'applied').length,
+          failedCount: updates.filter(u => u.status === 'failed').length,
         },
       });
     }
