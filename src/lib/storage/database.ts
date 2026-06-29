@@ -766,3 +766,518 @@ export async function updateShopSyncTime(shopId: string): Promise<Shop> {
   if (error) throw new Error(`更新店铺同步时间失败: ${error.message}`);
   return data as Shop;
 }
+
+// ==================== Users ====================
+
+export interface User {
+  id: string;
+  email: string;
+  password_hash: string;
+  name: string | null;
+  role: string; // 'admin', 'client', 'operator'
+  status: string; // 'active', 'inactive', 'suspended', 'deleted'
+  last_login_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export async function getUserByEmail(email: string): Promise<User | null> {
+  const client = getSupabaseClient();
+  const { data, error } = await client
+    .from('users')
+    .select('*')
+    .eq('email', email)
+    .maybeSingle();
+  if (error) throw new Error(`查询用户失败: ${error.message}`);
+  return data as User | null;
+}
+
+export async function getUserById(id: string): Promise<User | null> {
+  const client = getSupabaseClient();
+  const { data, error } = await client
+    .from('users')
+    .select('*')
+    .eq('id', id)
+    .maybeSingle();
+  if (error) throw new Error(`查询用户失败: ${error.message}`);
+  return data as User | null;
+}
+
+export async function createUser(params: {
+  email: string;
+  passwordHash: string;
+  name?: string;
+  role?: string;
+}): Promise<User> {
+  const client = getSupabaseClient();
+  const { data, error } = await client
+    .from('users')
+    .insert({
+      email: params.email,
+      password_hash: params.passwordHash,
+      name: params.name || null,
+      role: params.role || 'client',
+      status: 'active',
+    })
+    .select()
+    .single();
+  if (error) throw new Error(`创建用户失败: ${error.message}`);
+  return data as User;
+}
+
+export async function updateUserLastLogin(userId: string): Promise<void> {
+  const client = getSupabaseClient();
+  const { error } = await client
+    .from('users')
+    .update({
+      last_login_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', userId);
+  if (error) throw new Error(`更新登录时间失败: ${error.message}`);
+}
+
+export async function listUsers(params: {
+  role?: string;
+  status?: string;
+  limit?: number;
+}): Promise<User[]> {
+  const client = getSupabaseClient();
+  let query = client
+    .from('users')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(params.limit || 50);
+  
+  if (params.role) query = query.eq('role', params.role);
+  if (params.status) query = query.eq('status', params.status);
+  
+  const { data, error } = await query;
+  if (error) throw new Error(`查询用户列表失败: ${error.message}`);
+  return (data as User[]) || [];
+}
+
+// ==================== Audit Logs ====================
+
+export interface AuditLog {
+  id: string;
+  user_id: string | null;
+  action: string;
+  resource_type: string | null;
+  resource_id: string | null;
+  details: Record<string, unknown> | null;
+  ip_address: string | null;
+  created_at: string;
+}
+
+export async function createAuditLog(params: {
+  userId?: string;
+  action: string;
+  resourceType?: string;
+  resourceId?: string;
+  details?: Record<string, unknown>;
+  ipAddress?: string;
+}): Promise<AuditLog> {
+  const client = getSupabaseClient();
+  const { data, error } = await client
+    .from('audit_logs')
+    .insert({
+      user_id: params.userId || null,
+      action: params.action,
+      resource_type: params.resourceType || null,
+      resource_id: params.resourceId || null,
+      details: params.details || null,
+      ip_address: params.ipAddress || null,
+    })
+    .select()
+    .single();
+  if (error) throw new Error(`创建审计日志失败: ${error.message}`);
+  return data as AuditLog;
+}
+
+// ==================== Products ====================
+
+export interface Product {
+  id: string;
+  sku: string;
+  name: string;
+  description: string | null;
+  category: string | null;
+  source_url: string | null;
+  source_platform: string | null;
+  cost_price: string | null;
+  sale_price: string | null;
+  market_price: string | null;
+  weight: string | null;
+  dimensions: string | null;
+  supplier_id: string | null;
+  images: unknown[] | null;
+  videos: unknown[] | null;
+  listing_status: string;
+  published_shop_id: string | null;
+  published_product_id: string | null;
+  published_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export async function createProduct(params: {
+  sku: string;
+  name: string;
+  description?: string;
+  category?: string;
+  sourceUrl?: string;
+  sourcePlatform?: string;
+  costPrice?: string;
+  salePrice?: string;
+  supplierId?: string;
+  images?: unknown[];
+}): Promise<Product> {
+  const client = getSupabaseClient();
+  const { data, error } = await client
+    .from('products')
+    .insert({
+      sku: params.sku,
+      name: params.name,
+      description: params.description || null,
+      category: params.category || null,
+      source_url: params.sourceUrl || null,
+      source_platform: params.sourcePlatform || null,
+      cost_price: params.costPrice || null,
+      sale_price: params.salePrice || null,
+      supplier_id: params.supplierId || null,
+      images: params.images || null,
+      listing_status: 'draft',
+    })
+    .select()
+    .single();
+  if (error) throw new Error(`创建商品失败: ${error.message}`);
+  return data as Product;
+}
+
+export async function getProduct(id: string): Promise<Product | null> {
+  const client = getSupabaseClient();
+  const { data, error } = await client
+    .from('products')
+    .select('*')
+    .eq('id', id)
+    .maybeSingle();
+  if (error) throw new Error(`查询商品失败: ${error.message}`);
+  return data as Product | null;
+}
+
+export async function getProductBySku(sku: string): Promise<Product | null> {
+  const client = getSupabaseClient();
+  const { data, error } = await client
+    .from('products')
+    .select('*')
+    .eq('sku', sku)
+    .maybeSingle();
+  if (error) throw new Error(`查询商品失败: ${error.message}`);
+  return data as Product | null;
+}
+
+export async function updateProduct(
+  id: string,
+  updates: Partial<Omit<Product, 'id' | 'created_at'>>
+): Promise<Product> {
+  const client = getSupabaseClient();
+  const { data, error } = await client
+    .from('products')
+    .update({ ...updates, updated_at: new Date().toISOString() })
+    .eq('id', id)
+    .select()
+    .single();
+  if (error) throw new Error(`更新商品失败: ${error.message}`);
+  return data as Product;
+}
+
+export async function listProducts(params: {
+  listingStatus?: string;
+  category?: string;
+  supplierId?: string;
+  limit?: number;
+  offset?: number;
+}): Promise<Product[]> {
+  const client = getSupabaseClient();
+  let query = client
+    .from('products')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(params.limit || 50);
+  
+  if (params.listingStatus) query = query.eq('listing_status', params.listingStatus);
+  if (params.category) query = query.eq('category', params.category);
+  if (params.supplierId) query = query.eq('supplier_id', params.supplierId);
+  if (params.offset) query = query.range(params.offset, params.offset + (params.limit || 50) - 1);
+  
+  const { data, error } = await query;
+  if (error) throw new Error(`查询商品列表失败: ${error.message}`);
+  return (data as Product[]) || [];
+}
+
+// ==================== Orders ====================
+
+export interface Order {
+  id: string;
+  order_number: string;
+  platform_order_id: string | null;
+  shop_id: string | null;
+  product_id: string | null;
+  sku: string | null;
+  quantity: number;
+  unit_price: string;
+  total_amount: string;
+  currency: string | null;
+  status: string;
+  customer_name: string | null;
+  customer_phone: string | null;
+  shipping_address: string | null;
+  tracking_number: string | null;
+  logistics_company: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export async function createOrder(params: {
+  orderNumber: string;
+  platformOrderId?: string;
+  shopId?: string;
+  productId?: string;
+  sku?: string;
+  quantity: number;
+  unitPrice: string;
+  totalAmount: string;
+  currency?: string;
+  customerName?: string;
+  shippingAddress?: string;
+}): Promise<Order> {
+  const client = getSupabaseClient();
+  const { data, error } = await client
+    .from('orders')
+    .insert({
+      order_number: params.orderNumber,
+      platform_order_id: params.platformOrderId || null,
+      shop_id: params.shopId || null,
+      product_id: params.productId || null,
+      sku: params.sku || null,
+      quantity: params.quantity,
+      unit_price: params.unitPrice,
+      total_amount: params.totalAmount,
+      currency: params.currency || null,
+      customer_name: params.customerName || null,
+      shipping_address: params.shippingAddress || null,
+      status: 'pending',
+    })
+    .select()
+    .single();
+  if (error) throw new Error(`创建订单失败: ${error.message}`);
+  return data as Order;
+}
+
+export async function listOrders(params: {
+  shopId?: string;
+  status?: string;
+  limit?: number;
+}): Promise<Order[]> {
+  const client = getSupabaseClient();
+  let query = client
+    .from('orders')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(params.limit || 50);
+  
+  if (params.shopId) query = query.eq('shop_id', params.shopId);
+  if (params.status) query = query.eq('status', params.status);
+  
+  const { data, error } = await query;
+  if (error) throw new Error(`查询订单列表失败: ${error.message}`);
+  return (data as Order[]) || [];
+}
+
+// ==================== Inventory ====================
+
+export interface Inventory {
+  id: string;
+  product_id: string;
+  sku: string | null;
+  warehouse: string | null;
+  quantity: number;
+  reserved_qty: number | null;
+  available_qty: number | null;
+  reorder_point: number | null;
+  status: string;
+  last_restocked_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export async function getInventory(productId: string): Promise<Inventory | null> {
+  const client = getSupabaseClient();
+  const { data, error } = await client
+    .from('inventory')
+    .select('*')
+    .eq('product_id', productId)
+    .maybeSingle();
+  if (error) throw new Error(`查询库存失败: ${error.message}`);
+  return data as Inventory | null;
+}
+
+export async function updateInventory(
+  productId: string,
+  updates: Partial<Omit<Inventory, 'id' | 'product_id' | 'created_at'>>
+): Promise<Inventory> {
+  const client = getSupabaseClient();
+  const { data, error } = await client
+    .from('inventory')
+    .update({ ...updates, updated_at: new Date().toISOString() })
+    .eq('product_id', productId)
+    .select()
+    .single();
+  if (error) throw new Error(`更新库存失败: ${error.message}`);
+  return data as Inventory;
+}
+
+export async function listLowStockInventory(threshold: number = 10): Promise<Inventory[]> {
+  const client = getSupabaseClient();
+  const { data, error } = await client
+    .from('inventory')
+    .select('*')
+    .lt('quantity', threshold)
+    .order('quantity', { ascending: true });
+  if (error) throw new Error(`查询低库存失败: ${error.message}`);
+  return (data as Inventory[]) || [];
+}
+
+// ==================== Suppliers ====================
+
+export interface Supplier {
+  id: string;
+  name: string;
+  platform: string;
+  url: string | null;
+  contact: string | null;
+  phone: string | null;
+  address: string | null;
+  moq: number | null;
+  lead_time: number | null;
+  quality_rating: string | null;
+  response_rating: string | null;
+  status: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export async function createSupplier(params: {
+  name: string;
+  platform: string;
+  url?: string;
+  contact?: string;
+  moq?: number;
+  leadTime?: number;
+}): Promise<Supplier> {
+  const client = getSupabaseClient();
+  const { data, error } = await client
+    .from('suppliers')
+    .insert({
+      name: params.name,
+      platform: params.platform,
+      url: params.url || null,
+      contact: params.contact || null,
+      moq: params.moq || 1,
+      lead_time: params.leadTime || 7,
+      status: 'active',
+    })
+    .select()
+    .single();
+  if (error) throw new Error(`创建供应商失败: ${error.message}`);
+  return data as Supplier;
+}
+
+export async function listSuppliers(params: {
+  platform?: string;
+  status?: string;
+}): Promise<Supplier[]> {
+  const client = getSupabaseClient();
+  let query = client
+    .from('suppliers')
+    .select('*')
+    .order('created_at', { ascending: false });
+  
+  if (params.platform) query = query.eq('platform', params.platform);
+  if (params.status) query = query.eq('status', params.status);
+  
+  const { data, error } = await query;
+  if (error) throw new Error(`查询供应商列表失败: ${error.message}`);
+  return (data as Supplier[]) || [];
+}
+
+// ==================== Ad Campaigns ====================
+
+export interface AdCampaign {
+  id: string;
+  name: string;
+  shop_id: string | null;
+  product_id: string | null;
+  platform: string;
+  campaign_id: string | null;
+  budget: string;
+  daily_budget: string | null;
+  spent: string | null;
+  impressions: number | null;
+  clicks: number | null;
+  orders: number | null;
+  roas: string | null;
+  status: string;
+  start_date: string | null;
+  end_date: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export async function createAdCampaign(params: {
+  name: string;
+  shopId?: string;
+  productId?: string;
+  platform: string;
+  budget: string;
+  dailyBudget?: string;
+  startDate?: string;
+}): Promise<AdCampaign> {
+  const client = getSupabaseClient();
+  const { data, error } = await client
+    .from('ad_campaigns')
+    .insert({
+      name: params.name,
+      shop_id: params.shopId || null,
+      product_id: params.productId || null,
+      platform: params.platform,
+      budget: params.budget,
+      daily_budget: params.dailyBudget || null,
+      start_date: params.startDate || null,
+      status: 'pending',
+    })
+    .select()
+    .single();
+  if (error) throw new Error(`创建广告计划失败: ${error.message}`);
+  return data as AdCampaign;
+}
+
+export async function listAdCampaigns(params: {
+  shopId?: string;
+  status?: string;
+}): Promise<AdCampaign[]> {
+  const client = getSupabaseClient();
+  let query = client
+    .from('ad_campaigns')
+    .select('*')
+    .order('created_at', { ascending: false });
+  
+  if (params.shopId) query = query.eq('shop_id', params.shopId);
+  if (params.status) query = query.eq('status', params.status);
+  
+  const { data, error } = await query;
+  if (error) throw new Error(`查询广告计划列表失败: ${error.message}`);
+  return (data as AdCampaign[]) || [];
+}
