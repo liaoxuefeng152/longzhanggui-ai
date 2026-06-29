@@ -88,7 +88,7 @@ export default function TaskLogsPage() {
     setIsLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch('/api/task-logs', {
+      const res = await fetch('/api/v1/task-logs', {
         headers: token ? { 'Authorization': `Bearer ${token}` } : {},
       });
       if (res.ok) {
