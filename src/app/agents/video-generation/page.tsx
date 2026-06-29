@@ -128,23 +128,27 @@ const tkComplianceRules = [
 ];
 
 // 历史视频Tab组件
-function VideoHistoryTab() {
+function VideoHistoryTab({ refreshKey }: { refreshKey?: number }) {
   const [videos, setVideos] = useState<GeneratedVideoData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const load = async () => {
       try {
+        setError(null);
         const data = await listGeneratedVideos({ limit: 50 });
         setVideos(data);
-      } catch {
-        // non-critical
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : '加载失败';
+        console.error('[VideoHistory] Error:', msg);
+        setError(msg);
       } finally {
         setLoading(false);
       }
     };
     load();
-  }, []);
+  }, [refreshKey]);
 
   if (loading) {
     return (
@@ -207,6 +211,9 @@ export default function VideoAgentPage() {
   const [activeTab, setActiveTab] = useState('tasks');
   const [agentStatus, setAgentStatus] = useState<'online' | 'offline' | 'processing'>('online');
   const [videoTasks, setVideoTasks] = useState<VideoTask[]>(mockVideoTasks);
+  
+  // 历史视频刷新Key
+  const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
   
   // 新建视频对话框状态
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -285,7 +292,12 @@ export default function VideoAgentPage() {
             prompt: newVideo.product_name,
             duration: result.duration || String(newVideo.duration),
           });
-        } catch { /* non-critical */ }
+          // 触发历史列表刷新
+          setHistoryRefreshKey(prev => prev + 1);
+        } catch (err) {
+          console.error('[VideoGen] Save failed:', err);
+          toast.warning('视频已生成，但保存失败');
+        }
         
         toast.success('视频生成成功！');
         setIsDialogOpen(false);
@@ -636,7 +648,7 @@ export default function VideoAgentPage() {
 
           {/* 历史视频 */}
           <TabsContent value="history" className="space-y-4">
-            <VideoHistoryTab />
+            <VideoHistoryTab refreshKey={historyRefreshKey} />
           </TabsContent>
 
           {/* 合规预检 */}

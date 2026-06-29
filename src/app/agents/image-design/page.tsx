@@ -157,23 +157,27 @@ Requirements:
 }
 
 // 历史作品Tab组件
-function ImageHistoryTab() {
+function ImageHistoryTab({ refreshKey }: { refreshKey?: number }) {
   const [images, setImages] = useState<GeneratedImageData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const load = async () => {
       try {
+        setError(null);
         const data = await listGeneratedImages({ limit: 50 });
         setImages(data);
-      } catch {
-        // non-critical
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : '加载失败';
+        console.error('[ImageHistory] Error:', msg);
+        setError(msg);
       } finally {
         setLoading(false);
       }
     };
     load();
-  }, []);
+  }, [refreshKey]);
 
   if (loading) {
     return (
@@ -240,6 +244,9 @@ export default function ImageDesignPage() {
   const [tasks, setTasks] = useState<ImageTask[]>([]);
   const [loading, setLoading] = useState(true);
   const [keyword, setKeyword] = useState('');
+  
+  // 历史图片刷新Key
+  const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
   
   // 对话框状态
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -404,7 +411,10 @@ export default function ImageDesignPage() {
             prompt: `翻译成 ${(result as ImageProcessResult).target_language_name}`,
             product_id: createForm.product_id,
           });
-        } catch { /* non-critical */ }
+          setHistoryRefreshKey(prev => prev + 1);
+        } catch (err) {
+          console.error('[ImageDesign] Save failed:', err);
+        }
         
       } else if (createForm.image_url && createForm.type !== 'main') {
         // 图片处理（优化/去水印/白底图）
@@ -441,7 +451,10 @@ export default function ImageDesignPage() {
             prompt: createForm.prompt,
             product_id: createForm.product_id,
           });
-        } catch { /* non-critical */ }
+          setHistoryRefreshKey(prev => prev + 1);
+        } catch (err) {
+          console.error('[ImageDesign] Save failed:', err);
+        }
         
       } else {
         // AI生成图片
@@ -472,7 +485,10 @@ export default function ImageDesignPage() {
             prompt: createForm.prompt || 'AI生成',
             product_id: createForm.product_id,
           });
-        } catch { /* non-critical */ }
+          setHistoryRefreshKey(prev => prev + 1);
+        } catch (err) {
+          console.error('[ImageDesign] Save AI image failed:', err);
+        }
       }
       
       setCreateForm({ 
@@ -901,7 +917,7 @@ export default function ImageDesignPage() {
 
           {/* 历史作品 */}
           <TabsContent value="history" className="space-y-4">
-            <ImageHistoryTab />
+            <ImageHistoryTab refreshKey={historyRefreshKey} />
           </TabsContent>
 
           {/* 合规检查 */}
