@@ -1,12 +1,16 @@
 [project]
-requires = ["nodejs-24"]
+requires = [ "nodejs-24" ]
+template = "nextjs"
+version = "legacy"
+appliedPatches = [ "nextjs/validate@0.0.20" ]
 
 [dev]
-build = ["bash", "./scripts/prepare.sh"]
-run = ["bash", "./scripts/dev-all.sh"]
-deps = ["git"]
+build = [ "bash", "./scripts/prepare.sh" ]
+run = [ "bash", "./scripts/dev-all.sh" ]
+deps = [ "git" ]
+validate = [ "bash", "./scripts/validate.sh" ]
 
 [deploy]
-build = ["bash","./scripts/build.sh"]
-run = ["node", "./scripts/start_server.js"]
-deps = ["git"]
+build = [ "bash", "./scripts/build.sh" ]
+run = [ "node", "./scripts/start_server.js" ]
+deps = [ "git" ]

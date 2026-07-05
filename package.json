@@ -16,7 +16,9 @@
     "docker:rm": "docker rm afeng-ai-platform",
     "docker:compose:up": "docker-compose up -d",
     "docker:compose:down": "docker-compose down",
-    "docker:compose:logs": "docker-compose logs -f"
+    "docker:compose:logs": "docker-compose logs -f",
+    "lint:build": "eslint . --quiet",
+    "validate": "pnpm run --parallel '/^(ts-check|lint:build)$/'"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.958.0",
